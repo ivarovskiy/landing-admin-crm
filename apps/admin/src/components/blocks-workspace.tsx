@@ -601,7 +601,7 @@ export function BlocksWorkspace({
           </Button>
 
           <Button asChild variant="ghost" size="icon-xs" title="Open in new tab">
-            <Link href={previewSrc} target="_blank" rel="noreferrer">
+            <Link href={previewSrc} target="_blank" rel="noreferrer" prefetch={false}>
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
           </Button>
