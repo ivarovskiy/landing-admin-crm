@@ -1,9 +1,7 @@
 [build]
-builder = "nixpacks"
-buildCommand = "pnpm install --frozen-lockfile && pnpm -C apps/api build"
+builder = "dockerfile"
 
 [deploy]
-startCommand = "node apps/api/dist/main"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
