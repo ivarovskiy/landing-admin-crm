@@ -24,6 +24,8 @@ type FeatureItem = {
 type FeaturesV1Data = {
   title?: string;
   subtitle?: string;
+  subtitleHide?: { base?: boolean; md?: boolean; lg?: boolean };
+  showSubtitle?: boolean;
   items?: FeatureItem[];
   options?: {
     autoPlayMs?: number;

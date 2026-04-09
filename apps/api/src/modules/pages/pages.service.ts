@@ -160,7 +160,7 @@ export class PagesService {
           slug: input.slug,
           locale: input.locale,
           status: "draft",
-          seo: Prisma.DbNull,
+          seo: Prisma.JsonNull,
         },
         select: { id: true, slug: true, locale: true, status: true, createdAt: true, updatedAt: true },
       })
@@ -197,7 +197,7 @@ export class PagesService {
           locale: src.locale,
           status: "draft",
           publishedAt: null,
-          seo: src.seo ?? Prisma.DbNull,
+          seo: src.seo ?? Prisma.JsonNull,
         },
         select: { id: true, slug: true, locale: true, status: true },
       })
