@@ -8,4 +8,4 @@ RUN pnpm exec prisma generate
 RUN rm -rf dist tsconfig.build.tsbuildinfo && pnpm run build
 RUN ls -la dist/ || echo "DIST NOT FOUND"
 EXPOSE 3000
-CMD ["node", "dist/main"]
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy && pnpm exec prisma db seed && node dist/main"]
