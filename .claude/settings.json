@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:3000/v1/health)",
+      "Bash(npx ts-node:*)",
+      "Bash(netstat -ano)",
+      "Bash(wsl --list --running)",
+      "Bash(cmd /c \"netstat -ano | findstr :3000\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\ThinkPad\\.claude\\projects\\c--Users-ThinkPad-Desktop-Work-landing-admin-crm\\memory"
+    ]
+  }
+}

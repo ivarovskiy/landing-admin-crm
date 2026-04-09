@@ -1,0 +1,21 @@
+{
+  "name": "@acme/openapi-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "fetch-spec": "curl -s http://localhost:3000/docs-json -o openapi.json",
+    "gen:types": "openapi-typescript openapi.json -o src/types.ts",
+    "gen": "pnpm run fetch-spec && pnpm run gen:types"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.14.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "openapi-typescript": "^7.6.1",
+    "typescript": "^5.9.0"
+  }
+}

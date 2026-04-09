@@ -1,0 +1,335 @@
+/*
+ * Design system component classes — web (landing)
+ *
+ * Reusable primitives: containers, typography, cards, icons, pills.
+ * All classes use `ds-` prefix for clarity.
+ */
+
+/* ---- Containers ---- */
+
+.ds-container {
+  margin-inline: auto;
+  padding-inline: 20px;
+  max-width: 1360px;
+  width: 100%;
+  /* padding: 0 21px; */
+  box-sizing: border-box;
+  /* text-align: center; */
+  position: relative;
+}
+
+.nav-container {
+  margin-inline: auto;
+  max-width: 1360px;
+  padding-top: 6px;
+  padding-bottom: 4px;
+  /* padding-inline: 26px; */
+  padding-inline-end: 4px;
+}
+
+/* ---- Typography: outline ---- */
+
+.ds-outline {
+  --outline-fill: var(--color-outline-fill);
+  --outline-stroke: var(--color-primary);
+  --outline-stroke-width: 1px;
+  --outline-tracking: 0.02em;
+  --outline-weight: 700;
+  --outline-filter: drop-shadow(0 2px 0 rgba(221, 28, 71, 0.22));
+
+  font-family: var(--font-display);
+  font-weight: var(--outline-weight);
+  text-transform: uppercase;
+  letter-spacing: var(--outline-tracking);
+  color: var(--outline-fill);
+  -webkit-text-stroke: var(--outline-stroke-width) var(--outline-stroke);
+  filter: var(--outline-filter);
+}
+
+.ds-outline-inline {
+  display: inline-block;
+  line-height: 1;
+}
+
+.ds-outline--no-shadow {
+  --outline-filter: none;
+}
+
+.ds-outline--ghost {
+  --outline-fill: transparent;
+}
+
+/* Size modifiers */
+.ds-outline--hero {
+  font-size: 2.25rem;
+  line-height: 1.05;
+}
+
+.ds-outline--section {
+  font-size: 3rem;
+  line-height: 1.02;
+}
+
+@media (min-width: 768px) {
+  .ds-outline--hero {
+    font-size: 3.75rem;
+  }
+
+  .ds-outline--section {
+    font-size: 4.5rem;
+  }
+}
+
+/* Alignment modifiers */
+.ds-outline--left {
+  text-align: left;
+}
+
+.ds-outline--center {
+  text-align: center;
+}
+
+.ds-outline--right {
+  text-align: right;
+}
+
+/* ---- Typography: stamp ---- */
+
+.ds-outline-stamp {
+  --stamp-fill: var(--color-outline-fill);
+  --stamp-stroke: var(--color-primary);
+  --stamp-stroke-w: 1px;
+  --stamp-shadow-x: 2.6px;
+  --stamp-shadow-y: 2.6px;
+  --stamp-shadow-color: var(--color-primary);
+  --stamp-tracking: 0.02em;
+  --stamp-weight: 700;
+
+  position: relative;
+  display: inline-block;
+  font-family: var(--font-display);
+  font-weight: var(--stamp-weight);
+  letter-spacing: var(--stamp-tracking);
+  /* text-transform: uppercase; */
+  white-space: pre-wrap;
+}
+
+.ds-outline-stamp__shadow,
+.ds-outline-stamp__main {
+  white-space: inherit;
+  font-family: var(--font-maru);
+}
+
+.ds-outline-stamp__shadow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  transform: translate(var(--stamp-shadow-x), var(--stamp-shadow-y));
+  color: var(--stamp-shadow-color);
+  -webkit-text-stroke: var(--stamp-stroke-w) var(--stamp-shadow-color);
+}
+
+.ds-outline-stamp__main {
+  font-family: var(--font-maru);
+  position: relative;
+  z-index: 1;
+  color: var(--stamp-fill);
+  -webkit-text-stroke: var(--stamp-stroke-w) var(--stamp-stroke);
+  text-shadow: var(--stamp-shadow-x) var(--stamp-shadow-y) 0 var(--stamp-shadow-color);
+}
+
+.ds-outline-stamp--no-shadow {
+  --stamp-shadow-x: 0px;
+  --stamp-shadow-y: 0px;
+}
+
+.ds-outline-stamp--ghost {
+  --stamp-fill: transparent;
+}
+
+/* ---- Typography: kicker ---- */
+
+.ds-kicker {
+  color: var(--color-primary);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 26%;
+  text-transform: uppercase;
+  line-height: 31px;
+}
+
+.ds-kicker-sm {
+  color: var(--color-primary);
+  /* font-size: 10px; */
+  /* font-weight: 700; */
+  /* letter-spacing: 0.35em; */
+  text-transform: uppercase;
+}
+
+/* ---- Display heading ---- */
+
+.ds-display {
+  font-family: var(--font-display);
+  font-size: 46px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+/* ---- Hairline ---- */
+
+.ds-hairline {
+  height: 1px;
+  background: var(--color-line);
+}
+
+/* ---- Card ---- */
+
+.ds-card {
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+}
+
+/* Content card — used in section items (benefits, services, faq, etc.) */
+
+.content-card {
+  border: 1px solid var(--color-line-subtle);
+  background: var(--color-card);
+  border-radius: var(--radius-md);
+}
+
+/* ---- Icon button ---- */
+
+.ds-icon-btn {
+  height: 40px;
+  width: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  background: transparent;
+  border: none;
+}
+
+/* ---- Pill ---- */
+
+.ds-pill {
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  padding: 12px 18px;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Mobile icon sizes ---- */
+
+.phone-icon-mobile {
+  width: 20px;
+  height: 33px;
+  color: var(--color-primary);
+}
+
+.mail-icon-mobile {
+  width: 32px;
+  height: 25px;
+  color: var(--color-primary);
+}
+
+.hamburger-icon-mobile {
+  width: 58px;
+  height: 58px;
+  color: var(--color-primary);
+}
+
+.logo-padding {
+  padding: 14px 21px 50px 21px;
+}
+
+.features-v1-icon {
+  width: 252px;
+  height: 252px;
+}
+
+/* ---- Logo fallback (error/missing) ---- */
+
+.logo-fallback {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+/* ---- Responsive display via CSS vars ---- */
+
+.ds-responsive-display {
+  display: var(--ds-display-base, block);
+}
+
+@media (min-width: 768px) {
+  .ds-responsive-display {
+    display: var(--ds-display-md, var(--ds-display-base, block));
+  }
+}
+
+@media (min-width: 1024px) {
+  .ds-responsive-display {
+    display: var(--ds-display-lg,
+        var(--ds-display-md, var(--ds-display-base, block)));
+  }
+}
+
+@media (min-width: 767px) {
+  .ds-outline-stamp {
+    --stamp-shadow-x: 4.15px;
+    --stamp-shadow-y: 4.15px;
+  }
+}
+
+/* ---- Scroll-to-top button ---- */
+
+.scroll-to-top {
+  position: fixed;
+  bottom: 32px;
+  right: 28px;
+  z-index: 99;
+
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-primary);
+  cursor: pointer;
+
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.scroll-to-top--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.scroll-to-top:hover {
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+@media (max-width: 899px) {
+  .scroll-to-top {
+    display: none;
+  }
+}

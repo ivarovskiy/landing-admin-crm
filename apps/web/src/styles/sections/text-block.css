@@ -1,0 +1,65 @@
+.text-block {
+  padding-top: clamp(40px, 5vw, 80px);
+  padding-bottom: clamp(40px, 5vw, 80px);
+}
+
+.tb__inner {
+  /* align and maxWidth applied via inline style */
+}
+
+.tb__kicker {
+  font-family: var(--font-maru);
+  font-size: clamp(11px, 1.2vw, 13px);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: 12px;
+}
+
+.tb__heading {
+  font-family: var(--font-maru);
+  font-size: clamp(20px, 2.8vw, 36px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin: 0 0 16px;
+}
+
+.tb__body {
+  font-size: clamp(14px, 1.4vw, 16px);
+  line-height: 1.7;
+  color: var(--color-text, currentColor);
+  max-width: 72ch;
+}
+
+.tb__body p {
+  margin: 0;
+}
+
+.tb__body p + p {
+  margin-top: 1em;
+}
+
+.tb__cta {
+  margin-top: clamp(20px, 2.5vw, 32px);
+}
+
+.tb__cta-btn {
+  display: inline-block;
+  padding: 10px 24px;
+  border: 2px solid var(--color-primary);
+  border-radius: 6px;
+  font-family: var(--font-maru);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tb__cta-btn:hover {
+  background: var(--color-primary);
+  color: var(--color-bg);
+}

@@ -1,0 +1,238 @@
+/* =========================================================
+   STUDIO ADDRESS
+   ========================================================= */
+
+.studio-address-section {
+  /* padding-top: clamp(40px, 6vw, 80px); */
+  padding-bottom: clamp(40px, 6vw, 100px);
+  color: var(--color-primary);
+}
+
+.studio-address-section > .ds-container {
+  /* padding-inline: clamp(18px, 3.8vw, 44px); */
+}
+
+/* ---- Title ---- */
+
+.studio-address__title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* margin-bottom: clamp(24px, 4vw, 50px); */
+}
+
+.studio-address__subtitle {
+  margin: 14px 0 0;
+  font-family: var(--font-maru);
+  font-size: clamp(16px, 2vw, 22px);
+  line-height: 1.3;
+  text-align: center;
+  max-width: 760px;
+  white-space: pre-line;
+}
+
+.studio-address__title {
+  margin: 0;
+  font-size: clamp(46px, 8vw, 104px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+/* ---- Map ---- */
+
+.studio-address__map-wrap {
+  /* margin-bottom: clamp(24px, 4vw, 48px); */
+}
+
+.studio-address__map-container {
+  width: 100%;
+  max-width: 800px;
+  margin-inline: auto;
+}
+
+.studio-address__map-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.studio-address__map-iframe {
+  position: absolute;
+  inset: 0;
+  width: 840px;
+  height: 100%;
+  border: none;
+}
+
+.studio-address__map-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.studio-address__map-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---- Address / contact text ---- */
+
+@media (max-width: 899px) {
+  .studio-address__address .ds-kicker,
+  .studio-address__notes .ds-kicker,
+  .studio-address__contact-link .ds-kicker,
+  .studio-address__contact-link .ds-kicker-sm {
+    font-size: 14.85px;
+    line-height: 24px;
+    letter-spacing: 0.2em;
+    font-weight: 500;
+  }
+}
+
+@media (min-width: 900px) {
+  .studio-address__address .ds-kicker,
+  .studio-address__notes .ds-kicker,
+  .studio-address__contact-link .ds-kicker,
+  .studio-address__contact-link .ds-kicker-sm {
+    font-size: 22px;
+    line-height: 1.3;
+    letter-spacing: 0.2em;
+    /* font-weight: 500; */
+  }
+}
+
+/* ---- Info row ---- */
+
+.studio-address__info {
+  text-align: center;
+}
+
+.studio-address__row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(20px, 3vw, 32px);
+}
+
+.studio-address__address {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.studio-address__socials {
+  display: flex;
+  gap: clamp(12px, 2vw, 24px);
+  justify-content: center;
+  align-items: center;
+  align-self: center;
+}
+
+.studio-address__social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.studio-address__social-icon {
+  width: clamp(28px, 5vw, 40px);
+  height: clamp(28px, 5vw, 40px);
+}
+
+.studio-address__notes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.studio-address__notes-placeholder {
+  display: none;
+}
+
+/* ---- Contacts ---- */
+
+.studio-address__contacts {
+  /* margin-top: clamp(20px, 3vw, 36px); */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 1.5vw, 16px);
+}
+
+.studio-address__contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--color-primary);
+}
+
+.studio-address__contact-icon--phone {
+  width: 20px;
+  height: 33px;
+}
+
+.studio-address__contact-icon--mail {
+  width: 32px;
+  height: 25px;
+}
+
+/* ---- Mobile ---- */
+
+@media (max-width: 899px) {
+  .studio-address__social-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .studio-address__notes {
+    display: none;
+  }
+
+  .studio-address__contacts {
+    padding-top: 26px;
+  }
+}
+
+/* ---- Desktop ---- */
+
+@media (min-width: 900px) {
+  .studio-address__map-container {
+    max-width: 830px;
+  }
+
+  .studio-address__map-frame {
+    aspect-ratio: 16 / 7;
+  }
+
+  .studio-address__row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .studio-address__address,
+  .studio-address__notes {
+    align-items: flex-start;
+    text-align: left;
+    flex: 1;
+  }
+
+  .studio-address__notes {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  /* .studio-address__contacts {
+    flex-direction: row;
+    justify-content: center;
+    gap: clamp(24px, 3vw, 48px);
+  } */
+}

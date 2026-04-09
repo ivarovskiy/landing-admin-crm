@@ -1,0 +1,11 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pnpm install --frozen-lockfile && pnpm -C apps/api build"
+
+[deploy]
+startCommand = "node apps/api/dist/main"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[environments.production.deploy]
+healthcheckPath = "/v1/health"

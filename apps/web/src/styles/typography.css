@@ -1,0 +1,143 @@
+/* =========================================================
+   TYPOGRAPHY — Design system tokens from Figma
+   Only these text styles should appear across the project.
+   ========================================================= */
+
+.typo-content-header,
+.typo-homepage-header {
+  font-family: var(--font-maru);
+  font-weight: 500;
+  font-size: 78px;
+  line-height: 86px;
+  letter-spacing: 2%;
+  color: var(--stamp-fill, var(--color-outline-fill));
+  text-transform: uppercase;
+  -webkit-text-stroke: 1.3px var(--stamp-stroke, var(--color-primary)); /* 1.3px outside × 2 */
+  text-shadow: 4.15px 4.15px 0 var(--stamp-stroke, var(--color-primary));
+}
+
+.typo-homepage-header {
+  font-size: 104px;
+  line-height: 126px;
+}
+
+.typo-subtitle {
+  font-family: var(--font-maru-oblique);
+  font-weight: 500;
+  font-style: normal;
+  font-size: 47px;
+  line-height: 60px; /* 60/47 */
+  letter-spacing: 0.007em;
+  color: var(--stamp-fill, var(--color-outline-fill));
+  paint-order: stroke fill;
+  -webkit-text-stroke: 4px var(--stamp-stroke, var(--color-primary)); /* 2px outside × 2 */
+}
+
+.typo-body-text {
+  font-family: var(--font-maru);
+  color: var(--color-primary);
+  font-size: 20px;
+  line-height: 29.4px; /* 33.2/22 */
+  letter-spacing: 0.7%;
+}
+
+.typo-section-header,
+.typo-text-header {
+  font-family: var(--font-maru);
+  font-weight: 700;
+  font-size: clamp(14px, 2vw, 22px);
+  line-height: 1.51;
+  letter-spacing: 32.7%;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.typo-text-header {
+  letter-spacing: 32.1%;
+}
+
+
+.typo-promo-header {
+  font-family: var(--font-maru);
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 38px; /* 38/26 */
+  letter-spacing: 32.7%;
+  text-transform: uppercase;
+}
+
+/* ---- Teachers block header ---- */
+/* GT Maru Bold 22px, letter spacing 20%, line height 33.2px */
+
+.typo-teachers-header {
+  font-family: var(--font-maru);
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 33.2px; /* 33.2/22 */
+  letter-spacing: 20%;
+  text-transform: uppercase;
+}
+
+/* ---- Body text ---- */
+/* GT Maru Regular 20px, letter spacing 0.7%, line height 29.4px */
+
+.typo-body {
+  font-family: var(--font-maru);
+  font-weight: 400;
+  font-size: clamp(14px, 1.8vw, 20px);
+  line-height: 1.47; /* 29.4/20 */
+  letter-spacing: 0.007em;
+}
+
+/* ---- Body italic (feature descriptions, quotes) ---- */
+/* GT Alpina Fine Trial, Medium Italic 27px, line height 35px */
+
+.typo-body-italic {
+  font-family: var(--font-alpina, var(--font-maru));
+  font-weight: 500;
+  font-style: italic;
+  font-size: clamp(16px, 2.2vw, 27px);
+  line-height: 1.30; /* 35/27 */
+  letter-spacing: 0;
+}
+
+/* ---- Hero slider title (stamp) ---- */
+/* GT Maru Medium 78px, same stamp treatment as H1 */
+/* Stroke 1.3px, Shadow 4.15px */
+
+.typo-hero-title {
+  font-family: var(--font-maru);
+  font-weight: 500;
+  font-size: clamp(44px, 5.7vw, 78px);
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+  color: var(--stamp-fill, var(--color-outline-fill));
+  paint-order: stroke fill;
+  -webkit-text-stroke: 2.6px var(--stamp-stroke, var(--color-primary)); /* 1.3px outside × 2 */
+  text-shadow: 4.15px 4.15px 0 var(--stamp-stroke, var(--color-primary));
+}
+
+/* ---- Nav link ---- */
+/* GT Maru Bold, responsive size */
+
+.typo-nav {
+  font-family: var(--font-maru);
+  font-weight: 700;
+  font-size: clamp(12px, 1.2vw, 16px);
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ---- Meta text (phone, portal label) ---- */
+
+.typo-meta {
+  font-family: var(--font-maru);
+  font-weight: 700;
+  font-size: clamp(12px, 1.2vw, 16px);
+  line-height: 1.05;
+  letter-spacing: 0;
+  text-transform: none;
+}

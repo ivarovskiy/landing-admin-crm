@@ -1,0 +1,111 @@
+/* =========================================================
+   SCRAPBOOK
+   ========================================================= */
+
+.scrapbook {
+  /* padding-top: clamp(28px, 4vw, 52px);
+  padding-bottom: clamp(28px, 4vw, 52px); */
+  color: var(--color-primary);
+}
+
+.scrapbook > .ds-container {
+  /* padding-inline: clamp(4px, 1vw, 14px); */
+}
+
+.scrapbook__title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: clamp(14px, 65px, 65px);
+}
+
+.scrapbook__subtitle {
+  margin: 14px 0 0;
+  font-family: var(--font-maru);
+  font-size: clamp(16px, 2vw, 22px);
+  line-height: 1.3;
+  text-align: center;
+  max-width: 760px;
+  white-space: pre-line;
+}
+
+.scrapbook__title {
+  margin: 0;
+  font-size: clamp(42px, 7.2vw, 104px);
+  line-height: 0.92;
+  letter-spacing: 0.03em;
+  text-align: center;
+}
+
+.scrapbook__grid {
+  --sb-gap: clamp(6px, 1.2vw, 28px);
+  --sb-row: clamp(100px, 28vw, 270px);
+
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: var(--sb-row);
+  gap: var(--sb-gap);
+  grid-template-areas:
+    "slot1 slot2"
+    "slot1 slot3"
+    "slot4 slot5"
+    "slot6 slot6"
+    "slot7 slot8";
+}
+
+.scrapbook__tile {
+  min-width: 0;
+}
+
+.scrapbook__tile--1 { grid-area: slot1; }
+.scrapbook__tile--2 { grid-area: slot2; }
+.scrapbook__tile--3 { grid-area: slot3; }
+.scrapbook__tile--4 { grid-area: slot4; }
+.scrapbook__tile--5 { grid-area: slot5; }
+.scrapbook__tile--6 { grid-area: slot6; }
+.scrapbook__tile--7 { grid-area: slot7; }
+.scrapbook__tile--8 { grid-area: slot8; }
+
+.scrapbook__tile-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #d9d9d9;
+}
+
+.scrapbook__image,
+.scrapbook__placeholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.scrapbook__image {
+  object-fit: cover;
+}
+
+.scrapbook__placeholder {
+  background: #d9d9d9;
+}
+
+@media (min-width: 768px) {
+  .scrapbook__grid {
+    --sb-gap: clamp(8px, 1.2vw, 28px);
+    --sb-row: clamp(76px, 17vw, 270px);
+
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-areas:
+      "slot1 slot2 slot3 slot4"
+      "slot1 slot5 slot6 slot6"
+      "slot7 slot8 slot6 slot6";
+  }
+}
+
+@media (min-width: 1024px) {
+  .scrapbook__grid {
+    --sb-gap: clamp(14px, 1.35vw, 28px);
+    --sb-row: clamp(120px, 18vw, 270px);
+  }
+}

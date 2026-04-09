@@ -1,0 +1,28 @@
+/*
+ * Layout primitives — landing page responsive order + visibility
+ */
+
+.landing-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-section {
+  order: var(--order-base, 0);
+  display: var(--display-base, block);
+  margin-bottom: var(--spacing-after, 0px);
+}
+
+@media (min-width: 768px) {
+  .landing-section {
+    order: var(--order-md, var(--order-base, 0));
+    display: var(--display-md, var(--display-base, block));
+  }
+}
+
+@media (min-width: 1024px) {
+  .landing-section {
+    order: var(--order-lg, var(--order-md, var(--order-base, 0)));
+    display: var(--display-lg, var(--display-md, var(--display-base, block)));
+  }
+}

@@ -1,0 +1,542 @@
+/*
+ * Content sections — features, studio-address, content-page,
+ * page-renderer, app pages.
+ */
+
+/* ==================================================================
+   FEATURES
+   ================================================================== */
+
+.features-section {
+  /* padding-top: clamp(32px, 4.5vw, 82px); */
+  padding-bottom: clamp(32px, 4.5vw, 56px);
+}
+
+.features-title {
+  font-size: clamp(42px, 7.2vw, 104px);
+  line-height: 1;
+  text-align: center;
+  width: 100%;
+}
+
+.features-subtitle {
+  width: 100%;
+  max-width: min(750px, 100%);
+  margin: auto;
+  margin-top: var(--s-12);
+  font-size: clamp(18px, 2.2vw, 26px);
+  color: var(--color-primary);
+  white-space: pre-line;
+  line-height: clamp(26px, 3vw, 36px);
+  font-family: var(--font-maru);
+  font-weight: 500;
+}
+
+.features-grid {
+  padding-top: clamp(20px, 2.5vw, 30px);
+  display: grid;
+  gap: clamp(1.25rem, 2vw, 2rem);
+  color: var(--color-primary);
+}
+
+@media (min-width: 768px) {
+  .features-grid {
+    /* padding: clamp(20px, 2.5vw, 30px) 20px 0 20px; */
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(20px, 2.5vw, 30px);
+  }
+}
+
+.feature-card {
+  border-radius: 1rem;
+  text-align: center;
+}
+
+.feature-card__title {
+  white-space: pre-line;
+  font-size: clamp(20px, 2.2vw, 26px);
+  padding-top: clamp(24px, 3vw, 36px);
+  line-height: clamp(28px, 3.2vw, 38px);
+  letter-spacing: 32%;
+}
+
+.feature-card__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.feature-card__text {
+  margin-top: clamp(16px, 2vw, 24px);
+  font-size: clamp(16px, 1.6vw, 20px);
+  line-height: 1.5;
+  opacity: 0.9;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+/* ==================================================================
+   STUDIO ADDRESS
+   ================================================================== */
+
+.studio-address-section {
+  /* padding-top: clamp(32px, 5vw, 64px); */
+  padding-bottom: clamp(32px, 96px, 96px);
+}
+
+.studio-address__title-wrap {
+  text-align: center;
+}
+
+.studio-address__title {
+  font-size: clamp(46px, 7.2vw, 104px);
+  line-height: 1;
+}
+
+/* Map */
+.studio-address__map-wrap {
+  padding-top: clamp(18px, 4.3vw, 62px);
+}
+
+.studio-address__map-container {
+  margin-inline: auto;
+  max-width: 520px;
+}
+
+@media (min-width: 768px) {
+  .studio-address__map-container {
+    max-width: 830px;
+  }
+}
+
+.studio-address__map-frame {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: white;
+  border-radius: var(--radius-md);
+}
+
+@media (min-width: 768px) {
+  .studio-address__map-frame {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+.studio-address__map-iframe {
+  width: 100%;
+  height: 100%;
+}
+
+.studio-address__map-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.studio-address__map-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Under-map row */
+.studio-address__info {
+  padding-top: clamp(32px, 4.5vw, 60px);
+  color: var(--color-primary);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.studio-address__row {
+  display: grid;
+  gap: clamp(20px, 2.5vw, 32px);
+  text-align: center;
+  width: 100%;
+  max-width: 912px;
+}
+
+@media (min-width: 768px) {
+  .studio-address__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+  }
+}
+
+.studio-address__address {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 1.5vw, 18px);
+}
+
+@media (min-width: 768px) {
+  .studio-address__address {
+    align-items: flex-end;
+  }
+}
+
+.studio-address__socials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(20px, 2.5vw, 30px);
+}
+
+.studio-address__social-link {}
+
+.studio-address__social-icon {
+  width: clamp(28px, 3.5vw, 48px);
+  height: clamp(28px, 3.5vw, 48px);
+}
+
+.studio-address__notes {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .studio-address__notes {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-self: end;
+    gap: clamp(6px, 0.6vw, 8px);
+  }
+}
+
+.studio-address__notes-placeholder {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .studio-address__notes-placeholder {
+    display: block;
+
+  }
+}
+
+/* Phone / Email */
+.studio-address__contacts {
+  padding-top: clamp(24px, 48px, 48px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 1.2vw, 16px);
+
+  font-size: clamp(16px, 1.8vw, 22px);
+  letter-spacing: 20%;
+  line-height: clamp(24px, 2.8vw, 34px);
+  font-weight: 700;
+}
+
+.studio-address__contact-link {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1vw, 12px);
+}
+
+.studio-address__contact-icon--phone {
+  width: clamp(22px, 2.2vw, 28px);
+  height: clamp(36px, 3.6vw, 46px);
+}
+
+.studio-address__contact-icon--mail {
+  width: clamp(34px, 3.4vw, 44px);
+  height: clamp(26px, 2.6vw, 34px);
+}
+
+/* ==================================================================
+   CONTENT PAGE  (cp__ prefix)
+   ================================================================== */
+
+.content-page {
+  padding-top: clamp(40px, 5vw, 72px);
+  padding-bottom: clamp(56px, 6vw, 82px);
+  color: var(--color-primary);
+}
+
+/* ---- Hero ---- */
+.cp__hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.cp__hero-text {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.cp__hero-cta {
+  flex-shrink: 0;
+  padding-top: clamp(12px, 1.5vw, 20px);
+}
+
+.cp__cta-btn {
+  display: inline-block;
+  padding: 10px 22px;
+  border: 2px solid var(--color-primary);
+  border-radius: 6px;
+  font-family: var(--font-maru);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cp__cta-btn:hover {
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+.cp__title {
+  margin-top: clamp(12px, 2vw, 24px);
+  margin-bottom: 12px;
+  font-size: clamp(46px, 7.1vw, 78px);
+  line-height: 86px;
+  letter-spacing: 0.03em;
+  white-space: normal;
+  text-wrap: balance;
+}
+
+.cp__subtitle {
+  margin-top: clamp(10px, 1.3vw, 16px);
+  font-family: var(--font-maru);
+  font-size: 46px;
+  line-height: 1.08;
+  font-style: italic;
+  font-weight: 500;
+  /* color: var(--color-primary); */
+  color: var(--stamp-fill);
+  -webkit-text-stroke: 2px var(--stamp-stroke);
+  margin: clamp(8px, 1vw, 18px) 0 0;
+  font-family: var(--font-maru);
+  /* font-size: var(--hs-subtitle-size); */
+  line-height: 1.08;
+  white-space: pre-line;
+  font-style: italic;
+}
+
+/* ---- Document box (boxed mode) ---- */
+.cp__box {
+  position: relative;
+  margin-top: clamp(32px, 4vw, 56px);
+  border: 1.5px solid var(--color-primary);
+  border-radius: 4px;
+  padding: clamp(40px, 5vw, 72px) clamp(24px, 4vw, 56px) clamp(40px, 5vw, 64px);
+}
+
+.cp__box-clip {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 48px;
+  color: var(--color-primary);
+  opacity: 0.7;
+}
+
+.cp__box-clip svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* When boxed, columns sit inside the box (no extra margin) */
+.cp__box .cp__columns {
+  margin-top: 0;
+}
+
+/* ---- Two independent columns ---- */
+.cp__columns {
+  margin-top: clamp(48px, 6.5vw, 100px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2vw, 24px);
+  max-width: var(--cp-content-max-w, none);
+}
+
+.cp__col {
+  display: contents;
+}
+
+/* ---- Items ---- */
+.cp__item {
+  order: var(--mobile-order, 0);
+  width: 100%;
+}
+
+.cp__item--image,
+.cp__item--text {
+  min-width: 0;
+}
+
+.cp__item--text {
+  display: flex;
+  flex-direction: column;
+  gap: 33px;
+  width: var(--cp-text-max-w, 533px);
+  max-width: 100%;
+}
+
+.cp__item--image {
+  padding: var(--img-padding, 0);
+}
+
+.cp__image {
+  display: block;
+  width: var(--img-w, 100%);
+  height: var(--img-h, auto);
+  aspect-ratio: var(--aspect, auto);
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.cp__image--placeholder {
+  background: #d9d9d9;
+}
+
+.cp__heading {
+  max-width: none;
+  font-size: 22px;
+  line-height: 33.2px;
+  letter-spacing: 0.31em;
+}
+
+.cp__prose {
+  font-size: 20px;
+  line-height: 29.4px;
+}
+
+.cp__prose p+p {
+  margin-top: 1.2em;
+}
+
+@media (min-width: 768px) {
+  .cp__columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(56px, 10vw, 142px);
+    align-items: start;
+    /* max-width: 1037px; */
+  }
+
+  .cp__col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+    max-width: 533px;
+  }
+
+  .cp__item {
+    order: unset;
+    margin-top: var(--cp-gap-md, 0px);
+    margin-left: var(--cp-offset-md, 0px);
+    align-self: var(--cp-align-md, flex-start);
+  }
+
+  .cp__item--image {
+    max-width: var(--cp-width-md, none);
+  }
+
+  .cp__col>.cp__item:first-child {
+    margin-top: 0;
+  }
+
+  .cp__prose,
+  .cp__image {
+    width: 100%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cp__item {
+    margin-top: var(--cp-gap-lg, var(--cp-gap-md, 0px));
+    margin-left: var(--cp-offset-lg, var(--cp-offset-md, 0px));
+    align-self: var(--cp-align-lg, var(--cp-align-md, flex-start));
+  }
+
+  .cp__item--image {
+    max-width: var(--cp-width-lg, var(--cp-width-md, none));
+  }
+}
+
+/* ==================================================================
+   PAGE RENDERER — unsupported block
+   ================================================================== */
+
+.unsupported-block {
+  margin: clamp(16px, 2vw, 24px) 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line-subtle);
+  background: var(--color-card);
+  padding: clamp(12px, 1.2vw, 16px);
+}
+
+.unsupported-block__label {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.unsupported-block__key {
+  color: white;
+}
+
+/* ==================================================================
+   APP PAGES — error, offline
+   ================================================================== */
+
+.error-page {
+  padding: clamp(28px, 3.5vw, 40px) 0;
+}
+
+.error-page__card {
+  padding: clamp(28px, 3.5vw, 48px);
+}
+
+.error-page__trace {
+  margin-top: clamp(12px, 1.2vw, 16px);
+  font-size: clamp(11px, 0.9vw, 12px);
+  opacity: 0.8;
+  white-space: pre-wrap;
+}
+
+.error-page__retry {
+  margin-top: clamp(16px, 1.8vw, 24px);
+}
+
+.error-page__message {
+  padding: clamp(20px, 2.5vw, 32px);
+}
+
+.offline-page {
+  padding: clamp(28px, 3.5vw, 40px) 0;
+}
+
+.offline-page__card {
+  padding: clamp(28px, 3.5vw, 48px);
+}
+
+.offline-page__detail {
+  margin-top: clamp(12px, 1.2vw, 16px);
+  font-size: clamp(13px, 1vw, 14px);
+  opacity: 0.8;
+}
+
+/* ==================================================================
+   TAGLINE
+   ================================================================== */
+
+.tagline {
+  text-align: center;
+  color: var(--color-primary);
+}

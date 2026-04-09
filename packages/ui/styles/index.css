@@ -1,0 +1,10 @@
+/*
+ * @acme/ui styles — entry point
+ *
+ * Import this single file in your app's globals.css:
+ *   @import "@acme/ui/styles";
+ */
+
+@import "./tokens.css";
+@import "./base.css";
+@import "./animations.css";

@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pnpm install --frozen-lockfile && pnpm -C apps/admin build"
+
+[deploy]
+startCommand = "pnpm -C apps/admin start"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

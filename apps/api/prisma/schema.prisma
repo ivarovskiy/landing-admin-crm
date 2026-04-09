@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PageStatus {
+  draft
+  published
+}
+
+enum ThemeStatus {
+  draft
+  published
+}
+
+enum UserStatus {
+  active
+  disabled
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  status       UserStatus  @default(active)
+  createdAt    DateTime    @default(now())
+  lastLoginAt  DateTime?
+
+  roles        UserRole[]
+  auditLogs    AuditLog[]  @relation("AuditActor")
+
+  @@index([createdAt])
+}
+
+model Role {
+  id   String @id @default(cuid())
+  key  String @unique // admin/editor/viewer
+
+  users UserRole[]
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+}
+
+model Page {
+  id          String     @id @default(cuid())
+  slug        String
+  locale      String     @default("uk")
+  status      PageStatus @default(draft)
+  seo         Json?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  publishedAt DateTime?
+
+  blocks      Block[]
+
+  @@unique([slug, locale])
+  @@index([status])
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  pageId    String
+  type      String
+  variant   String
+  order     Int
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, order])
+  @@index([type, variant])
+}
+
+model Theme {
+  id          String      @id @default(cuid())
+  key         String      @unique
+  tokens      Json
+  status      ThemeStatus @default(draft)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  publishedAt DateTime?
+
+  @@index([status])
+}
+
+model MediaAsset {
+  id          String   @id @default(cuid())
+  url         String
+  providerKey String
+  mime        String
+  size        Int
+  width       Int?
+  height      Int?
+  alt         String?
+  tags        String[] @default([])
+  createdAt   DateTime @default(now())
+
+  @@index([providerKey])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  entityType  String
+  entityId    String
+  action      String
+  diff        Json?
+  createdAt   DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}

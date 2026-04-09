@@ -1,0 +1,16 @@
+/*
+ * Base / reset — @acme/ui
+ *
+ * Minimal global styles that every app consuming
+ * @acme/ui tokens should apply.
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+* {
+  @apply border-border outline-ring/50;
+}
+
+body {
+  @apply bg-background text-foreground;
+}

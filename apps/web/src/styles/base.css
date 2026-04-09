@@ -1,0 +1,32 @@
+/*
+ * Base styles — web (landing)
+ */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-maru);
+  /* overflow-x: hidden; */
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Page wrapper — shared by home, preview, offline */
+
+.page-base {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+
+.text-center {
+  text-align: center;
+}
