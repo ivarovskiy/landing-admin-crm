@@ -2,6 +2,19 @@ import type { NextConfig } from "next";
 
 // SVGR support for both Turbopack (dev) and Webpack (build / when turbopack is disabled)
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      {
+        source: "/preview/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "GET, OPTIONS" },
+          { key: "Access-Control-Allow-Headers", value: "*" },
+        ],
+      },
+    ];
+  },
+
   turbopack: {
     rules: {
       "*.svg": {
