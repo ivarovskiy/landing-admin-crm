@@ -377,77 +377,54 @@ function DesktopNavColumn({
       if (!row || !dropdown || !trigger) return;
 
       const rowRect = row.getBoundingClientRect();
-      const dropdownWidth = dropdown.getBoundingClientRect().width;
+      const dropdownRect = dropdown.getBoundingClientRect();
       const triggerRect = trigger.getBoundingClientRect();
 
-      const rowWidth = rowRect.width;
-      if (!rowWidth || !dropdownWidth) return;
+      if (!row.offsetWidth || !dropdownRect.width) return;
 
-      const triggerLeft = triggerRect.left - rowRect.left;
-      const triggerCenter = triggerLeft + triggerRect.width / 2;
+      // getBoundingClientRect() returns visual pixels (affected by CSS zoom / transform:scale).
+      // CSS `left` is in layout pixels. Divide by scale to convert between the two.
+      const rowScale = row.offsetWidth > 0 ? rowRect.width / row.offsetWidth : 1;
+
+      const dropdownWidth = dropdownRect.width / rowScale;
+      const triggerLeft = (triggerRect.left - rowRect.left) / rowScale;
+      const triggerCenter = triggerLeft + triggerRect.width / rowScale / 2;
+
+      // Determine which child to center under the trigger.
+      // Items near the left edge of left-nav (or right edge of right-nav) align
+      // with an outer child so the dropdown doesn't overhang the near edge.
+      // Formula: childCenterIdx = clamp(stepsFromEdge - 1, 0, naturalCenter)
+      //   where naturalCenter = floor((childCount-1)/2) — the middle child.
+      const childrenEls = Array.from(dropdown.children) as HTMLElement[];
+      const childCount = childrenEls.length;
+      const stepsFromEdge =
+        align === "left" ? activeItemIndex : items.length - 1 - activeItemIndex;
+      const naturalCenter = Math.floor((childCount - 1) / 2);
+      const childCenterIdx = Math.max(0, Math.min(stepsFromEdge - 1, naturalCenter));
+
+      const targetChild = childrenEls[childCenterIdx];
+      const childRect = targetChild?.getBoundingClientRect();
+      // Center of target child relative to dropdown's left edge, in layout pixels
+      const childOffsetFromDropdown = childRect
+        ? (childRect.left - dropdownRect.left) / rowScale + childRect.width / rowScale / 2
+        : dropdownWidth / 2;
 
       const safePadding = 4;
       const minLeft = safePadding;
-      // Right nav: clamp to the row's right edge (= header content right edge, consistent at any viewport width)
-      // Left nav: clamp to the viewport right edge (items sit on the left, plenty of room)
       const viewportWidth = document.documentElement.clientWidth;
-      const rightBoundary =
+      const rightBoundaryVisual =
         align === "right"
-          ? rowRect.right - rowRect.left - safePadding
-          : viewportWidth - rowRect.left - safePadding;
+          ? rowRect.right - rowRect.left
+          : viewportWidth - rowRect.left;
+      const rightBoundary = rightBoundaryVisual / rowScale - safePadding;
       const maxLeft = Math.max(minLeft, rightBoundary - dropdownWidth);
 
-      let nextLeft: number;
-
-      const ddChildren = Array.from(dropdown.children) as HTMLElement[];
-      const ddCount = ddChildren.length;
-
-      const dropdownRect = dropdown.getBoundingClientRect();
-      const childCenter = (el: HTMLElement) => {
-        const r = el.getBoundingClientRect();
-        return r.left - dropdownRect.left + r.width / 2;
-      };
-
-      if (activeItemIndex === 0) {
-        // 1st item: left-align dropdown with trigger left edge
-        nextLeft = triggerLeft;
-      } else if (align === "left" && activeItemIndex === 1) {
-        // Faculty: center first dropdown child under trigger
-        const c = ddChildren[0];
-        nextLeft = c ? triggerCenter - childCenter(c) : triggerCenter - dropdownWidth / 2;
-      } else if (align === "left" && activeItemIndex >= 2) {
-        // Masterclass Series+: center second dropdown child under trigger
-        const c = ddChildren[1] ?? ddChildren[0];
-        nextLeft = c ? triggerCenter - childCenter(c) : triggerCenter - dropdownWidth / 2;
-      } else if (align === "right" && activeItemIndex === 1) {
-        // Performances:
-        // 2 children → always center under 1st child
-        // 3+ children → try 1st child; fall back to 2nd if it overflows right
-        const first = ddChildren[0];
-        const second = ddChildren[1];
-        if (first) {
-          const tryLeft = triggerCenter - childCenter(first);
-          if (ddCount >= 3 && second && tryLeft + dropdownWidth > rightBoundary) {
-            nextLeft = triggerCenter - childCenter(second);
-          } else {
-            nextLeft = tryLeft;
-          }
-        } else {
-          nextLeft = triggerCenter - dropdownWidth / 2;
-        }
-      } else {
-        // Right nav index 2+: center middle child
-        if (ddCount >= 3) {
-          const midChild = ddChildren[Math.floor(ddCount / 2)];
-          nextLeft = triggerCenter - childCenter(midChild);
-        } else if (ddCount === 2) {
-          nextLeft = triggerCenter - childCenter(ddChildren[0]);
-        } else {
-          nextLeft = triggerCenter - dropdownWidth / 2;
-        }
-      }
-
-      // Final clamp — never overflow left or viewport right
+      // First nav item: left-align dropdown with trigger's left edge ("від краю")
+      // All other items: center the appropriate child under the trigger
+      let nextLeft =
+        activeItemIndex === 0
+          ? triggerLeft
+          : triggerCenter - childOffsetFromDropdown;
       nextLeft = Math.min(Math.max(nextLeft, minLeft), maxLeft);
 
       setDropdownLeft(nextLeft);
@@ -474,7 +451,7 @@ function DesktopNavColumn({
       window.removeEventListener("resize", updatePosition);
       ro?.disconnect();
     };
-  }, [activeItem, align]);
+  }, [activeItem, activeItemIndex, align, items.length]);
 
   return (
     <div

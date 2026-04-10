@@ -7,6 +7,21 @@ export type BlockDefinition = {
   defaultData: Record<string, any>
 }
 
+export type BlockPreset = {
+  key: string          // e.g. "header:v1:ibc-full"
+  blockKey: string     // e.g. "header:v1"
+  label: string
+  description?: string
+  data: Record<string, any>
+}
+
+export type PageTemplate = {
+  key: string
+  label: string
+  description?: string
+  blocks: Array<{ type: string; variant: string; data: Record<string, any> }>
+}
+
 export const BLOCK_LIBRARY: BlockDefinition[] = [
   {
     key: "header:v1",
@@ -419,4 +434,293 @@ export function getBlockKey(type: string, variant: string) {
 
 export function findBlockDef(key: string) {
   return BLOCK_LIBRARY.find((b) => b.key === key)
+}
+
+/* ============================================================
+   IBC shared data — reused across presets and page templates
+   ============================================================ */
+
+const IBC_HEADER_DATA = {
+  brand: { label: "IBC Ballet", href: "#top" },
+  mobile: {
+    top: {
+      phoneHref: "tel:+16108830878",
+      emailHref: "mailto:simplydancepa@gmail.com",
+    },
+    masthead: {
+      logo: { kind: "asset", name: "ibc-ballet-pre" },
+      tagline: "ENHANCE\nYOUR TECHNIQUE,\nGET\nPERSONALIZED\nATTENTION\nAND\nSHINE ON STAGE",
+    },
+    portal: { label: "Parent Portal", href: "#" },
+    menu: [
+      { label: "About Us", href: "#about" },
+      {
+        label: "Faculty", href: "#faculty",
+        children: [
+          { label: "Artistic Director", href: "#artistic-director" },
+          { label: "Ballet Master", href: "#ballet-master" },
+          { label: "Teachers", href: "#teachers" },
+        ],
+      },
+      {
+        label: "Masterclass Series", href: "#masterclasses",
+        children: [
+          { label: "Info", href: "#masterclass-info" },
+          { label: "Registry", href: "#masterclass-registry" },
+          { label: "Faculty", href: "#masterclass-faculty" },
+        ],
+      },
+      { label: "Competitions", href: "#competitions" },
+      { label: "Nutcracker 2025", href: "#nutcracker" },
+      {
+        label: "Performances", href: "#performances",
+        children: [
+          { label: "Nutcracker 2024", href: "#nutcracker-2024" },
+          { label: "Showcase 2024", href: "#showcase-2024" },
+          { label: "Spring Gala", href: "#spring-gala" },
+        ],
+      },
+      { label: "Merch", href: "#merch" },
+      { label: "Contact Us", href: "#address" },
+    ],
+    promo: {
+      label: "CHECK OUT", label2: "OUR",
+      logo: { kind: "asset", name: "simply-dance" },
+      logoText: "SIMPLY DANCE", subText: "CHILDREN'S PROGRAMS", href: "#",
+    },
+  },
+  desktop: {
+    phone: "(610) 883-0878",
+    phoneHref: "tel:+16108830878",
+    logo: { kind: "asset", name: "ibc-ballet-pre" },
+    portal: { label: "Parent Portal", href: "#" },
+    secondaryPortal: { label: "IBC Ballet Company", href: "#" },
+    navigation: {
+      left: [
+        { label: "About Us", href: "#about" },
+        {
+          label: "Faculty", href: "#faculty",
+          children: [
+            { label: "Artistic Director", href: "#artistic-director" },
+            { label: "Ballet Master", href: "#ballet-master" },
+            { label: "Teachers", href: "#teachers" },
+          ],
+        },
+        {
+          label: "Masterclass Series", href: "#masterclasses",
+          children: [
+            { label: "Info", href: "#masterclass-info" },
+            { label: "Registry", href: "#masterclass-registry" },
+            { label: "Faculty", href: "#masterclass-faculty" },
+          ],
+        },
+        { label: "Competitions", href: "#competitions" },
+      ],
+      right: [
+        { label: "Nutcracker 2025", href: "#nutcracker" },
+        {
+          label: "Performances", href: "#performances",
+          children: [
+            { label: "Nutcracker 2024", href: "#nutcracker-2024" },
+            { label: "Showcase 2024", href: "#showcase-2024" },
+            { label: "Spring Gala", href: "#spring-gala" },
+          ],
+        },
+        { label: "Merch", href: "#merch" },
+        { label: "Contact Us", href: "#address" },
+      ],
+    },
+  },
+  _layout: { anchor: "top", container: "full" },
+}
+
+const IBC_FOOTER_DATA = {
+  left: {
+    href: "#top",
+    logo: { kind: "asset", name: "ibc-logo-large" },
+    subText: "IBC BALLET PRE-PROFESSIONAL",
+  },
+  columns: [
+    { links: [{ label: "About Us", href: "#about" }, { label: "Faculty", href: "#faculty" }] },
+    { links: [{ label: "Masterclass Series", href: "#masterclass" }, { label: "Competition", href: "#competition" }, { label: "Nutcracker 2024", href: "#nutcracker" }] },
+    { links: [{ label: "Performances", href: "#performances" }, { label: "Merch", href: "#merch" }, { label: "Contact Us", href: "#address" }] },
+  ],
+  right: {
+    portal: { label: "Parent Portal", href: "#", icon: "lock" },
+    promo: {
+      label: "Check Out Our Children's Website",
+      href: "#",
+      logo: { kind: "asset", name: "sds-logo-large" },
+      logoText: "SIMPLY DANCE STUDIO",
+      subText: "CHILDREN'S PROGRAMS",
+    },
+  },
+  bottomText: "Copyright © 2026 Simply Dance Studio • All Rights Reserved",
+  _layout: { anchor: "footer", container: "full" },
+}
+
+const IBC_HERO_DATA = {
+  slides: [
+    {
+      id: "school-year",
+      template: "copy-left-image-right",
+      title: "SCHOOL YEAR\n2025-26",
+      subtitle: "Registration Now Open",
+      subtitleVariant: "plain",
+      cta: { label: "LEARN MORE", href: "/summer-program" },
+      media: {
+        kind: "image",
+        src: "https://placehold.co/900x900/png?text=+",
+        alt: "Ballet",
+        aspectRatio: "1/1",
+        objectFit: "cover",
+      },
+      layout: {
+        desktop: {
+          gap: "42px", mediaWidth: "40%", textWidth: "92%",
+          textAlign: "center", contentJustify: "center",
+          titleSize: "clamp(54px, 5.5vw, 84px)",
+          subtitleSize: "clamp(20px, 2vw, 30px)",
+        },
+        mobile: { imageFirst: false },
+      },
+    },
+    {
+      id: "2026",
+      template: "full-image",
+      title: "2026",
+      media: {
+        kind: "image",
+        src: "https://placehold.co/1440x700/png?text=+",
+        alt: "2026",
+        aspectRatio: "1440/700",
+        objectFit: "cover",
+      },
+    },
+  ],
+  options: { autoPlayMs: 0, showDots: true, showArrows: false },
+  _layout: { anchor: "hero", container: "full" },
+}
+
+const IBC_FEATURES_DATA = {
+  title: "OUR SCHOOL",
+  subtitle: "Join to enhance your technique,\nget personalized attention and shine on stage",
+  items: [
+    { title: "BRAND NEW\nFACILITY", text: "Three large studio spaces basking in natural sunlight, new spring Marley floors and great atmosphere all around.", icon: "ballet-bar", _layout: { hide: { base: true } } },
+    { title: "JUNIOR COMPANY\nAUDITIONS", text: "Two full-length ballets per year with opportunities to perform principal and soloist roles, working with guest choreographers.", icon: "ballet-shoes" },
+    { title: "STUDENT\nACHIEVEMENTS", text: "Classical ballet is the basis of a good dance education. It provides the foundation for all other dance forms.", icon: "prize-cup", _layout: { hide: { base: true } } },
+  ],
+  _layout: { anchor: "our-school", container: "full" },
+}
+
+const IBC_ADDRESS_DATA = {
+  title: "STUDIO ADDRESS",
+  map: {
+    embedUrl: "",
+    imageSrc: "/maps/map_ibc.png",
+    alt: "Studio location map",
+    linkUrl: "https://www.google.com/maps?q=580+Lancaster+Ave+Malvern+PA+19455",
+  },
+  addressLines: ["580 LANCASTER AVE", "MALVERN, PA 19455"],
+  notes: ["ACROSS FROM WAWA", "OFF LANCASTER AVE"],
+  socials: [
+    { icon: "instagram", href: "#", label: "Instagram" },
+    { icon: "facebook", href: "#", label: "Facebook" },
+  ],
+  contacts: { phone: "(610) 883-0878", email: "SIMPLYDANCEPA@GMAIL.COM" },
+  _layout: { anchor: "address", container: "full" },
+}
+
+/* ============================================================
+   Block Presets — real IBC data, ready to use
+   ============================================================ */
+
+export const BLOCK_PRESETS: BlockPreset[] = [
+  {
+    key: "header:v1:ibc",
+    blockKey: "header:v1",
+    label: "IBC Ballet — Header",
+    description: "Full nav: Faculty, Masterclass Series, Performances dropdowns",
+    data: IBC_HEADER_DATA,
+  },
+  {
+    key: "hero:slider-v1:ibc-home",
+    blockKey: "hero:slider-v1",
+    label: "IBC Ballet — Hero slider (home)",
+    description: "School Year 2025-26 + full-image 2026 slides",
+    data: IBC_HERO_DATA,
+  },
+  {
+    key: "features:v1:ibc",
+    blockKey: "features:v1",
+    label: "IBC Ballet — Our School",
+    description: "Brand New Facility · Junior Company · Student Achievements",
+    data: IBC_FEATURES_DATA,
+  },
+  {
+    key: "studio-address:v1:ibc",
+    blockKey: "studio-address:v1",
+    label: "IBC Ballet — Studio Address",
+    description: "580 Lancaster Ave · Malvern PA · map + socials",
+    data: IBC_ADDRESS_DATA,
+  },
+  {
+    key: "footer:v1:ibc",
+    blockKey: "footer:v1",
+    label: "IBC Ballet — Footer",
+    description: "Full footer with nav columns + Simply Dance promo",
+    data: IBC_FOOTER_DATA,
+  },
+]
+
+export function findBlockPreset(key: string) {
+  return BLOCK_PRESETS.find((p) => p.key === key)
+}
+
+/* ============================================================
+   Page Templates — full page block sets
+   ============================================================ */
+
+export const PAGE_TEMPLATES: PageTemplate[] = [
+  {
+    key: "blank",
+    label: "Blank page",
+    description: "Start from scratch — no blocks",
+    blocks: [],
+  },
+  {
+    key: "ibc-home",
+    label: "IBC Ballet — Home",
+    description: "Header + Hero slider + Our School + Studio Address + Footer",
+    blocks: [
+      { type: "header", variant: "v1", data: IBC_HEADER_DATA },
+      { type: "hero", variant: "slider-v1", data: IBC_HERO_DATA },
+      { type: "features", variant: "v1", data: IBC_FEATURES_DATA },
+      { type: "studio-address", variant: "v1", data: IBC_ADDRESS_DATA },
+      { type: "footer", variant: "v1", data: IBC_FOOTER_DATA },
+    ],
+  },
+  {
+    key: "ibc-content",
+    label: "IBC Ballet — Content page",
+    description: "Header + Content Page + Footer",
+    blocks: [
+      { type: "header", variant: "v1", data: IBC_HEADER_DATA },
+      { type: "content-page", variant: "v1", data: { kicker: "PROGRAM", title: "PAGE TITLE", subtitle: "", left: [], right: [] } },
+      { type: "footer", variant: "v1", data: IBC_FOOTER_DATA },
+    ],
+  },
+  {
+    key: "header-footer",
+    label: "Header + Footer only",
+    description: "IBC header and footer, empty middle",
+    blocks: [
+      { type: "header", variant: "v1", data: IBC_HEADER_DATA },
+      { type: "footer", variant: "v1", data: IBC_FOOTER_DATA },
+    ],
+  },
+]
+
+export function findPageTemplate(key: string) {
+  return PAGE_TEMPLATES.find((t) => t.key === key)
 }
