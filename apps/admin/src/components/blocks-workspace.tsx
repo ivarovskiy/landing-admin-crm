@@ -8,7 +8,7 @@ import { AddBlockForm } from "@/components/add-block-form";
 import { DeleteBlockButton } from "@/components/delete-block-button";
 import { BlockVisibilityControls } from "@/components/block-visibility-controls";
 import { BlockEditPanel } from "@/components/block-edit-panel";
-import { PageSettingsDropdown } from "@/components/page-settings-dropdown";
+import { PageSettingsPanel, type PageCanvasSettings } from "@/components/page-settings-panel";
 import { readHide, desktopVisibilityState } from "@/lib/visibility";
 import {
   ChevronDown,
@@ -23,6 +23,7 @@ import {
   ExternalLink,
   Minus,
   Plus,
+  Maximize2,
   RefreshCw,
   PanelLeftClose,
   PanelLeftOpen,
@@ -36,6 +37,8 @@ import {
   Box,
   MousePointer2,
   Hand,
+  Settings,
+  Keyboard,
 } from "lucide-react";
 
 /* ================================================================
@@ -149,6 +152,22 @@ export function BlocksWorkspace({
   // Preview mode — hides all panels, toolbar; canvas only
   const [previewMode, setPreviewMode] = useState(false);
 
+  // Page settings floating panel
+  const [showPageSettings, setShowPageSettings] = useState(false);
+
+  // Page-level canvas settings
+  const [canvasSettings, setCanvasSettings] = useState<PageCanvasSettings>({
+    canvasScroll: false,
+    showGrid: true,
+  });
+
+  function updateCanvasSettings(patch: Partial<PageCanvasSettings>) {
+    setCanvasSettings((prev) => ({ ...prev, ...patch }));
+  }
+
+  // Keyboard shortcuts guide
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
   // Canvas tool
   const [tool, setTool] = useState<"pointer" | "hand">("pointer");
   const [spaceHeld, setSpaceHeld] = useState(false);
@@ -168,6 +187,7 @@ export function BlocksWorkspace({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [canvasWidth, setCanvasWidth] = useState(0);
+  const [iframeHeight, setIframeHeight] = useState(1200);
 
   const zoomMultiplier = ZOOM_STEPS[zoomIdx];
 
@@ -202,14 +222,24 @@ export function BlocksWorkspace({
   // Reset pan when switching viewport mode
   useEffect(() => { setPanX(0); setPanY(0); }, [viewMode]);
 
+  // Notify iframe when preview mode toggles — enables/disables block highlights
+  useEffect(() => {
+    try {
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: "set-preview-mode", enabled: previewMode },
+        "*",
+      );
+    } catch { /* cross-origin */ }
+  }, [previewMode]);
+
   const availableWidth = canvasWidth > 0 ? canvasWidth - CANVAS_PADDING * 2 : 1440;
 
-  // Desktop: zoom changes effective viewport width, scaled to fill canvas width.
-  // Mobile:  iframe always 390px; zoom multiplier = display scale directly.
-  const iframeWidth  = viewMode === "mobile" ? 390 : Math.round(1440 / zoomMultiplier);
-  const iframeHeight = 5000; // tall enough for any page; content clips below
-  const scale        = viewMode === "mobile" ? zoomMultiplier : availableWidth / iframeWidth;
-  const displayWidth = viewMode === "mobile" ? Math.round(390 * zoomMultiplier) : availableWidth;
+  // Desktop: viewport is always 1440px; zoom is purely visual scale (Figma-style).
+  //   "Fit" (multiplier=1) fills the canvas width; 50% = half canvas width, etc.
+  // Mobile:  viewport always 390px; zoom multiplier = display scale directly.
+  const iframeWidth  = viewMode === "mobile" ? 390 : 1440;
+  const scale        = viewMode === "mobile" ? zoomMultiplier : zoomMultiplier * (availableWidth / 1440);
+  const displayWidth = Math.round(iframeWidth * scale);
 
   // Artboard top-left in canvas coords (transform-based, no scroll)
   const artboardX = canvasWidth > 0 ? Math.round((canvasWidth - displayWidth) / 2) + panX : panX;
@@ -261,8 +291,14 @@ export function BlocksWorkspace({
       const { type, blockId, elementId, offsetTop } = e.data ?? {};
 
       if (type === "block-clicked" && blockId && sorted.some((b) => b.id === blockId)) {
+        if (previewMode) return; // preview mode — ignore selection, don't disturb iframe scroll
         setActiveId(blockId);
         setSelectedElementId(null);
+        canvasRef.current?.focus({ preventScroll: true });
+      }
+
+      if (type === "page-height" && typeof e.data.height === "number" && e.data.height > 0) {
+        setIframeHeight(e.data.height);
       }
 
       if (type === "element-clicked" && blockId && elementId && sorted.some((b) => b.id === blockId)) {
@@ -305,6 +341,9 @@ export function BlocksWorkspace({
 
   // Canvas pan drag handler — moves artboard via transform (Figma style)
   function handleCanvasMouseDown(e: React.MouseEvent) {
+    // Reclaim keyboard focus so V/H/Space shortcuts work after clicking canvas.
+    // preventScroll: true — prevent canvas from jumping to top when focused.
+    canvasRef.current?.focus({ preventScroll: true });
     if (!isHandMode) return;
     e.preventDefault();
     const ref = panDragRef.current;
@@ -440,6 +479,9 @@ export function BlocksWorkspace({
     return `/api/preview/${pageId}?${qs.toString()}`;
   }, [pageId, refreshKey, viewMode]);
 
+  // Reset iframe height when preview source changes so stale size doesn't flash
+  useEffect(() => { setIframeHeight(1200); }, [previewSrc]);
+
   /* ================================================================
      RENDER
      ================================================================ */
@@ -480,99 +522,65 @@ export function BlocksWorkspace({
         <div className="flex items-center gap-2">
           {/* Tool switcher */}
           <div className="flex rounded-lg border border-border/50 bg-muted/40 p-0.5">
-            <button
-              type="button"
-              title="Pointer (V)"
+            <TToolBtn
+              label="Pointer tool"
+              shortcut="V"
+              active={tool === "pointer" && !spaceHeld}
               onClick={() => setTool("pointer")}
-              className={[
-                "flex items-center justify-center rounded px-2 py-1 transition-all",
-                (tool === "pointer" && !spaceHeld)
-                  ? "bg-muted text-foreground shadow-sm"
-                  : "text-foreground/60 hover:text-foreground",
-              ].join(" ")}
             >
               <MousePointer2 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              title="Hand (H)"
+            </TToolBtn>
+            <TToolBtn
+              label="Hand tool"
+              shortcut="H"
+              active={tool === "hand" || spaceHeld}
               onClick={() => setTool("hand")}
-              className={[
-                "flex items-center justify-center rounded px-2 py-1 transition-all",
-                (tool === "hand" || spaceHeld)
-                  ? "bg-muted text-foreground shadow-sm"
-                  : "text-foreground/60 hover:text-foreground",
-              ].join(" ")}
             >
               <Hand className="h-3.5 w-3.5" />
-            </button>
+            </TToolBtn>
           </div>
 
           <div className="h-5 w-px bg-border/50" />
 
           {/* Viewport toggle */}
           <div className="flex rounded-lg border bg-muted/40 p-0.5">
-            <button
-              type="button"
-              onClick={() => setViewMode("desktop")}
-              className={[
-                "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all",
-                viewMode === "desktop"
-                  ? "bg-muted text-foreground shadow-sm"
-                  : "text-foreground/60 hover:text-foreground",
-              ].join(" ")}
-            >
-              <Monitor className="h-3.5 w-3.5" />
-              Desktop
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("mobile")}
-              className={[
-                "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-all",
-                viewMode === "mobile"
-                  ? "bg-muted text-foreground shadow-sm"
-                  : "text-foreground/60 hover:text-foreground",
-              ].join(" ")}
-            >
-              <Smartphone className="h-3.5 w-3.5" />
-              Mobile
-            </button>
+            {([
+              { mode: "desktop" as const, label: "Desktop view", Icon: Monitor, text: "Desktop" },
+              { mode: "mobile" as const, label: "Mobile view (390px)", Icon: Smartphone, text: "Mobile" },
+            ]).map(({ mode, label, Icon, text }) => (
+              <TToolBtn
+                key={mode}
+                label={label}
+                active={viewMode === mode}
+                onClick={() => setViewMode(mode)}
+                wide
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {text}
+              </TToolBtn>
+            ))}
           </div>
 
           <div className="h-5 w-px bg-border" />
 
           {/* Zoom */}
           <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              disabled={zoomIdx <= 0}
-              onClick={() => setZoomIdx((i) => Math.max(0, i - 1))}
-            >
+            <TToolBtn label="Zoom out" shortcut="Ctrl+scroll" disabled={zoomIdx <= 0} onClick={() => setZoomIdx((i) => Math.max(0, i - 1))}>
               <Minus className="h-3.5 w-3.5" />
-            </Button>
+            </TToolBtn>
             <span className="text-xs font-medium tabular-nums w-10 text-center">
               {Math.round(zoomMultiplier * 100)}%
             </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              disabled={zoomIdx >= ZOOM_STEPS.length - 1}
-              onClick={() =>
-                setZoomIdx((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))
-              }
-            >
+            <TToolBtn label="Zoom in" shortcut="Ctrl+scroll" disabled={zoomIdx >= ZOOM_STEPS.length - 1} onClick={() => setZoomIdx((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))}>
               <Plus className="h-3.5 w-3.5" />
-            </Button>
+            </TToolBtn>
 
             <div className="flex gap-0.5 ml-1">
               {ZOOM_STEPS.map((s, i) => (
                 <button
                   key={s}
                   type="button"
+                  title={s === 1 ? "Fit to canvas width" : `Zoom to ${Math.round(s * 100)}%`}
                   onClick={() => setZoomIdx(i)}
                   className={[
                     "text-[10px] px-1 py-0.5 rounded font-medium transition-all",
@@ -590,71 +598,80 @@ export function BlocksWorkspace({
 
         {/* Right: actions */}
         <div className="flex items-center gap-1.5 shrink-0 text-foreground">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => setRefreshKey((v) => v + 1)}
-            title="Refresh preview"
-          >
+          <TBtn label="Refresh preview" shortcut="—" onClick={() => setRefreshKey((v) => v + 1)}>
             <RefreshCw className="h-3.5 w-3.5" />
-          </Button>
+          </TBtn>
 
-          <Button asChild variant="ghost" size="icon-xs" title="Open in new tab">
-            <Link href={previewSrc} target="_blank" rel="noreferrer" prefetch={false}>
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
+          <TBtn label="Open in new tab" shortcut="—" asLink href={previewSrc}>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </TBtn>
+
+          <TBtn
+            label="Fit to screen"
+            shortcut="—"
+            onClick={() => { setZoomIdx(DEFAULT_ZOOM_IDX); setPanX(0); setPanY(0); }}
+            active={zoomIdx === DEFAULT_ZOOM_IDX && panX === 0 && panY === 0}
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+          </TBtn>
 
           <div className="h-5 w-px bg-border" />
 
-          <PageSettingsDropdown
-            pageId={pageId}
-            slug={pageSlug}
-            status={pageStatus}
-          />
+          <TBtn
+            label="Shortcuts guide"
+            shortcut="?"
+            onClick={() => setShowShortcuts((v) => !v)}
+            active={showShortcuts}
+          >
+            <Keyboard className="h-3.5 w-3.5" />
+          </TBtn>
+
+          <TBtn
+            label="Page settings"
+            shortcut="—"
+            onClick={() => setShowPageSettings((v) => !v)}
+            active={showPageSettings}
+          >
+            <Settings className="h-4 w-4" />
+          </TBtn>
 
           <div className="h-5 w-px bg-border" />
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
+          <TBtn
+            label="Preview mode"
+            shortcut="P"
             onClick={() => setPreviewMode(true)}
-            title="Preview mode (P)"
           >
             <Eye className="h-4 w-4" />
-          </Button>
+          </TBtn>
 
           <div className="h-5 w-px bg-border" />
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
+          <TBtn
+            label={showLayers ? "Hide layers" : "Show layers"}
+            shortcut="—"
             onClick={() => setShowLayers((v) => !v)}
-            title={showLayers ? "Hide layers" : "Show layers"}
+            active={showLayers}
           >
             {showLayers ? (
               <PanelLeftClose className="h-4 w-4" />
             ) : (
               <PanelLeftOpen className="h-4 w-4" />
             )}
-          </Button>
+          </TBtn>
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
+          <TBtn
+            label={showInspector ? "Hide inspector" : "Show inspector"}
+            shortcut="—"
             onClick={() => setShowInspector((v) => !v)}
-            title={showInspector ? "Hide inspector" : "Show inspector"}
+            active={showInspector}
           >
             {showInspector ? (
               <PanelRightClose className="h-4 w-4" />
             ) : (
               <PanelRightOpen className="h-4 w-4" />
             )}
-          </Button>
+          </TBtn>
         </div>
       </div>
 
@@ -685,17 +702,18 @@ export function BlocksWorkspace({
               <div className="flex rounded-md border bg-muted/30 p-0.5">
                 {(
                   [
-                    { v: "all" as const, label: "All", Icon: Layers },
-                    { v: "mobile" as const, label: "Mob", Icon: Smartphone },
-                    { v: "desktop" as const, label: "Desk", Icon: Monitor },
+                    { v: "all" as const, label: "All", tooltip: "Show all blocks", Icon: Layers },
+                    { v: "mobile" as const, label: "Mob", tooltip: "Mobile visible", Icon: Smartphone },
+                    { v: "desktop" as const, label: "Desk", tooltip: "Desktop visible", Icon: Monitor },
                   ] as const
-                ).map(({ v, label, Icon }) => (
+                ).map(({ v, label, tooltip, Icon }) => (
                   <button
                     key={v}
                     type="button"
+                    title={tooltip}
                     onClick={() => setViewportMode(v)}
                     className={[
-                      "flex-1 flex items-center justify-center gap-1 rounded px-1 py-1 text-[10px] font-medium transition-all",
+                      "relative group flex-1 flex items-center justify-center gap-1 rounded px-1 py-1 text-[10px] font-medium transition-all",
                       v === viewportMode
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground",
@@ -704,6 +722,9 @@ export function BlocksWorkspace({
                     <Icon className="h-3 w-3" />
                     {label}
                     <span className="opacity-60 tabular-nums">{counts[v]}</span>
+                    <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex items-center whitespace-nowrap rounded bg-popover border border-border/60 shadow px-1.5 py-0.5 text-[10px] text-popover-foreground z-50">
+                      {tooltip}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -814,6 +835,7 @@ export function BlocksWorkspace({
             <div className="border-t p-2 shrink-0">
               <button
                 type="button"
+                title={showAddBlock ? "Close add block form" : "Add a new block to this page"}
                 onClick={() => setShowAddBlock((v) => !v)}
                 className={[
                   "w-full flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition-all",
@@ -836,9 +858,11 @@ export function BlocksWorkspace({
         <div
           ref={canvasRef}
           className="absolute inset-0"
+          tabIndex={-1}
           style={{
-            overflow: previewMode ? "auto" : "hidden",
-            backgroundImage: previewMode ? undefined :
+            outline: "none",
+            overflow: previewMode || canvasSettings.canvasScroll ? "auto" : "hidden",
+            backgroundImage: previewMode || !canvasSettings.showGrid ? undefined :
               "radial-gradient(circle, hsl(var(--border) / 0.5) 1px, transparent 1px)",
             backgroundSize: "24px 24px",
             backgroundColor: previewMode ? undefined : "oklch(0.09 0 0)",
@@ -888,7 +912,6 @@ export function BlocksWorkspace({
             type="button"
             onClick={() => setPreviewMode(false)}
             className="absolute bottom-5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-card/90 backdrop-blur-md border border-border/50 shadow-2xl px-4 py-2 text-xs font-medium text-foreground hover:bg-card transition-colors"
-            title="Exit preview (P or Escape)"
           >
             <EyeOff className="h-3.5 w-3.5" />
             Exit Preview
@@ -896,11 +919,22 @@ export function BlocksWorkspace({
           </button>
         )}
 
+        {/* Shortcuts guide */}
+        {showShortcuts && !previewMode && (
+          <ShortcutsGuide onClose={() => setShowShortcuts(false)} />
+        )}
+
         {/* --------------------------------------------------------
             INSPECTOR PANEL (right) — floating
             -------------------------------------------------------- */}
+        {/* Inspector panel — Block only */}
         {showInspector && !previewMode && (
           <div className="absolute top-3 right-3 bottom-3 z-20 w-[280px] flex flex-col bg-card/95 backdrop-blur-md rounded-xl border border-border/50 shadow-2xl overflow-hidden">
+            <div className="px-3 py-2.5 border-b border-border/50 shrink-0">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {active ? `${active.type}:${active.variant}` : "Inspector"}
+              </span>
+            </div>
             {active ? (
               <BlockEditPanel
                 blockId={active.id}
@@ -927,6 +961,187 @@ export function BlocksWorkspace({
             )}
           </div>
         )}
+
+        {/* Page settings — standalone floating panel */}
+        {showPageSettings && !previewMode && (
+          <PageSettingsPanel
+            pageId={pageId}
+            slug={pageSlug}
+            status={pageStatus}
+            canvasSettings={canvasSettings}
+            onCanvasSettingsChange={updateCanvasSettings}
+            onClose={() => setShowPageSettings(false)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   TToolBtn — tooltip button for grouped toolbar controls (tool/viewport/zoom)
+   ================================================================ */
+
+function TToolBtn({
+  children,
+  label,
+  shortcut,
+  active,
+  wide,
+  disabled,
+  onClick,
+}: {
+  children: React.ReactNode;
+  label: string;
+  shortcut?: string;
+  active?: boolean;
+  wide?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={[
+        "relative group flex items-center justify-center gap-1 rounded transition-all disabled:opacity-40",
+        wide ? "px-2 py-1 text-xs font-medium" : "px-2 py-1",
+        active
+          ? "bg-muted text-foreground shadow-sm"
+          : "text-foreground/60 hover:text-foreground",
+      ].join(" ")}
+    >
+      {children}
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center gap-1.5 whitespace-nowrap rounded-md bg-popover border border-border/60 shadow-md px-2 py-1 text-[11px] text-popover-foreground z-50">
+        {label}
+        {shortcut && (
+          <kbd className="ml-0.5 font-mono text-[10px] bg-muted text-muted-foreground px-1 py-0.5 rounded">
+            {shortcut}
+          </kbd>
+        )}
+      </span>
+    </button>
+  );
+}
+
+/* ================================================================
+   TBtn — toolbar button with rich tooltip
+   ================================================================ */
+
+function TBtn({
+  children,
+  label,
+  shortcut,
+  onClick,
+  active,
+  asLink,
+  href,
+}: {
+  children: React.ReactNode;
+  label: string;
+  shortcut: string;
+  onClick?: () => void;
+  active?: boolean;
+  asLink?: boolean;
+  href?: string;
+}) {
+  const cls = [
+    "relative group flex items-center justify-center rounded px-2 py-1 h-7 w-7 transition-all",
+    active
+      ? "bg-primary/15 text-primary"
+      : "text-foreground/70 hover:text-foreground hover:bg-muted/60",
+  ].join(" ");
+
+  const tooltip = (
+    <span className="
+      pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+      hidden group-hover:flex
+      items-center gap-1.5 whitespace-nowrap
+      rounded-md bg-popover border border-border/60 shadow-md
+      px-2 py-1 text-[11px] text-popover-foreground z-50
+    ">
+      {label}
+      {shortcut !== "—" && (
+        <kbd className="ml-0.5 font-mono text-[10px] bg-muted text-muted-foreground px-1 py-0.5 rounded">
+          {shortcut}
+        </kbd>
+      )}
+    </span>
+  );
+
+  if (asLink && href) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className={cls}>
+        {children}
+        {tooltip}
+      </a>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onClick} className={cls}>
+      {children}
+      {tooltip}
+    </button>
+  );
+}
+
+/* ================================================================
+   ShortcutsGuide — floating keyboard shortcuts panel
+   ================================================================ */
+
+const SHORTCUTS = [
+  { group: "Tools", items: [
+    { key: "V", desc: "Pointer tool" },
+    { key: "H", desc: "Hand / pan tool" },
+    { key: "Space", desc: "Hold to pan temporarily" },
+  ]},
+  { group: "View", items: [
+    { key: "P", desc: "Toggle preview mode" },
+    { key: "Esc", desc: "Exit preview mode" },
+    { key: "Ctrl + scroll", desc: "Zoom canvas" },
+  ]},
+  { group: "Canvas", items: [
+    { key: "Desktop / Mobile", desc: "Switch viewport in toolbar" },
+    { key: "50% – 200%", desc: "Zoom preset buttons in toolbar" },
+  ]},
+];
+
+function ShortcutsGuide({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-40 w-80 rounded-xl border border-border/50 bg-card/95 backdrop-blur-md shadow-2xl overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+        <div className="flex items-center gap-2">
+          <Keyboard className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-xs font-semibold">Keyboard Shortcuts</span>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span className="text-xs">✕</span>
+        </button>
+      </div>
+      <div className="px-4 py-3 space-y-4 max-h-72 overflow-y-auto">
+        {SHORTCUTS.map(({ group, items }) => (
+          <div key={group}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+              {group}
+            </p>
+            <div className="space-y-1">
+              {items.map(({ key, desc }) => (
+                <div key={key} className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-foreground/80">{desc}</span>
+                  <kbd className="shrink-0 font-mono text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded border border-border/60 whitespace-nowrap">
+                    {key}
+                  </kbd>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -21,8 +21,7 @@ export function PreviewScrollListener() {
     let activeElementId: string | null = null;
 
     /* ---- Inject overlay styles ---- */
-    const style = document.createElement("style");
-    style.textContent = `
+    const originalStyles = `
       [data-block-id] {
         position: relative;
         transition: outline 0.15s ease;
@@ -68,6 +67,8 @@ export function PreviewScrollListener() {
         outline: 2px solid hsl(262, 83%, 58%);
       }
     `;
+    const style = document.createElement("style");
+    style.textContent = originalStyles;
     document.head.appendChild(style);
 
     /* ---- Add labels to blocks ---- */
@@ -193,9 +194,28 @@ export function PreviewScrollListener() {
     document.addEventListener("click", handleClick, true);
     window.addEventListener("message", handleMessage);
 
+    // Handle preview-mode toggle from admin
+    function handlePreviewMode(e: MessageEvent) {
+      if (e.data?.type !== "set-preview-mode") return;
+      if (e.data.enabled) {
+        // Disable all highlights and clicks
+        style.textContent = "";
+        document.removeEventListener("click", handleClick, true);
+        document.querySelectorAll(".preview-active, .preview-el-active").forEach((el) => {
+          el.classList.remove("preview-active", "preview-el-active");
+        });
+      } else {
+        // Re-enable (restore original styles)
+        style.textContent = originalStyles;
+        document.addEventListener("click", handleClick, true);
+      }
+    }
+    window.addEventListener("message", handlePreviewMode);
+
     return () => {
       document.removeEventListener("click", handleClick, true);
       window.removeEventListener("message", handleMessage);
+      window.removeEventListener("message", handlePreviewMode);
       style.remove();
     };
   }, []);

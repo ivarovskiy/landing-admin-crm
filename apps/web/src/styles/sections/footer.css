@@ -288,9 +288,9 @@
   }
 
   .footer-desktop__rule {
-    width: min(100%, 1130px);
+    width: min(calc(100% - clamp(0px, 13.26vw, 191px)), 1130px);
     margin-top: clamp(32px, 3.5vw, 42px);
-    margin-left: 191px;
+    margin-left: clamp(0px, 13.26vw, 191px);
   }
 
   .footer-desktop__bottom {

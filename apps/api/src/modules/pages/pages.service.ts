@@ -62,7 +62,10 @@ export class PagesService {
     const [pages, total] = await this.prisma.$transaction([
       this.prisma.page.findMany({
         orderBy: { updatedAt: "desc" },
-        include: { _count: { select: { blocks: true } } },
+        include: {
+          _count: { select: { blocks: true } },
+          blocks: { select: { updatedAt: true }, orderBy: { updatedAt: "desc" }, take: 1 },
+        },
         skip,
         take,
       }),
@@ -77,6 +80,7 @@ export class PagesService {
         status: p.status,
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
+        contentUpdatedAt: p.blocks[0]?.updatedAt ?? p.createdAt,
         publishedAt: p.publishedAt ?? null,
         blocksCount: p._count.blocks,
       })),

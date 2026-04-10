@@ -220,12 +220,14 @@
 .header-desktop__nav-link {
   --underline-min: 74px;
   --underline-max: 118px;
+  overflow: hidden;
   padding-bottom: clamp(6px, 0.8vw, 10px);
 }
 
 .header-desktop__subnav-link {
   --underline-min: 74px;
   --underline-max: 118px;
+  overflow: hidden;
   font-size: clamp(12px, 1.2vw, 16px);
   line-height: 1.5;
   padding-bottom: clamp(5px, 0.6vw, 8px);
@@ -236,14 +238,13 @@
 .header-desktop__subnav-link::after {
   content: "";
   position: absolute;
-  left: 50%;
-  bottom: -1px;
-  width: 100%;
-  height: clamp(5px, 0.6vw, 7px);
-  background: url("/icons/menu_line.svg") center / 100% 100% no-repeat;
-  background-size: cover;
+  left: 0;
+  bottom: 1px;
+  width: calc(100% + 10px);
+  height: 3px;
+  background: url("/icons/dropdown_line.svg") left center / 100% 100% no-repeat;
   opacity: 0;
-  transform: translateX(-50%);
+  transform: none;
   transition: opacity 180ms ease;
   pointer-events: none;
 }

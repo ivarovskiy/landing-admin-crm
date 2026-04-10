@@ -35,6 +35,23 @@ export function LivePreviewProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
+  // Report page height to admin so artboard matches content exactly
+  useEffect(() => {
+    const isPreview = window !== window.parent;
+    if (!isPreview) return;
+
+    function reportHeight() {
+      const h = document.documentElement.scrollHeight;
+      window.parent.postMessage({ type: "page-height", height: h }, "*");
+    }
+
+    // Report immediately + on any resize
+    reportHeight();
+    const ro = new ResizeObserver(reportHeight);
+    ro.observe(document.documentElement);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <LivePreviewContext.Provider value={overrides}>
       {children}

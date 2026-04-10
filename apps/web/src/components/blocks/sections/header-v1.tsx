@@ -388,64 +388,75 @@ function DesktopNavColumn({
 
       const safePadding = 4;
       const minLeft = safePadding;
-      const maxLeft = Math.max(safePadding, rowWidth - dropdownWidth - safePadding);
+      // Right nav: clamp to the row's right edge (= header content right edge, consistent at any viewport width)
+      // Left nav: clamp to the viewport right edge (items sit on the left, plenty of room)
+      const viewportWidth = document.documentElement.clientWidth;
+      const rightBoundary =
+        align === "right"
+          ? rowRect.right - rowRect.left - safePadding
+          : viewportWidth - rowRect.left - safePadding;
+      const maxLeft = Math.max(minLeft, rightBoundary - dropdownWidth);
 
       let nextLeft: number;
 
       const ddChildren = Array.from(dropdown.children) as HTMLElement[];
       const ddCount = ddChildren.length;
 
+      const dropdownRect = dropdown.getBoundingClientRect();
+      const childCenter = (el: HTMLElement) => {
+        const r = el.getBoundingClientRect();
+        return r.left - dropdownRect.left + r.width / 2;
+      };
+
       if (activeItemIndex === 0) {
         // 1st item: left-align dropdown with trigger left edge
         nextLeft = triggerLeft;
-      } else if (activeItemIndex === 1) {
-        // 2nd item left: always center first child under trigger
-        // 2nd item right: for 3 children — center middle child, otherwise first child
-        if (align === "right" && ddCount >= 3) {
-          const midChild = ddChildren[Math.floor(ddCount / 2)];
-          const midCenter = midChild.offsetLeft + midChild.offsetWidth / 2;
-          nextLeft = triggerCenter - midCenter;
-        } else {
-          const firstChild = ddChildren[0];
-          if (firstChild) {
-            const firstCenter = firstChild.offsetLeft + firstChild.offsetWidth / 2;
-            nextLeft = triggerCenter - firstCenter;
+      } else if (align === "left" && activeItemIndex === 1) {
+        // Faculty: center first dropdown child under trigger
+        const c = ddChildren[0];
+        nextLeft = c ? triggerCenter - childCenter(c) : triggerCenter - dropdownWidth / 2;
+      } else if (align === "left" && activeItemIndex >= 2) {
+        // Masterclass Series+: center second dropdown child under trigger
+        const c = ddChildren[1] ?? ddChildren[0];
+        nextLeft = c ? triggerCenter - childCenter(c) : triggerCenter - dropdownWidth / 2;
+      } else if (align === "right" && activeItemIndex === 1) {
+        // Performances:
+        // 2 children → always center under 1st child
+        // 3+ children → try 1st child; fall back to 2nd if it overflows right
+        const first = ddChildren[0];
+        const second = ddChildren[1];
+        if (first) {
+          const tryLeft = triggerCenter - childCenter(first);
+          if (ddCount >= 3 && second && tryLeft + dropdownWidth > rightBoundary) {
+            nextLeft = triggerCenter - childCenter(second);
           } else {
-            nextLeft = triggerCenter - dropdownWidth / 2;
+            nextLeft = tryLeft;
           }
-        }
-      } else {
-        // 3rd+ items: center logic based on child count
-        if (ddCount >= 3) {
-          // 3+ children: center the MIDDLE child under the trigger center
-          const midChild = ddChildren[Math.floor(ddCount / 2)];
-          const midCenter = midChild.offsetLeft + midChild.offsetWidth / 2;
-          nextLeft = triggerCenter - midCenter;
-        } else if (ddCount === 2) {
-          // 2 children: center the FIRST child under the trigger center
-          const firstChild = ddChildren[0];
-          const firstCenter = firstChild.offsetLeft + firstChild.offsetWidth / 2;
-          nextLeft = triggerCenter - firstCenter;
         } else {
           nextLeft = triggerCenter - dropdownWidth / 2;
         }
-
-        // If overflows right, snap to right edge
-        if (nextLeft + dropdownWidth > rowWidth - safePadding) {
-          nextLeft = rowWidth - dropdownWidth - safePadding;
+      } else {
+        // Right nav index 2+: center middle child
+        if (ddCount >= 3) {
+          const midChild = ddChildren[Math.floor(ddCount / 2)];
+          nextLeft = triggerCenter - childCenter(midChild);
+        } else if (ddCount === 2) {
+          nextLeft = triggerCenter - childCenter(ddChildren[0]);
+        } else {
+          nextLeft = triggerCenter - dropdownWidth / 2;
         }
       }
 
-      // Final clamp -- never exceed row boundaries
+      // Final clamp — never overflow left or viewport right
       nextLeft = Math.min(Math.max(nextLeft, minLeft), maxLeft);
 
       setDropdownLeft(nextLeft);
     };
 
-    // Double RAF to ensure layout is computed after DOM update
-    const raf = window.requestAnimationFrame(() =>
-      window.requestAnimationFrame(updatePosition)
-    );
+    // Run synchronously inside useLayoutEffect — DOM is already updated, before paint.
+    // No RAF needed: measuring immediately avoids the flash of wrong position.
+    updatePosition();
+
     window.addEventListener("resize", updatePosition);
 
     const ro =
@@ -460,7 +471,6 @@ function DesktopNavColumn({
     }
 
     return () => {
-      window.cancelAnimationFrame(raf);
       window.removeEventListener("resize", updatePosition);
       ro?.disconnect();
     };
