@@ -194,7 +194,8 @@ export function HeaderV1({ data }: { data: any }) {
                       data-el="cta"
                     >
                       <span className="header-desktop__meta-text">{desktopPortal.label}</span>
-                      <Icon name="lock" className="header-desktop__portal-icon" aria-hidden />
+                      <Icon name="lock" className="header-desktop__portal-icon" aria-hidden style={{ right: "12px" }} />
+                      <Icon name="unlock" className="header-desktop__portal-icon" aria-hidden />
                     </a>
                   ) : null}
 

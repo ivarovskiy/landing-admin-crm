@@ -5,7 +5,15 @@
       "Bash(npx ts-node:*)",
       "Bash(netstat -ano)",
       "Bash(wsl --list --running)",
-      "Bash(cmd /c \"netstat -ano | findstr :3000\")"
+      "Bash(cmd /c \"netstat -ano | findstr :3000\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(pnpm --filter admin exec tsc --noEmit)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "WebSearch",
+      "Bash(xargs grep:*)",
+      "Bash(git -C \"c:/Users/ThinkPad/Desktop/Work/landing-admin-crm\" diff HEAD -- apps/web/src/components/blocks/sections/header-v1.tsx)"
     ],
     "additionalDirectories": [
       "c:\\Users\\ThinkPad\\.claude\\projects\\c--Users-ThinkPad-Desktop-Work-landing-admin-crm\\memory"

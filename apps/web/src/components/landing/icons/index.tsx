@@ -6,7 +6,7 @@ import MailDt from "@/assets/icons/email_dt.svg";
 import Hamburger from "@/assets/icons/hamburger.svg";
 import Instagram from "@/assets/icons/instagram.svg";
 import Facebook from "@/assets/icons/facebook_dt.svg";
-import Lock from "@/assets/icons/lock_opened_v2.svg";
+import Lock from "@/assets/icons/lock_closed_v1.svg";
 import Unlock from "@/assets/icons/lock_opened_v2.svg";
 import Expand from "@/assets/icons/expand_btn.svg";
 import Collapse from "@/assets/icons/collapse_btn.svg";
