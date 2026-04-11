@@ -5,6 +5,7 @@ import type { BlockModel } from "./blocks/types";
 import { Container } from "@/components/landing/ui";
 import { PreviewScrollListener } from "./preview-scroll-listener";
 import { LiveBlockWrapper } from "./live-block-wrapper";
+import { LandingZoom } from "./landing-zoom";
 
 type Layout = {
   anchor?: string;
@@ -39,12 +40,17 @@ function cssVarStyle(layout: Layout, dbOrder: number) {
   } as React.CSSProperties;
 }
 
-export function PageRenderer({ blocks }: { blocks: BlockModel[] }) {
+type PageSettings = {
+  fitViewport?: boolean;
+};
+
+export function PageRenderer({ blocks, pageSettings }: { blocks: BlockModel[]; pageSettings?: PageSettings | null }) {
   const sorted = (blocks ?? []).slice().sort((a, b) => a.order - b.order);
 
   return (
     <div className="landing-stack">
       <PreviewScrollListener />
+      <LandingZoom fitViewport={pageSettings?.fitViewport === true} />
       {sorted.map((block) => {
 
         const key = getBlockKey(block.type, block.variant);

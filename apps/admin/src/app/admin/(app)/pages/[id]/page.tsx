@@ -32,6 +32,7 @@ export default async function AdminPageDetails({
       pageId={page.id}
       pageSlug={page.slug}
       pageStatus={page.status ?? "draft"}
+      pageLayoutSettings={(page as any).settings}
       blocks={blocks}
       initialActiveId={initialBlockId}
     />

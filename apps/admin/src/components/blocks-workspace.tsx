@@ -8,7 +8,7 @@ import { AddBlockForm } from "@/components/add-block-form";
 import { DeleteBlockButton } from "@/components/delete-block-button";
 import { BlockVisibilityControls } from "@/components/block-visibility-controls";
 import { BlockEditPanel } from "@/components/block-edit-panel";
-import { PageSettingsPanel, type PageCanvasSettings } from "@/components/page-settings-panel";
+import { PageSettingsPanel, type PageCanvasSettings, type PageLayoutSettings } from "@/components/page-settings-panel";
 import { readHide, desktopVisibilityState } from "@/lib/visibility";
 import {
   ChevronDown,
@@ -111,12 +111,14 @@ export function BlocksWorkspace({
   pageId,
   pageSlug,
   pageStatus,
+  pageLayoutSettings,
   blocks,
   initialActiveId,
 }: {
   pageId: string;
   pageSlug: string;
   pageStatus: string;
+  pageLayoutSettings?: PageLayoutSettings | null;
   blocks: Block[];
   initialActiveId?: string;
 }) {
@@ -163,6 +165,15 @@ export function BlocksWorkspace({
 
   function updateCanvasSettings(patch: Partial<PageCanvasSettings>) {
     setCanvasSettings((prev) => ({ ...prev, ...patch }));
+  }
+
+  // Page-level layout settings (persisted to DB via page.settings)
+  const [layoutSettings, setLayoutSettings] = useState<PageLayoutSettings>({
+    fitViewport: pageLayoutSettings?.fitViewport === true,
+  });
+
+  function updateLayoutSettings(patch: Partial<PageLayoutSettings>) {
+    setLayoutSettings((prev) => ({ ...prev, ...patch }));
   }
 
   // Keyboard shortcuts guide
@@ -970,6 +981,8 @@ export function BlocksWorkspace({
             status={pageStatus}
             canvasSettings={canvasSettings}
             onCanvasSettingsChange={updateCanvasSettings}
+            layoutSettings={layoutSettings}
+            onLayoutSettingsChange={updateLayoutSettings}
             onClose={() => setShowPageSettings(false)}
           />
         )}

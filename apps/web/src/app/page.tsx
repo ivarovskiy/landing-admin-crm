@@ -37,7 +37,7 @@ export default async function Home() {
 
   return (
     <main style={cssVars} className="page-base">
-      <PageRenderer blocks={(page as any).blocks ?? []} />
+      <PageRenderer blocks={(page as any).blocks ?? []} pageSettings={(page as any).settings} />
     </main>
   );
 }

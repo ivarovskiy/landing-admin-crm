@@ -26,6 +26,9 @@ export class AdminPageDto {
   @ApiProperty({ type: "object", additionalProperties: true, nullable: true })
   seo!: Record<string, any> | null
 
+  @ApiProperty({ type: "object", additionalProperties: true, nullable: true })
+  settings!: Record<string, any> | null
+
   @ApiProperty({ type: "string", format: "date-time" })
   createdAt!: Date
 

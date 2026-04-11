@@ -180,75 +180,7 @@ export function HeroSliderV1({ data }: { data: any }) {
   const options = data?.options ?? {};
   const count = slides.length;
 
-  const fitViewport = options?.fitViewport === true;
   const sectionRef = useRef<HTMLElement>(null);
-
-  // Proportional zoom: scale the entire slider relative to 1296px container width.
-  // At 1296px+ → zoom 1 (no change). At 900px → zoom ≈ 0.694.
-  // All fonts, gaps and image dimensions scale automatically — no per-property clamps needed.
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
-
-    const mq = window.matchMedia("(min-width: 900px)");
-    const DESIGN_WIDTH = 1296;
-
-    const update = () => {
-      section.style.removeProperty("zoom");
-      if (!mq.matches) return;
-      const scale = Math.min(1, document.documentElement.clientWidth / DESIGN_WIDTH);
-      if (scale < 0.999) {
-        section.style.zoom = scale.toFixed(5);
-      }
-    };
-
-    update();
-    window.addEventListener("resize", update);
-    mq.addEventListener("change", update);
-    return () => {
-      window.removeEventListener("resize", update);
-      mq.removeEventListener("change", update);
-      section.style.removeProperty("zoom");
-    };
-  }, []);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
-    const main = section.closest(".landing-stack") as HTMLElement | null;
-    if (!main) return;
-
-    const mq = window.matchMedia("(min-width: 900px)");
-
-    const update = () => {
-      // Always reset zoom on main first so we measure natural dimensions
-      main.style.removeProperty("zoom");
-
-      if (!fitViewport || !mq.matches) return;
-
-      // Force reflow so measurements reflect unzoomed layout
-      void main.offsetHeight;
-
-      const headerH = parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue("--header-h") || "0"
-      );
-      const sliderH = section.offsetHeight;
-      const scale = window.innerHeight / (headerH + sliderH);
-
-      if (scale < 0.999) {
-        main.style.zoom = scale.toFixed(5);
-      }
-    };
-
-    update();
-    window.addEventListener("resize", update);
-    mq.addEventListener("change", update);
-    return () => {
-      window.removeEventListener("resize", update);
-      mq.removeEventListener("change", update);
-      main.style.removeProperty("zoom");
-    };
-  }, [fitViewport]);
 
   // useId() shifts between SSR and client when nested inside LiveBlockWrapper (extra client boundary).
   // Use a stable "hs" prefix on server; swap to the real ID after mount to keep aria links working.

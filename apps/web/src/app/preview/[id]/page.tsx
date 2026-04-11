@@ -34,7 +34,7 @@ export default async function PreviewPage({
   return (
     <LivePreviewProvider>
       <main style={cssVars} className="page-base">
-        <PageRenderer blocks={(page as any).blocks ?? []} />
+        <PageRenderer blocks={(page as any).blocks ?? []} pageSettings={(page as any).settings} />
       </main>
     </LivePreviewProvider>
   )

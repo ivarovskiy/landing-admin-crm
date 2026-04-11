@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from "@nestjs/swagger"
-import { IsOptional, IsString, Matches, MinLength } from "class-validator"
+import { IsObject, IsOptional, IsString, Matches, MinLength } from "class-validator"
 
 export class UpdatePageDto {
   @ApiPropertyOptional({ example: "about-us" })
@@ -10,4 +10,9 @@ export class UpdatePageDto {
     message: "slug must be kebab-case (a-z, 0-9, -)",
   })
   slug?: string
+
+  @ApiPropertyOptional({ type: "object", additionalProperties: true, example: { fitViewport: true } })
+  @IsOptional()
+  @IsObject()
+  settings?: Record<string, any>
 }

@@ -224,17 +224,21 @@ export class PagesService {
     return created
   }
 
-  async updatePage(id: string, dto: { slug?: string }) {
+  async updatePage(id: string, dto: { slug?: string; settings?: Record<string, any> }) {
     const page = await this.prisma.page.findUnique({ where: { id } })
     if (!page) throw new NotFoundException("Page not found")
 
-    if (dto.slug == null) throw new BadRequestException("Nothing to update")
+    if (dto.slug == null && dto.settings == null) throw new BadRequestException("Nothing to update")
+
+    const data: Record<string, any> = {}
+    if (dto.slug != null) data.slug = dto.slug
+    if (dto.settings != null) data.settings = dto.settings
 
     try {
       return await this.prisma.page.update({
         where: { id },
-        data: { slug: dto.slug },
-        select: { id: true, slug: true, locale: true, status: true, updatedAt: true },
+        data,
+        select: { id: true, slug: true, locale: true, status: true, settings: true, updatedAt: true },
       })
     } catch (e) {
       handleUniqueViolation(e, "Page with this slug+locale already exists")

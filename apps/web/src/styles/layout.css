@@ -7,6 +7,19 @@
   flex-direction: column;
 }
 
+/* Desktop: fix layout width to design base so proportional zoom works correctly */
+@media (min-width: 768px) {
+  .landing-stack {
+    width: 1360px;
+    margin-inline: auto;
+  }
+
+  /* Hide overflow flash before JS zoom kicks in */
+  html {
+    overflow-x: hidden;
+  }
+}
+
 .landing-section {
   order: var(--order-base, 0);
   display: var(--display-base, block);
