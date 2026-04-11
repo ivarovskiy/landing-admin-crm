@@ -240,6 +240,7 @@ export function HeroSliderV1({ data }: { data: any }) {
   const onPointerDown = (e: React.PointerEvent) => {
     if (count <= 1) return;
     if (e.pointerType === "mouse" && (e as any).button !== 0) return;
+    if ((e.target as HTMLElement).closest("a, button")) return;
 
     setPaused(true);
 
