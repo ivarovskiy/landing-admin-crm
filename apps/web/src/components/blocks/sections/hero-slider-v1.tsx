@@ -664,9 +664,6 @@ function MediaFrame({
           loading="lazy"
         />
       ) : null}
-      {ratioLabel ? (
-        <span className="hero-slide__media-ratio">{ratioLabel}</span>
-      ) : null}
     </div>
   );
 }

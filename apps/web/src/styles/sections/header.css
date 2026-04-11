@@ -105,6 +105,8 @@
   display: flex;
   align-items: center;
   gap: 30px;
+
+  margin-right: 36px;
 }
 
 .header-desktop__portal {}
@@ -121,6 +123,9 @@
   height: clamp(40px, 4.2vw, 56px);
   color: var(--color-primary);
   flex: 0 0 auto;
+
+  position: absolute;
+  right: 0;
 }
 
 .header-desktop__meta-text {

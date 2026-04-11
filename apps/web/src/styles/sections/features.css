@@ -94,7 +94,7 @@
 
 /* ---- Mobile: title above icon ---- */
 
-@media (max-width: 899px) {
+@media (max-width: 767px) {
   .features-section {
     padding-top: 54px;
     padding-bottom: 44px;
@@ -121,7 +121,7 @@
 
 /* ---- Desktop: 3-column grid ---- */
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .features-section {
     padding-top: 28px;
   }

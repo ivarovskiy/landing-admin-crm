@@ -37,7 +37,7 @@
   margin-bottom: clamp(28px, 3vw, 40px);
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 767px) {
   .footer__double-hairline {
     margin-bottom: 56px;
   }
@@ -200,7 +200,7 @@
 
 /* ---- DESKTOP ---- */
 
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .footer-mobile {
     display: none;
   }

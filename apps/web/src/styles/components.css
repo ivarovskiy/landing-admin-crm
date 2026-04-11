@@ -328,7 +328,7 @@
   color: var(--color-bg);
 }
 
-@media (max-width: 899px) {
+@media (max-width: 767px) {
   .scroll-to-top {
     display: none;
   }

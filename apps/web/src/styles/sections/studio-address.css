@@ -82,7 +82,7 @@
 
 /* ---- Address / contact text ---- */
 
-@media (max-width: 899px) {
+@media (max-width: 767px) {
   .studio-address__address .ds-kicker,
   .studio-address__notes .ds-kicker,
   .studio-address__contact-link .ds-kicker,
@@ -94,7 +94,7 @@
   }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .studio-address__address .ds-kicker,
   .studio-address__notes .ds-kicker,
   .studio-address__contact-link .ds-kicker,
@@ -186,7 +186,7 @@
 
 /* ---- Mobile ---- */
 
-@media (max-width: 899px) {
+@media (max-width: 767px) {
   .studio-address__social-icon {
     width: 50px;
     height: 50px;
@@ -203,7 +203,7 @@
 
 /* ---- Desktop ---- */
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .studio-address__map-container {
     max-width: 830px;
   }
@@ -228,6 +228,7 @@
   .studio-address__notes {
     align-items: flex-end;
     text-align: right;
+    gap: 12px;
   }
 
   /* .studio-address__contacts {
