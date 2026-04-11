@@ -319,13 +319,13 @@
   }
 
   .hero-slide__media-col {
-    flex: 0 0 auto;
+    flex: 0 0 var(--hs-media-w, 42%);
+    min-width: 0;
   }
 
   .hero-slide__media-box {
     height: 100%;
-    /* aspect-ratio: var(--hs-media-aspect); */
-    width: auto;
+    width: 100%;
   }
 
   /* Image LEFT templates */
