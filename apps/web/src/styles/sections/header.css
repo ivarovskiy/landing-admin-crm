@@ -221,7 +221,7 @@
   --underline-min: 74px;
   --underline-max: 118px;
   overflow: hidden;
-  padding-bottom: clamp(6px, 0.8vw, 10px);
+  padding-bottom: 7px;
 }
 
 .header-desktop__subnav-link {
@@ -230,7 +230,7 @@
   overflow: hidden;
   font-size: clamp(12px, 1.2vw, 16px);
   line-height: 1.5;
-  padding-bottom: clamp(5px, 0.6vw, 8px);
+  padding-bottom: 7px;
   margin: 0 clamp(-4px, -0.3vw, -2px);
 }
 
@@ -240,9 +240,9 @@
   position: absolute;
   left: 0;
   bottom: 1px;
-  width: calc(100% + 10px);
+  width: calc(100% + 4px);
   height: 3px;
-  background: url("/icons/dropdown_line.svg") left center / 100% 100% no-repeat;
+  background: url("/icons/dropdown_line.svg") left center / auto 100% no-repeat;
   opacity: 0;
   transform: none;
   transition: opacity 180ms ease;
@@ -269,7 +269,7 @@
 
 .header-desktop__dropdown {
   position: absolute;
-  top: calc(100% - 2px);
+  top: 100%;
   display: flex;
   align-items: center;
   gap: clamp(16px, 2.2vw, 30px);
