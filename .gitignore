@@ -18,3 +18,9 @@ uploads/
 
 # turbo cache
 .turbo/
+
+# TypeScript build artifacts
+tsconfig.build.tsbuildinfo
+apps/api/prisma/*.js
+apps/api/prisma/*.js.map
+apps/api/prisma/*.d.ts

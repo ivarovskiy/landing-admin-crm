@@ -106,7 +106,7 @@
   align-items: center;
   gap: 30px;
 
-  margin-right: 36px;
+  margin-right: 42px;
 }
 
 .header-desktop__portal {}
@@ -125,7 +125,7 @@
   flex: 0 0 auto;
 
   position: absolute;
-  right: 0;
+  right: 8px;
 }
 
 .header-desktop__meta-text {
