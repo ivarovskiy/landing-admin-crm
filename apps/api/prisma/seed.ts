@@ -352,19 +352,6 @@ async function main() {
         blocks: { create: blocks.map((b) => ({ ...b })) },
       },
     });
-  } else {
-    await prisma.$transaction([
-      prisma.block.deleteMany({ where: { pageId: existingPage.id } }),
-      prisma.page.update({
-        where: { id: existingPage.id },
-        data: {
-          status: 'published',
-          seo,
-          publishedAt: new Date(),
-          blocks: { create: blocks.map((b) => ({ ...b })) },
-        },
-      }),
-    ]);
   }
 
   // ---- Seed Page: summer-program (published) ----
@@ -472,22 +459,6 @@ async function main() {
         blocks: { create: spBlocks.map((b) => ({ ...b })) },
       },
     });
-  } else {
-    await prisma.$transaction([
-      prisma.block.deleteMany({ where: { pageId: existingSp.id } }),
-      prisma.page.update({
-        where: { id: existingSp.id },
-        data: {
-          status: "published",
-          seo: {
-            title: "Summer Program — New Guest Teachers",
-            description: "Sign up by June 15 for our summer ballet program.",
-          },
-          publishedAt: new Date(),
-          blocks: { create: spBlocks.map((b) => ({ ...b })) },
-        },
-      }),
-    ]);
   }
 
   console.log(`Seeded roles + admin: ${email}`);
