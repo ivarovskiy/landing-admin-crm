@@ -1,4 +1,4 @@
-import { getPublicPage } from "@/lib/api-public";
+import { getPublicPage, getSiteSettings } from "@/lib/api-public";
 import { PageRenderer } from "@/components/page-renderer";
 import { tokensToCssVars } from "@/lib/theme";
 import { notFound } from "next/navigation";
@@ -8,22 +8,26 @@ export default async function SlugPage({ params }: { params: Promise<{ slug: str
 
   if (slug === "home") notFound();
 
-  const res = await getPublicPage(slug, "uk");
+  const [pageRes, settingsRes] = await Promise.all([
+    getPublicPage(slug, "uk"),
+    getSiteSettings(),
+  ]);
 
-  if (!res.ok) {
-    if (res.error?.kind === "http" && res.error.status === 404) {
+  if (!pageRes.ok) {
+    if (pageRes.error?.kind === "http" && pageRes.error.status === 404) {
       notFound();
     }
-    console.error(`[web] getPublicPage("${slug}") failed:`, res.error);
+    console.error(`[web] getPublicPage("${slug}") failed:`, pageRes.error);
     notFound();
   }
 
-  const { page, theme } = res.data;
+  const { page, theme } = pageRes.data;
   const cssVars = tokensToCssVars(theme?.tokens ?? theme);
+  const zoomSettings = settingsRes.ok ? (settingsRes.data?.zoom ?? null) : null;
 
   return (
     <main style={cssVars} className="page-base">
-      <PageRenderer blocks={(page as any).blocks ?? []} pageSettings={(page as any).settings} />
+      <PageRenderer blocks={(page as any).blocks ?? []} zoomSettings={zoomSettings} />
     </main>
   );
 }

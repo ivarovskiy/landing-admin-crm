@@ -1,4 +1,4 @@
-import { getPublicPage } from "@/lib/api-public";
+import { getPublicPage, getSiteSettings } from "@/lib/api-public";
 import { PageRenderer } from "@/components/page-renderer";
 import { tokensToCssVars } from "@/lib/theme";
 
@@ -25,19 +25,23 @@ function Offline({ error }: { error: any }) {
 }
 
 export default async function Home() {
-  const res = await getPublicPage("home", "uk");
+  const [pageRes, settingsRes] = await Promise.all([
+    getPublicPage("home", "uk"),
+    getSiteSettings(),
+  ]);
 
-  if (!res.ok) {
-    console.error("[web] getPublicPage failed:", res.error);
-    return <Offline error={res.error} />;
+  if (!pageRes.ok) {
+    console.error("[web] getPublicPage failed:", pageRes.error);
+    return <Offline error={pageRes.error} />;
   }
 
-  const { page, theme } = res.data;
+  const { page, theme } = pageRes.data;
   const cssVars = tokensToCssVars(theme?.tokens ?? theme);
+  const zoomSettings = settingsRes.ok ? (settingsRes.data?.zoom ?? null) : null;
 
   return (
     <main style={cssVars} className="page-base">
-      <PageRenderer blocks={(page as any).blocks ?? []} pageSettings={(page as any).settings} />
+      <PageRenderer blocks={(page as any).blocks ?? []} zoomSettings={zoomSettings} />
     </main>
   );
 }

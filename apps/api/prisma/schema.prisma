@@ -116,6 +116,12 @@ model MediaAsset {
   @@index([createdAt])
 }
 
+model SiteSettings {
+  id        String   @id @default("default")
+  zoom      Json?
+  updatedAt DateTime @updatedAt
+}
+
 model AuditLog {
   id          String   @id @default(cuid())
   actorUserId String?

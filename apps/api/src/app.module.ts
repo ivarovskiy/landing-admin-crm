@@ -26,6 +26,7 @@ import { PagesModule } from './modules/pages/pages.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { MediaModule } from './modules/media/media.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { MediaModule } from './modules/media/media.module';
     UsersModule,
     AuthModule,
     MediaModule,
+    SettingsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

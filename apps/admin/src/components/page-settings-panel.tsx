@@ -14,7 +14,6 @@ import {
   Grid3x3,
   FileText,
   ChevronRight,
-  Maximize2,
 } from "lucide-react";
 
 /* ----------------------------------------------------------------
@@ -23,10 +22,6 @@ import {
 export type PageCanvasSettings = {
   canvasScroll: boolean;
   showGrid: boolean;
-};
-
-export type PageLayoutSettings = {
-  fitViewport: boolean;
 };
 
 /* ----------------------------------------------------------------
@@ -38,8 +33,6 @@ export function PageSettingsPanel({
   status,
   canvasSettings,
   onCanvasSettingsChange,
-  layoutSettings,
-  onLayoutSettingsChange,
   onClose,
 }: {
   pageId: string;
@@ -47,8 +40,6 @@ export function PageSettingsPanel({
   status: string;
   canvasSettings: PageCanvasSettings;
   onCanvasSettingsChange: (s: Partial<PageCanvasSettings>) => void;
-  layoutSettings: PageLayoutSettings;
-  onLayoutSettingsChange: (s: Partial<PageLayoutSettings>) => void;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -71,22 +62,6 @@ export function PageSettingsPanel({
       setError(e?.message ?? "Failed");
     } finally {
       setSaving(null);
-    }
-  }
-
-  async function saveLayoutSetting(patch: Partial<PageLayoutSettings>) {
-    const next = { ...layoutSettings, ...patch };
-    onLayoutSettingsChange(patch);
-    setError(null);
-    try {
-      const r = await fetch(`/api/admin/pages/${pageId}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ settings: next }),
-      });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to save");
     }
   }
 
@@ -224,19 +199,6 @@ export function PageSettingsPanel({
               description="Show background dot grid"
               value={canvasSettings.showGrid}
               onChange={(v) => onCanvasSettingsChange({ showGrid: v })}
-            />
-          </Section>
-
-          <Divider />
-
-          {/* ---- Layout ---- */}
-          <Section label="Layout">
-            <Toggle
-              icon={<Maximize2 className="h-3.5 w-3.5" />}
-              label="Fit screen"
-              description="Scale page to fit viewport height"
-              value={layoutSettings.fitViewport}
-              onChange={(v) => saveLayoutSetting({ fitViewport: v })}
             />
           </Section>
 

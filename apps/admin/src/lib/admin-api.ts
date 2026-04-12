@@ -35,3 +35,20 @@ export async function createPreviewToken(pageId: string): Promise<{ token: strin
   const r = await apiFetch(`/v1/admin/pages/${pageId}/preview-token`, { method: "POST" })
   return r.json()
 }
+
+export type SiteZoomSettings = { fitViewport?: boolean; scale?: number }
+export type SiteSettingsData = { zoom?: SiteZoomSettings }
+
+export async function fetchSiteSettings(): Promise<SiteSettingsData> {
+  const r = await apiFetch("/v1/admin/settings")
+  return r.json()
+}
+
+export async function updateSiteSettings(data: SiteSettingsData): Promise<SiteSettingsData> {
+  const r = await apiFetch("/v1/admin/settings", {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(data),
+  })
+  return r.json()
+}

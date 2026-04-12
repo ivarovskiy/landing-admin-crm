@@ -11,3 +11,8 @@ export async function getPreviewPage(pageId: string, token: string) {
   const url = `${BASE}/v1/public/preview/${encodeURIComponent(pageId)}?token=${encodeURIComponent(token)}`;
   return safeFetchJson<{ page: any; theme: any }>(url, { cache: "no-store" });
 }
+
+export async function getSiteSettings() {
+  const url = `${BASE}/v1/public/settings`;
+  return safeFetchJson<{ zoom?: { fitViewport?: boolean; scale?: number } }>(url, { cache: "no-store" });
+}

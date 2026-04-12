@@ -40,17 +40,21 @@ function cssVarStyle(layout: Layout, dbOrder: number) {
   } as React.CSSProperties;
 }
 
-type PageSettings = {
+type ZoomSettings = {
   fitViewport?: boolean;
+  scale?: number;
 };
 
-export function PageRenderer({ blocks, pageSettings }: { blocks: BlockModel[]; pageSettings?: PageSettings | null }) {
+export function PageRenderer({ blocks, zoomSettings }: { blocks: BlockModel[]; zoomSettings?: ZoomSettings | null }) {
   const sorted = (blocks ?? []).slice().sort((a, b) => a.order - b.order);
 
   return (
     <div className="landing-stack">
       <PreviewScrollListener />
-      <LandingZoom fitViewport={pageSettings?.fitViewport === true} />
+      <LandingZoom
+        fitViewport={zoomSettings?.fitViewport === true}
+        scale={zoomSettings?.scale ?? 1}
+      />
       {sorted.map((block) => {
 
         const key = getBlockKey(block.type, block.variant);
