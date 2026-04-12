@@ -371,7 +371,7 @@ export function HeroSliderV1({ data }: { data: any }) {
 
 
         {/* <Hairline className="hero-slider__hairline-bottom" /> */}
-        <img src="/icons/slider_v2.svg" alt="" />
+        <img src="/icons/slider_v2.svg" alt="" className="hero-slider__hairline-bottom"/>
 
         {showDots && count > 1 ? (
           <div className="hero-slider__dots" role="tablist" aria-label="Slides">
