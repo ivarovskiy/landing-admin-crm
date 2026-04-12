@@ -21,10 +21,14 @@ function withShadow(size: number): OutlineStampStyle {
   };
 }
 
-/** Section titles (features, studio-address, scrapbook) — shadow 2.6 */
-export const STAMP_SECTION_TITLE = withShadow(4.15);
+/** Section titles (features, studio-address, scrapbook) — Figma: stroke 1.3, shadow 5.56 */
+export const STAMP_SECTION_TITLE: OutlineStampStyle = {
+  ...BASE,
+  strokeWidthPx: 1.3,
+  shadow: { x: 5.56, y: 5.56, color: "var(--color-primary)", enabled: true },
+};
 
-/** Hero / slide titles — shadow 2.6 */
+/** Hero / slide titles — shadow 4.15, stroke 1 */
 export const STAMP_HERO_TITLE = withShadow(4.15);
 
 /** Kicker-sized stamp text — shadow 2.2 */

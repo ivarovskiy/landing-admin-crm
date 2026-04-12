@@ -113,17 +113,17 @@ function stampStyleToVars(style?: OutlineStampStyle): React.CSSProperties {
   if (style.tracking) v["--stamp-tracking"] = style.tracking;
   if (typeof style.weight === "number") v["--stamp-weight"] = String(style.weight);
 
-  // if (style.shadow) {
-  //   const { x, y, color, enabled } = style.shadow;
-  //   if (enabled === false) {
-  //     v["--stamp-shadow-x"] = "0px";
-  //     v["--stamp-shadow-y"] = "0px";
-  //   } else {
-  //     if (typeof x === "number") v["--stamp-shadow-x"] = `${x}px`;
-  //     if (typeof y === "number") v["--stamp-shadow-y"] = `${y}px`;
-  //     if (color) v["--stamp-shadow-color"] = color;
-  //   }
-  // }
+  if (style.shadow) {
+    const { x, y, color, enabled } = style.shadow;
+    if (enabled === false) {
+      v["--stamp-shadow-x"] = "0px";
+      v["--stamp-shadow-y"] = "0px";
+    } else {
+      if (typeof x === "number") v["--stamp-shadow-x"] = `${x}px`;
+      if (typeof y === "number") v["--stamp-shadow-y"] = `${y}px`;
+      if (color) v["--stamp-shadow-color"] = color;
+    }
+  }
 
   return v as React.CSSProperties;
 }
