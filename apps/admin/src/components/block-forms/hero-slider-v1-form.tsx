@@ -85,6 +85,7 @@ export function HeroSliderV1Form({ value, onChange }: BlockFormProps) {
 
   const showDots = options?.showDots !== false;
   const showArrows = options?.showArrows === true;
+  const fillViewport = options?.fillViewport === true;
   const autoPlayMs = Number(options?.autoPlayMs ?? 0);
 
   const set = (path: (string | number)[], v: unknown) =>
@@ -114,6 +115,11 @@ export function HeroSliderV1Form({ value, onChange }: BlockFormProps) {
           label="Arrows"
           checked={showArrows}
           onChange={(v) => set(["options", "showArrows"], v)}
+        />
+        <InspectorToggle
+          label="Fill viewport height"
+          checked={fillViewport}
+          onChange={(v) => set(["options", "fillViewport"], v)}
         />
       </InspectorSection>
 

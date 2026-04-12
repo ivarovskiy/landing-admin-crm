@@ -50,7 +50,7 @@
 }
 
 .header-desktop {
-  padding: clamp(20px, 2.5vw, 30px) clamp(20px, 4.5vw, 0px) clamp(24px, 2.8vw, 36px);
+  padding: clamp(20px, 2.5vw, 30px) 0 clamp(24px, 2.8vw, 36px);
 }
 
 .header-desktop__top-rule {
@@ -125,7 +125,7 @@
   flex: 0 0 auto;
 
   position: absolute;
-  right: 8px;
+  right: -12px;
 }
 
 .header-desktop__meta-text {

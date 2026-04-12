@@ -12,10 +12,16 @@
   padding-inline: 20px;
   max-width: 1360px;
   width: 100%;
-  /* padding: 0 21px; */
   box-sizing: border-box;
-  /* text-align: center; */
   position: relative;
+}
+
+/* Global landing padding (60px each side on .landing-stack) covers side spacing —
+   ds-container only provides mobile padding */
+@media (min-width: 768px) {
+  .ds-container {
+    padding-inline: 0;
+  }
 }
 
 .nav-container {

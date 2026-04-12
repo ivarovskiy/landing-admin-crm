@@ -34,7 +34,10 @@ export default async function PreviewPage({
 
   const { page, theme } = await r.json()
   const cssVars = tokensToCssVars((theme as any)?.tokens)
-  const zoomSettings = settingsRes.ok ? (settingsRes.data?.zoom ?? null) : null
+  const blocks: any[] = (page as any).blocks ?? []
+  const blockFillViewport = blocks.some((b: any) => b.data?.options?.fillViewport === true)
+  const baseZoom = settingsRes.ok ? (settingsRes.data?.zoom ?? null) : null
+  const zoomSettings = blockFillViewport ? { ...baseZoom, fitViewport: true } : baseZoom
 
   return (
     <LivePreviewProvider>

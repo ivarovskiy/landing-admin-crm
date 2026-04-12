@@ -7,10 +7,12 @@
 } */
 
 .hero-slider__hairline-top {
+  width: 100%;
   /* margin-bottom: clamp(6px, 0.8vw, 10px); */
 }
 
 .hero-slider__hairline-bottom {
+  width: 100%;
   /* margin-top: clamp(6px, 0.8vw, 10px); */
 }
 

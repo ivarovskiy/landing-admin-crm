@@ -23,7 +23,10 @@ export default async function SlugPage({ params }: { params: Promise<{ slug: str
 
   const { page, theme } = pageRes.data;
   const cssVars = tokensToCssVars(theme?.tokens ?? theme);
-  const zoomSettings = settingsRes.ok ? (settingsRes.data?.zoom ?? null) : null;
+  const blocks: any[] = (page as any).blocks ?? [];
+  const blockFillViewport = blocks.some((b) => b.data?.options?.fillViewport === true);
+  const baseZoom = settingsRes.ok ? (settingsRes.data?.zoom ?? null) : null;
+  const zoomSettings = blockFillViewport ? { ...baseZoom, fitViewport: true } : baseZoom;
 
   return (
     <main style={cssVars} className="page-base">
