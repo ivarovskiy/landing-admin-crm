@@ -1,4 +1,5 @@
 import { Container, OutlineStampText } from "@/components/landing/ui";
+import { MediaImage } from "@/components/media-image";
 import { cn } from "@/lib/cn";
 
 type ScrapbookItem = {
@@ -36,11 +37,11 @@ function ScrapbookTile({
   idx: number;
 }) {
   const inner = item?.src ? (
-    <img
+    <MediaImage
       src={item.src}
       alt={item.alt ?? ""}
-      className="scrapbook__image"
-      loading="lazy"
+      sizes="(max-width: 767px) 50vw, 350px"
+      style={{ width: "100%", height: "100%" }}
     />
   ) : (
     <div className="scrapbook__placeholder" aria-hidden="true" />

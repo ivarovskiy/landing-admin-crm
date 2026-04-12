@@ -2,6 +2,14 @@ import type { NextConfig } from "next";
 
 // SVGR support for both Turbopack (dev) and Webpack (build / when turbopack is disabled)
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      // Local dev — API on localhost (any port)
+      { protocol: "http", hostname: "localhost" },
+      // Production — Railway and any HTTPS host (uploads URL varies per project)
+      { protocol: "https", hostname: "**" },
+    ],
+  },
   async headers() {
     return [
       {

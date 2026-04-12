@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import NextImage from "next/image";
 import { Container, Hairline, Kicker, OutlineStampText, STAMP_HERO_TITLE, STAMP_KICKER, STAMP_SUBTITLE } from "@/components/landing/ui";
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
@@ -412,7 +413,7 @@ function HeroSlide({
   );
 
   const mediaPrimary = (
-    <MediaFrame media={slide.media} className="hero-slide__media-box" slotId={`slide-${i}-media`} />
+    <MediaFrame media={slide.media} className="hero-slide__media-box" slotId={`slide-${i}-media`} priority={i === 0} />
   );
 
   const standardCopy = (
@@ -648,21 +649,25 @@ function MediaFrame({
   media,
   className,
   slotId,
+  priority = false,
 }: {
   media?: SlideMedia;
   className?: string;
   slotId: string;
+  priority?: boolean;
 }) {
   const ratioLabel = media?.aspectRatio?.replace(/\s*\/\s*/, "x") ?? "";
 
   return (
     <div className={cn(className, !media?.src && "hero-slide__media-box--placeholder")} data-el={slotId}>
       {media?.src ? (
-        <img
+        <NextImage
           src={media.src}
           alt={media.alt ?? ""}
-          className="hero-slide__media-img"
-          loading="lazy"
+          fill
+          sizes="1360px"
+          priority={priority}
+          style={{ objectFit: media.objectFit ?? "cover" }}
         />
       ) : null}
     </div>

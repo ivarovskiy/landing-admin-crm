@@ -1,6 +1,7 @@
 import { Container, Kicker, OutlineStampText, STAMP_SECTION_TITLE } from "@/components/landing/ui";
 import { Icon } from "@/components/landing/icons";
 import { normalizeTel } from "@/lib/section-utils";
+import Image from "next/image";
 
 type Social = { icon?: "instagram" | "facebook"; href?: string; label?: string };
 
@@ -59,19 +60,21 @@ export function StudioAddressV1({ data }: { data: any }) {
               ) : hasImage ? (
                 mapLink ? (
                   <a href={mapLink} target="_blank" rel="noreferrer" className="studio-address__map-link">
-                    <img
+                    <Image
                       src={map.imageSrc}
                       alt={map?.alt ?? ""}
-                      className="studio-address__map-img"
-                      loading="lazy"
+                      fill
+                      sizes="(max-width: 767px) 100vw, 830px"
+                      style={{ objectFit: "cover" }}
                     />
                   </a>
                 ) : (
-                  <img
+                  <Image
                     src={map.imageSrc}
                     alt={map?.alt ?? ""}
-                    className="studio-address__map-img"
-                    loading="lazy"
+                    fill
+                    sizes="(max-width: 767px) 100vw, 830px"
+                    style={{ objectFit: "cover" }}
                   />
                 )
               ) : null}

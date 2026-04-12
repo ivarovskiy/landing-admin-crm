@@ -393,11 +393,13 @@
 
 .cp__image {
   display: block;
+  position: relative;
+  overflow: hidden;
   width: var(--img-w, 100%);
   height: var(--img-h, auto);
   aspect-ratio: var(--aspect, auto);
-  object-fit: cover;
   border-radius: 0;
+  /* object-fit handled by next/image style prop */
 }
 
 .cp__image--placeholder {

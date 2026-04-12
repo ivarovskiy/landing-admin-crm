@@ -67,6 +67,7 @@
 .scrapbook__tile--8 { grid-area: slot8; }
 
 .scrapbook__tile-link {
+  position: relative;
   display: block;
   width: 100%;
   height: 100%;

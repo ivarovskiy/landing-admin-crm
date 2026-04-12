@@ -1,5 +1,6 @@
 import type React from "react";
 import { Container, Kicker, OutlineStampText } from "@/components/landing/ui";
+import { MediaImage } from "@/components/media-image";
 import ClipIcon from "@/assets/icons/clip.svg";
 
 type ResponsiveItemLayout = {
@@ -102,11 +103,11 @@ function renderItem(item: ContentItem, idx: number, col: "left" | "right") {
         data-el={`${col}-${idx}-image`}
       >
         {item.src ? (
-          <img
+          <MediaImage
             src={item.src}
             alt={item.alt ?? ""}
             className="cp__image"
-            loading="lazy"
+            sizes="(max-width: 767px) 100vw, 530px"
           />
         ) : (
           <div className="cp__image cp__image--placeholder" />
