@@ -2,7 +2,6 @@
 import { useEffect } from "react";
 
 const VIEWPORT_DEFAULT = "width=device-width, initial-scale=1";
-const VIEWPORT_1440 = "width=1440";
 
 function getOrCreateViewportMeta(): HTMLMetaElement {
   let el = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
@@ -15,49 +14,58 @@ function getOrCreateViewportMeta(): HTMLMetaElement {
 }
 
 /**
- * Applies CSS zoom to `.landing-stack` at ≥768px.
+ * All zoom/viewport behaviour is driven by props — nothing is hardcoded.
  *
- * Normal mode (fitViewport=false):
- *   zoom = (viewport width / 1360) * scale
- *
- * Fit-viewport mode (fitViewport=true):
- *   zoom = (viewport height / (header height + hero-slider height)) * scale
- *   Falls back to width zoom when no slider is present.
- *
- * normalizeViewport — sets <meta viewport content="width=1440"> so the browser
- *   renders the page as a 1440px canvas and scales it to the screen.
- *   Restores to device-width on unmount.
- *
- * scale — global zoom coefficient (default 1.0), set by admin in Site Settings.
+ * enableZoom            — master switch for CSS zoom (default true)
+ * designWidth           — reference canvas width in px (default 1480)
+ * zoomBreakpoint        — min viewport width where zoom activates (default 768)
+ * scale                 — coefficient multiplied on top of auto-zoom (default 1.0)
+ * fitViewport           — fit page to screen height via header+hero measurement
+ * normalizeViewport     — set <meta viewport content="width=N"> for native browser scaling
+ * normalizeViewportWidth — the N above (default 1320)
  */
 export function LandingZoom({
-  fitViewport = false,
+  enableZoom = true,
+  designWidth = 1480,
+  zoomBreakpoint = 768,
   scale = 1,
+  fitViewport = false,
   normalizeViewport = false,
+  normalizeViewportWidth = 1320,
 }: {
-  fitViewport?: boolean;
+  enableZoom?: boolean;
+  designWidth?: number;
+  zoomBreakpoint?: number;
   scale?: number;
+  fitViewport?: boolean;
   normalizeViewport?: boolean;
+  normalizeViewportWidth?: number;
 }) {
   /* ── Normalize viewport meta ── */
   useEffect(() => {
     const meta = getOrCreateViewportMeta();
     const prev = meta.content;
     if (normalizeViewport) {
-      meta.content = VIEWPORT_1440;
+      meta.content = `width=${normalizeViewportWidth}`;
     }
     return () => {
       meta.content = prev || VIEWPORT_DEFAULT;
     };
-  }, [normalizeViewport]);
+  }, [normalizeViewport, normalizeViewportWidth]);
 
   /* ── CSS zoom ── */
   useEffect(() => {
     const stack = document.querySelector(".landing-stack") as HTMLElement | null;
     if (!stack) return;
 
-    const mq = window.matchMedia("(min-width: 768px)");
-    const DESIGN_WIDTH = 1480; // 1360px content + 60px padding on each side
+    if (!enableZoom) {
+      stack.style.removeProperty("zoom");
+      return;
+    }
+
+    const mqQuery = `(min-width: ${zoomBreakpoint}px)`;
+    const mq = window.matchMedia(mqQuery);
+    const dw = designWidth > 0 ? designWidth : 1480;
     const s = typeof scale === "number" && isFinite(scale) && scale > 0 ? scale : 1;
 
     const update = () => {
@@ -84,7 +92,7 @@ export function LandingZoom({
         }
       }
 
-      const auto = Math.min(1, document.documentElement.clientWidth / DESIGN_WIDTH);
+      const auto = Math.min(1, document.documentElement.clientWidth / dw);
       const final = auto * s;
       if (final < 0.999) {
         stack.style.zoom = final.toFixed(5);
@@ -99,7 +107,7 @@ export function LandingZoom({
       mq.removeEventListener("change", update);
       stack.style.removeProperty("zoom");
     };
-  }, [fitViewport, scale]);
+  }, [enableZoom, designWidth, zoomBreakpoint, fitViewport, scale]);
 
   return null;
 }

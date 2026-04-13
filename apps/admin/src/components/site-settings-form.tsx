@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone } from "lucide-react";
+import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate } from "lucide-react";
 import type { SiteSettingsData, SiteZoomSettings } from "@/lib/admin-api";
 
 /* ----------------------------------------------------------------
@@ -49,6 +49,42 @@ function ToggleRow({
   );
 }
 
+function NumberRow({
+  icon,
+  label,
+  description,
+  value,
+  placeholder,
+  onChange,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  value: number | undefined;
+  placeholder: string;
+  onChange: (v: number | undefined) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <span className="shrink-0 text-[oklch(0.45_0_0)]">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold text-[oklch(0.88_0_0)] leading-none">{label}</p>
+        <p className="text-[10px] text-[oklch(0.5_0_0)] mt-0.5 leading-snug">{description}</p>
+      </div>
+      <input
+        type="number"
+        value={value ?? ""}
+        placeholder={placeholder}
+        onChange={(e) => {
+          const n = parseInt(e.target.value, 10);
+          onChange(isNaN(n) ? undefined : n);
+        }}
+        className="w-20 h-7 rounded-md bg-[oklch(1_0_0/6%)] border border-[oklch(1_0_0/10%)] text-xs text-right text-[oklch(0.88_0_0)] tabular-nums px-2 focus:outline-none focus:ring-1 focus:ring-[oklch(0.58_0.22_25)]"
+      />
+    </div>
+  );
+}
+
 function SliderRow({
   icon,
   label,
@@ -85,7 +121,6 @@ function SliderRow({
         </span>
       </div>
 
-      {/* custom track */}
       <div className="relative h-1 rounded-full bg-[oklch(1_0_0/10%)]">
         <div
           className="absolute left-0 top-0 h-full rounded-full bg-[oklch(0.58_0.22_25)]"
@@ -136,9 +171,13 @@ function StatusBadge({ status }: { status: "idle" | "saving" | "saved" | "error"
 
 export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSettingsData }) {
   const [zoom, setZoom] = useState<SiteZoomSettings>({
-    fitViewport: initialSettings?.zoom?.fitViewport === true,
+    enableZoom: initialSettings?.zoom?.enableZoom !== false,
+    designWidth: initialSettings?.zoom?.designWidth,
+    zoomBreakpoint: initialSettings?.zoom?.zoomBreakpoint,
     scale: initialSettings?.zoom?.scale ?? 1,
+    fitViewport: initialSettings?.zoom?.fitViewport === true,
     normalizeViewport: initialSettings?.zoom?.normalizeViewport === true,
+    normalizeViewportWidth: initialSettings?.zoom?.normalizeViewportWidth,
   });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
@@ -171,25 +210,42 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
       {/* ---- Zoom section ---- */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <SectionLabel>Zoom</SectionLabel>
+          <SectionLabel>Zoom & Viewport</SectionLabel>
           <StatusBadge status={status} />
         </div>
 
         <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
+
+          {/* Master switch */}
           <ToggleRow
-            icon={<MonitorSmartphone className="h-3.5 w-3.5" />}
-            label="Normalize viewport (1440px)"
-            description="Sets meta viewport width=1440 so the browser scales the page to the screen"
-            value={zoom.normalizeViewport === true}
-            onChange={(v) => update({ normalizeViewport: v })}
+            icon={<ZoomIn className="h-3.5 w-3.5" />}
+            label="Enable CSS zoom"
+            description="Scales landing-stack to fit the viewport width (desktop only)"
+            value={zoom.enableZoom !== false}
+            onChange={(v) => update({ enableZoom: v })}
           />
-          <ToggleRow
-            icon={<Maximize2 className="h-3.5 w-3.5" />}
-            label="Fit screen"
-            description="Scale page to fit viewport height using header + hero dimensions"
-            value={zoom.fitViewport === true}
-            onChange={(v) => update({ fitViewport: v })}
+
+          {/* Design width */}
+          <NumberRow
+            icon={<Ruler className="h-3.5 w-3.5" />}
+            label="Design width (px)"
+            description="Reference canvas width — zoom target (default 1480)"
+            value={zoom.designWidth}
+            placeholder="1480"
+            onChange={(v) => update({ designWidth: v })}
           />
+
+          {/* Zoom breakpoint */}
+          <NumberRow
+            icon={<LayoutTemplate className="h-3.5 w-3.5" />}
+            label="Zoom breakpoint (px)"
+            description="Min viewport width at which zoom activates (default 768)"
+            value={zoom.zoomBreakpoint}
+            placeholder="768"
+            onChange={(v) => update({ zoomBreakpoint: v })}
+          />
+
+          {/* Scale coefficient */}
           <SliderRow
             icon={<ScanLine className="h-3.5 w-3.5" />}
             label="Zoom coefficient"
@@ -201,6 +257,35 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             format={(v) => `${v}%`}
             onChange={(v) => update({ scale: v / 100 })}
           />
+
+          {/* Fit screen */}
+          <ToggleRow
+            icon={<Maximize2 className="h-3.5 w-3.5" />}
+            label="Fit screen"
+            description="Scale page to fit viewport height using header + hero dimensions"
+            value={zoom.fitViewport === true}
+            onChange={(v) => update({ fitViewport: v })}
+          />
+
+          {/* Normalize viewport */}
+          <ToggleRow
+            icon={<MonitorSmartphone className="h-3.5 w-3.5" />}
+            label="Normalize viewport"
+            description="Sets <meta viewport> to a fixed width — browser scales natively"
+            value={zoom.normalizeViewport === true}
+            onChange={(v) => update({ normalizeViewport: v })}
+          />
+
+          {/* Viewport width — only relevant when normalizeViewport is on */}
+          <NumberRow
+            icon={<MonitorSmartphone className="h-3.5 w-3.5 opacity-50" />}
+            label="Viewport width (px)"
+            description="Width used in meta viewport when normalize is on (default 1320)"
+            value={zoom.normalizeViewportWidth}
+            placeholder="1320"
+            onChange={(v) => update({ normalizeViewportWidth: v })}
+          />
+
         </div>
       </div>
 

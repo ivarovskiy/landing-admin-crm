@@ -36,7 +36,22 @@ export async function createPreviewToken(pageId: string): Promise<{ token: strin
   return r.json()
 }
 
-export type SiteZoomSettings = { fitViewport?: boolean; scale?: number; normalizeViewport?: boolean }
+export type SiteZoomSettings = {
+  /** Enable/disable CSS zoom entirely */
+  enableZoom?: boolean;
+  /** Reference canvas width in px (default 1320) */
+  designWidth?: number;
+  /** Min viewport width (px) at which CSS zoom activates (default 768) */
+  zoomBreakpoint?: number;
+  /** Scale coefficient applied on top of auto-zoom (default 1.0) */
+  scale?: number;
+  /** Fit page height to viewport using header + hero dimensions */
+  fitViewport?: boolean;
+  /** Set <meta viewport> to a fixed width so browser scales natively */
+  normalizeViewport?: boolean;
+  /** Width value used in meta viewport when normalizeViewport is on (default 1320) */
+  normalizeViewportWidth?: number;
+}
 export type SiteSettingsData = { zoom?: SiteZoomSettings }
 
 export async function fetchSiteSettings(): Promise<SiteSettingsData> {

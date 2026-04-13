@@ -618,7 +618,7 @@ const IBC_HERO_DATA = {
         kind: "image",
         src: "https://placehold.co/1440x700/png?text=+",
         alt: "2026",
-        aspectRatio: "1440/700",
+        aspectRatio: "1320/700",
         objectFit: "cover",
       },
     },

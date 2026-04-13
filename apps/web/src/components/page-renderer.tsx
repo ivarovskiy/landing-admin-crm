@@ -45,9 +45,13 @@ function cssVarStyle(layout: Layout, dbOrder: number) {
 }
 
 type ZoomSettings = {
-  fitViewport?: boolean;
+  enableZoom?: boolean;
+  designWidth?: number;
+  zoomBreakpoint?: number;
   scale?: number;
+  fitViewport?: boolean;
   normalizeViewport?: boolean;
+  normalizeViewportWidth?: number;
 };
 
 export function PageRenderer({ blocks, zoomSettings }: { blocks: BlockModel[]; zoomSettings?: ZoomSettings | null }) {
@@ -57,9 +61,13 @@ export function PageRenderer({ blocks, zoomSettings }: { blocks: BlockModel[]; z
     <div className="landing-stack">
       <PreviewScrollListener />
       <LandingZoom
-        fitViewport={zoomSettings?.fitViewport === true}
+        enableZoom={zoomSettings?.enableZoom !== false}
+        designWidth={zoomSettings?.designWidth}
+        zoomBreakpoint={zoomSettings?.zoomBreakpoint}
         scale={zoomSettings?.scale ?? 1}
+        fitViewport={zoomSettings?.fitViewport === true}
         normalizeViewport={zoomSettings?.normalizeViewport === true}
+        normalizeViewportWidth={zoomSettings?.normalizeViewportWidth}
       />
       {sorted.map((block) => {
 
