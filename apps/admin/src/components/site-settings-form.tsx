@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Maximize2, ScanLine, Check, Loader2 } from "lucide-react";
+import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone } from "lucide-react";
 import type { SiteSettingsData, SiteZoomSettings } from "@/lib/admin-api";
 
 /* ----------------------------------------------------------------
@@ -138,6 +138,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
   const [zoom, setZoom] = useState<SiteZoomSettings>({
     fitViewport: initialSettings?.zoom?.fitViewport === true,
     scale: initialSettings?.zoom?.scale ?? 1,
+    normalizeViewport: initialSettings?.zoom?.normalizeViewport === true,
   });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
@@ -175,6 +176,13 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
         </div>
 
         <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
+          <ToggleRow
+            icon={<MonitorSmartphone className="h-3.5 w-3.5" />}
+            label="Normalize viewport (1440px)"
+            description="Sets meta viewport width=1440 so the browser scales the page to the screen"
+            value={zoom.normalizeViewport === true}
+            onChange={(v) => update({ normalizeViewport: v })}
+          />
           <ToggleRow
             icon={<Maximize2 className="h-3.5 w-3.5" />}
             label="Fit screen"

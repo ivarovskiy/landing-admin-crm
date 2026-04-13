@@ -36,7 +36,7 @@ export async function createPreviewToken(pageId: string): Promise<{ token: strin
   return r.json()
 }
 
-export type SiteZoomSettings = { fitViewport?: boolean; scale?: number }
+export type SiteZoomSettings = { fitViewport?: boolean; scale?: number; normalizeViewport?: boolean }
 export type SiteSettingsData = { zoom?: SiteZoomSettings }
 
 export async function fetchSiteSettings(): Promise<SiteSettingsData> {

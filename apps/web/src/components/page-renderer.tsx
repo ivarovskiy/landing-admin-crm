@@ -47,6 +47,7 @@ function cssVarStyle(layout: Layout, dbOrder: number) {
 type ZoomSettings = {
   fitViewport?: boolean;
   scale?: number;
+  normalizeViewport?: boolean;
 };
 
 export function PageRenderer({ blocks, zoomSettings }: { blocks: BlockModel[]; zoomSettings?: ZoomSettings | null }) {
@@ -58,6 +59,7 @@ export function PageRenderer({ blocks, zoomSettings }: { blocks: BlockModel[]; z
       <LandingZoom
         fitViewport={zoomSettings?.fitViewport === true}
         scale={zoomSettings?.scale ?? 1}
+        normalizeViewport={zoomSettings?.normalizeViewport === true}
       />
       {sorted.map((block) => {
 

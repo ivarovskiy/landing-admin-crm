@@ -1,6 +1,19 @@
 "use client";
 import { useEffect } from "react";
 
+const VIEWPORT_DEFAULT = "width=device-width, initial-scale=1";
+const VIEWPORT_1440 = "width=1440";
+
+function getOrCreateViewportMeta(): HTMLMetaElement {
+  let el = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+  if (!el) {
+    el = document.createElement("meta");
+    el.name = "viewport";
+    document.head.appendChild(el);
+  }
+  return el;
+}
+
 /**
  * Applies CSS zoom to `.landing-stack` at ≥768px.
  *
@@ -11,15 +24,34 @@ import { useEffect } from "react";
  *   zoom = (viewport height / (header height + hero-slider height)) * scale
  *   Falls back to width zoom when no slider is present.
  *
+ * normalizeViewport — sets <meta viewport content="width=1440"> so the browser
+ *   renders the page as a 1440px canvas and scales it to the screen.
+ *   Restores to device-width on unmount.
+ *
  * scale — global zoom coefficient (default 1.0), set by admin in Site Settings.
  */
 export function LandingZoom({
   fitViewport = false,
   scale = 1,
+  normalizeViewport = false,
 }: {
   fitViewport?: boolean;
   scale?: number;
+  normalizeViewport?: boolean;
 }) {
+  /* ── Normalize viewport meta ── */
+  useEffect(() => {
+    const meta = getOrCreateViewportMeta();
+    const prev = meta.content;
+    if (normalizeViewport) {
+      meta.content = VIEWPORT_1440;
+    }
+    return () => {
+      meta.content = prev || VIEWPORT_DEFAULT;
+    };
+  }, [normalizeViewport]);
+
+  /* ── CSS zoom ── */
   useEffect(() => {
     const stack = document.querySelector(".landing-stack") as HTMLElement | null;
     if (!stack) return;
