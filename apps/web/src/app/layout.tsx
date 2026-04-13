@@ -15,9 +15,9 @@ export const metadata: Metadata = {
  */
 const VIEWPORT_SCRIPT = `(function(){try{
   var w=window.screen.width;
-  if(w>=768&&w<1480){
+  if(w>=768&&w<1320){
     var m=document.querySelector('meta[name=viewport]');
-    if(m)m.content='width=1480';
+    if(m)m.content='width=1320';
   }
 }catch(e){}})()`;
 

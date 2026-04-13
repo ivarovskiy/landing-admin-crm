@@ -138,7 +138,7 @@ export function HeaderV1({ data }: { data: any }) {
                     data-el="desktop-phone-link"
                   >
                     <Icon name="phone" className="header-desktop__phone-icon" aria-hidden />
-                    <span className="header-desktop__meta-text" data-el="desktop-phone">
+                    <span className="header-desktop__meta-text header-desktop__meta-text--phone" data-el="desktop-phone">
                       {desktopPhone}
                     </span>
                   </a>
