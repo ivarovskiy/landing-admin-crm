@@ -12,6 +12,7 @@ type Layout = {
   container?: "contained" | "full";
   order?: { md?: number; lg?: number };
   hide?: { base?: boolean; md?: boolean; lg?: boolean };
+  spacingBefore?: number;
   spacingAfter?: number;
 };
 
@@ -34,6 +35,9 @@ function cssVarStyle(layout: Layout, dbOrder: number) {
     ["--display-md" as any]: displayMd,
     ["--display-lg" as any]: displayLg,
 
+    ...(layout.spacingBefore != null && {
+      ["--spacing-before" as any]: `${layout.spacingBefore}px`,
+    }),
     ...(layout.spacingAfter != null && {
       ["--spacing-after" as any]: `${layout.spacingAfter}px`,
     }),

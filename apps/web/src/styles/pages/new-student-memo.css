@@ -1,0 +1,129 @@
+.nsm {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-maru);
+}
+
+/* ---- Header band ---- */
+
+.nsm__header {
+  padding: clamp(28px, 3.5vw, 48px) 0 clamp(16px, 2vw, 28px);
+  border-bottom: 1.5px solid var(--color-primary);
+  margin-bottom: clamp(24px, 3vw, 40px);
+}
+
+.nsm__kicker {
+  font-size: clamp(11px, 1vw, 13px);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin: 0 0 clamp(6px, 0.8vw, 10px);
+}
+
+.nsm__title {
+  margin: 0;
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: clamp(48px, 7.5vw, 104px);
+}
+
+.nsm__subtitle {
+  margin: clamp(8px, 1vw, 14px) 0 0;
+  font-size: clamp(16px, 1.8vw, 24px);
+  font-style: italic;
+  font-family: var(--font-maru);
+  font-weight: 400;
+  color: var(--color-primary);
+}
+
+/* ---- Body: two-column layout ---- */
+
+.nsm__body {
+  display: flex;
+  gap: clamp(24px, 3.5vw, 52px);
+  align-items: flex-start;
+}
+
+.nsm__text-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.nsm__image-col {
+  flex: 0 0 clamp(200px, 28vw, 380px);
+  min-width: 0;
+}
+
+/* ---- Text content ---- */
+
+.nsm__section {
+  margin-bottom: clamp(20px, 2.5vw, 36px);
+}
+
+.nsm__section-title {
+  margin: 0 0 clamp(8px, 1vw, 14px);
+  font-size: clamp(13px, 1.1vw, 15px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: clamp(4px, 0.5vw, 6px);
+}
+
+.nsm__body-text {
+  font-size: clamp(13px, 1.1vw, 15px);
+  line-height: 1.65;
+  color: var(--color-fg);
+  margin: 0;
+}
+
+.nsm__body-text + .nsm__body-text {
+  margin-top: 1em;
+}
+
+/* ---- Image frame ---- */
+
+.nsm__image-frame {
+  position: relative;
+  width: 100%;
+  border: 3px solid var(--color-primary);
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+}
+
+.nsm__image-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.nsm__image-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #d9d9d9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #999;
+  letter-spacing: 0.05em;
+}
+
+/* ---- Mobile ---- */
+
+@media (max-width: 767px) {
+  .nsm__body {
+    flex-direction: column;
+  }
+
+  .nsm__image-col {
+    flex: none;
+    width: 100%;
+    max-width: 320px;
+  }
+}

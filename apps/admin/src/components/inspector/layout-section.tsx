@@ -13,6 +13,7 @@ type LayoutData = {
   _layout?: {
     anchor?: string;
     container?: string;
+    spacingBefore?: number;
     spacingAfter?: number;
     hide?: {
       base?: boolean;
@@ -79,8 +80,14 @@ export function BlockLayoutSection({
         </select>
       </InspectorField>
 
-      {/* Spacing after — interactive drag area */}
-      <SpacingAfterControl
+      {/* Spacing before / after — interactive drag areas */}
+      <SpacingControl
+        label="Spacing before"
+        value={layout.spacingBefore ?? 0}
+        onChange={(v) => updateLayout({ spacingBefore: v || undefined })}
+      />
+      <SpacingControl
+        label="Spacing after"
         value={layout.spacingAfter ?? 0}
         onChange={(v) => updateLayout({ spacingAfter: v || undefined })}
       />
@@ -125,10 +132,12 @@ export function BlockLayoutSection({
    SpacingAfterControl — visual spacing editor (Figma-like)
    ================================================================ */
 
-function SpacingAfterControl({
+function SpacingControl({
+  label,
   value,
   onChange,
 }: {
+  label: string;
   value: number;
   onChange: (v: number) => void;
 }) {
@@ -173,7 +182,7 @@ function SpacingAfterControl({
   return (
     <div className="pt-1">
       <div className="text-[11px] font-medium text-muted-foreground mb-1.5">
-        Spacing after
+        {label}
       </div>
 
       {/* Visual preview area */}

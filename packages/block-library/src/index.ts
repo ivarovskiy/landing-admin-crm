@@ -378,6 +378,31 @@ export const BLOCK_LIBRARY: BlockDefinition[] = [
     },
   },
   {
+    key: "doc-header:v1",
+    type: "doc-header",
+    variant: "v1",
+    label: "Doc Header (v1)",
+    description: "Заголовок документ-сторінки: кікер + stamp title + subtitle + divider",
+    defaultData: {
+      kicker: "Parent Portal",
+      title: "New Student Memo",
+      subtitle: "Welcome to Simply Dance!",
+    },
+  },
+  {
+    key: "doc-body:v1",
+    type: "doc-body",
+    variant: "v1",
+    label: "Doc Body (v1)",
+    description: "Тіло документ-сторінки: текстові секції ліворуч + зображення праворуч",
+    defaultData: {
+      sections: [
+        { id: "s1", heading: "We Believe in Classical Ballet", body: "Classical ballet is the basis of a good dance education." },
+      ],
+      image: { src: "", alt: "" },
+    },
+  },
+  {
     key: "content-page:v1",
     type: "content-page",
     variant: "v1",
@@ -707,6 +732,17 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
     blocks: [
       { type: "header", variant: "v1", data: IBC_HEADER_DATA },
       { type: "content-page", variant: "v1", data: { kicker: "PROGRAM", title: "PAGE TITLE", subtitle: "", left: [], right: [] } },
+      { type: "footer", variant: "v1", data: IBC_FOOTER_DATA },
+    ],
+  },
+  {
+    key: "ibc-doc-page",
+    label: "IBC Ballet — Document page",
+    description: "Header + Doc Header + Doc Body + Footer",
+    blocks: [
+      { type: "header", variant: "v1", data: IBC_HEADER_DATA },
+      { type: "doc-header", variant: "v1", data: { kicker: "Parent Portal", title: "New Student Memo", subtitle: "Welcome to Simply Dance!" } },
+      { type: "doc-body", variant: "v1", data: { sections: [{ id: "s1", heading: "", body: "" }], image: { src: "", alt: "" } } },
       { type: "footer", variant: "v1", data: IBC_FOOTER_DATA },
     ],
   },

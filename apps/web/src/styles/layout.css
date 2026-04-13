@@ -25,6 +25,7 @@
 .landing-section {
   order: var(--order-base, 0);
   display: var(--display-base, block);
+  margin-top: var(--spacing-before, 0px);
   margin-bottom: var(--spacing-after, 0px);
 }
 
