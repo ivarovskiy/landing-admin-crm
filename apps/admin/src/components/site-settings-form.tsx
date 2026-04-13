@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate } from "lucide-react";
+import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff } from "lucide-react";
 import type { SiteSettingsData, SiteZoomSettings } from "@/lib/admin-api";
 
 /* ----------------------------------------------------------------
@@ -178,6 +178,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     fitViewport: initialSettings?.zoom?.fitViewport === true,
     normalizeViewport: initialSettings?.zoom?.normalizeViewport === true,
     normalizeViewportWidth: initialSettings?.zoom?.normalizeViewportWidth,
+    hideScrollbar: initialSettings?.zoom?.hideScrollbar === true,
   });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
@@ -274,6 +275,15 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             description="Sets <meta viewport> to a fixed width — browser scales natively"
             value={zoom.normalizeViewport === true}
             onChange={(v) => update({ normalizeViewport: v })}
+          />
+
+          {/* Hide scrollbar */}
+          <ToggleRow
+            icon={<EyeOff className="h-3.5 w-3.5" />}
+            label="Hide scrollbar"
+            description="Hides the vertical scrollbar visually — scrolling still works"
+            value={zoom.hideScrollbar === true}
+            onChange={(v) => update({ hideScrollbar: v })}
           />
 
           {/* Viewport width — only relevant when normalizeViewport is on */}

@@ -19,6 +19,15 @@ a {
   text-decoration: none;
 }
 
+/* Optional: hide scrollbar visually — toggled via .hide-scrollbar on <html> */
+html.hide-scrollbar,
+html.hide-scrollbar body {
+  scrollbar-width: none; /* Firefox */
+}
+html.hide-scrollbar ::-webkit-scrollbar {
+  display: none; /* Chrome / Safari / Edge */
+}
+
 /* Page wrapper — shared by home, preview, offline */
 
 .page-base {

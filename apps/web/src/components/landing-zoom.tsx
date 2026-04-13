@@ -32,6 +32,7 @@ export function LandingZoom({
   fitViewport = false,
   normalizeViewport = false,
   normalizeViewportWidth = 1320,
+  hideScrollbar = false,
 }: {
   enableZoom?: boolean;
   designWidth?: number;
@@ -40,7 +41,17 @@ export function LandingZoom({
   fitViewport?: boolean;
   normalizeViewport?: boolean;
   normalizeViewportWidth?: number;
+  hideScrollbar?: boolean;
 }) {
+  /* ── Hide scrollbar ── */
+  useEffect(() => {
+    const html = document.documentElement;
+    if (hideScrollbar) {
+      html.classList.add("hide-scrollbar");
+    }
+    return () => html.classList.remove("hide-scrollbar");
+  }, [hideScrollbar]);
+
   /* ── Normalize viewport meta ── */
   useEffect(() => {
     const meta = getOrCreateViewportMeta();

@@ -51,6 +51,8 @@ export type SiteZoomSettings = {
   normalizeViewport?: boolean;
   /** Width value used in meta viewport when normalizeViewport is on (default 1320) */
   normalizeViewportWidth?: number;
+  /** Hide the vertical scrollbar visually (scrolling still works) */
+  hideScrollbar?: boolean;
 }
 export type SiteSettingsData = { zoom?: SiteZoomSettings }
 
