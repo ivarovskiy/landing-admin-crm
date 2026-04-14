@@ -88,13 +88,15 @@ export function FeaturesV1({ data }: { data: FeaturesV1Data }) {
             ?? (data.showSubtitle === false ? { base: true, md: true, lg: true } : {});
           const { className: rClass, style: rStyle } = hideToResponsiveClasses(subtitleHide, "block");
           return (
-            <p
-              className={`features-subtitle text-center ${rClass}`}
-              style={rStyle}
-              data-el="subtitle"
-            >
-              {data.subtitle}
-            </p>
+
+              <div
+                className={`features-subtitle text-center ${rClass}`}
+                style={rStyle}
+                data-el="subtitle"
+              >
+                {data.subtitle}
+              </div>
+
           );
         })() : null}
 

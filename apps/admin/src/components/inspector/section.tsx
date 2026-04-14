@@ -139,20 +139,34 @@ export function InspectorInput({
   type?: string;
   className?: string;
 }) {
+  const baseClass = [
+    "w-full border bg-muted text-foreground px-2 text-xs",
+    "focus:outline-none focus:ring-1 focus:ring-ring",
+    "placeholder:text-muted-foreground/50",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  if (type === "text") {
+    return (
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={1}
+        className={[baseClass, "py-1.5 resize-y leading-tight"].join(" ")}
+      />
+    );
+  }
+
   return (
     <input
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className={[
-        "w-full h-7 border bg-muted text-foreground px-2 text-xs",
-        "focus:outline-none focus:ring-1 focus:ring-ring",
-        "placeholder:text-muted-foreground/50",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={[baseClass, "h-7"].join(" ")}
     />
   );
 }

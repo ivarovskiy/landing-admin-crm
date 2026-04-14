@@ -104,7 +104,7 @@
 .ds-outline-stamp {
   --stamp-fill: var(--color-outline-fill);
   --stamp-stroke: var(--color-primary);
-  --stamp-stroke-w: 1px;
+  --stamp-stroke-w: 1.3px;
   --stamp-shadow-x: 2.6px;
   --stamp-shadow-y: 2.6px;
   --stamp-shadow-color: var(--color-primary);
@@ -133,7 +133,8 @@
   pointer-events: none;
   transform: translate(var(--stamp-shadow-x), var(--stamp-shadow-y));
   color: var(--stamp-shadow-color);
-  -webkit-text-stroke: var(--stamp-stroke-w) var(--stamp-shadow-color);
+  paint-order: stroke fill;
+  -webkit-text-stroke: 2.6px var(--stamp-shadow-color);
 }
 
 .ds-outline-stamp__main {
@@ -141,7 +142,8 @@
   position: relative;
   z-index: 1;
   color: var(--stamp-fill);
-  -webkit-text-stroke: var(--stamp-stroke-w) var(--stamp-stroke);
+  paint-order: stroke fill;
+  -webkit-text-stroke: 2.6px var(--stamp-stroke, var(--color-primary)); /* 1.45px outside × 2 */
   text-shadow: var(--stamp-shadow-x) var(--stamp-shadow-y) 0 var(--stamp-shadow-color);
 }
 
@@ -209,8 +211,8 @@
 /* ---- Icon button ---- */
 
 .ds-icon-btn {
-  height: 40px;
-  width: 40px;
+  height: 49px;
+  width: 49px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -292,7 +294,7 @@
 
 @media (min-width: 767px) {
   .ds-outline-stamp {
-    --stamp-shadow-x: 4.15px;
+    --stamp-shadow-x: 7.15px;
     --stamp-shadow-y: 4.15px;
   }
 }

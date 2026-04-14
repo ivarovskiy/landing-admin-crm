@@ -12,7 +12,8 @@
   letter-spacing: 2%;
   color: var(--stamp-fill, var(--color-outline-fill));
   text-transform: uppercase;
-  -webkit-text-stroke: 1.3px var(--stamp-stroke, var(--color-primary)); /* 1.3px outside × 2 */
+  paint-order: stroke fill;
+  -webkit-text-stroke: 2.6px var(--stamp-stroke, var(--color-primary)); /* 1.3px outside × 2 */
   text-shadow: 4.15px 4.15px 0 var(--stamp-stroke, var(--color-primary));
 }
 
@@ -27,10 +28,10 @@
   font-style: normal;
   font-size: 47px;
   line-height: 60px; /* 60/47 */
-  letter-spacing: 0.007em;
+  letter-spacing: 1%;
   color: var(--stamp-fill, var(--color-outline-fill));
   paint-order: stroke fill;
-  -webkit-text-stroke: 4px var(--stamp-stroke, var(--color-primary)); /* 2px outside × 2 */
+  -webkit-text-stroke: 4.1px var(--stamp-stroke, var(--color-primary)); /* 2px outside × 2 */
 }
 
 .typo-body-text {

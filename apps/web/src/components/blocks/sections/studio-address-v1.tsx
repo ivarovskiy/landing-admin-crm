@@ -139,7 +139,7 @@ export function StudioAddressV1({ data }: { data: any }) {
             ) : null}
 
             {email && emailHref ? (
-              <a href={emailHref} className="studio-address__contact-link" data-el="email">
+              <a href={emailHref} className="studio-address__contact-link studio-address__contact-link--mail" data-el="email">
                 <Icon name="mail-dt" className="studio-address__contact-icon--mail" aria-hidden />
                 <Kicker size="sm">{email}</Kicker>
               </a>

@@ -210,7 +210,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         ctaStyle: { mb: "4px" },
         layout: {
           desktop: {
-            gap: "50px", mediaWidth: "40%", textWidth: "88%",
+            gap: "50px", mediaWidth: "547px", textWidth: "88%",
             textAlign: "left", contentJustify: "center",
             mediaPadding: "0 0 0 12px",
           },
@@ -225,14 +225,14 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         subtitle: "Registration Now Open",
         cta: CTA_DEFAULT,
         media: media(PH.square, "School year", "1/1"),
-        titleStyle: { mt: "120px", mb: "30px" },
-        subtitleStyle: { typo: "typo-subtitle", pb: "236px" },
+        titleStyle: { mt: "73px", mb: "18px" },
+        subtitleStyle: { typo: "typo-subtitle", ml: "15px" },
         layout: {
           desktop: {
-            gap: "116px", mediaWidth: "40%", textWidth: "92%",
+            gap: "114px", mediaWidth: "547px", textWidth: "100%",
             textAlign: "center", contentJustify: "center",
-            contentOffsetX: "40px",
-            mediaPadding: "0 12px 0 0",
+            contentOffsetX: "0",
+            mediaPadding: "0 13px 0 0",
           },
           mobile: { imageFirst: false },
         },
@@ -250,7 +250,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         bodyStyle: { typo: "typo-text-header", align: "right", pb: "112px" },
         layout: {
           desktop: {
-            gap: "50px", mediaWidth: "62%", textWidth: "80%",
+            gap: "50px", mediaWidth: "818px", textWidth: "80%",
             textAlign: "right", contentJustify: "center",
             mediaPadding: "0 0 0 12px",
           },
@@ -270,7 +270,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         bodyStyle: { typo: "typo-text-header", align: "left", pb: "112px" },
         layout: {
           desktop: {
-            gap: "50px", mediaWidth: "62%", textWidth: "80%",
+            gap: "50px", mediaWidth: "818px", textWidth: "80%",
             textAlign: "right", contentJustify: "center",
             mediaPadding: "0 0 0 12px",
           },
@@ -290,7 +290,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         media: media(PH.p796x448, "Program photo", "796/448"),
         layout: {
           desktop: {
-            gap: "60px", mediaWidth: "62%", textWidth: "82%",
+            gap: "60px", mediaWidth: "818px", textWidth: "82%",
             textAlign: "left", contentJustify: "end",
             mediaPadding: "26px 12px 66px 0",
           },
