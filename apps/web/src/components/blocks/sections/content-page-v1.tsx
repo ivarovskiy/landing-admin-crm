@@ -1,5 +1,5 @@
 import type React from "react";
-import { Container, Kicker, OutlineStampText } from "@/components/landing/ui";
+import { Container, Kicker, OutlineStampText, STAMP_TITLE } from "@/components/landing/ui";
 import { MediaImage } from "@/components/media-image";
 import ClipIcon from "@/assets/icons/clip.svg";
 
@@ -170,7 +170,7 @@ export function ContentPageV1({ data }: { data: any }) {
             <div className="cp__hero-text">
               {kicker ? <div data-el="kicker" className="typo-teachers-header">{kicker}</div> : null}
               {title ? (
-                <OutlineStampText as="h1" className="cp__title" data-el="title">
+                <OutlineStampText as="h1" className="cp__title" stamp={STAMP_TITLE} data-el="title">
                   {title}
                 </OutlineStampText>
               ) : null}

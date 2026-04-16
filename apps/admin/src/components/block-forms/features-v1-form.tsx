@@ -32,6 +32,7 @@ const ICONS = [
   { value: "ballet-bar", label: "Ballet bar" },
   { value: "ballet-shoes", label: "Ballet shoes" },
   { value: "prize-cup", label: "Prize cup" },
+  { value: "girl", label: "Girl" },
 ];
 
 export function FeaturesV1Form({ value, onChange, viewMode }: BlockFormProps) {
@@ -165,13 +166,25 @@ export function FeaturesV1Form({ value, onChange, viewMode }: BlockFormProps) {
                   rows={2}
                 />
 
-                <InspectorSelect
-                  value={it?.icon ?? "ballet-bar"}
-                  onChange={(v) =>
-                    onChange({ ...value, items: setAt(items, idx, { ...it, icon: v }) })
-                  }
-                  options={ICONS}
-                />
+                <InspectorField label="Image URL" hint="Overrides icon when set">
+                  <InspectorInput
+                    value={it?.image ?? ""}
+                    onChange={(v) =>
+                      onChange({ ...value, items: setAt(items, idx, { ...it, image: v || undefined }) })
+                    }
+                    placeholder="https://... or /uploads/..."
+                  />
+                </InspectorField>
+
+                {!it?.image && (
+                  <InspectorSelect
+                    value={it?.icon ?? "ballet-bar"}
+                    onChange={(v) =>
+                      onChange({ ...value, items: setAt(items, idx, { ...it, icon: v }) })
+                    }
+                    options={ICONS}
+                  />
+                )}
               </div>
             );
           })}

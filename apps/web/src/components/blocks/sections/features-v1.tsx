@@ -9,6 +9,7 @@ import {
   hideToResponsiveClasses,
 } from "@/components/landing/ui";
 import { Icon, type IconName } from "@/components/landing/icons";
+import { MediaImage } from "@/components/media-image";
 
 type ResponsiveHide = { base?: boolean; md?: boolean; lg?: boolean };
 type LayoutConfig = { hide?: ResponsiveHide };
@@ -18,6 +19,8 @@ type FeatureItem = {
   title?: string;
   text?: string;
   icon?: string;
+  image?: string;  // custom image URL — overrides icon when set
+  imageAlt?: string;
   _layout?: LayoutConfig;
 };
 
@@ -113,7 +116,16 @@ export function FeaturesV1({ data }: { data: FeaturesV1Data }) {
                 <div className="feature-card">
 
                   <div className="feature-card__icon-wrap" data-el={`item-${idx}-icon`}>
-                    <Icon name={iconName} className="features-v1-icon" aria-hidden />
+                    {it?.image ? (
+                      <MediaImage
+                        src={it.image}
+                        alt={it.imageAlt ?? ""}
+                        className="features-v1-icon"
+                        sizes="252px"
+                      />
+                    ) : (
+                      <Icon name={iconName} className="features-v1-icon" aria-hidden />
+                    )}
                   </div>
 
                   {it?.title ? (
@@ -141,6 +153,8 @@ function normalizeFeatureIcon(v?: string): IconName {
       return "ballet-shoes";
     case "prize-cup":
       return "prize-cup";
+    case "girl":
+      return "girl";
     default:
       return "prize-cup";
   }

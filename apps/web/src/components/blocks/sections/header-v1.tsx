@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/landing/icons";
 import { Container, Kicker, Tagline } from "@/components/landing/ui";
 import { cn } from "@/lib/cn";
@@ -44,6 +44,7 @@ export function HeaderV1({ data }: { data: any }) {
   }, [mobile?.menu, desktopLinks]);
 
   const desktop = data?.desktop ?? {};
+  const navGap = desktop?.navGap as string | undefined;
   const desktopPhone = desktop?.phone ?? data?.contacts?.phone ?? mobileTop?.phone;
   const desktopPhoneHref = desktop?.phoneHref ?? mobileTop?.phoneHref;
   const desktopLogo = pickLogoSource(desktop?.logo) ?? mastheadLogo;
@@ -103,7 +104,11 @@ export function HeaderV1({ data }: { data: any }) {
 
   return (
     <>
-      <header className="header" ref={headerRef}>
+      <header
+        className="header"
+        ref={headerRef}
+        style={navGap ? { "--header-nav-gap": navGap } as React.CSSProperties : undefined}
+      >
         <div className="header__bar--mobile nav-container">
           <div className="header__mobile-icons">
             <a href={mobileTop?.phoneHref ?? "#"} aria-label="Phone" data-el="mobile-phone">

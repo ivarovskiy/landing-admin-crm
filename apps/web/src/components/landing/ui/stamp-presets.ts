@@ -28,11 +28,14 @@ export const STAMP_SECTION_TITLE: OutlineStampStyle = {
   shadow: { x: 5.56, y: 5.56, color: "var(--color-primary)", enabled: true },
 };
 
-/** Hero / slide titles — shadow x 7.15, y 4.15, stroke 1 */
-export const STAMP_HERO_TITLE: OutlineStampStyle = {
+/** Page / content titles (78px) — hero slides, content pages, doc headers */
+export const STAMP_TITLE: OutlineStampStyle = {
   ...BASE,
   shadow: { x: 4.25, y: 4.15, color: "var(--color-primary)", enabled: true },
 };
+
+/** @deprecated use STAMP_TITLE */
+export const STAMP_HERO_TITLE = STAMP_TITLE;
 
 /** Kicker-sized stamp text — shadow 2.2 */
 export const STAMP_KICKER = withShadow(2.2);

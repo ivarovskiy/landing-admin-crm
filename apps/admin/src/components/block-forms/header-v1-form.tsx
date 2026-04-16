@@ -259,6 +259,14 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
             placeholder="#"
           />
         </InspectorField>
+
+        <InspectorField label="Nav gap" hint="Gap between nav items, e.g. 28px or 2em">
+          <InspectorInput
+            value={desktop?.navGap ?? ""}
+            onChange={(v) => set(["desktop", "navGap"], v || undefined)}
+            placeholder="28px (default)"
+          />
+        </InspectorField>
       </InspectorSection>
 
       {/* ===== Desktop Nav Left ===== */}

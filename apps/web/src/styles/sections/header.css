@@ -216,18 +216,15 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 28.3px;
-  /* gap: clamp(8px, 1vw, 14px) clamp(12px, 2vw, 27px); */
+  gap: var(--header-nav-gap, 28.3px);
   padding-top: 17px;
-  /* padding-top: clamp(10px, 1.2vw, 14px); */
-  /* padding-bottom: clamp(6px, 0.8vw, 10px); */
 }
 
 .header-desktop__nav-row--right {
   justify-content: flex-end;
   padding-top: 33px;
   margin-right: 2px;
-  gap: 30.4px;
+  gap: var(--header-nav-gap, 30.4px);
 }
 
 .header-desktop__nav-item {
