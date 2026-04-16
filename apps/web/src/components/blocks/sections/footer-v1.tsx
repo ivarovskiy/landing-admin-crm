@@ -167,7 +167,7 @@ export function FooterV1({ data }: { data: any }) {
 
             <div className="footer-desktop__right">
               {portal?.label ? (
-                <div data-el="portal">
+                <div data-el="portal" style={{width : "100%"}}>
                   <a href={portal?.href ?? "#"} className="footer-desktop__portal-link">
                     <span className="footer-meta">{portal.label}</span>
                     <Icon name={portalIcon} className="footer-desktop__portal-icon" aria-hidden />

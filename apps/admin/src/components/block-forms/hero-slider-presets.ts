@@ -202,7 +202,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
       return {
         template: "image-left-copy-right",
         title: "FUN\nCHILDREN'S\nPROGRAMS",
-        subtitle: "For 2024-25 Academic Year",
+        subtitle: "For 2026-27 Academic Year",
         cta: CTA_DEFAULT,
         media: media(PH.square, "Children's programs", "1/1"),
         titleStyle: { mt: "120px", mb: "46px" },
@@ -221,7 +221,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
     case "2": // ② Title + subtitle — photo right
       return {
         template: "copy-left-image-right",
-        title: "SCHOOL YEAR\n2025-26",
+        title: "SCHOOL YEAR\n2026-27",
         subtitle: "Registration Now Open",
         cta: CTA_DEFAULT,
         media: media(PH.square, "School year", "1/1"),
@@ -282,7 +282,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
       return {
         template: "copy-left-image-right",
         kicker: "June 25th to\nAugust 4th",
-        title: "2026\nSUMMER\nPROGRAM",
+        title: "2027\nSUMMER\nPROGRAM",
         cta: CTA_DEFAULT,
         ctaStyle: { align: "right" },
         kickerStyle: { mt: "60px", mb: "76px", typo: "typo-subtitle", align: "right" },
