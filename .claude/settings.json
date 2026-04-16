@@ -13,7 +13,9 @@
       "Bash(node_modules/.bin/tsc --noEmit)",
       "WebSearch",
       "Bash(xargs grep:*)",
-      "Bash(git -C \"c:/Users/ThinkPad/Desktop/Work/landing-admin-crm\" diff HEAD -- apps/web/src/components/blocks/sections/header-v1.tsx)"
+      "Bash(git -C \"c:/Users/ThinkPad/Desktop/Work/landing-admin-crm\" diff HEAD -- apps/web/src/components/blocks/sections/header-v1.tsx)",
+      "Bash(pnpm exec:*)",
+      "Bash(findstr /n \"textarea\\\\|InspectorInput\\\\|type.*text\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\ThinkPad\\.claude\\projects\\c--Users-ThinkPad-Desktop-Work-landing-admin-crm\\memory"

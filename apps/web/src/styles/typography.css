@@ -31,7 +31,7 @@
   letter-spacing: 1%;
   color: var(--stamp-fill, var(--color-outline-fill));
   paint-order: stroke fill;
-  -webkit-text-stroke: 4.1px var(--stamp-stroke, var(--color-primary)); /* 2px outside × 2 */
+  -webkit-text-stroke: 3.6px var(--stamp-stroke, var(--color-primary)); /* 2px outside × 2 */
 }
 
 .typo-body-text {
