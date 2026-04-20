@@ -331,6 +331,7 @@
 
   .hero-slide__text-col {
     /* flex: 1 1 0; */
+    width: 100%;
     min-width: 0;
   }
 
