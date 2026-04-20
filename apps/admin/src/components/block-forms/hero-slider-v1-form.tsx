@@ -122,6 +122,8 @@ export function HeroSliderV1Form({ value, onChange }: BlockFormProps) {
   const showArrows = options?.showArrows === true;
   const fillViewport = options?.fillViewport === true;
   const autoPlayMs = Number(options?.autoPlayMs ?? 0);
+  const inlineIconMargin = options?.inlineIconMargin ?? "";
+  const inlineIconSize = options?.inlineIconSize ?? "";
 
   const set = (path: (string | number)[], v: unknown) =>
     onChange(updatePath(value, path, v));
@@ -156,6 +158,23 @@ export function HeroSliderV1Form({ value, onChange }: BlockFormProps) {
           checked={fillViewport}
           onChange={(v) => set(["options", "fillViewport"], v)}
         />
+
+        <div className="grid grid-cols-2 gap-1.5">
+          <InspectorField label="Star size" hint="width/height of inline star icons (e.g. 0.9em, 24px)">
+            <InspectorInput
+              value={inlineIconSize}
+              onChange={(v) => set(["options", "inlineIconSize"], v || undefined)}
+              placeholder="0.9em"
+            />
+          </InspectorField>
+          <InspectorField label="Star margin" hint="margin around inline stars (e.g. 0 0.1em, 0 8px)">
+            <InspectorInput
+              value={inlineIconMargin}
+              onChange={(v) => set(["options", "inlineIconMargin"], v || undefined)}
+              placeholder="0 0.1em"
+            />
+          </InspectorField>
+        </div>
       </InspectorSection>
 
       <InspectorSection

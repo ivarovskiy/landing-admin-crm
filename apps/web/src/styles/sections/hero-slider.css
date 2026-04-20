@@ -79,9 +79,9 @@
 .hs-inline-icon {
   display: inline-block;
   vertical-align: middle;
-  width: 0.9em;
-  height: 0.9em;
-  margin: 0 0.1em;
+  width: var(--hs-inline-icon-size, 0.9em);
+  height: var(--hs-inline-icon-size, 0.9em);
+  margin: var(--hs-inline-icon-margin, 0 0.1em);
   flex-shrink: 0;
 }
 

@@ -137,6 +137,12 @@
   -webkit-text-stroke: 2.6px var(--stamp-shadow-color);
 }
 
+/* Inline SVG icons (e.g. stars) must not duplicate in the shadow copy.
+   Keep layout space so the main copy stays perfectly aligned. */
+.ds-outline-stamp__shadow .hs-inline-icon {
+  visibility: hidden;
+}
+
 .ds-outline-stamp__main {
   font-family: var(--font-maru);
   position: relative;

@@ -318,8 +318,12 @@ export function HeroSliderV1({ data }: { data: any }) {
     }
   };
 
+  const sectionStyle: React.CSSProperties = {};
+  if (options?.inlineIconMargin) (sectionStyle as any)["--hs-inline-icon-margin"] = options.inlineIconMargin;
+  if (options?.inlineIconSize) (sectionStyle as any)["--hs-inline-icon-size"] = options.inlineIconSize;
+
   return (
-    <section className="hero-slider" ref={sectionRef}>
+    <section className="hero-slider" ref={sectionRef} style={sectionStyle}>
       <Container>
         {/* <Hairline className="hero-slider__hairline-top" /> */}
         <img src="/icons/slider_v1.svg" alt="" className="hero-slider__hairline-top" />
@@ -665,16 +669,33 @@ function MediaFrame({
 }) {
   const src = media?.src;
   const ratioLabel = media?.aspectRatio?.replace(/\s+/g, "") ?? "";
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  // Pre-decode on mount so that swapping to this slide is jank-free.
+  // All slides live in the DOM at once (carousel track), so we can warm them in advance.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img || !src) return;
+    if (img.complete) {
+      img.decode?.().catch(() => {});
+    } else {
+      const onLoad = () => { img.decode?.().catch(() => {}); };
+      img.addEventListener("load", onLoad, { once: true });
+      return () => img.removeEventListener("load", onLoad);
+    }
+  }, [src]);
 
   return (
     <div className={cn(className, !src && "hero-slide__media-box--placeholder")} data-el={slotId}>
       {src ? (
         <img
+          ref={imgRef}
           src={src}
           alt={media?.alt ?? ""}
           className="hero-slide__media-img"
-          loading={priority ? "eager" : "lazy"}
+          loading="eager"
           decoding="async"
+          fetchPriority={priority ? "high" : "low"}
         />
       ) : ratioLabel ? (
         <span className="hero-slide__media-ratio" aria-hidden>{ratioLabel}</span>
