@@ -111,9 +111,19 @@ export function LandingZoom({
     };
 
     update();
+
+    // Re-run after fonts and images settle — initial measurement may use
+    // fallback font metrics or unloaded image heights, producing a wrong zoom
+    // that only self-corrects when the user resizes or scrolls.
+    if (typeof document !== "undefined" && (document as any).fonts?.ready) {
+      (document as any).fonts.ready.then(() => update()).catch(() => {});
+    }
+    const onLoad = () => update();
+    window.addEventListener("load", onLoad);
     window.addEventListener("resize", update);
     mq.addEventListener("change", update);
     return () => {
+      window.removeEventListener("load", onLoad);
       window.removeEventListener("resize", update);
       mq.removeEventListener("change", update);
       stack.style.removeProperty("zoom");
