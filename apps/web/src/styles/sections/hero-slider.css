@@ -75,6 +75,16 @@
 
 /* ===== Base slide system ===== */
 
+/* Inline icons embedded in slide text ({{icon:star}} markers) */
+.hs-inline-icon {
+  display: inline-block;
+  vertical-align: middle;
+  width: 0.9em;
+  height: 0.9em;
+  margin: 0 0.1em;
+  flex-shrink: 0;
+}
+
 .hero-slide {
   --hs-gap: clamp(20px, 2.8vw, 42px);
   --hs-media-w: 42%;
@@ -262,7 +272,7 @@
 .hero-slide__media-box {
   position: relative;
   width: 100%;
-  /* aspect-ratio: var(--hs-media-aspect); */
+  aspect-ratio: var(--hs-media-aspect, auto);
   height: var(--hs-media-h, auto);
   max-height: var(--hs-media-h, none);
   background: #d9d9d9;
@@ -285,7 +295,7 @@
 .hero-slide__media-img {
   width: 100%;
   height: 100%;
-  object-fit: var(--hs-media-fit);
+  object-fit: var(--hs-media-fit, cover);
   display: block;
 }
 
@@ -330,7 +340,7 @@
   }
 
   .hero-slide__media-box {
-    height: 100%;
+    height: var(--hs-media-h, 100%);
     width: 100%;
   }
 
@@ -344,7 +354,7 @@
   }
 
   .hero-slide--image-left-copy-right .hero-slide__media-col {
-    padding: 0 0 0 13px;
+    padding: var(--hs-media-padding, 0 0 0 13px);
   }
 
   /* Image RIGHT templates */
@@ -357,7 +367,26 @@
   }
 
   .hero-slide--copy-left-image-right .hero-slide__media-col {
-    padding: 0 13px 0 0;
+    padding: var(--hs-media-padding, 0 13px 0 0);
+  }
+
+  /* Vertical alignment for media within the slide row */
+  .hero-slide__media-col {
+    align-self: var(--hs-media-align, stretch);
+  }
+
+  /* Text-align ignores gap: text-col fills remaining row space so text-align has
+     real width to work with, and copy extends into the gap area toward media
+     so centering uses (text-col + gap) as the reference width. */
+  .hero-slide.hs-text-wide .hero-slide__text-col {
+    flex: 1 1 0;
+  }
+  .hero-slide.hs-text-wide.hero-slide--copy-left-image-right .hero-slide__copy {
+    width: calc(100% + var(--hs-gap, 0px));
+  }
+  .hero-slide.hs-text-wide.hero-slide--image-left-copy-right .hero-slide__copy {
+    width: calc(100% + var(--hs-gap, 0px));
+    margin-left: calc(var(--hs-gap, 0px) * -1);
   }
 
   .hero-slide--full-image {

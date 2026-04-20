@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
-import NextImage from "next/image";
 import { Container, Hairline, Kicker, OutlineStampText, STAMP_HERO_TITLE, STAMP_KICKER, STAMP_SUBTITLE } from "@/components/landing/ui";
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
+import { InlineText } from "./inline-icons";
 
 type SlideTemplate =
   | "image-left-copy-right"
@@ -79,6 +79,8 @@ type Slide = {
       padding?: string;
       mediaPadding?: string;
       mediaHeight?: string;
+      mediaAlign?: "start" | "center" | "end" | "stretch";
+      textAlignFullWidth?: boolean;
     };
     mobile?: {
       imageFirst?: boolean;
@@ -171,6 +173,10 @@ function slideStyle(slide: Slide): React.CSSProperties {
   }
   if (desktop.mediaHeight) {
     style["--hs-media-h"] = desktop.mediaHeight;
+  }
+  if (desktop.mediaAlign) {
+    const map = { start: "flex-start", center: "center", end: "flex-end", stretch: "stretch" } as const;
+    style["--hs-media-align"] = map[desktop.mediaAlign];
   }
 
   return style as React.CSSProperties;
@@ -409,7 +415,8 @@ function HeroSlide({
   const slideClass = cn(
     "hero-slide",
     `hero-slide--${template}`,
-    mobileImageFirst && "hero-slide--mobile-image-first"
+    mobileImageFirst && "hero-slide--mobile-image-first",
+    slide?.layout?.desktop?.textAlignFullWidth && "hs-text-wide"
   );
 
   const mediaPrimary = (
@@ -493,7 +500,7 @@ function CopyStack({
           stamp={STAMP_HERO_TITLE}
           style={elStyle(slide.titleStyle)}
         >
-          {title}
+          <InlineText text={title} />
         </OutlineStampText>
       ) : null}
 
@@ -523,7 +530,7 @@ function CopyStack({
     <div className={cn("hero-slide__copy", spread && "hero-slide__copy--spread")}>
       {quote ? (
         <p className={cn("hero-slide__quote", slide.quoteStyle?.typo)} style={elStyle(slide.quoteStyle)}>
-          {quote}
+          <InlineText text={quote} />
         </p>
       ) : spread ? (
         <div />
@@ -555,7 +562,7 @@ function ExtraElement({
         stamp={STAMP_HERO_TITLE}
         style={style}
       >
-        {extra.text}
+        <InlineText text={extra.text} />
       </OutlineStampText>
     );
   }
@@ -563,14 +570,14 @@ function ExtraElement({
   if (extra.kind === "kicker") {
     return (
       <div className={typo || undefined} style={style} data-el={slotId}>
-        <Kicker>{extra.text}</Kicker>
+        <Kicker><InlineText text={extra.text} /></Kicker>
       </div>
     );
   }
 
   return (
     <p className={cn("hero-slide__quote", typo)} style={style} data-el={slotId}>
-      {extra.text}
+      <InlineText text={extra.text} />
     </p>
   );
 }
@@ -580,7 +587,7 @@ function SlideKicker({
 }: {
   text: string;
 }) {
-  return <p className="hero-slide__kicker">{text}</p>;
+  return <p className="hero-slide__kicker"><InlineText text={text} /></p>;
 }
 
 function SlideSubtitle({
@@ -606,7 +613,7 @@ function SlideSubtitle({
 
   return (
     <p className="hero-slide__subtitle" data-el={slotId}>
-      {text}
+      <InlineText text={text} />
     </p>
   );
 }
@@ -626,7 +633,7 @@ function SlideBody({
           .map((line) => line.trim())
           .filter(Boolean)
           .map((line, idx) => (
-            <div key={idx}>{line}</div>
+            <div key={idx}><InlineText text={line} /></div>
           ))}
       </div>
     );
@@ -639,7 +646,7 @@ function SlideBody({
         .map((part) => part.trim())
         .filter(Boolean)
         .map((part, idx) => (
-          <p key={idx}>{part}</p>
+          <p key={idx}><InlineText text={part} /></p>
         ))}
     </div>
   );
@@ -656,19 +663,21 @@ function MediaFrame({
   slotId: string;
   priority?: boolean;
 }) {
-  const ratioLabel = media?.aspectRatio?.replace(/\s*\/\s*/, "x") ?? "";
+  const src = media?.src;
+  const ratioLabel = media?.aspectRatio?.replace(/\s+/g, "") ?? "";
 
   return (
-    <div className={cn(className, !media?.src && "hero-slide__media-box--placeholder")} data-el={slotId}>
-      {media?.src ? (
-        <NextImage
-          src={media.src}
-          alt={media.alt ?? ""}
-          fill
-          sizes="1360px"
-          priority={priority}
-          style={{ objectFit: media.objectFit ?? "cover" }}
+    <div className={cn(className, !src && "hero-slide__media-box--placeholder")} data-el={slotId}>
+      {src ? (
+        <img
+          src={src}
+          alt={media?.alt ?? ""}
+          className="hero-slide__media-img"
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
         />
+      ) : ratioLabel ? (
+        <span className="hero-slide__media-ratio" aria-hidden>{ratioLabel}</span>
       ) : null}
     </div>
   );

@@ -117,9 +117,10 @@ model MediaAsset {
 }
 
 model SiteSettings {
-  id        String   @id @default("default")
-  zoom      Json?
-  updatedAt DateTime @updatedAt
+  id           String   @id @default("default")
+  zoom         Json?
+  scrollToTop  Json?
+  updatedAt    DateTime @updatedAt
 }
 
 model AuditLog {

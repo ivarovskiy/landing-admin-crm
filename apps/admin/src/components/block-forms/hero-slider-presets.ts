@@ -90,6 +90,8 @@ export type Slide = {
       padding?: string;
       mediaPadding?: string;
       mediaHeight?: string;
+      mediaAlign?: "start" | "center" | "end" | "stretch";
+      textAlignFullWidth?: boolean;
       imageSide?: "left" | "right";
     };
     mobile?: {
@@ -169,23 +171,11 @@ export const TYPO_OPTIONS: { value: TypoClass; label: string }[] = [
   { value: "typo-teachers-header", label: "Teachers Header (22px, ls 20%)" },
 ];
 
-const PH = {
-  square: "https://placehold.co/720x720/b0b0b0/888888/png",       // 1:1
-  landscape: "https://placehold.co/1200x720/b0b0b0/888888/png",   // 5:3
-  portrait: "https://placehold.co/640x920/b0b0b0/888888/png",     // 2:3 vertical
-  wide: "https://placehold.co/1440x640/b0b0b0/888888/png",        // 16:7
-  p3x5: "https://placehold.co/600x1000/b0b0b0/888888/png",       // 3:5
-  p5x7: "https://placehold.co/500x700/b0b0b0/888888/png",        // 5:7
-  p4x5: "https://placehold.co/640x800/b0b0b0/888888/png",        // 4:5
-  p9x16: "https://placehold.co/576x1024/b0b0b0/888888/png",      // 9:16
-  p788x526: "https://placehold.co/788x526/b0b0b0/888888/png",    // 788:526
-  p796x448: "https://placehold.co/796x448/b0b0b0/888888/png",    // 796:448
-};
-
 const CTA_DEFAULT = { label: "LEARN MORE", href: "#address" };
 
-function media(src: string, alt: string, aspect: string, fit: ObjectFit = "cover"): SlideMedia {
-  return { kind: "image", src, alt, aspectRatio: aspect, objectFit: fit };
+/** Preset media — no src means the slide renders as a grey placeholder with ratio label */
+function media(alt: string, aspect: string, fit: ObjectFit = "cover"): SlideMedia {
+  return { kind: "image", alt, aspectRatio: aspect, objectFit: fit };
 }
 
 /** Fields allowed per template — everything else gets removed on switch */
@@ -204,7 +194,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         title: "FUN\nCHILDREN'S\nPROGRAMS",
         subtitle: "For 2026-27 Academic Year",
         cta: CTA_DEFAULT,
-        media: media(PH.square, "Children's programs", "1/1"),
+        media: media("Children's programs", "1/1"),
         titleStyle: { mt: "120px", mb: "46px" },
         subtitleStyle: { typo: "typo-subtitle", pb: "132px" },
         ctaStyle: { mb: "4px" },
@@ -224,7 +214,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         title: "SCHOOL YEAR\n2026-27",
         subtitle: "Registration Now Open",
         cta: CTA_DEFAULT,
-        media: media(PH.square, "School year", "1/1"),
+        media: media("School year", "1/1"),
         titleStyle: { mt: "73px", mb: "18px" },
         subtitleStyle: { typo: "typo-subtitle", ml: "15px" },
         layout: {
@@ -245,7 +235,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         body: "BALLET\nPOINTE\nCONTEMPORARY\nJAZZ\nHIP HOP\nTAP COMBO CLASSES\nPRESCHOOL DANCE",
         bodyVariant: "list",
         cta: CTA_DEFAULT,
-        media: media(PH.p788x526, "Dance styles", "788/526"),
+        media: media("Dance styles", "788/526"),
         subtitleStyle: { mt: "80px", mb: "44px", typo: "typo-subtitle", align: "left" },
         bodyStyle: { typo: "typo-text-header", align: "right", pb: "112px" },
         layout: {
@@ -265,7 +255,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         body: "BALLET\nPOINTE\nCONTEMPORARY\nJAZZ\nHIP HOP\nTAP COMBO CLASSES\nPRESCHOOL DANCE",
         bodyVariant: "list",
         cta: CTA_DEFAULT,
-        media: media(PH.p788x526, "Dance styles", "788/526"),
+        media: media("Dance styles", "788/526"),
         subtitleStyle: { mt: "80px", mb: "44px", typo: "typo-subtitle", align: "left" },
         bodyStyle: { typo: "typo-text-header", align: "left", pb: "112px" },
         layout: {
@@ -287,7 +277,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         ctaStyle: { align: "right" },
         kickerStyle: { mt: "60px", mb: "76px", typo: "typo-subtitle", align: "right" },
         titleStyle: { mb: "66px", ml: "30px", align: "right" },
-        media: media(PH.p796x448, "Program photo", "796/448"),
+        media: media("Program photo", "796/448"),
         layout: {
           desktop: {
             gap: "60px", mediaWidth: "818px", textWidth: "82%",
@@ -301,7 +291,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
     case "6": // ⑥ Full-width banner image
       return {
         template: "full-image",
-        media: media(PH.wide, "Full image", "16/6"),
+        media: media("Full image", "16/6"),
         layout: {
           desktop: { mediaWidth: "100%", mediaPadding: "0 12px" },
           mobile: { imageFirst: true },

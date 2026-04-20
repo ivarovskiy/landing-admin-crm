@@ -153,7 +153,7 @@
 }
 
 .header-desktop__meta-text--phone {
-  padding-top: 6px;
+  padding-top: 5px;
 }
 
 .header-desktop__center {
@@ -264,6 +264,7 @@
   --underline-min: 74px;
   --underline-max: 118px;
   overflow: hidden;
+  padding-bottom: 7px;
   font-size: 16px;
   /* font-size: clamp(12px, 1.2vw, 16px); */
   line-height: 24px;
@@ -306,7 +307,8 @@
 .header-desktop__dropdown {
   position: absolute;
   margin-left: -2px;
-  top: calc(100% + 13px);
+  top: 100%;
+  padding-top: 13px;
   display: flex;
   align-items: center;
   gap: 31px;

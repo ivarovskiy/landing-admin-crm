@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { fontMaru, fontMaruOblique, fontDisplay } from "./fonts";
 import { ScrollToTop } from "@/components/landing/ui/scroll-to-top";
+import { getSiteSettings } from "@/lib/api-public";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -21,9 +22,12 @@ const VIEWPORT_SCRIPT = `(function(){try{
   }
 }catch(e){}})()`;
 
-export default function RootLayout({ children }: {
+export default async function RootLayout({ children }: {
   children: React.ReactNode
 }) {
+  const settingsRes = await getSiteSettings();
+  const scrollToTop = settingsRes.ok ? settingsRes.data?.scrollToTop : undefined;
+
   return (
     <html lang="uk" className={`${fontMaru.variable} ${fontMaruOblique.variable} ${fontDisplay.variable}`}>
       <head>
@@ -32,7 +36,13 @@ export default function RootLayout({ children }: {
       </head>
       <body>
         {children}
-        <ScrollToTop />
+        <ScrollToTop
+          enabled={scrollToTop?.enabled !== false}
+          right={scrollToTop?.right}
+          bottom={scrollToTop?.bottom}
+          showAfter={scrollToTop?.showAfter}
+          stopOffset={scrollToTop?.stopOffset}
+        />
       </body>
     </html>
   );

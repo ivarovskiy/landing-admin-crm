@@ -51,7 +51,42 @@ const ELEMENT_ALIGN_OPTIONS = [
   { value: "right", label: "Right" },
 ];
 
-function updateDesktopLayout(slide: Slide, patch: Record<string, string | undefined>) {
+const MEDIA_ALIGN_OPTIONS = [
+  { value: "", label: "Stretch (default)" },
+  { value: "start", label: "Top" },
+  { value: "center", label: "Center" },
+  { value: "end", label: "Bottom" },
+  { value: "stretch", label: "Stretch" },
+];
+
+const STAR_VARIANTS: { marker: string; label: string }[] = [
+  { marker: "{{icon:star-v1}}", label: "v1" },
+  { marker: "{{icon:star-dt}}", label: "dt" },
+  { marker: "{{icon:star-v2}}", label: "v2" },
+  { marker: "{{icon:star-v3}}", label: "v3" },
+];
+
+function IconInsertBar({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const insert = (marker: string) => onChange((value ?? "") + marker);
+  return (
+    <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
+      <span className="opacity-70">Insert ★:</span>
+      {STAR_VARIANTS.map((s) => (
+        <button
+          key={s.marker}
+          type="button"
+          onClick={() => insert(s.marker)}
+          className="px-1.5 py-0.5 rounded border border-border hover:bg-muted/50 transition-colors"
+          title={`Insert ${s.marker}`}
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function updateDesktopLayout(slide: Slide, patch: Record<string, string | boolean | undefined>) {
   return updatePath(slide, ["layout", "desktop"], {
     ...(slide?.layout?.desktop ?? {}),
     ...patch,
@@ -257,6 +292,10 @@ function SlideEditor({
                   onChange={(v) => onChange({ ...s, quote: v })}
                   rows={2}
                 />
+                <IconInsertBar
+                  value={s.quote ?? ""}
+                  onChange={(v) => onChange({ ...s, quote: v })}
+                />
               </InspectorField>
               <InspectorField label="Quote typography">
                 <InspectorSelect
@@ -275,6 +314,10 @@ function SlideEditor({
                   value={s.kicker ?? ""}
                   onChange={(v) => onChange({ ...s, kicker: v })}
                   rows={2}
+                />
+                <IconInsertBar
+                  value={s.kicker ?? ""}
+                  onChange={(v) => onChange({ ...s, kicker: v })}
                 />
               </InspectorField>
               <div className="grid grid-cols-2 gap-1.5">
@@ -302,6 +345,10 @@ function SlideEditor({
               onChange={(v) => onChange({ ...s, title: v })}
               rows={2}
             />
+            <IconInsertBar
+              value={s?.title ?? ""}
+              onChange={(v) => onChange({ ...s, title: v })}
+            />
           </InspectorField>
           <div className="grid grid-cols-2 gap-1.5">
             <InspectorField label="Title typography">
@@ -327,6 +374,10 @@ function SlideEditor({
                   value={s.subtitle ?? ""}
                   onChange={(v) => onChange({ ...s, subtitle: v })}
                   rows={2}
+                />
+                <IconInsertBar
+                  value={s.subtitle ?? ""}
+                  onChange={(v) => onChange({ ...s, subtitle: v })}
                 />
               </InspectorField>
               <div className="grid grid-cols-2 gap-1.5">
@@ -355,6 +406,10 @@ function SlideEditor({
                   value={s.body ?? ""}
                   onChange={(v) => onChange({ ...s, body: v })}
                   rows={4}
+                />
+                <IconInsertBar
+                  value={s.body ?? ""}
+                  onChange={(v) => onChange({ ...s, body: v })}
                 />
               </InspectorField>
               <div className="grid grid-cols-2 gap-1.5">
@@ -412,6 +467,13 @@ function SlideEditor({
             onChange={(patch) => onChange(updateMedia(s, patch))}
           />
           <div className="grid grid-cols-2 gap-1.5">
+            <InspectorField label="Gap to text" hint="Space between media and text column">
+              <InspectorInput
+                value={desktop?.gap ?? ""}
+                onChange={(v) => onChange(updateDesktopLayout(s, { gap: v }))}
+                placeholder="42px"
+              />
+            </InspectorField>
             <InspectorField label="Media padding">
               <InspectorInput
                 value={desktop?.mediaPadding ?? ""}
@@ -424,6 +486,13 @@ function SlideEditor({
                 value={desktop?.mediaHeight ?? ""}
                 onChange={(v) => onChange(updateDesktopLayout(s, { mediaHeight: v }))}
                 placeholder="auto"
+              />
+            </InspectorField>
+            <InspectorField label="Media vertical align">
+              <InspectorSelect
+                value={desktop?.mediaAlign ?? ""}
+                onChange={(v) => onChange(updateDesktopLayout(s, { mediaAlign: v || undefined }))}
+                options={MEDIA_ALIGN_OPTIONS}
               />
             </InspectorField>
           </div>
@@ -446,14 +515,6 @@ function SlideEditor({
           </div>
 
           <div className="grid grid-cols-2 gap-1.5">
-            <div>
-              <div className="mb-1 text-[10px] text-muted-foreground">Gap</div>
-              <InspectorInput
-                value={desktop?.gap ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { gap: v }))}
-                placeholder="42px"
-              />
-            </div>
             <div>
               <div className="mb-1 text-[10px] text-muted-foreground">Media width</div>
               <InspectorInput
@@ -539,6 +600,12 @@ function SlideEditor({
               />
             </InspectorField>
           </div>
+
+          <InspectorToggle
+            label="Align text ignoring gap"
+            checked={!!desktop?.textAlignFullWidth}
+            onChange={(v) => onChange(updateDesktopLayout(s, { textAlignFullWidth: v || undefined }))}
+          />
 
           <InspectorToggle
             label="Mobile: image first"

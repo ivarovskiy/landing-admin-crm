@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff } from "lucide-react";
-import type { SiteSettingsData, SiteZoomSettings } from "@/lib/admin-api";
+import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor } from "lucide-react";
+import type { SiteSettingsData, SiteZoomSettings, SiteScrollToTopSettings } from "@/lib/admin-api";
 
 /* ----------------------------------------------------------------
    Sub-components
@@ -46,6 +46,39 @@ function ToggleRow({
         <div className={["absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-transform duration-200", value ? "translate-x-3.5" : "translate-x-0.5"].join(" ")} />
       </div>
     </button>
+  );
+}
+
+function TextRow({
+  icon,
+  label,
+  description,
+  value,
+  placeholder,
+  onChange,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  value: string | undefined;
+  placeholder: string;
+  onChange: (v: string | undefined) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <span className="shrink-0 text-[oklch(0.45_0_0)]">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold text-[oklch(0.88_0_0)] leading-none">{label}</p>
+        <p className="text-[10px] text-[oklch(0.5_0_0)] mt-0.5 leading-snug">{description}</p>
+      </div>
+      <input
+        type="text"
+        value={value ?? ""}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value || undefined)}
+        className="w-24 h-7 rounded-md bg-[oklch(1_0_0/6%)] border border-[oklch(1_0_0/10%)] text-xs text-right text-[oklch(0.88_0_0)] tabular-nums px-2 focus:outline-none focus:ring-1 focus:ring-[oklch(0.58_0.22_25)]"
+      />
+    </div>
   );
 }
 
@@ -180,15 +213,22 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     normalizeViewportWidth: initialSettings?.zoom?.normalizeViewportWidth,
     hideScrollbar: initialSettings?.zoom?.hideScrollbar === true,
   });
+  const [scrollToTop, setScrollToTop] = useState<SiteScrollToTopSettings>({
+    enabled: initialSettings?.scrollToTop?.enabled !== false,
+    right: initialSettings?.scrollToTop?.right,
+    bottom: initialSettings?.scrollToTop?.bottom,
+    showAfter: initialSettings?.scrollToTop?.showAfter,
+    stopOffset: initialSettings?.scrollToTop?.stopOffset,
+  });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
-  async function save(next: SiteZoomSettings) {
+  async function save(body: SiteSettingsData) {
     setStatus("saving");
     try {
       const r = await fetch("/api/admin/settings", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ zoom: next }),
+        body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error();
       setStatus("saved");
@@ -202,7 +242,13 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
   function update(patch: Partial<SiteZoomSettings>) {
     const next = { ...zoom, ...patch };
     setZoom(next);
-    save(next);
+    save({ zoom: next });
+  }
+
+  function updateScrollToTop(patch: Partial<SiteScrollToTopSettings>) {
+    const next = { ...scrollToTop, ...patch };
+    setScrollToTop(next);
+    save({ scrollToTop: next });
   }
 
   return (
@@ -294,6 +340,59 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             value={zoom.normalizeViewportWidth}
             placeholder="1320"
             onChange={(v) => update({ normalizeViewportWidth: v })}
+          />
+
+        </div>
+      </div>
+
+      {/* ---- Scroll-to-top section ---- */}
+      <div className="space-y-2">
+        <SectionLabel>Scroll-to-top button</SectionLabel>
+
+        <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
+
+          <ToggleRow
+            icon={<ArrowUp className="h-3.5 w-3.5" />}
+            label="Enable"
+            description="Show the floating up-arrow button on desktop"
+            value={scrollToTop.enabled !== false}
+            onChange={(v) => updateScrollToTop({ enabled: v })}
+          />
+
+          <TextRow
+            icon={<MoveHorizontal className="h-3.5 w-3.5" />}
+            label="Right offset"
+            description="CSS distance from viewport right edge (e.g. 28px, 4vw)"
+            value={scrollToTop.right}
+            placeholder="28px"
+            onChange={(v) => updateScrollToTop({ right: v })}
+          />
+
+          <TextRow
+            icon={<MoveVertical className="h-3.5 w-3.5" />}
+            label="Bottom offset"
+            description="CSS distance from viewport bottom edge"
+            value={scrollToTop.bottom}
+            placeholder="32px"
+            onChange={(v) => updateScrollToTop({ bottom: v })}
+          />
+
+          <NumberRow
+            icon={<Eye className="h-3.5 w-3.5" />}
+            label="Show after (px)"
+            description="ScrollY threshold at which the button appears (default 400)"
+            value={scrollToTop.showAfter}
+            placeholder="400"
+            onChange={(v) => updateScrollToTop({ showAfter: v })}
+          />
+
+          <NumberRow
+            icon={<Anchor className="h-3.5 w-3.5" />}
+            label="Stop offset (px)"
+            description="Distance from document bottom where button locks (sticky-until-footer). 0 = disabled"
+            value={scrollToTop.stopOffset}
+            placeholder="0"
+            onChange={(v) => updateScrollToTop({ stopOffset: v })}
           />
 
         </div>

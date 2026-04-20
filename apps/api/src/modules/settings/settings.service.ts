@@ -6,8 +6,17 @@ export interface ZoomSettings {
   scale?: number;
 }
 
+export interface ScrollToTopSettings {
+  enabled?: boolean;
+  right?: string;
+  bottom?: string;
+  showAfter?: number;
+  stopOffset?: number;
+}
+
 export interface SiteSettingsData {
   zoom?: ZoomSettings;
+  scrollToTop?: ScrollToTopSettings;
 }
 
 @Injectable()

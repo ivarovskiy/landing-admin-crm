@@ -12,7 +12,18 @@ export async function getPreviewPage(pageId: string, token: string) {
   return safeFetchJson<{ page: any; theme: any }>(url, { cache: "no-store" });
 }
 
+export type ScrollToTopSettings = {
+  enabled?: boolean;
+  right?: string;
+  bottom?: string;
+  showAfter?: number;
+  stopOffset?: number;
+};
+
 export async function getSiteSettings() {
   const url = `${BASE}/v1/public/settings`;
-  return safeFetchJson<{ zoom?: { fitViewport?: boolean; scale?: number } }>(url, { cache: "no-store" });
+  return safeFetchJson<{
+    zoom?: { fitViewport?: boolean; scale?: number };
+    scrollToTop?: ScrollToTopSettings;
+  }>(url, { cache: "no-store" });
 }

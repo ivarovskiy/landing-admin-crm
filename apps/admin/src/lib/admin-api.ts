@@ -54,7 +54,22 @@ export type SiteZoomSettings = {
   /** Hide the vertical scrollbar visually (scrolling still works) */
   hideScrollbar?: boolean;
 }
-export type SiteSettingsData = { zoom?: SiteZoomSettings }
+export type SiteScrollToTopSettings = {
+  /** Enable/disable the scroll-to-top button (default true) */
+  enabled?: boolean;
+  /** CSS `right` value — distance from viewport right edge (default "28px") */
+  right?: string;
+  /** CSS `bottom` value — distance from viewport bottom edge (default "32px") */
+  bottom?: string;
+  /** ScrollY threshold (px) at which the button becomes visible (default 400) */
+  showAfter?: number;
+  /** Distance (px) from document bottom where the button locks in place (sticky-until-footer). 0/undefined = no stop */
+  stopOffset?: number;
+}
+export type SiteSettingsData = {
+  zoom?: SiteZoomSettings;
+  scrollToTop?: SiteScrollToTopSettings;
+}
 
 export async function fetchSiteSettings(): Promise<SiteSettingsData> {
   const r = await apiFetch("/v1/admin/settings")
