@@ -595,6 +595,7 @@ function normalizeLinks(value: unknown): HeaderLink[] {
 
 function normalizeLink(value: any): HeaderLink | null {
   if (!value || typeof value !== "object") return null;
+  if (value.hidden === true) return null;
   if (!value.label) return null;
 
   const label = String(value.label).trim();

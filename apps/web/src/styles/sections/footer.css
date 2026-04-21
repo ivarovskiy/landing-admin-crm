@@ -265,8 +265,8 @@
 
   .footer-desktop__portal-link {
     width: 100%;
-    display: inline-flex;
-    padding-left: 81px;
+    /* display: inline-flex; */
+    /* padding-left: 81px; */
     /* height: clamp(20px, 2vw, 24px); */
     /* align-items: center; */
     text-decoration: none;
@@ -275,7 +275,7 @@
 
   .footer-desktop__portal-icon {
     position: absolute;
-    right: 52px;
+    right: -55px;
     top: 50%;
     transform: translateY(-52%);
     width: 57px;
