@@ -18,7 +18,7 @@ export const fontMaruOblique = localFont({
     { path: "../assets/fonts/GTMaruMediumOblique.ttf", weight: "500", style: "normal" },
   ],
   variable: "--font-maru-oblique",
-  display: "swap",
+  display: "block",
   preload: true,
   adjustFontFallback: "Arial",
 });
