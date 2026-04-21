@@ -10,6 +10,8 @@ type ResponsiveItemLayout = {
   align?: "start" | "center" | "end";
 };
 
+type TextAlign = "left" | "center" | "right";
+
 type ContentItem = {
   kind: "image" | "text";
   // image
@@ -23,6 +25,9 @@ type ContentItem = {
   heading?: string;
   body?: string;
   textMaxWidth?: string;
+  textAlign?: TextAlign;
+  headingTypo?: string;
+  bodyTypo?: string;
   // mobile
   mobileOrder?: number;
   // free-flow layout per breakpoint
@@ -83,8 +88,9 @@ function itemStyle(item: ContentItem): React.CSSProperties {
     if (item.imagePadding) s["--img-padding"] = item.imagePadding;
   }
 
-  if (item.kind === "text" && item.textMaxWidth) {
-    s["--cp-text-max-w"] = item.textMaxWidth;
+  if (item.kind === "text") {
+    if (item.textMaxWidth) s["--cp-text-max-w"] = item.textMaxWidth;
+    if (item.textAlign) s.textAlign = item.textAlign;
   }
 
   applyLayoutVars(s, "md", item.layout?.md);
@@ -116,6 +122,9 @@ function renderItem(item: ContentItem, idx: number, col: "left" | "right") {
     );
   }
 
+  const headingClass = ["cp__heading", item.headingTypo].filter(Boolean).join(" ");
+  const bodyClass = ["cp__prose", item.bodyTypo].filter(Boolean).join(" ");
+
   return (
     <div
       key={`txt-${idx}`}
@@ -123,10 +132,10 @@ function renderItem(item: ContentItem, idx: number, col: "left" | "right") {
       style={itemStyle(item)}
     >
       {item.heading ? (
-        <Kicker className="cp__heading" data-el={`${col}-${idx}-heading`}>{item.heading}</Kicker>
+        <Kicker className={headingClass} data-el={`${col}-${idx}-heading`}>{item.heading}</Kicker>
       ) : null}
       {item.body ? (
-        <div className="cp__prose" data-el={`${col}-${idx}-body`}>
+        <div className={bodyClass} data-el={`${col}-${idx}-body`}>
           {item.body.split("\n\n").map((p, i) => (
             <p key={i}>{p}</p>
           ))}
@@ -134,6 +143,12 @@ function renderItem(item: ContentItem, idx: number, col: "left" | "right") {
       ) : null}
     </div>
   );
+}
+
+type HeroAlign = TextAlign;
+
+function alignStyle(align?: TextAlign): React.CSSProperties | undefined {
+  return align ? { textAlign: align } : undefined;
 }
 
 export function ContentPageV1({ data }: { data: any }) {
@@ -147,37 +162,83 @@ export function ContentPageV1({ data }: { data: any }) {
   const contentMaxWidth = data?.maxWidth as string | undefined;
   const boxed = !!data?.boxed;
 
+  const heroAlign = data?.heroAlign as HeroAlign | undefined;
+  const kickerAlign = (data?.kickerAlign as TextAlign | undefined) ?? heroAlign;
+  const titleAlign = (data?.titleAlign as TextAlign | undefined) ?? heroAlign;
+  const subtitleAlign = (data?.subtitleAlign as TextAlign | undefined) ?? heroAlign;
+  const ctaAlign = data?.ctaAlign as TextAlign | undefined;
+  const kickerTypo = (data?.kickerTypo as string | undefined) ?? "typo-teachers-header";
+  const subtitleTypo = (data?.subtitleTypo as string | undefined) ?? "typo-subtitle";
+
+  const columnsMode: "one" | "two" = data?.columns === "one" ? "one" : "two";
+
   const columnsStyle = contentMaxWidth
     ? ({ "--cp-content-max-w": contentMaxWidth } as React.CSSProperties)
     : undefined;
 
-  const columns = left.length > 0 || right.length > 0 ? (
-    <div className="cp__columns" style={columnsStyle}>
-      <div className="cp__col cp__col--left">
-        {left.map((item, idx) => renderItem(item, idx, "left"))}
+  const columnsClass = ["cp__columns", columnsMode === "one" ? "cp__columns--single" : ""]
+    .filter(Boolean)
+    .join(" ");
+
+  const columns =
+    columnsMode === "one" ? (
+      left.length > 0 ? (
+        <div className={columnsClass} style={columnsStyle}>
+          <div className="cp__col cp__col--left">
+            {left.map((item, idx) => renderItem(item, idx, "left"))}
+          </div>
+        </div>
+      ) : null
+    ) : left.length > 0 || right.length > 0 ? (
+      <div className={columnsClass} style={columnsStyle}>
+        <div className="cp__col cp__col--left">
+          {left.map((item, idx) => renderItem(item, idx, "left"))}
+        </div>
+        <div className="cp__col cp__col--right">
+          {right.map((item, idx) => renderItem(item, idx, "right"))}
+        </div>
       </div>
-      <div className="cp__col cp__col--right">
-        {right.map((item, idx) => renderItem(item, idx, "right"))}
-      </div>
-    </div>
-  ) : null;
+    ) : null;
+
+  const heroClass = ["cp__hero", heroAlign ? `cp__hero--align-${heroAlign}` : ""]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <section className="content-page">
       <Container>
         {kicker || title || subtitle || cta?.label ? (
-          <div className="cp__hero">
+          <div className={heroClass}>
             <div className="cp__hero-text">
-              {kicker ? <div data-el="kicker" className="typo-teachers-header">{kicker}</div> : null}
-              {title ? (
-                <OutlineStampText as="h1" className="cp__title" stamp={STAMP_TITLE} data-el="title">
-                  {title}
-                </OutlineStampText>
+              {kicker ? (
+                <div className="cp__hero-row" style={alignStyle(kickerAlign)}>
+                  <div data-el="kicker" className={kickerTypo}>
+                    {kicker}
+                  </div>
+                </div>
               ) : null}
-              {subtitle ? <p className="typo-subtitle" data-el="subtitle">{subtitle}</p> : null}
+              {title ? (
+                <div className="cp__hero-row" style={alignStyle(titleAlign)}>
+                  <OutlineStampText
+                    as="h1"
+                    className="cp__title"
+                    stamp={STAMP_TITLE}
+                    data-el="title"
+                  >
+                    {title}
+                  </OutlineStampText>
+                </div>
+              ) : null}
+              {subtitle ? (
+                <div className="cp__hero-row" style={alignStyle(subtitleAlign)}>
+                  <p className={subtitleTypo} data-el="subtitle">
+                    {subtitle}
+                  </p>
+                </div>
+              ) : null}
             </div>
             {cta?.label ? (
-              <div className="cp__hero-cta">
+              <div className="cp__hero-cta" style={alignStyle(ctaAlign)}>
                 <a href={cta.href ?? "#"} className="cp__cta-btn" data-el="cta">
                   {cta.label}
                 </a>

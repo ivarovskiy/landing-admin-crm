@@ -13,6 +13,7 @@ import {
   BlockLayoutSection,
 } from "@/components/inspector";
 import { Type, Columns2, Image, Trash2 } from "lucide-react";
+import { TYPO_OPTIONS } from "./hero-slider-presets";
 
 const ASPECT_RATIOS = [
   { value: "4/3", label: "4:3" },
@@ -27,6 +28,18 @@ const ALIGN_OPTIONS = [
   { value: "start", label: "Start" },
   { value: "center", label: "Center" },
   { value: "end", label: "End" },
+];
+
+const TEXT_ALIGN_OPTIONS = [
+  { value: "", label: "Inherit" },
+  { value: "left", label: "Left" },
+  { value: "center", label: "Center" },
+  { value: "right", label: "Right" },
+];
+
+const COLUMNS_MODE_OPTIONS = [
+  { value: "two", label: "Two columns" },
+  { value: "one", label: "One column (full-width)" },
 ];
 
 
@@ -166,13 +179,41 @@ function ColumnEditor({
                   placeholder="Body text..."
                   rows={3}
                 />
-                <div>
-                  <div className="mb-1 text-[10px] text-muted-foreground">Max width</div>
-                  <InspectorInput
-                    value={item.textMaxWidth ?? ""}
-                    onChange={(v) => onChange(setAt(items, idx, { ...item, textMaxWidth: v || undefined }))}
-                    placeholder="533px"
-                  />
+                <div className="grid grid-cols-2 gap-1.5">
+                  <div>
+                    <div className="mb-1 text-[10px] text-muted-foreground">Max width</div>
+                    <InspectorInput
+                      value={item.textMaxWidth ?? ""}
+                      onChange={(v) => onChange(setAt(items, idx, { ...item, textMaxWidth: v || undefined }))}
+                      placeholder="533px"
+                    />
+                  </div>
+                  <div>
+                    <div className="mb-1 text-[10px] text-muted-foreground">Text align</div>
+                    <InspectorSelect
+                      value={item.textAlign ?? ""}
+                      onChange={(v) => onChange(setAt(items, idx, { ...item, textAlign: v || undefined }))}
+                      options={TEXT_ALIGN_OPTIONS}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <div>
+                    <div className="mb-1 text-[10px] text-muted-foreground">Heading typography</div>
+                    <InspectorSelect
+                      value={item.headingTypo ?? ""}
+                      onChange={(v) => onChange(setAt(items, idx, { ...item, headingTypo: v || undefined }))}
+                      options={TYPO_OPTIONS}
+                    />
+                  </div>
+                  <div>
+                    <div className="mb-1 text-[10px] text-muted-foreground">Body typography</div>
+                    <InspectorSelect
+                      value={item.bodyTypo ?? ""}
+                      onChange={(v) => onChange(setAt(items, idx, { ...item, bodyTypo: v || undefined }))}
+                      options={TYPO_OPTIONS}
+                    />
+                  </div>
                 </div>
               </>
             )}
@@ -244,6 +285,14 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
   return (
     <div>
       <InspectorSection title="Hero" icon={<Type className="h-3 w-3" />}>
+        <InspectorField label="Hero align" hint="Default text-align for kicker / title / tagline">
+          <InspectorSelect
+            value={value?.heroAlign ?? ""}
+            onChange={(v) => onChange({ ...value, heroAlign: v || undefined })}
+            options={TEXT_ALIGN_OPTIONS}
+          />
+        </InspectorField>
+
         <InspectorField label="Kicker">
           <InspectorInput
             value={value?.kicker ?? ""}
@@ -251,12 +300,35 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             placeholder="SUMMER PROGRAM"
           />
         </InspectorField>
+        <div className="grid grid-cols-2 gap-1.5">
+          <InspectorField label="Kicker typography">
+            <InspectorSelect
+              value={value?.kickerTypo ?? ""}
+              onChange={(v) => onChange({ ...value, kickerTypo: v || undefined })}
+              options={TYPO_OPTIONS}
+            />
+          </InspectorField>
+          <InspectorField label="Kicker align">
+            <InspectorSelect
+              value={value?.kickerAlign ?? ""}
+              onChange={(v) => onChange({ ...value, kickerAlign: v || undefined })}
+              options={TEXT_ALIGN_OPTIONS}
+            />
+          </InspectorField>
+        </div>
 
         <InspectorField label="Title">
           <InspectorInput
             value={value?.title ?? ""}
             onChange={(v) => onChange({ ...value, title: v })}
             placeholder="NEW GUEST TEACHERS"
+          />
+        </InspectorField>
+        <InspectorField label="Title align">
+          <InspectorSelect
+            value={value?.titleAlign ?? ""}
+            onChange={(v) => onChange({ ...value, titleAlign: v || undefined })}
+            options={TEXT_ALIGN_OPTIONS}
           />
         </InspectorField>
 
@@ -267,6 +339,22 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             placeholder="Sign up by June 15"
           />
         </InspectorField>
+        <div className="grid grid-cols-2 gap-1.5">
+          <InspectorField label="Tagline typography">
+            <InspectorSelect
+              value={value?.subtitleTypo ?? ""}
+              onChange={(v) => onChange({ ...value, subtitleTypo: v || undefined })}
+              options={TYPO_OPTIONS}
+            />
+          </InspectorField>
+          <InspectorField label="Tagline align">
+            <InspectorSelect
+              value={value?.subtitleAlign ?? ""}
+              onChange={(v) => onChange({ ...value, subtitleAlign: v || undefined })}
+              options={TEXT_ALIGN_OPTIONS}
+            />
+          </InspectorField>
+        </div>
 
         <InspectorField label="CTA label">
           <InspectorInput
@@ -276,13 +364,22 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
           />
         </InspectorField>
 
-        <InspectorField label="CTA href">
-          <InspectorInput
-            value={value?.cta?.href ?? ""}
-            onChange={(v) => onChange({ ...value, cta: { ...value?.cta, href: v } })}
-            placeholder="#"
-          />
-        </InspectorField>
+        <div className="grid grid-cols-2 gap-1.5">
+          <InspectorField label="CTA href">
+            <InspectorInput
+              value={value?.cta?.href ?? ""}
+              onChange={(v) => onChange({ ...value, cta: { ...value?.cta, href: v } })}
+              placeholder="#"
+            />
+          </InspectorField>
+          <InspectorField label="CTA align">
+            <InspectorSelect
+              value={value?.ctaAlign ?? ""}
+              onChange={(v) => onChange({ ...value, ctaAlign: v || undefined })}
+              options={TEXT_ALIGN_OPTIONS}
+            />
+          </InspectorField>
+        </div>
 
         <InspectorField label="Document box">
           <InspectorToggle
@@ -302,24 +399,36 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
       </InspectorSection>
 
       <InspectorSection title="Columns" icon={<Columns2 className="h-3 w-3" />}>
+        <InspectorField label="Layout">
+          <InspectorSelect
+            value={value?.columns ?? "two"}
+            onChange={(v) => onChange({ ...value, columns: v })}
+            options={COLUMNS_MODE_OPTIONS}
+          />
+        </InspectorField>
+
         <div className="mb-2 text-[10px] text-muted-foreground">
           Mobile order = цифри з макета. Desktop width / offset / top gap = вільна композиція без grid.
         </div>
 
         <div className="space-y-4">
           <ColumnEditor
-            label="Left column"
+            label={value?.columns === "one" ? "Items" : "Left column"}
             items={left}
             onChange={(next) => onChange({ ...value, left: next })}
           />
 
-          <div className="h-px bg-border" />
+          {value?.columns === "one" ? null : (
+            <>
+              <div className="h-px bg-border" />
 
-          <ColumnEditor
-            label="Right column"
-            items={right}
-            onChange={(next) => onChange({ ...value, right: next })}
-          />
+              <ColumnEditor
+                label="Right column"
+                items={right}
+                onChange={(next) => onChange({ ...value, right: next })}
+              />
+            </>
+          )}
         </div>
       </InspectorSection>
 
