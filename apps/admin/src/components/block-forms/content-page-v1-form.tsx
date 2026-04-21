@@ -179,23 +179,13 @@ function ColumnEditor({
                   placeholder="Body text..."
                   rows={3}
                 />
-                <div className="grid grid-cols-2 gap-1.5">
-                  <div>
-                    <div className="mb-1 text-[10px] text-muted-foreground">Max width</div>
-                    <InspectorInput
-                      value={item.textMaxWidth ?? ""}
-                      onChange={(v) => onChange(setAt(items, idx, { ...item, textMaxWidth: v || undefined }))}
-                      placeholder="533px"
-                    />
-                  </div>
-                  <div>
-                    <div className="mb-1 text-[10px] text-muted-foreground">Text align</div>
-                    <InspectorSelect
-                      value={item.textAlign ?? ""}
-                      onChange={(v) => onChange(setAt(items, idx, { ...item, textAlign: v || undefined }))}
-                      options={TEXT_ALIGN_OPTIONS}
-                    />
-                  </div>
+                <div>
+                  <div className="mb-1 text-[10px] text-muted-foreground">Text align</div>
+                  <InspectorSelect
+                    value={item.textAlign ?? ""}
+                    onChange={(v) => onChange(setAt(items, idx, { ...item, textAlign: v || undefined }))}
+                    options={TEXT_ALIGN_OPTIONS}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   <div>
@@ -239,17 +229,28 @@ function ColumnEditor({
               </div>
 
               <div>
-                <div className="mb-1 text-[10px] text-muted-foreground">Desktop width</div>
+                <div className="mb-1 text-[10px] text-muted-foreground">Max width</div>
                 <InspectorInput
                   value={item?.layout?.lg?.width ?? ""}
                   onChange={(v) =>
                     onChange(setAt(items, idx, updateDesktopLayout(item, { width: v || undefined })))
                   }
-                  placeholder="342px / 78%"
+                  placeholder="533px / 78%"
                 />
               </div>
 
               <div>
+                <div className="mb-1 text-[10px] text-muted-foreground">Gap (top)</div>
+                <InspectorInput
+                  value={item?.layout?.lg?.gapBefore ?? ""}
+                  onChange={(v) =>
+                    onChange(setAt(items, idx, updateDesktopLayout(item, { gapBefore: v || undefined })))
+                  }
+                  placeholder="32px"
+                />
+              </div>
+
+              <div className="col-span-2">
                 <div className="mb-1 text-[10px] text-muted-foreground">Left offset</div>
                 <InspectorInput
                   value={item?.layout?.lg?.offsetX ?? ""}
@@ -257,17 +258,6 @@ function ColumnEditor({
                     onChange(setAt(items, idx, updateDesktopLayout(item, { offsetX: v || undefined })))
                   }
                   placeholder="72px"
-                />
-              </div>
-
-              <div className="col-span-2">
-                <div className="mb-1 text-[10px] text-muted-foreground">Top gap before item</div>
-                <InspectorInput
-                  value={item?.layout?.lg?.gapBefore ?? ""}
-                  onChange={(v) =>
-                    onChange(setAt(items, idx, updateDesktopLayout(item, { gapBefore: v || undefined })))
-                  }
-                  placeholder="32px"
                 />
               </div>
             </div>
