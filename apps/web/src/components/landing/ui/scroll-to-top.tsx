@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
+import { Icon } from "../icons";
 
 export type ScrollToTopProps = {
   enabled?: boolean;
@@ -66,9 +67,10 @@ export function ScrollToTop({
       className={`scroll-to-top${visible ? " scroll-to-top--visible" : ""}`}
       style={style}
     >
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      {/* <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path d="M8 12V4M4 7l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
+      </svg> */}
+      <Icon name="arrow-up" className="header-desktop__portal-icon" aria-hidden/>
     </button>
   );
 }

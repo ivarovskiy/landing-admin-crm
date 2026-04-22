@@ -18,6 +18,7 @@ import BalletShoes from "@/assets/icons/ballet_shoes.svg";
 import PrizeCup from "@/assets/icons/prize_cup.svg";
 import Girl from "@/assets/icons/girl.svg";
 import ParentPortal from "@/assets/buttons/parent-portal.svg";
+import ArrowUp from "@/assets/icons/arrow_up.svg";
 
 export type IconName =
   | "phone"
@@ -37,7 +38,8 @@ export type IconName =
   | "ballet-shoes"
   | "prize-cup"
   | "parent-portal"
-  | "girl";
+  | "girl"
+  | "arrow-up";
 
 const ICONS = {
   phone: Phone,
@@ -57,7 +59,8 @@ const ICONS = {
   "ballet-shoes": BalletShoes,
   "prize-cup": PrizeCup,
   "parent-portal": ParentPortal,
-  "girl": Girl
+  "girl": Girl,
+  "arrow-up": ArrowUp,
 } satisfies Record<IconName, React.ComponentType<SVGProps<SVGSVGElement>>>;
 
 export function Icon({
