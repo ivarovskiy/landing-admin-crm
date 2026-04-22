@@ -768,7 +768,7 @@ function ElementStyleEditor({
           />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-1">
+      <div className="grid grid-cols-3 gap-1">
         <div>
           <div className="text-[9px] text-muted-foreground mb-0.5">Align</div>
           <InspectorSelect
@@ -783,6 +783,14 @@ function ElementStyleEditor({
             value={s.size ?? ""}
             onChange={(v) => patch("size", v)}
             placeholder="inherit"
+          />
+        </div>
+        <div>
+          <div className="text-[9px] text-muted-foreground mb-0.5">Stroke</div>
+          <InspectorInput
+            value={s.strokeW ?? ""}
+            onChange={(v) => patch("strokeW", v)}
+            placeholder="3.6px"
           />
         </div>
       </div>

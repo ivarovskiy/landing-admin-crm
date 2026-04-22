@@ -13,7 +13,7 @@
   color: var(--stamp-fill, var(--color-outline-fill));
   text-transform: uppercase;
   paint-order: stroke fill;
-  -webkit-text-stroke: 2.6px var(--stamp-stroke, var(--color-primary)); /* 1.3px outside × 2 */
+  -webkit-text-stroke: var(--text-stroke-w, 2.6px) var(--stamp-stroke, var(--color-primary)); /* 1.3px outside × 2 */
   text-shadow: 4.15px 4.15px 0 var(--stamp-stroke, var(--color-primary));
 }
 
@@ -31,7 +31,7 @@
   letter-spacing: 1%;
   color: var(--stamp-fill, var(--color-outline-fill));
   paint-order: stroke fill;
-  -webkit-text-stroke: 3.6px var(--stamp-stroke, var(--color-primary)); /* 2px outside × 2 */
+  -webkit-text-stroke: var(--text-stroke-w, 3.6px) var(--stamp-stroke, var(--color-primary)); /* 2px outside × 2 */
 }
 
 .typo-body-text {
@@ -116,7 +116,7 @@
   letter-spacing: 0.02em;
   color: var(--stamp-fill, var(--color-outline-fill));
   paint-order: stroke fill;
-  -webkit-text-stroke: 2.6px var(--stamp-stroke, var(--color-primary)); /* 1.3px outside × 2 */
+  -webkit-text-stroke: var(--text-stroke-w, 2.6px) var(--stamp-stroke, var(--color-primary)); /* 1.3px outside × 2 */
   text-shadow: 4.15px 4.15px 0 var(--stamp-stroke, var(--color-primary));
 }
 

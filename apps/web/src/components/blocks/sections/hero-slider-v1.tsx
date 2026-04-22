@@ -25,6 +25,7 @@ type ElementStyle = {
   align?: "left" | "center" | "right";
   size?: string;
   typo?: string; // typography class from design system
+  strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
 };
 
 type SlideExtra = {
@@ -92,7 +93,7 @@ type Slide = {
 /** Convert ElementStyle to inline CSS */
 function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
   if (!es) return undefined;
-  const s: React.CSSProperties = {};
+  const s: Record<string, string> = {};
   if (es.mt) s.marginTop = es.mt;
   if (es.mb) s.marginBottom = es.mb;
   if (es.ml) s.marginLeft = es.ml;
@@ -104,7 +105,8 @@ function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
     s.alignSelf = es.align === "center" ? "center" : es.align === "right" ? "flex-end" : "flex-start";
   }
   if (es.size) s.fontSize = es.size;
-  return Object.keys(s).length ? s : undefined;
+  if (es.strokeW) s["--text-stroke-w"] = es.strokeW;
+  return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
 }
 
 function resolveTemplate(slide: Slide): SlideTemplate {

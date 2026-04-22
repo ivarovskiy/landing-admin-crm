@@ -197,11 +197,27 @@ function ColumnEditor({
                     />
                   </div>
                   <div>
+                    <div className="mb-1 text-[10px] text-muted-foreground">Heading stroke</div>
+                    <InspectorInput
+                      value={item.headingStrokeW ?? ""}
+                      onChange={(v) => onChange(setAt(items, idx, { ...item, headingStrokeW: v || undefined }))}
+                      placeholder="2.6px"
+                    />
+                  </div>
+                  <div>
                     <div className="mb-1 text-[10px] text-muted-foreground">Body typography</div>
                     <InspectorSelect
                       value={item.bodyTypo ?? ""}
                       onChange={(v) => onChange(setAt(items, idx, { ...item, bodyTypo: v || undefined }))}
                       options={TYPO_OPTIONS}
+                    />
+                  </div>
+                  <div>
+                    <div className="mb-1 text-[10px] text-muted-foreground">Body stroke</div>
+                    <InspectorInput
+                      value={item.bodyStrokeW ?? ""}
+                      onChange={(v) => onChange(setAt(items, idx, { ...item, bodyStrokeW: v || undefined }))}
+                      placeholder="3.6px"
                     />
                   </div>
                 </div>
@@ -290,7 +306,7 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             placeholder="SUMMER PROGRAM"
           />
         </InspectorField>
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-3 gap-1.5">
           <InspectorField label="Kicker typography">
             <InspectorSelect
               value={value?.kickerTypo ?? ""}
@@ -305,6 +321,13 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
               options={TEXT_ALIGN_OPTIONS}
             />
           </InspectorField>
+          <InspectorField label="Stroke">
+            <InspectorInput
+              value={value?.kickerStrokeW ?? ""}
+              onChange={(v) => onChange({ ...value, kickerStrokeW: v || undefined })}
+              placeholder="2.6px"
+            />
+          </InspectorField>
         </div>
 
         <InspectorField label="Title">
@@ -314,13 +337,22 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             placeholder="NEW GUEST TEACHERS"
           />
         </InspectorField>
-        <InspectorField label="Title align">
-          <InspectorSelect
-            value={value?.titleAlign ?? ""}
-            onChange={(v) => onChange({ ...value, titleAlign: v || undefined })}
-            options={TEXT_ALIGN_OPTIONS}
-          />
-        </InspectorField>
+        <div className="grid grid-cols-2 gap-1.5">
+          <InspectorField label="Title align">
+            <InspectorSelect
+              value={value?.titleAlign ?? ""}
+              onChange={(v) => onChange({ ...value, titleAlign: v || undefined })}
+              options={TEXT_ALIGN_OPTIONS}
+            />
+          </InspectorField>
+          <InspectorField label="Title stroke">
+            <InspectorInput
+              value={value?.titleStrokeW ?? ""}
+              onChange={(v) => onChange({ ...value, titleStrokeW: v || undefined })}
+              placeholder="2.6px"
+            />
+          </InspectorField>
+        </div>
 
         <InspectorField label="Tagline">
           <InspectorInput
@@ -329,7 +361,7 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             placeholder="Sign up by June 15"
           />
         </InspectorField>
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-3 gap-1.5">
           <InspectorField label="Tagline typography">
             <InspectorSelect
               value={value?.subtitleTypo ?? ""}
@@ -342,6 +374,13 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
               value={value?.subtitleAlign ?? ""}
               onChange={(v) => onChange({ ...value, subtitleAlign: v || undefined })}
               options={TEXT_ALIGN_OPTIONS}
+            />
+          </InspectorField>
+          <InspectorField label="Stroke">
+            <InspectorInput
+              value={value?.subtitleStrokeW ?? ""}
+              onChange={(v) => onChange({ ...value, subtitleStrokeW: v || undefined })}
+              placeholder="3.6px"
             />
           </InspectorField>
         </div>

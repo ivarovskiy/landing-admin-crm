@@ -28,6 +28,8 @@ type ContentItem = {
   textAlign?: TextAlign;
   headingTypo?: string;
   bodyTypo?: string;
+  headingStrokeW?: string;
+  bodyStrokeW?: string;
   // mobile
   mobileOrder?: number;
   // free-flow layout per breakpoint
@@ -124,6 +126,8 @@ function renderItem(item: ContentItem, idx: number, col: "left" | "right") {
 
   const headingClass = ["cp__heading", item.headingTypo].filter(Boolean).join(" ");
   const bodyClass = ["cp__prose", item.bodyTypo].filter(Boolean).join(" ");
+  const headingStroke = strokeStyle(item.headingStrokeW);
+  const bodyStroke = strokeStyle(item.bodyStrokeW);
 
   return (
     <div
@@ -132,10 +136,16 @@ function renderItem(item: ContentItem, idx: number, col: "left" | "right") {
       style={itemStyle(item)}
     >
       {item.heading ? (
-        <Kicker className={headingClass} data-el={`${col}-${idx}-heading`}>{item.heading}</Kicker>
+        <Kicker
+          className={headingClass}
+          data-el={`${col}-${idx}-heading`}
+          style={headingStroke}
+        >
+          {item.heading}
+        </Kicker>
       ) : null}
       {item.body ? (
-        <div className={bodyClass} data-el={`${col}-${idx}-body`}>
+        <div className={bodyClass} data-el={`${col}-${idx}-body`} style={bodyStroke}>
           {item.body.split("\n\n").map((p, i) => (
             <p key={i}>{p}</p>
           ))}
@@ -149,6 +159,10 @@ type HeroAlign = TextAlign;
 
 function alignStyle(align?: TextAlign): React.CSSProperties | undefined {
   return align ? { textAlign: align } : undefined;
+}
+
+function strokeStyle(value?: string): React.CSSProperties | undefined {
+  return value ? ({ "--text-stroke-w": value } as React.CSSProperties) : undefined;
 }
 
 export function ContentPageV1({ data }: { data: any }) {
@@ -169,6 +183,9 @@ export function ContentPageV1({ data }: { data: any }) {
   const ctaAlign = data?.ctaAlign as TextAlign | undefined;
   const kickerTypo = (data?.kickerTypo as string | undefined) ?? "typo-teachers-header";
   const subtitleTypo = (data?.subtitleTypo as string | undefined) ?? "typo-subtitle";
+  const kickerStrokeW = data?.kickerStrokeW as string | undefined;
+  const titleStrokeW = data?.titleStrokeW as string | undefined;
+  const subtitleStrokeW = data?.subtitleStrokeW as string | undefined;
 
   const columnsMode: "one" | "two" = data?.columns === "one" ? "one" : "two";
 
@@ -212,7 +229,7 @@ export function ContentPageV1({ data }: { data: any }) {
             <div className="cp__hero-text">
               {kicker ? (
                 <div className="cp__hero-row" style={alignStyle(kickerAlign)}>
-                  <div data-el="kicker" className={kickerTypo}>
+                  <div data-el="kicker" className={kickerTypo} style={strokeStyle(kickerStrokeW)}>
                     {kicker}
                   </div>
                 </div>
@@ -224,6 +241,7 @@ export function ContentPageV1({ data }: { data: any }) {
                     className="cp__title"
                     stamp={STAMP_TITLE}
                     data-el="title"
+                    style={strokeStyle(titleStrokeW)}
                   >
                     {title}
                   </OutlineStampText>
@@ -231,7 +249,7 @@ export function ContentPageV1({ data }: { data: any }) {
               ) : null}
               {subtitle ? (
                 <div className="cp__hero-row" style={alignStyle(subtitleAlign)}>
-                  <p className={subtitleTypo} data-el="subtitle">
+                  <p className={subtitleTypo} data-el="subtitle" style={strokeStyle(subtitleStrokeW)}>
                     {subtitle}
                   </p>
                 </div>

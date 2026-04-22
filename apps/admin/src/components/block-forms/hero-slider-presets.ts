@@ -43,6 +43,7 @@ export type ElementStyle = {
   align?: "left" | "center" | "right";   // text-align + align-self
   size?: string;  // font-size override
   typo?: TypoClass; // typography class from design system
+  strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
 };
 
 /** Extra text block that can be added to any slide */

@@ -134,7 +134,7 @@
   transform: translate(var(--stamp-shadow-x), var(--stamp-shadow-y));
   color: var(--stamp-shadow-color);
   paint-order: stroke fill;
-  -webkit-text-stroke: 2.6px var(--stamp-shadow-color);
+  -webkit-text-stroke: var(--text-stroke-w, 2.6px) var(--stamp-shadow-color);
 }
 
 /* Inline SVG icons (e.g. stars) must not duplicate in the shadow copy.
@@ -149,7 +149,7 @@
   z-index: 1;
   color: var(--stamp-fill);
   paint-order: stroke fill;
-  -webkit-text-stroke: 2.6px var(--stamp-stroke, var(--color-primary)); /* 1.45px outside × 2 */
+  -webkit-text-stroke: var(--text-stroke-w, 2.6px) var(--stamp-stroke, var(--color-primary)); /* 1.45px outside × 2 */
   text-shadow: var(--stamp-shadow-x) var(--stamp-shadow-y) 0 var(--stamp-shadow-color);
 }
 
