@@ -20,10 +20,15 @@ export type ScrollToTopSettings = {
   stopOffset?: number;
 };
 
+export type TypographySettings = {
+  linkStampScale?: boolean;
+};
+
 export async function getSiteSettings() {
   const url = `${BASE}/v1/public/settings`;
   return safeFetchJson<{
     zoom?: { fitViewport?: boolean; scale?: number };
     scrollToTop?: ScrollToTopSettings;
+    typography?: TypographySettings;
   }>(url, { cache: "no-store" });
 }

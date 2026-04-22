@@ -305,6 +305,18 @@
   }
 }
 
+/* Linked stamp scaling — see typography.css for baseline rationale.
+   !important is needed to beat inline --stamp-shadow-x/y from STAMP_TITLE preset. */
+[data-stamp-link="on"] .ds-outline-stamp {
+  --stamp-shadow-x: 0.0535em !important;
+  --stamp-shadow-y: 0.0535em !important;
+}
+
+[data-stamp-link="on"] .ds-outline-stamp__shadow,
+[data-stamp-link="on"] .ds-outline-stamp__main {
+  -webkit-text-stroke: var(--text-stroke-w, 0.025em) var(--stamp-stroke, var(--color-primary));
+}
+
 /* ---- Scroll-to-top button ---- */
 
 .scroll-to-top {

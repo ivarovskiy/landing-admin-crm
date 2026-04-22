@@ -27,9 +27,15 @@ export default async function RootLayout({ children }: {
 }) {
   const settingsRes = await getSiteSettings();
   const scrollToTop = settingsRes.ok ? settingsRes.data?.scrollToTop : undefined;
+  const typography = settingsRes.ok ? settingsRes.data?.typography : undefined;
+  const stampLink = typography?.linkStampScale === true ? "on" : undefined;
 
   return (
-    <html lang="uk" className={`${fontMaru.variable} ${fontMaruOblique.variable} ${fontDisplay.variable}`}>
+    <html
+      lang="uk"
+      className={`${fontMaru.variable} ${fontMaruOblique.variable} ${fontDisplay.variable}`}
+      data-stamp-link={stampLink}
+    >
       <head>
         {/* Must run synchronously before first paint to prevent zoom flash */}
         <script dangerouslySetInnerHTML={{ __html: VIEWPORT_SCRIPT }} />

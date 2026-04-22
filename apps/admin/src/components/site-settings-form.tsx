@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor } from "lucide-react";
-import type { SiteSettingsData, SiteZoomSettings, SiteScrollToTopSettings } from "@/lib/admin-api";
+import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor, Link2 } from "lucide-react";
+import type { SiteSettingsData, SiteZoomSettings, SiteScrollToTopSettings, SiteTypographySettings } from "@/lib/admin-api";
 
 /* ----------------------------------------------------------------
    Sub-components
@@ -220,6 +220,9 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     showAfter: initialSettings?.scrollToTop?.showAfter,
     stopOffset: initialSettings?.scrollToTop?.stopOffset,
   });
+  const [typography, setTypography] = useState<SiteTypographySettings>({
+    linkStampScale: initialSettings?.typography?.linkStampScale === true,
+  });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   async function save(body: SiteSettingsData) {
@@ -249,6 +252,12 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     const next = { ...scrollToTop, ...patch };
     setScrollToTop(next);
     save({ scrollToTop: next });
+  }
+
+  function updateTypography(patch: Partial<SiteTypographySettings>) {
+    const next = { ...typography, ...patch };
+    setTypography(next);
+    save({ typography: next });
   }
 
   return (
@@ -393,6 +402,23 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             value={scrollToTop.stopOffset}
             placeholder="0"
             onChange={(v) => updateScrollToTop({ stopOffset: v })}
+          />
+
+        </div>
+      </div>
+
+      {/* ---- Typography section ---- */}
+      <div className="space-y-2">
+        <SectionLabel>Typography</SectionLabel>
+
+        <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
+
+          <ToggleRow
+            icon={<Link2 className="h-3.5 w-3.5" />}
+            label="Link stroke & shadow to font-size"
+            description="Stamp headings auto-scale stroke + shadow proportionally (104px → 2.6 / 5.56). Per-element stroke overrides still win."
+            value={typography.linkStampScale === true}
+            onChange={(v) => updateTypography({ linkStampScale: v })}
           />
 
         </div>

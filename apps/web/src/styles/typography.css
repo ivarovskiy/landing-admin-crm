@@ -142,3 +142,18 @@
   letter-spacing: 0;
   text-transform: none;
 }
+
+/* =========================================================
+   Linked stamp scaling — when SiteSettings.typography.linkStampScale is ON,
+   stroke + shadow scale proportionally to font-size via em units.
+   Baseline: 104px → stroke 2.6px, shadow 5.56px
+   Ratios:   stroke 0.025em, shadow 0.0535em
+   Per-element --text-stroke-w (inline px) still overrides via the var fallback.
+   ========================================================= */
+
+[data-stamp-link="on"] .typo-content-header,
+[data-stamp-link="on"] .typo-homepage-header,
+[data-stamp-link="on"] .typo-hero-title {
+  -webkit-text-stroke: var(--text-stroke-w, 0.025em) var(--stamp-stroke, var(--color-primary));
+  text-shadow: 0.0535em 0.0535em 0 var(--stamp-stroke, var(--color-primary));
+}

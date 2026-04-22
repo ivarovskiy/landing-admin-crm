@@ -14,9 +14,15 @@ export interface ScrollToTopSettings {
   stopOffset?: number;
 }
 
+export interface TypographySettings {
+  /** Auto-scale stamp stroke + shadow proportionally to font-size (em-based) */
+  linkStampScale?: boolean;
+}
+
 export interface SiteSettingsData {
   zoom?: ZoomSettings;
   scrollToTop?: ScrollToTopSettings;
+  typography?: TypographySettings;
 }
 
 @Injectable()
