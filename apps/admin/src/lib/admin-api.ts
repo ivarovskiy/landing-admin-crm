@@ -67,7 +67,7 @@ export type SiteScrollToTopSettings = {
   stopOffset?: number;
 }
 export type SiteTypographySettings = {
-  /** Auto-scale stamp stroke + shadow proportionally to font-size (em-based). Baseline 104px → 3.38px stroke, 5.56px shadow */
+  /** Auto-scale stamp stroke + shadow proportionally to font-size (em-based). Baseline 104px → 2.6px stroke, 5.56px shadow */
   linkStampScale?: boolean;
 }
 export type SiteSettingsData = {
