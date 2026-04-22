@@ -1,7 +1,7 @@
 "use client";
 
 import type { BlockFormProps } from "./index";
-import { arr, removeAt } from "@/lib/array";
+import { arr, setAt } from "@/lib/array";
 import { updatePath } from "@/lib/update-path";
 import { LogoField, normalizeLogo } from "./logo-field";
 import {
@@ -11,11 +11,11 @@ import {
   InspectorTextarea,
   BlockLayoutSection,
 } from "@/components/inspector";
-import { Monitor, Smartphone, PanelLeft, PanelRight, Menu, Megaphone, Plus, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { Monitor, Smartphone, PanelLeft, PanelRight, Menu, Megaphone, Plus, Eye, EyeOff, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
-type LinkItem = { label?: string; href?: string };
-type NavItem = { label?: string; href?: string; children?: LinkItem[] };
+type LinkItem = { label?: string; href?: string; hidden?: boolean };
+type NavItem = { label?: string; href?: string; children?: LinkItem[]; hidden?: boolean };
 
 /* ------------------------------------------------------------------ */
 /*  Reusable nav-item editor (label + href + collapsible children)    */
@@ -24,20 +24,21 @@ function NavItemEditor({
   item,
   basePath,
   set,
-  onRemove,
+  onToggleHidden,
   idx,
 }: {
   item: NavItem;
   basePath: (string | number)[];
   set: (path: (string | number)[], v: unknown) => void;
-  onRemove: () => void;
+  onToggleHidden: () => void;
   idx: number;
 }) {
   const children = arr<LinkItem>(item?.children);
   const [open, setOpen] = useState(children.length > 0);
+  const isHidden = !!item?.hidden;
 
   return (
-    <div className="rounded-md border p-2 space-y-1.5 bg-muted/10">
+    <div className={`rounded-md border p-2 space-y-1.5 bg-muted/10 ${isHidden ? "opacity-50" : ""}`}>
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -45,14 +46,17 @@ function NavItemEditor({
           className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
         >
           {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-          {idx + 1}. {item?.label || "Link"}
+          <span className={isHidden ? "line-through" : ""}>
+            {idx + 1}. {item?.label || "Link"}
+          </span>
         </button>
         <button
           type="button"
-          onClick={onRemove}
-          className="text-muted-foreground hover:text-red-500"
+          onClick={onToggleHidden}
+          className="text-muted-foreground hover:text-foreground"
+          title={isHidden ? "Show" : "Hide"}
         >
-          <Trash2 className="h-3 w-3" />
+          {isHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
         </button>
       </div>
 
@@ -71,27 +75,36 @@ function NavItemEditor({
 
       {open && (
         <div className="pl-2 border-l-2 border-muted space-y-1">
-          {children.map((c, cIdx) => (
-            <div key={cIdx} className="flex gap-1">
-              <InspectorInput
-                value={c?.label ?? ""}
-                onChange={(v) => set([...basePath, "children", cIdx, "label"], v)}
-                placeholder="Child label"
-              />
-              <InspectorInput
-                value={c?.href ?? ""}
-                onChange={(v) => set([...basePath, "children", cIdx, "href"], v)}
-                placeholder="Href"
-              />
-              <button
-                type="button"
-                onClick={() => set([...basePath, "children"], removeAt(children, cIdx))}
-                className="text-muted-foreground hover:text-red-500 shrink-0 pt-1.5"
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
+          {children.map((c, cIdx) => {
+            const childHidden = !!c?.hidden;
+            return (
+              <div key={cIdx} className={`flex gap-1 ${childHidden ? "opacity-50" : ""}`}>
+                <InspectorInput
+                  value={c?.label ?? ""}
+                  onChange={(v) => set([...basePath, "children", cIdx, "label"], v)}
+                  placeholder="Child label"
+                />
+                <InspectorInput
+                  value={c?.href ?? ""}
+                  onChange={(v) => set([...basePath, "children", cIdx, "href"], v)}
+                  placeholder="Href"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    set(
+                      [...basePath, "children"],
+                      setAt(children, cIdx, { ...c, hidden: !childHidden }),
+                    )
+                  }
+                  className="text-muted-foreground hover:text-foreground shrink-0 pt-1.5"
+                  title={childHidden ? "Show" : "Hide"}
+                >
+                  {childHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                </button>
+              </div>
+            );
+          })}
           <button
             type="button"
             onClick={() =>
@@ -147,7 +160,7 @@ function NavColumnEditor({
             item={item}
             basePath={[...path, idx]}
             set={set}
-            onRemove={() => set(path, removeAt(items, idx))}
+            onToggleHidden={() => set(path, setAt(items, idx, { ...item, hidden: !item?.hidden }))}
             idx={idx}
           />
         ))}
@@ -366,7 +379,9 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
               item={m}
               basePath={["mobile", "menu", idx]}
               set={set}
-              onRemove={() => set(["mobile", "menu"], removeAt(menu, idx))}
+              onToggleHidden={() =>
+                set(["mobile", "menu"], setAt(menu, idx, { ...m, hidden: !m?.hidden }))
+              }
               idx={idx}
             />
           ))}
