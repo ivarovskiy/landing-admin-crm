@@ -14,7 +14,7 @@ export class PreviewTokenService {
   }
 
   create(pageId: string) {
-    const ttl = Number(process.env.PREVIEW_TOKEN_TTL_SECONDS ?? "3600")
+    const ttl = Number(process.env.PREVIEW_TOKEN_TTL_SECONDS ?? "604800")
     const secret = this.getSecret()
 
     const token = this.jwt.sign(

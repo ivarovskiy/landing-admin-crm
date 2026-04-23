@@ -482,6 +482,18 @@ export function BlocksWorkspace({
   // Reset iframe height when preview source changes so stale size doesn't flash
   useEffect(() => { setIframeHeight(1200); }, [previewSrc]);
 
+  // Preview JWT lives ~7 days by default, but if TTL is shorter we still want
+  // the iframe to auto-renew before it expires. Refresh every 50 min while the
+  // tab is visible — goes through /api/preview/:id which re-issues a fresh token.
+  useEffect(() => {
+    const PREVIEW_REFRESH_MS = 50 * 60 * 1000;
+    const id = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      setRefreshKey((v) => v + 1);
+    }, PREVIEW_REFRESH_MS);
+    return () => clearInterval(id);
+  }, []);
+
   /* ================================================================
      RENDER
      ================================================================ */
