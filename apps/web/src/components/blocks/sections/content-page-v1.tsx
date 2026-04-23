@@ -165,6 +165,23 @@ function strokeStyle(value?: string): React.CSSProperties | undefined {
   return value ? ({ "--text-stroke-w": value } as React.CSSProperties) : undefined;
 }
 
+function rowStyle(align?: TextAlign, gap?: string): React.CSSProperties | undefined {
+  const s: Record<string, string> = {};
+  if (align) s.textAlign = align;
+  if (gap) s.marginTop = gap;
+  return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
+}
+
+function elementStyle(strokeW?: string, maxWidth?: string): React.CSSProperties | undefined {
+  const s: Record<string, string> = {};
+  if (strokeW) s["--text-stroke-w"] = strokeW;
+  if (maxWidth) {
+    s.maxWidth = maxWidth;
+    s.display = "inline-block";
+  }
+  return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
+}
+
 export function ContentPageV1({ data }: { data: any }) {
   const kicker = data?.kicker;
   const title =
@@ -186,6 +203,14 @@ export function ContentPageV1({ data }: { data: any }) {
   const kickerStrokeW = data?.kickerStrokeW as string | undefined;
   const titleStrokeW = data?.titleStrokeW as string | undefined;
   const subtitleStrokeW = data?.subtitleStrokeW as string | undefined;
+  const kickerGap = data?.kickerGap as string | undefined;
+  const kickerMaxW = data?.kickerMaxW as string | undefined;
+  const titleGap = data?.titleGap as string | undefined;
+  const titleMaxW = data?.titleMaxW as string | undefined;
+  const subtitleGap = data?.subtitleGap as string | undefined;
+  const subtitleMaxW = data?.subtitleMaxW as string | undefined;
+  const ctaGap = data?.ctaGap as string | undefined;
+  const ctaMaxW = data?.ctaMaxW as string | undefined;
 
   const columnsMode: "one" | "two" = data?.columns === "one" ? "one" : "two";
 
@@ -228,36 +253,49 @@ export function ContentPageV1({ data }: { data: any }) {
           <div className={heroClass}>
             <div className="cp__hero-text">
               {kicker ? (
-                <div className="cp__hero-row" style={alignStyle(kickerAlign)}>
-                  <div data-el="kicker" className={kickerTypo} style={strokeStyle(kickerStrokeW)}>
+                <div className="cp__hero-row" style={rowStyle(kickerAlign, kickerGap)}>
+                  <div
+                    data-el="kicker"
+                    className={kickerTypo}
+                    style={elementStyle(kickerStrokeW, kickerMaxW)}
+                  >
                     {kicker}
                   </div>
                 </div>
               ) : null}
               {title ? (
-                <div className="cp__hero-row" style={alignStyle(titleAlign)}>
+                <div className="cp__hero-row" style={rowStyle(titleAlign, titleGap)}>
                   <OutlineStampText
                     as="h1"
                     className="cp__title"
                     stamp={STAMP_TITLE}
                     data-el="title"
-                    style={strokeStyle(titleStrokeW)}
+                    style={elementStyle(titleStrokeW, titleMaxW)}
                   >
                     {title}
                   </OutlineStampText>
                 </div>
               ) : null}
               {subtitle ? (
-                <div className="cp__hero-row" style={alignStyle(subtitleAlign)}>
-                  <p className={subtitleTypo} data-el="subtitle" style={strokeStyle(subtitleStrokeW)}>
+                <div className="cp__hero-row" style={rowStyle(subtitleAlign, subtitleGap)}>
+                  <p
+                    className={subtitleTypo}
+                    data-el="subtitle"
+                    style={elementStyle(subtitleStrokeW, subtitleMaxW)}
+                  >
                     {subtitle}
                   </p>
                 </div>
               ) : null}
             </div>
             {cta?.label ? (
-              <div className="cp__hero-cta" style={alignStyle(ctaAlign)}>
-                <a href={cta.href ?? "#"} className="cp__cta-btn" data-el="cta">
+              <div className="cp__hero-cta" style={rowStyle(ctaAlign, ctaGap)}>
+                <a
+                  href={cta.href ?? "#"}
+                  className="cp__cta-btn"
+                  data-el="cta"
+                  style={ctaMaxW ? { maxWidth: ctaMaxW } : undefined}
+                >
                   {cta.label}
                 </a>
               </div>

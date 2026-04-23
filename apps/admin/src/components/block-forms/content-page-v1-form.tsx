@@ -329,6 +329,22 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             />
           </InspectorField>
         </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <InspectorField label="Kicker gap (top)">
+            <InspectorInput
+              value={value?.kickerGap ?? ""}
+              onChange={(v) => onChange({ ...value, kickerGap: v || undefined })}
+              placeholder="0"
+            />
+          </InspectorField>
+          <InspectorField label="Kicker max width">
+            <InspectorInput
+              value={value?.kickerMaxW ?? ""}
+              onChange={(v) => onChange({ ...value, kickerMaxW: v || undefined })}
+              placeholder="none"
+            />
+          </InspectorField>
+        </div>
 
         <InspectorField label="Title">
           <InspectorInput
@@ -350,6 +366,22 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
               value={value?.titleStrokeW ?? ""}
               onChange={(v) => onChange({ ...value, titleStrokeW: v || undefined })}
               placeholder="2.6px"
+            />
+          </InspectorField>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <InspectorField label="Title gap (top)">
+            <InspectorInput
+              value={value?.titleGap ?? ""}
+              onChange={(v) => onChange({ ...value, titleGap: v || undefined })}
+              placeholder="24px"
+            />
+          </InspectorField>
+          <InspectorField label="Title max width">
+            <InspectorInput
+              value={value?.titleMaxW ?? ""}
+              onChange={(v) => onChange({ ...value, titleMaxW: v || undefined })}
+              placeholder="none"
             />
           </InspectorField>
         </div>
@@ -384,6 +416,22 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             />
           </InspectorField>
         </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <InspectorField label="Tagline gap (top)">
+            <InspectorInput
+              value={value?.subtitleGap ?? ""}
+              onChange={(v) => onChange({ ...value, subtitleGap: v || undefined })}
+              placeholder="0"
+            />
+          </InspectorField>
+          <InspectorField label="Tagline max width">
+            <InspectorInput
+              value={value?.subtitleMaxW ?? ""}
+              onChange={(v) => onChange({ ...value, subtitleMaxW: v || undefined })}
+              placeholder="none"
+            />
+          </InspectorField>
+        </div>
 
         <InspectorField label="CTA label">
           <InspectorInput
@@ -406,6 +454,22 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
               value={value?.ctaAlign ?? ""}
               onChange={(v) => onChange({ ...value, ctaAlign: v || undefined })}
               options={TEXT_ALIGN_OPTIONS}
+            />
+          </InspectorField>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <InspectorField label="CTA gap (top)">
+            <InspectorInput
+              value={value?.ctaGap ?? ""}
+              onChange={(v) => onChange({ ...value, ctaGap: v || undefined })}
+              placeholder="12px"
+            />
+          </InspectorField>
+          <InspectorField label="CTA max width">
+            <InspectorInput
+              value={value?.ctaMaxW ?? ""}
+              onChange={(v) => onChange({ ...value, ctaMaxW: v || undefined })}
+              placeholder="none"
             />
           </InspectorField>
         </div>
