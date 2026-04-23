@@ -415,8 +415,11 @@ function DesktopNavColumn({
         ? (childRect.left - dropdownRect.left) / rowScale + childRect.width / rowScale / 2
         : dropdownWidth / 2;
 
-      const minLeft = 0;
+      // Clamp to the ROW boundaries — dropdown must not extend past either
+      // edge of its nav-row. When natural centering would overflow, snap to
+      // the boundary (perfect centering gives way to "no overflow").
       const viewportWidth = document.documentElement.clientWidth;
+      const minLeft = 0;
       const rightBoundaryVisual =
         align === "right"
           ? rowRect.right - rowRect.left

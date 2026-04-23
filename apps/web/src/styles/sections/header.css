@@ -306,7 +306,6 @@
 
 .header-desktop__dropdown {
   position: absolute;
-  margin-left: -2px;
   top: 100%;
   padding-top: 13px;
   display: flex;
