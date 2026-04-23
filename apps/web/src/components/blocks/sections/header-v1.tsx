@@ -415,14 +415,13 @@ function DesktopNavColumn({
         ? (childRect.left - dropdownRect.left) / rowScale + childRect.width / rowScale / 2
         : dropdownWidth / 2;
 
-      const safePadding = 4;
-      const minLeft = safePadding;
+      const minLeft = 0;
       const viewportWidth = document.documentElement.clientWidth;
       const rightBoundaryVisual =
         align === "right"
           ? rowRect.right - rowRect.left
           : viewportWidth - rowRect.left;
-      const rightBoundary = rightBoundaryVisual / rowScale - safePadding;
+      const rightBoundary = rightBoundaryVisual / rowScale;
       const maxLeft = Math.max(minLeft, rightBoundary - dropdownWidth);
 
       // First nav item: left-align dropdown with trigger's left edge ("від краю")
