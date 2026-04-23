@@ -68,6 +68,7 @@
 .studio-address-section {
   /* padding-top: clamp(32px, 5vw, 64px); */
   padding-bottom: clamp(32px, 96px, 96px);
+  padding-top: 80px;
 }
 
 .studio-address__title-wrap {

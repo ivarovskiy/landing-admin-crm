@@ -5,11 +5,13 @@
 .studio-address-section {
   /* padding-top: clamp(40px, 6vw, 80px); */
   padding-bottom: clamp(40px, 6vw, 100px);
+  padding-top: 80px;
   color: var(--color-primary);
 }
 
 .studio-address-section > .ds-container {
   /* padding-inline: clamp(18px, 3.8vw, 44px); */
+  padding-top: 80px;
 }
 
 /* ---- Title ---- */
