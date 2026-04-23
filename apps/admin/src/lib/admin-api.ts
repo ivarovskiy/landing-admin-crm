@@ -69,6 +69,10 @@ export type SiteScrollToTopSettings = {
 export type SiteTypographySettings = {
   /** Auto-scale stamp stroke + shadow proportionally to font-size (em-based). Baseline 104px → 2.6px stroke, 5.56px shadow */
   linkStampScale?: boolean;
+  /** Override stroke width for 104px section titles (features, studio-address, homepage-header). Narrower scope wins over linkStampScale. */
+  sectionTitleStrokeEnabled?: boolean;
+  /** Stroke width value when sectionTitleStrokeEnabled is on (e.g. "3.38px") */
+  sectionTitleStrokeW?: string;
 }
 export type SiteSettingsData = {
   zoom?: SiteZoomSettings;

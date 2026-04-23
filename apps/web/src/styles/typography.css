@@ -157,3 +157,16 @@
   -webkit-text-stroke: var(--text-stroke-w, 0.025em) var(--stamp-stroke, var(--color-primary));
   text-shadow: 0.0535em 0.0535em 0 var(--stamp-stroke, var(--color-primary));
 }
+
+/* =========================================================
+   Section title stroke override — narrower scope than linkStampScale.
+   Targets 104px section titles (features, studio-address, homepage-header).
+   Sets --text-stroke-w so BOTH the default rule AND the linkStampScale rule
+   resolve to the configured value. Shadow is untouched.
+   ========================================================= */
+
+[data-section-stroke="on"] .typo-homepage-header,
+[data-section-stroke="on"] .features-title,
+[data-section-stroke="on"] .studio-address__title {
+  --text-stroke-w: var(--section-title-stroke-w, 3.38px);
+}

@@ -29,12 +29,19 @@ export default async function RootLayout({ children }: {
   const scrollToTop = settingsRes.ok ? settingsRes.data?.scrollToTop : undefined;
   const typography = settingsRes.ok ? settingsRes.data?.typography : undefined;
   const stampLink = typography?.linkStampScale === true ? "on" : undefined;
+  const sectionStroke = typography?.sectionTitleStrokeEnabled === true ? "on" : undefined;
+  const sectionStrokeStyle =
+    sectionStroke && typography?.sectionTitleStrokeW
+      ? ({ "--section-title-stroke-w": typography.sectionTitleStrokeW } as React.CSSProperties)
+      : undefined;
 
   return (
     <html
       lang="uk"
       className={`${fontMaru.variable} ${fontMaruOblique.variable} ${fontDisplay.variable}`}
       data-stamp-link={stampLink}
+      data-section-stroke={sectionStroke}
+      style={sectionStrokeStyle}
     >
       <head>
         {/* Must run synchronously before first paint to prevent zoom flash */}

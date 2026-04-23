@@ -222,6 +222,8 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
   });
   const [typography, setTypography] = useState<SiteTypographySettings>({
     linkStampScale: initialSettings?.typography?.linkStampScale === true,
+    sectionTitleStrokeEnabled: initialSettings?.typography?.sectionTitleStrokeEnabled === true,
+    sectionTitleStrokeW: initialSettings?.typography?.sectionTitleStrokeW,
   });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
@@ -419,6 +421,23 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             description="Stamp headings auto-scale stroke + shadow proportionally (104px → 2.6 / 5.56). Per-element stroke overrides still win."
             value={typography.linkStampScale === true}
             onChange={(v) => updateTypography({ linkStampScale: v })}
+          />
+
+          <ToggleRow
+            icon={<Link2 className="h-3.5 w-3.5" />}
+            label="Override section title stroke"
+            description="Forces a custom stroke width on 104px section titles (features, studio-address, homepage-header). Shadow stays as-is. Narrower scope — wins over Link above."
+            value={typography.sectionTitleStrokeEnabled === true}
+            onChange={(v) => updateTypography({ sectionTitleStrokeEnabled: v })}
+          />
+
+          <TextRow
+            icon={<Ruler className="h-3.5 w-3.5 opacity-50" />}
+            label="Section title stroke"
+            description="CSS length (e.g. 3.38px). Applied only when the toggle above is on."
+            value={typography.sectionTitleStrokeW}
+            placeholder="3.38px"
+            onChange={(v) => updateTypography({ sectionTitleStrokeW: v })}
           />
 
         </div>

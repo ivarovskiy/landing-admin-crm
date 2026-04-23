@@ -17,6 +17,10 @@ export interface ScrollToTopSettings {
 export interface TypographySettings {
   /** Auto-scale stamp stroke + shadow proportionally to font-size (em-based) */
   linkStampScale?: boolean;
+  /** Override stroke width for 104px section titles (features, studio-address, homepage-header) */
+  sectionTitleStrokeEnabled?: boolean;
+  /** Stroke width value when sectionTitleStrokeEnabled is on (e.g. "3.38px") */
+  sectionTitleStrokeW?: string;
 }
 
 export interface SiteSettingsData {

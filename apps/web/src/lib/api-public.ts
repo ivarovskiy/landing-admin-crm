@@ -22,6 +22,8 @@ export type ScrollToTopSettings = {
 
 export type TypographySettings = {
   linkStampScale?: boolean;
+  sectionTitleStrokeEnabled?: boolean;
+  sectionTitleStrokeW?: string;
 };
 
 export async function getSiteSettings() {
