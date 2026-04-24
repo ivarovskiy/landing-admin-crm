@@ -199,25 +199,50 @@ export function HeroSliderV1({ data }: { data: any }) {
 
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const [active, setActive] = useState(0);
+  // --- Seamless infinite loop via clones (Swiper/Embla-style) ------------------
+  // For N > 1 we render [clone(last), ...slides, clone(first)] and translate the
+  // track forward only. When we land on a clone we snap (no transition) to the
+  // matching real slide. This removes the "rewind flash" from last → first.
+  const hasLoop = count > 1;
+  const displayedSlides = useMemo<Slide[]>(() => {
+    if (!hasLoop) return slides;
+    return [slides[count - 1], ...slides, slides[0]];
+  }, [slides, count, hasLoop]);
+  const initialTrackIndex = hasLoop ? 1 : 0;
+
+  const [trackIndex, setTrackIndex] = useState(initialTrackIndex);
+  const [noTransition, setNoTransition] = useState(false);
   const [paused, setPaused] = useState(false);
 
   const showDots = options?.showDots !== false;
   const showArrows = options?.showArrows === true;
+
+  // Real slide currently displayed (for dots / aria / live preview)
+  const active = hasLoop
+    ? ((trackIndex - 1) % count + count) % count
+    : Math.max(0, Math.min(trackIndex, count - 1));
 
   const activeRef = useRef(active);
   useEffect(() => {
     activeRef.current = active;
   }, [active]);
 
-  const clampIndex = (i: number) => {
-    const n = Math.max(count, 1);
-    return ((i % n) + n) % n;
+  const goNext = () => {
+    if (count <= 1) return;
+    setNoTransition(false);
+    setTrackIndex((i) => (hasLoop ? i + 1 : Math.min(i + 1, count - 1)));
   };
-
-  const goTo = (i: number) => setActive(clampIndex(i));
-  const goNext = () => setActive((x) => clampIndex(x + 1));
-  const goPrev = () => setActive((x) => clampIndex(x - 1));
+  const goPrev = () => {
+    if (count <= 1) return;
+    setNoTransition(false);
+    setTrackIndex((i) => (hasLoop ? i - 1 : Math.max(i - 1, 0)));
+  };
+  const goTo = (target: number) => {
+    if (count <= 1) return;
+    const real = ((target % count) + count) % count;
+    setNoTransition(false);
+    setTrackIndex(hasLoop ? real + 1 : real);
+  };
 
   useEffect(() => {
     const ms = Number(options?.autoPlayMs ?? 0);
@@ -226,17 +251,46 @@ export function HeroSliderV1({ data }: { data: any }) {
     if (paused) return;
 
     const t = window.setInterval(() => {
-      const cur = activeRef.current;
-      setActive(clampIndex(cur + 1));
+      setNoTransition(false);
+      setTrackIndex((i) => i + 1);
     }, ms);
 
     return () => window.clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options?.autoPlayMs, count, paused, prefersReducedMotion]);
 
+  // When we land on a clone, wait for the slide-in transition to finish, then
+  // snap (no transition) to the matching real slide. Re-enable transition on
+  // next frame so subsequent movements animate normally.
   useEffect(() => {
-    if (active > count - 1) setActive(0);
-  }, [active, count]);
+    if (!hasLoop) return;
+    if (trackIndex !== 0 && trackIndex !== count + 1) return;
+
+    const timer = window.setTimeout(() => {
+      setNoTransition(true);
+      setTrackIndex(trackIndex === 0 ? count : 1);
+    }, 520); // slightly longer than 500ms CSS transition to be safe
+    return () => window.clearTimeout(timer);
+  }, [trackIndex, count, hasLoop]);
+
+  useEffect(() => {
+    if (!noTransition) return;
+    const r1 = requestAnimationFrame(() => {
+      const r2 = requestAnimationFrame(() => setNoTransition(false));
+      (r1 as unknown as { inner?: number }).inner = r2;
+    });
+    return () => cancelAnimationFrame(r1);
+  }, [noTransition]);
+
+  // If slide count changes (add/remove in admin), snap trackIndex back to a valid
+  // real-slide position without animating.
+  useEffect(() => {
+    const maxIdx = hasLoop ? count + 1 : Math.max(count - 1, 0);
+    const minIdx = 0;
+    if (trackIndex < minIdx || trackIndex > maxIdx) {
+      setNoTransition(true);
+      setTrackIndex(hasLoop ? 1 : 0);
+    }
+  }, [count, hasLoop, trackIndex]);
 
   const drag = useRef<{
     startX: number;
@@ -292,8 +346,8 @@ export function HeroSliderV1({ data }: { data: any }) {
   };
 
   const trackStyle = useMemo(
-    () => ({ transform: `translateX(-${active * 100}%)` }),
-    [active]
+    () => ({ transform: `translateX(-${trackIndex * 100}%)` }),
+    [trackIndex]
   );
 
   if (count === 0) return null;
@@ -349,23 +403,34 @@ export function HeroSliderV1({ data }: { data: any }) {
           <div
             className={cn(
               "hero-slider__track",
-              prefersReducedMotion && "hero-slider__track--no-motion"
+              (prefersReducedMotion || noTransition) && "hero-slider__track--no-motion"
             )}
             style={trackStyle}
           >
-            {slides.map((s, i) => (
-              <div
-                key={s.id ?? i}
-                id={`${carouselId}-slide-${i}`}
-                className="hero-slider__slide"
-                role="group"
-                aria-roledescription="slide"
-                aria-label={`${i + 1} of ${count}`}
-                aria-hidden={i !== active}
-              >
-                <HeroSlide slide={s} isDragging={!!drag.current?.moved} slideIndex={i} />
-              </div>
-            ))}
+            {displayedSlides.map((s, i) => {
+              // Map DOM position → real slide index (clones share aria with their originals)
+              const realIndex = hasLoop
+                ? i === 0
+                  ? count - 1
+                  : i === count + 1
+                    ? 0
+                    : i - 1
+                : i;
+              const isClone = hasLoop && (i === 0 || i === count + 1);
+              return (
+                <div
+                  key={isClone ? `clone-${realIndex}-${i}` : (s.id ?? `real-${realIndex}`)}
+                  id={isClone ? undefined : `${carouselId}-slide-${realIndex}`}
+                  className="hero-slider__slide"
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-label={`${realIndex + 1} of ${count}`}
+                  aria-hidden={isClone || realIndex !== active}
+                >
+                  <HeroSlide slide={s} isDragging={!!drag.current?.moved} slideIndex={realIndex} />
+                </div>
+              );
+            })}
           </div>
         </div>
 
