@@ -112,20 +112,37 @@ export function LandingZoom({
 
     update();
 
-    // Re-run after fonts and images settle — initial measurement may use
-    // fallback font metrics or unloaded image heights, producing a wrong zoom
-    // that only self-corrects when the user resizes or scrolls.
-    if (typeof document !== "undefined" && (document as any).fonts?.ready) {
-      (document as any).fonts.ready.then(() => update()).catch(() => {});
+    // Re-run after fonts and images settle. `document.fonts.ready` resolves
+    // ONCE for the initial batch; fonts that start loading later (e.g. oblique
+    // italic registered via CSS variable) are missed. Listen for `loadingdone`
+    // and add safety timeouts so a late-arriving font doesn't leave us with a
+    // stale, smaller-metrics layout until the user scrolls.
+    const fonts = (document as any).fonts;
+    if (fonts?.ready) {
+      fonts.ready.then(() => update()).catch(() => {});
     }
+    const onFontsLoadingDone = () => update();
+    fonts?.addEventListener?.("loadingdone", onFontsLoadingDone);
+
     const onLoad = () => update();
     window.addEventListener("load", onLoad);
     window.addEventListener("resize", update);
     mq.addEventListener("change", update);
+
+    // Safety nets — re-measure after short delays in case font metrics or
+    // image dimensions finalized after mount but before any event fired.
+    const t1 = window.setTimeout(update, 250);
+    const t2 = window.setTimeout(update, 800);
+    const t3 = window.setTimeout(update, 2000);
+
     return () => {
       window.removeEventListener("load", onLoad);
       window.removeEventListener("resize", update);
       mq.removeEventListener("change", update);
+      fonts?.removeEventListener?.("loadingdone", onFontsLoadingDone);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
       stack.style.removeProperty("zoom");
     };
   }, [enableZoom, designWidth, zoomBreakpoint, fitViewport, scale]);
