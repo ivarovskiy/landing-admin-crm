@@ -111,12 +111,16 @@ export function BlocksWorkspace({
   pageId,
   pageSlug,
   pageStatus,
+  pageParentId,
+  allPages,
   blocks,
   initialActiveId,
 }: {
   pageId: string;
   pageSlug: string;
   pageStatus: string;
+  pageParentId?: string | null;
+  allPages?: Array<{ id: string; slug: string; parentId?: string | null }>;
   blocks: Block[];
   initialActiveId?: string;
 }) {
@@ -980,6 +984,8 @@ export function BlocksWorkspace({
             pageId={pageId}
             slug={pageSlug}
             status={pageStatus}
+            parentId={pageParentId ?? null}
+            allPages={allPages ?? []}
             canvasSettings={canvasSettings}
             onCanvasSettingsChange={updateCanvasSettings}
             onClose={() => setShowPageSettings(false)}

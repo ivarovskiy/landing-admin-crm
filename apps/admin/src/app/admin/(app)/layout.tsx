@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth"
 import Link from "next/link"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { LogOut, Settings } from "lucide-react"
+import { LogOut, Settings, LayoutPanelTop } from "lucide-react"
 
 async function logoutAction() {
   "use server"
@@ -31,6 +31,13 @@ export default async function AdminAppLayout({ children }: { children: React.Rea
         <div className="flex-1" />
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/admin/globals"
+            className="flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium text-[oklch(0.55_0_0)] hover:text-[oklch(0.93_0_0)] hover:bg-[oklch(1_0_0/6%)] transition-colors"
+          >
+            <LayoutPanelTop size={13} />
+            Globals
+          </Link>
           <Link
             href="/admin/settings"
             className="flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium text-[oklch(0.55_0_0)] hover:text-[oklch(0.93_0_0)] hover:bg-[oklch(1_0_0/6%)] transition-colors"

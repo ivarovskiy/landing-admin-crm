@@ -62,14 +62,19 @@ model Page {
   status      PageStatus @default(draft)
   seo         Json?
   settings    Json?
+  parentId    String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   publishedAt DateTime?
 
-  blocks      Block[]
+  blocks       Block[]
+  parent       Page?         @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Page[]        @relation("PageTree")
+  globalBlocks GlobalBlock[]
 
   @@unique([slug, locale])
   @@index([status])
+  @@index([parentId])
 }
 
 model Block {
@@ -98,6 +103,21 @@ model Theme {
   publishedAt DateTime?
 
   @@index([status])
+}
+
+model GlobalBlock {
+  id        String   @id @default(cuid())
+  parentId  String?
+  key       String
+  type      String
+  variant   String
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent    Page?    @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@index([parentId, key])
 }
 
 model MediaAsset {

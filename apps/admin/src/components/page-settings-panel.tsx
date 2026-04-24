@@ -31,6 +31,8 @@ export function PageSettingsPanel({
   pageId,
   slug,
   status,
+  parentId,
+  allPages,
   canvasSettings,
   onCanvasSettingsChange,
   onClose,
@@ -38,14 +40,50 @@ export function PageSettingsPanel({
   pageId: string;
   slug: string;
   status: string;
+  parentId?: string | null;
+  allPages?: Array<{ id: string; slug: string; parentId?: string | null }>;
   canvasSettings: PageCanvasSettings;
   onCanvasSettingsChange: (s: Partial<PageCanvasSettings>) => void;
   onClose: () => void;
 }) {
   const router = useRouter();
   const [slugValue, setSlugValue] = useState(slug);
+  const [parentValue, setParentValue] = useState<string>(parentId ?? "");
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  async function saveParent() {
+    setError(null);
+    setSaving("parent");
+    try {
+      const r = await fetch(`/api/admin/pages/${pageId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ parentId: parentValue || null }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      router.refresh();
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to save parent");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  // Possible parents = all pages except: self + any descendant of self
+  const parentOptions = (allPages ?? []).filter((p) => {
+    if (p.id === pageId) return false;
+    // walk up p's chain; if it hits pageId, this candidate is a descendant — exclude
+    let cursor: string | null | undefined = p.parentId ?? null;
+    let steps = 0;
+    while (cursor && steps < 16) {
+      if (cursor === pageId) return false;
+      const next = (allPages ?? []).find((x) => x.id === cursor);
+      cursor = next?.parentId ?? null;
+      steps++;
+    }
+    return true;
+  });
 
   async function saveSlug() {
     setError(null);
@@ -179,6 +217,35 @@ export function PageSettingsPanel({
                   {saving === "slug" ? "…" : "Save"}
                 </button>
               </div>
+            </div>
+
+            <div className="space-y-1.5 mt-2.5">
+              <label className="text-[10px] text-muted-foreground font-medium">Parent page</label>
+              <div className="flex gap-1.5">
+                <select
+                  value={parentValue}
+                  onChange={(e) => setParentValue(e.target.value)}
+                  className="flex-1 h-7 rounded-md bg-muted/40 border border-border/60 px-2 text-xs text-foreground focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-colors"
+                >
+                  <option value="">— No parent (top-level)</option>
+                  {parentOptions.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      /{p.slug}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={saving !== null || (parentValue || null) === (parentId ?? null)}
+                  onClick={saveParent}
+                  className="h-7 px-2 rounded-md bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 hover:bg-primary/90 transition-colors shrink-0"
+                >
+                  {saving === "parent" ? "…" : "Save"}
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground/70 leading-tight">
+                Child pages inherit this parent's header & footer. Organizational only — URL stays flat.
+              </p>
             </div>
           </Section>
 

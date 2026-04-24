@@ -78,6 +78,7 @@ export class PagesService {
         slug: p.slug,
         locale: p.locale,
         status: p.status,
+        parentId: p.parentId ?? null,
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
         contentUpdatedAt: p.blocks[0]?.updatedAt ?? p.createdAt,
@@ -224,21 +225,52 @@ export class PagesService {
     return created
   }
 
-  async updatePage(id: string, dto: { slug?: string; settings?: Record<string, any> }) {
+  async updatePage(
+    id: string,
+    dto: { slug?: string; settings?: Record<string, any>; parentId?: string | null },
+  ) {
     const page = await this.prisma.page.findUnique({ where: { id } })
     if (!page) throw new NotFoundException("Page not found")
 
-    if (dto.slug == null && dto.settings == null) throw new BadRequestException("Nothing to update")
+    if (dto.slug == null && dto.settings == null && dto.parentId === undefined) {
+      throw new BadRequestException("Nothing to update")
+    }
 
     const data: Record<string, any> = {}
     if (dto.slug != null) data.slug = dto.slug
     if (dto.settings != null) data.settings = dto.settings
+    if (dto.parentId !== undefined) {
+      if (dto.parentId === id) throw new BadRequestException("A page cannot be its own parent")
+      // Guard against cycles
+      if (dto.parentId) {
+        let cursor: string | null = dto.parentId
+        let steps = 0
+        while (cursor && steps < 32) {
+          if (cursor === id) throw new BadRequestException("Circular parent chain")
+          const next: { parentId: string | null } | null = await this.prisma.page.findUnique({
+            where: { id: cursor },
+            select: { parentId: true },
+          })
+          cursor = next?.parentId ?? null
+          steps++
+        }
+      }
+      data.parentId = dto.parentId
+    }
 
     try {
       return await this.prisma.page.update({
         where: { id },
         data,
-        select: { id: true, slug: true, locale: true, status: true, settings: true, updatedAt: true },
+        select: {
+          id: true,
+          slug: true,
+          locale: true,
+          status: true,
+          settings: true,
+          parentId: true,
+          updatedAt: true,
+        },
       })
     } catch (e) {
       handleUniqueViolation(e, "Page with this slug+locale already exists")

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from "@nestjs/swagger"
-import { IsObject, IsOptional, IsString, Matches, MinLength } from "class-validator"
+import { IsObject, IsOptional, IsString, Matches, MinLength, ValidateIf } from "class-validator"
 
 export class UpdatePageDto {
   @ApiPropertyOptional({ example: "about-us" })
@@ -15,4 +15,10 @@ export class UpdatePageDto {
   @IsOptional()
   @IsObject()
   settings?: Record<string, any>
+
+  @ApiPropertyOptional({ example: "clm3abc…", nullable: true, description: "Parent page id; null to detach" })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null)
+  @IsString()
+  parentId?: string | null
 }

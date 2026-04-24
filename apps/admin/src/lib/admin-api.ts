@@ -93,3 +93,36 @@ export async function updateSiteSettings(data: SiteSettingsData): Promise<SiteSe
   })
   return r.json()
 }
+
+export type GlobalBlock = {
+  id: string
+  key: string
+  type: string
+  variant: string
+  data: any
+  createdAt: string
+  updatedAt: string
+}
+
+export async function fetchGlobalBlock(
+  key: string,
+  scope?: string | null,
+): Promise<GlobalBlock> {
+  const qs = scope ? `?scope=${encodeURIComponent(scope)}` : ""
+  const r = await apiFetch(`/v1/admin/global-blocks/${encodeURIComponent(key)}${qs}`)
+  return r.json()
+}
+
+export async function updateGlobalBlock(
+  key: string,
+  patch: { type?: string; variant?: string; data?: unknown },
+  scope?: string | null,
+): Promise<GlobalBlock> {
+  const qs = scope ? `?scope=${encodeURIComponent(scope)}` : ""
+  const r = await apiFetch(`/v1/admin/global-blocks/${encodeURIComponent(key)}${qs}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(patch),
+  })
+  return r.json()
+}

@@ -1,4 +1,4 @@
-import { fetchAdminPage } from "@/lib/admin-api";
+import { fetchAdminPage, fetchAdminPages } from "@/lib/admin-api";
 import { BlocksWorkspace } from "@/components/blocks-workspace";
 
 type P = { id: string };
@@ -20,18 +20,28 @@ export default async function AdminPageDetails({
   const p = await Promise.resolve(params);
   const sp = await Promise.resolve(searchParams);
 
-  const { page } = await fetchAdminPage(p.id);
+  const [{ page }, allPagesRes] = await Promise.all([
+    fetchAdminPage(p.id),
+    fetchAdminPages().catch(() => ({ items: [] as any[] })),
+  ]);
 
   const blocks = Array.isArray(page.blocks) ? [...page.blocks] : [];
   blocks.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
 
   const initialBlockId = pickBlockId(sp);
+  const allPages = ((allPagesRes as any).items ?? []).map((x: any) => ({
+    id: x.id,
+    slug: x.slug,
+    parentId: x.parentId ?? null,
+  }));
 
   return (
     <BlocksWorkspace
       pageId={page.id}
       pageSlug={page.slug}
       pageStatus={page.status ?? "draft"}
+      pageParentId={(page as any).parentId ?? null}
+      allPages={allPages}
       blocks={blocks}
       initialActiveId={initialBlockId}
     />

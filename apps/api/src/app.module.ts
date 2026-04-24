@@ -27,6 +27,7 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { MediaModule } from './modules/media/media.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { GlobalBlocksModule } from './modules/global-blocks/global-blocks.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     AuthModule,
     MediaModule,
     SettingsModule,
+    GlobalBlocksModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

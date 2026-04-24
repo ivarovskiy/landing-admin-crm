@@ -1,4 +1,4 @@
-import { getPublicPage, getSiteSettings } from "@/lib/api-public";
+import { getGlobalBlocksForPage, getPublicPage, getSiteSettings, mergeGlobalBlocks } from "@/lib/api-public";
 import { PageRenderer } from "@/components/page-renderer";
 import { tokensToCssVars } from "@/lib/theme";
 
@@ -36,15 +36,22 @@ export default async function Home() {
   }
 
   const { page, theme } = pageRes.data;
+  const globalsRes = await getGlobalBlocksForPage((page as any).id);
+
   const cssVars = tokensToCssVars(theme?.tokens ?? theme);
-  const blocks: any[] = (page as any).blocks ?? [];
+  const pageBlocks: any[] = (page as any).blocks ?? [];
+  const blocks = mergeGlobalBlocks(
+    pageBlocks,
+    globalsRes.ok ? globalsRes.data : null,
+    (page as any).settings,
+  );
   const blockFillViewport = blocks.some((b) => b.data?.options?.fillViewport === true);
   const baseZoom = settingsRes.ok ? (settingsRes.data?.zoom ?? null) : null;
   const zoomSettings = blockFillViewport ? { ...baseZoom, fitViewport: true } : baseZoom;
 
   return (
     <main style={cssVars} className="page-base">
-      <PageRenderer blocks={(page as any).blocks ?? []} zoomSettings={zoomSettings} />
+      <PageRenderer blocks={blocks} zoomSettings={zoomSettings} />
     </main>
   );
 }
