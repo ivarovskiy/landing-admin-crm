@@ -1,5 +1,13 @@
 import localFont from "next/font/local";
 
+/**
+ * Body font — used by kickers, bullet lists, paragraphs, etc.
+ * Switched from `swap` to `block` because Arial's metrics don't match Maru
+ * well enough: the swap visibly shrinks/grows chunks of the hero slide
+ * (e.g. the right-aligned list on slide 3) until the real font loads.
+ * With `preload: true` the font is in the critical request chain, so the
+ * brief FOIT is barely perceptible and far less jarring than the FOUT size jump.
+ */
 export const fontMaru = localFont({
   src: [
     { path: "../assets/fonts/GTMaruRegular.ttf", weight: "400", style: "normal" },
@@ -8,7 +16,7 @@ export const fontMaru = localFont({
     { path: "../assets/fonts/GTMaruBlack.ttf", weight: "900", style: "normal" },
   ],
   variable: "--font-maru",
-  display: "swap",
+  display: "block",
   preload: true,
   adjustFontFallback: "Arial",
 });
