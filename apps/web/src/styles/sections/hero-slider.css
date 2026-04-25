@@ -8,11 +8,15 @@
 
 .hero-slider__hairline-top {
   width: 100%;
+  height: auto;
+  aspect-ratio: 1320 / 14;
   /* margin-bottom: clamp(6px, 0.8vw, 10px); */
 }
 
 .hero-slider__hairline-bottom {
   width: 100%;
+  height: auto;
+  aspect-ratio: 1320 / 14;
   /* margin-top: clamp(6px, 0.8vw, 10px); */
 }
 

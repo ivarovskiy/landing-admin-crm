@@ -382,7 +382,13 @@ export function HeroSliderV1({ data }: { data: any }) {
     <section className="hero-slider" ref={sectionRef} style={sectionStyle}>
       <Container>
         {/* <Hairline className="hero-slider__hairline-top" /> */}
-        <img src="/icons/slider_v1.svg" alt="" className="hero-slider__hairline-top" />
+        <img
+          src="/icons/slider_v1.svg"
+          alt=""
+          width={1320}
+          height={14}
+          className="hero-slider__hairline-top"
+        />
 
         <div
           className="hero-slider__viewport"
@@ -448,7 +454,13 @@ export function HeroSliderV1({ data }: { data: any }) {
 
 
         {/* <Hairline className="hero-slider__hairline-bottom" /> */}
-        <img src="/icons/slider_v2.svg" alt="" className="hero-slider__hairline-bottom"/>
+        <img
+          src="/icons/slider_v2.svg"
+          alt=""
+          width={1320}
+          height={14}
+          className="hero-slider__hairline-bottom"
+        />
 
         {showDots && count >= 1 ? (
           <div className="hero-slider__dots" role="tablist" aria-label="Slides">
