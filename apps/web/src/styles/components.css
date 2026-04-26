@@ -314,7 +314,7 @@
 
 [data-stamp-link="on"] .ds-outline-stamp__shadow,
 [data-stamp-link="on"] .ds-outline-stamp__main {
-  -webkit-text-stroke: var(--text-stroke-w, 0.025em) var(--stamp-stroke, var(--color-primary));
+  -webkit-text-stroke: var(--text-stroke-w, var(--stamp-stroke-em)) var(--stamp-stroke, var(--color-primary));
 }
 
 /* ---- Scroll-to-top button ---- */

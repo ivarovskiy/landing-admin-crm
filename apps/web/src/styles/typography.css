@@ -146,27 +146,42 @@
 /* =========================================================
    Linked stamp scaling — when SiteSettings.typography.linkStampScale is ON,
    stroke + shadow scale proportionally to font-size via em units.
-   Baseline: 104px → stroke 2.6px, shadow 5.56px
-   Ratios:   stroke 0.025em, shadow 0.0535em
-   Per-element --text-stroke-w (inline px) still overrides via the var fallback.
+
+   Default baseline: 104px → stroke 2.6px (0.025em), shadow 5.56px (0.0535em).
+
+   When SiteSettings.typography.sectionTitleStrokeEnabled is also ON, the
+   stroke baseline switches to the configured `--section-title-stroke-w`
+   value: ratio = section-stroke / 104 in em. So if you set 3.1px section
+   stroke, ALL stamp titles use a 0.0298em ratio (104px → 3.1px, 78px → ~2.32px),
+   not the default 0.025em. Shadow ratio stays untouched per spec.
+
+   Per-element --text-stroke-w (inline px) still overrides everything.
    ========================================================= */
+
+:root {
+  --stamp-stroke-em: 0.025em;
+}
+
+[data-section-stroke="on"] {
+  --stamp-stroke-em: calc(var(--section-title-stroke-w, 3.38px) / 104px * 1em);
+}
 
 [data-stamp-link="on"] .typo-content-header,
 [data-stamp-link="on"] .typo-homepage-header,
 [data-stamp-link="on"] .typo-hero-title {
-  -webkit-text-stroke: var(--text-stroke-w, 0.025em) var(--stamp-stroke, var(--color-primary));
+  -webkit-text-stroke: var(--text-stroke-w, var(--stamp-stroke-em)) var(--stamp-stroke, var(--color-primary));
   text-shadow: 0.0535em 0.0535em 0 var(--stamp-stroke, var(--color-primary));
 }
 
 /* =========================================================
-   Section title stroke override — narrower scope than linkStampScale.
-   Targets 104px section titles (features, studio-address, homepage-header).
-   Sets --text-stroke-w so BOTH the default rule AND the linkStampScale rule
-   resolve to the configured value. Shadow is untouched.
+   Section title stroke override (used when link is OFF) — narrower scope:
+   forces a fixed stroke value on 104px section titles only.
+   When link is ALSO on, we don't fix --text-stroke-w here — the em ratio
+   above handles it (proportional everywhere, equal to section value at 104px).
    ========================================================= */
 
-[data-section-stroke="on"] .typo-homepage-header,
-[data-section-stroke="on"] .features-title,
-[data-section-stroke="on"] .studio-address__title {
+[data-section-stroke="on"]:not([data-stamp-link="on"]) .typo-homepage-header,
+[data-section-stroke="on"]:not([data-stamp-link="on"]) .features-title,
+[data-section-stroke="on"]:not([data-stamp-link="on"]) .studio-address__title {
   --text-stroke-w: var(--section-title-stroke-w, 3.38px);
 }
