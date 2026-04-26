@@ -46,6 +46,10 @@ type SlideMedia = {
 type Slide = {
   id?: string;
   template?: SlideTemplate;
+  hidden?: boolean;
+  mirror?: boolean;
+  stretchTextToMedia?: boolean;
+  autoPlayMs?: number;
   quote?: string;
   kicker?: string;
   kickerVariant?: TextVariant;
@@ -110,12 +114,17 @@ function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
 }
 
 function resolveTemplate(slide: Slide): SlideTemplate {
-  if (slide?.template) return slide.template;
+  const base: SlideTemplate = slide?.template
+    ? slide.template
+    : (slide?.layout?.desktop?.imageSide ?? "right") === "left"
+      ? "image-left-copy-right"
+      : "copy-left-image-right";
 
-  const legacySide = slide?.layout?.desktop?.imageSide ?? "right";
-  return legacySide === "left"
-    ? "image-left-copy-right"
-    : "copy-left-image-right";
+  if (!slide?.mirror) return base;
+  // Mirror only swaps the two two-column templates; full-image is symmetric.
+  if (base === "image-left-copy-right") return "copy-left-image-right";
+  if (base === "copy-left-image-right") return "image-left-copy-right";
+  return base;
 }
 
 /** Returns which side the image is on for a given template */
@@ -185,7 +194,9 @@ function slideStyle(slide: Slide): React.CSSProperties {
 }
 
 export function HeroSliderV1({ data }: { data: any }) {
-  const slides: Slide[] = Array.isArray(data?.slides) ? data.slides : [];
+  const rawSlides: Slide[] = Array.isArray(data?.slides) ? data.slides : [];
+  // Hidden slides are skipped entirely — they affect neither count nor autoplay.
+  const slides: Slide[] = useMemo(() => rawSlides.filter((s) => !s?.hidden), [rawSlides]);
   const options = data?.options ?? {};
   const count = slides.length;
 
@@ -244,19 +255,26 @@ export function HeroSliderV1({ data }: { data: any }) {
     setTrackIndex(hasLoop ? real + 1 : real);
   };
 
+  // Per-slide autoplay timer, re-armed on every active change so user
+  // interaction (clicks / drag / arrow keys) restarts the countdown instead
+  // of letting an old interval fire on top of a manual transition.
   useEffect(() => {
-    const ms = Number(options?.autoPlayMs ?? 0);
-    if (!ms || ms < 1500 || count <= 1) return;
+    if (count <= 1) return;
     if (prefersReducedMotion) return;
     if (paused) return;
 
-    const t = window.setInterval(() => {
+    const slideMs = Number(slides[active]?.autoPlayMs ?? 0);
+    const globalMs = Number(options?.autoPlayMs ?? 0);
+    const ms = slideMs > 0 ? slideMs : globalMs;
+    if (!ms || ms < 1500) return;
+
+    const t = window.setTimeout(() => {
       setNoTransition(false);
       setTrackIndex((i) => i + 1);
     }, ms);
 
-    return () => window.clearInterval(t);
-  }, [options?.autoPlayMs, count, paused, prefersReducedMotion]);
+    return () => window.clearTimeout(t);
+  }, [active, slides, options?.autoPlayMs, count, paused, prefersReducedMotion]);
 
   // When we land on a clone, wait for the slide-in transition to finish, then
   // snap (no transition) to the matching real slide. Re-enable transition on
@@ -499,7 +517,8 @@ function HeroSlide({
     "hero-slide",
     `hero-slide--${template}`,
     mobileImageFirst && "hero-slide--mobile-image-first",
-    slide?.layout?.desktop?.textAlignFullWidth && "hs-text-wide"
+    slide?.layout?.desktop?.textAlignFullWidth && "hs-text-wide",
+    slide?.stretchTextToMedia && "hero-slide--copy-stretch"
   );
 
   const mediaPrimary = (

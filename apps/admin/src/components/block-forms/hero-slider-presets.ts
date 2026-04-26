@@ -57,6 +57,14 @@ export type SlideExtra = {
 export type Slide = {
   id?: string;
   template?: SlideTemplate;
+  /** Hide this slide from the carousel without deleting it (admin-only state) */
+  hidden?: boolean;
+  /** Mirror the layout — swaps media ↔ text horizontally for templates with both columns */
+  mirror?: boolean;
+  /** Stretch the text column to match media height — children spread top↔bottom */
+  stretchTextToMedia?: boolean;
+  /** Per-slide autoplay duration (ms). Falls back to options.autoPlayMs when unset/zero. */
+  autoPlayMs?: number;
   quote?: string;
   kicker?: string;
   kickerVariant?: TextVariant;

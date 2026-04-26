@@ -405,6 +405,16 @@
     height: 100%;
     padding: var(--hs-media-padding, 0);
   }
+
+  /* Stretch text column to media height — top child anchors to top edge,
+     bottom child to bottom edge of media (no manual mt/mb needed). Per-element
+     mt/mb still applies on top so editors can fine-tune insets. */
+  .hero-slide--copy-stretch .hero-slide__copy {
+    justify-content: stretch;
+  }
+  .hero-slide--copy-stretch .hero-slide__copy-main {
+    justify-content: space-between;
+  }
 }
 
 /* ===== Preset nudges ===== */

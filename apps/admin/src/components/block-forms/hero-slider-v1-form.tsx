@@ -18,6 +18,8 @@ import {
 import {
   ChevronDown,
   ChevronUp,
+  Eye,
+  EyeOff,
   Image,
   LayoutTemplate,
   Move,
@@ -241,13 +243,27 @@ function SlideEditor({
     <div className="rounded-md border bg-muted/10">
       {/* Slide header — click to collapse/expand */}
       <div
-        className="flex items-center justify-between px-2 py-1.5 border-b bg-muted/20 cursor-pointer select-none"
+        className={[
+          "flex items-center justify-between px-2 py-1.5 border-b bg-muted/20 cursor-pointer select-none",
+          s?.hidden ? "opacity-50" : "",
+        ].filter(Boolean).join(" ")}
         onClick={() => setCollapsed((c) => !c)}
       >
-        <span className="text-[11px] font-semibold text-muted-foreground truncate max-w-[160px]">
+        <span className={[
+          "text-[11px] font-semibold text-muted-foreground truncate max-w-[160px]",
+          s?.hidden ? "line-through" : "",
+        ].filter(Boolean).join(" ")}>
           {collapsed ? "▸" : "▾"} {idx + 1}. {s?.title?.split("\n")[0] || template}
         </span>
         <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => onChange({ ...s, hidden: !s?.hidden })}
+            className="text-muted-foreground hover:text-foreground p-0.5"
+            title={s?.hidden ? "Show slide" : "Hide slide"}
+          >
+            {s?.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          </button>
           <button
             type="button"
             onClick={() => onMove("up")}
@@ -295,6 +311,42 @@ function SlideEditor({
             options={TEMPLATE_OPTIONS}
           />
         </InspectorField>
+
+        {/* Slide-level toggles — visibility, mirror, stretch, per-slide timer */}
+        <InspectorSection
+          title="Slide options"
+          icon={<SlidersHorizontal className="h-3 w-3" />}
+          defaultOpen={false}
+        >
+          <InspectorField
+            label="Autoplay (this slide)"
+            hint="ms — overrides global Autoplay for this slide. Empty/0 = use global."
+          >
+            <InspectorNumber
+              value={s?.autoPlayMs || undefined}
+              onChange={(v) => onChange({ ...s, autoPlayMs: v ?? 0 })}
+              placeholder="3000"
+            />
+          </InspectorField>
+
+          <div className="space-y-1.5">
+            <InspectorToggle
+              label="Hidden"
+              checked={!!s?.hidden}
+              onChange={(v) => onChange({ ...s, hidden: v || undefined })}
+            />
+            <InspectorToggle
+              label="Mirror layout (swap media ↔ text)"
+              checked={!!s?.mirror}
+              onChange={(v) => onChange({ ...s, mirror: v || undefined })}
+            />
+            <InspectorToggle
+              label="Stretch text to media height"
+              checked={!!s?.stretchTextToMedia}
+              onChange={(v) => onChange({ ...s, stretchTextToMedia: v || undefined })}
+            />
+          </div>
+        </InspectorSection>
 
         {/* Text content */}
         <InspectorSection
