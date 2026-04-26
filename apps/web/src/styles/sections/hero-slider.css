@@ -408,11 +408,19 @@
 
   /* Stretch text column to media height — top child anchors to top edge,
      bottom child to bottom edge of media (no manual mt/mb needed). Per-element
-     mt/mb still applies on top so editors can fine-tune insets. */
+     mt/mb still applies on top so editors can fine-tune insets.
+     `.hero-slide__copy` is normally `display: block` (flex declaration is
+     commented out in the base rule), so we have to explicitly make it a flex
+     column here — otherwise `.hero-slide__copy-main { flex: 1 }` is a no-op
+     and `space-between` has nothing to spread. */
   .hero-slide--copy-stretch .hero-slide__copy {
+    display: flex;
+    flex-direction: column;
     justify-content: stretch;
+    height: 100%;
   }
   .hero-slide--copy-stretch .hero-slide__copy-main {
+    flex: 1 1 auto;
     justify-content: space-between;
   }
 }
