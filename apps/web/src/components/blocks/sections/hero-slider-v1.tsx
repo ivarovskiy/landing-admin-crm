@@ -522,7 +522,19 @@ function HeroSlide({
   const mobileImageFirst = !!slide?.layout?.mobile?.imageFirst;
   const stretchToMedia = !!slide?.stretchTextToMedia;
   const slideRef = useRef<HTMLDivElement>(null);
-  type MediaRect = { left: number; right: number; top: number; bottom: number; height: number };
+  type MediaRect = {
+    /** Media-box rect relative to the slide root — used for guide-line overlay. */
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+    height: number;
+    /** Media-box vertical insets relative to the text-col content box —
+     *  used to align `.hero-slide__copy` padding with the media's actual edges
+     *  (NOT the slide outer edges, which include hero-slide padding). */
+    stretchTop: number;
+    stretchBottom: number;
+  };
   const [mediaRect, setMediaRect] = useState<MediaRect | null>(null);
   // Measurement is needed for guides and for media-aligned text stretching.
   const measureNeeded = showGuides || stretchToMedia;
@@ -540,17 +552,26 @@ function HeroSlide({
         setMediaRect(null);
         return;
       }
+      const textCol = slideEl.querySelector<HTMLElement>(".hero-slide__text-col");
       const sr = slideEl.getBoundingClientRect();
       const mr = media.getBoundingClientRect();
       if (!sr.width || !mr.width) return;
       // Convert visual px → layout px in case parent uses CSS zoom/scale.
       const scale = sr.width / slideEl.offsetWidth || 1;
+      const tc = textCol?.getBoundingClientRect();
+      // Stretch insets are computed relative to text-col so that hero-slide's
+      // own padding is automatically excluded — copy lives inside text-col
+      // and shares its content box.
+      const refTop = tc?.top ?? sr.top;
+      const refBottom = tc?.bottom ?? sr.bottom;
       setMediaRect({
         left: (mr.left - sr.left) / scale,
         right: (mr.right - sr.left) / scale,
         top: (mr.top - sr.top) / scale,
         bottom: (mr.bottom - sr.top) / scale,
         height: sr.height / scale,
+        stretchTop: Math.max(0, (mr.top - refTop) / scale),
+        stretchBottom: Math.max(0, (refBottom - mr.bottom) / scale),
       });
     };
     measure();
@@ -558,6 +579,8 @@ function HeroSlide({
     ro.observe(slideEl);
     const media = slideEl.querySelector<HTMLElement>(".hero-slide__media-box");
     if (media) ro.observe(media);
+    const textCol = slideEl.querySelector<HTMLElement>(".hero-slide__text-col");
+    if (textCol) ro.observe(textCol);
     window.addEventListener("resize", measure);
     return () => {
       ro.disconnect();
@@ -584,11 +607,12 @@ function HeroSlide({
   ) : null;
 
   // Inline CSS vars for media-aligned text stretching: top/bottom insets equal
-  // the media-box's distance from slide top/bottom edges respectively.
+  // the media-box's distance from text-col content top/bottom (which excludes
+  // hero-slide's own padding).
   const stretchInsets = stretchToMedia && mediaRect
     ? ({
-        "--media-inset-top": `${Math.max(0, mediaRect.top)}px`,
-        "--media-inset-bottom": `${Math.max(0, mediaRect.height - mediaRect.bottom)}px`,
+        "--media-inset-top": `${mediaRect.stretchTop}px`,
+        "--media-inset-bottom": `${mediaRect.stretchBottom}px`,
       } as React.CSSProperties)
     : undefined;
 
