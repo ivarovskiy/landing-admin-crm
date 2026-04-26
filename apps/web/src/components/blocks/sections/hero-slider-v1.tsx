@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import React, { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Container, Hairline, Kicker, OutlineStampText, STAMP_HERO_TITLE, STAMP_KICKER, STAMP_SUBTITLE } from "@/components/landing/ui";
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
@@ -227,6 +227,7 @@ export function HeroSliderV1({ data }: { data: any }) {
 
   const showDots = options?.showDots !== false;
   const showArrows = options?.showArrows === true;
+  const showGuides = options?.showGuides === true;
 
   // Real slide currently displayed (for dots / aria / live preview)
   const active = hasLoop
@@ -451,7 +452,12 @@ export function HeroSliderV1({ data }: { data: any }) {
                   aria-label={`${realIndex + 1} of ${count}`}
                   aria-hidden={isClone || realIndex !== active}
                 >
-                  <HeroSlide slide={s} isDragging={!!drag.current?.moved} slideIndex={realIndex} />
+                  <HeroSlide
+                    slide={s}
+                    isDragging={!!drag.current?.moved}
+                    slideIndex={realIndex}
+                    showGuides={showGuides}
+                  />
                 </div>
               );
             })}
@@ -505,21 +511,86 @@ function HeroSlide({
   slide,
   isDragging,
   slideIndex: i,
+  showGuides = false,
 }: {
   slide: Slide;
   isDragging: boolean;
   slideIndex: number;
+  showGuides?: boolean;
 }) {
   const template = resolveTemplate(slide);
   const mobileImageFirst = !!slide?.layout?.mobile?.imageFirst;
+  const stretchToMedia = !!slide?.stretchTextToMedia;
+  const slideRef = useRef<HTMLDivElement>(null);
+  type MediaRect = { left: number; right: number; top: number; bottom: number; height: number };
+  const [mediaRect, setMediaRect] = useState<MediaRect | null>(null);
+  // Measurement is needed for guides and for media-aligned text stretching.
+  const measureNeeded = showGuides || stretchToMedia;
+
+  useLayoutEffect(() => {
+    if (!measureNeeded) {
+      setMediaRect(null);
+      return;
+    }
+    const slideEl = slideRef.current;
+    if (!slideEl) return;
+    const measure = () => {
+      const media = slideEl.querySelector<HTMLElement>(".hero-slide__media-box");
+      if (!media) {
+        setMediaRect(null);
+        return;
+      }
+      const sr = slideEl.getBoundingClientRect();
+      const mr = media.getBoundingClientRect();
+      if (!sr.width || !mr.width) return;
+      // Convert visual px → layout px in case parent uses CSS zoom/scale.
+      const scale = sr.width / slideEl.offsetWidth || 1;
+      setMediaRect({
+        left: (mr.left - sr.left) / scale,
+        right: (mr.right - sr.left) / scale,
+        top: (mr.top - sr.top) / scale,
+        bottom: (mr.bottom - sr.top) / scale,
+        height: sr.height / scale,
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(slideEl);
+    const media = slideEl.querySelector<HTMLElement>(".hero-slide__media-box");
+    if (media) ro.observe(media);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [measureNeeded, slide]);
 
   const slideClass = cn(
     "hero-slide",
     `hero-slide--${template}`,
     mobileImageFirst && "hero-slide--mobile-image-first",
     slide?.layout?.desktop?.textAlignFullWidth && "hs-text-wide",
-    slide?.stretchTextToMedia && "hero-slide--copy-stretch"
+    slide?.stretchTextToMedia && "hero-slide--copy-stretch",
+    showGuides && "hero-slide--with-guides"
   );
+
+  const guides = showGuides && mediaRect ? (
+    <div className="hero-slide__guides" aria-hidden="true">
+      <div className="hero-slide__guide hero-slide__guide--vertical" style={{ left: `${mediaRect.left}px` }} />
+      <div className="hero-slide__guide hero-slide__guide--vertical" style={{ left: `${mediaRect.right}px` }} />
+      <div className="hero-slide__guide hero-slide__guide--horizontal" style={{ top: `${mediaRect.top}px` }} />
+      <div className="hero-slide__guide hero-slide__guide--horizontal" style={{ top: `${mediaRect.bottom}px` }} />
+    </div>
+  ) : null;
+
+  // Inline CSS vars for media-aligned text stretching: top/bottom insets equal
+  // the media-box's distance from slide top/bottom edges respectively.
+  const stretchInsets = stretchToMedia && mediaRect
+    ? ({
+        "--media-inset-top": `${Math.max(0, mediaRect.top)}px`,
+        "--media-inset-bottom": `${Math.max(0, mediaRect.height - mediaRect.bottom)}px`,
+      } as React.CSSProperties)
+    : undefined;
 
   const mediaPrimary = (
     <MediaFrame media={slide.media} className="hero-slide__media-box" slotId={`slide-${i}-media`} priority={i === 0} />
@@ -534,18 +605,21 @@ function HeroSlide({
   const autoCtaAlign = imgSide === "left" ? "right" : "left";
   const ctaSide = slide.ctaStyle?.align || autoCtaAlign;
 
+  const rootStyle = { ...slideStyle(slide), ...(stretchInsets ?? {}) };
+
   if (template === "full-image") {
     return (
-      <div className={slideClass} style={slideStyle(slide)}>
+      <div ref={slideRef} className={slideClass} style={rootStyle}>
         <div className="hero-slide__media-col hero-slide__media-col--full">
           {mediaPrimary}
         </div>
+        {guides}
       </div>
     );
   }
 
   return (
-    <div className={slideClass} style={slideStyle(slide)}>
+    <div ref={slideRef} className={slideClass} style={rootStyle}>
       <div className="hero-slide__text-col">
         {standardCopy}
       </div>
@@ -553,6 +627,8 @@ function HeroSlide({
       <div className="hero-slide__media-col">
         {mediaPrimary}
       </div>
+
+      {guides}
 
       {cta?.href ? (
         <a

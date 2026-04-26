@@ -123,6 +123,7 @@ export function HeroSliderV1Form({ value, onChange }: BlockFormProps) {
   const showDots = options?.showDots !== false;
   const showArrows = options?.showArrows === true;
   const fillViewport = options?.fillViewport === true;
+  const showGuides = options?.showGuides === true;
   const autoPlayMs = Number(options?.autoPlayMs ?? 0);
   const inlineIconMargin = options?.inlineIconMargin ?? "";
   const inlineIconSize = options?.inlineIconSize ?? "";
@@ -159,6 +160,11 @@ export function HeroSliderV1Form({ value, onChange }: BlockFormProps) {
           label="Fill viewport height"
           checked={fillViewport}
           onChange={(v) => set(["options", "fillViewport"], v)}
+        />
+        <InspectorToggle
+          label="Show guidelines"
+          checked={showGuides}
+          onChange={(v) => set(["options", "showGuides"], v || undefined)}
         />
 
         <div className="grid grid-cols-2 gap-1.5">

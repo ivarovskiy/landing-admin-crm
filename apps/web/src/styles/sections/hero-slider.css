@@ -407,17 +407,24 @@
   }
 
   /* Stretch text column to media height — top child anchors to top edge,
-     bottom child to bottom edge of media (no manual mt/mb needed). Per-element
-     mt/mb still applies on top so editors can fine-tune insets.
+     bottom child to bottom edge of *media* (not slide row). The vertical
+     padding equals the media-box's offsets from the slide edges, measured
+     in JS and exposed as --media-inset-top / --media-inset-bottom.
      `.hero-slide__copy` is normally `display: block` (flex declaration is
      commented out in the base rule), so we have to explicitly make it a flex
      column here — otherwise `.hero-slide__copy-main { flex: 1 }` is a no-op
-     and `space-between` has nothing to spread. */
+     and `space-between` has nothing to spread.
+     `min-height: 0` overrides the base `min-height: 100%` so padding doesn't
+     push the inner content past the row bottom. */
   .hero-slide--copy-stretch .hero-slide__copy {
     display: flex;
     flex-direction: column;
     justify-content: stretch;
     height: 100%;
+    min-height: 0;
+    padding-top: var(--media-inset-top, 0px);
+    padding-bottom: var(--media-inset-bottom, 0px);
+    box-sizing: border-box;
   }
   .hero-slide--copy-stretch .hero-slide__copy-main {
     flex: 1 1 auto;
@@ -510,4 +517,40 @@
     position: absolute;
     inset: -8px;
   }
+}
+
+/* ===== Guidelines overlay (admin) =====
+   Toggled via slider options.showGuides. Renders 4 thin lines aligned with
+   the media's left/right/top/bottom edges, spanning the full slide.
+   Positions are computed in JS from .hero-slide__media-box bounding rect. */
+
+.hero-slide--with-guides {
+  position: relative;
+}
+
+.hero-slide__guides {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.hero-slide__guide {
+  position: absolute;
+  background: oklch(0.62 0.22 18 / 70%);
+  box-shadow: 0 0 0 0.5px oklch(1 0 0 / 30%);
+}
+
+.hero-slide__guide--vertical {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-0.5px);
+}
+
+.hero-slide__guide--horizontal {
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform: translateY(-0.5px);
 }
