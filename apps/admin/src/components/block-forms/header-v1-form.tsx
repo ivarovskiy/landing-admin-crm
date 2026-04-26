@@ -11,11 +11,11 @@ import {
   InspectorTextarea,
   BlockLayoutSection,
 } from "@/components/inspector";
-import { Monitor, Smartphone, PanelLeft, PanelRight, Menu, Megaphone, Plus, Eye, EyeOff, ChevronDown, ChevronRight } from "lucide-react";
+import { Monitor, Smartphone, PanelLeft, PanelRight, Menu, Megaphone, Plus, Eye, EyeOff, ChevronDown, ChevronRight, Link2, Link2Off } from "lucide-react";
 import { useState } from "react";
 
-type LinkItem = { label?: string; href?: string; hidden?: boolean };
-type NavItem = { label?: string; href?: string; children?: LinkItem[]; hidden?: boolean };
+type LinkItem = { label?: string; href?: string; hidden?: boolean; noLink?: boolean };
+type NavItem = { label?: string; href?: string; children?: LinkItem[]; hidden?: boolean; noLink?: boolean };
 
 /* ------------------------------------------------------------------ */
 /*  Reusable nav-item editor (label + href + collapsible children)    */
@@ -25,17 +25,20 @@ function NavItemEditor({
   basePath,
   set,
   onToggleHidden,
+  onToggleNoLink,
   idx,
 }: {
   item: NavItem;
   basePath: (string | number)[];
   set: (path: (string | number)[], v: unknown) => void;
   onToggleHidden: () => void;
+  onToggleNoLink: () => void;
   idx: number;
 }) {
   const children = arr<LinkItem>(item?.children);
   const [open, setOpen] = useState(children.length > 0);
   const isHidden = !!item?.hidden;
+  const isNoLink = !!item?.noLink;
 
   return (
     <div className={`rounded-md border p-2 space-y-1.5 bg-muted/10 ${isHidden ? "opacity-50" : ""}`}>
@@ -50,14 +53,24 @@ function NavItemEditor({
             {idx + 1}. {item?.label || "Link"}
           </span>
         </button>
-        <button
-          type="button"
-          onClick={onToggleHidden}
-          className="text-muted-foreground hover:text-foreground"
-          title={isHidden ? "Show" : "Hide"}
-        >
-          {isHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onToggleNoLink}
+            className={isNoLink ? "text-amber-500" : "text-muted-foreground hover:text-foreground"}
+            title={isNoLink ? "Make clickable link" : "Make non-clickable (label only)"}
+          >
+            {isNoLink ? <Link2Off className="h-3 w-3" /> : <Link2 className="h-3 w-3" />}
+          </button>
+          <button
+            type="button"
+            onClick={onToggleHidden}
+            className="text-muted-foreground hover:text-foreground"
+            title={isHidden ? "Show" : "Hide"}
+          >
+            {isHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-1">
@@ -66,17 +79,20 @@ function NavItemEditor({
           onChange={(v) => set([...basePath, "label"], v)}
           placeholder="Label"
         />
-        <InspectorInput
-          value={item?.href ?? ""}
-          onChange={(v) => set([...basePath, "href"], v)}
-          placeholder="Href"
-        />
+        <div className={isNoLink ? "opacity-40 pointer-events-none" : ""}>
+          <InspectorInput
+            value={item?.href ?? ""}
+            onChange={(v) => set([...basePath, "href"], v)}
+            placeholder={isNoLink ? "(non-link)" : "Href"}
+          />
+        </div>
       </div>
 
       {open && (
         <div className="pl-2 border-l-2 border-muted space-y-1">
           {children.map((c, cIdx) => {
             const childHidden = !!c?.hidden;
+            const childNoLink = !!c?.noLink;
             return (
               <div key={cIdx} className={`flex gap-1 ${childHidden ? "opacity-50" : ""}`}>
                 <InspectorInput
@@ -84,11 +100,26 @@ function NavItemEditor({
                   onChange={(v) => set([...basePath, "children", cIdx, "label"], v)}
                   placeholder="Child label"
                 />
-                <InspectorInput
-                  value={c?.href ?? ""}
-                  onChange={(v) => set([...basePath, "children", cIdx, "href"], v)}
-                  placeholder="Href"
-                />
+                <div className={`flex-1 ${childNoLink ? "opacity-40 pointer-events-none" : ""}`}>
+                  <InspectorInput
+                    value={c?.href ?? ""}
+                    onChange={(v) => set([...basePath, "children", cIdx, "href"], v)}
+                    placeholder={childNoLink ? "(non-link)" : "Href"}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    set(
+                      [...basePath, "children"],
+                      setAt(children, cIdx, { ...c, noLink: !childNoLink }),
+                    )
+                  }
+                  className={`shrink-0 pt-1.5 ${childNoLink ? "text-amber-500" : "text-muted-foreground hover:text-foreground"}`}
+                  title={childNoLink ? "Make clickable link" : "Make non-clickable (label only)"}
+                >
+                  {childNoLink ? <Link2Off className="h-3 w-3" /> : <Link2 className="h-3 w-3" />}
+                </button>
                 <button
                   type="button"
                   onClick={() =>
@@ -161,6 +192,7 @@ function NavColumnEditor({
             basePath={[...path, idx]}
             set={set}
             onToggleHidden={() => set(path, setAt(items, idx, { ...item, hidden: !item?.hidden }))}
+            onToggleNoLink={() => set(path, setAt(items, idx, { ...item, noLink: !item?.noLink }))}
             idx={idx}
           />
         ))}
@@ -381,6 +413,9 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
               set={set}
               onToggleHidden={() =>
                 set(["mobile", "menu"], setAt(menu, idx, { ...m, hidden: !m?.hidden }))
+              }
+              onToggleNoLink={() =>
+                set(["mobile", "menu"], setAt(menu, idx, { ...m, noLink: !m?.noLink }))
               }
               idx={idx}
             />

@@ -12,6 +12,9 @@ type HeaderLink = {
   href: string;
   children?: HeaderLink[];
   active?: boolean;
+  /** When true the item renders as plain text (no <a>, no underline-on-hover, no cursor:pointer).
+   *  For parents with children, hover does NOT auto-open the dropdown — only click toggles. */
+  noLink?: boolean;
 };
 
 type HeaderNavGroups = {
@@ -288,19 +291,24 @@ export function HeaderV1({ data }: { data: any }) {
                 const hasChildren =
                   Array.isArray(item.children) && item.children.length > 0;
                 const isOpen = !!expanded[idx];
+                const isNoLink = item.noLink === true;
 
                 return (
                   <div key={`${item.label}-${idx}`}>
                     <div className="header-menu__link-row">
-                      <a
-                        href={item.href ?? "#"}
-                        className="ds-kicker"
-                        onClick={() => {
-                          if (!hasChildren) setOpen(false);
-                        }}
-                      >
-                        {item.label}
-                      </a>
+                      {isNoLink ? (
+                        <span className={cn("ds-kicker", "is-no-link")}>{item.label}</span>
+                      ) : (
+                        <a
+                          href={item.href ?? "#"}
+                          className="ds-kicker"
+                          onClick={() => {
+                            if (!hasChildren) setOpen(false);
+                          }}
+                        >
+                          {item.label}
+                        </a>
+                      )}
 
                       {hasChildren ? (
                         <button
@@ -319,16 +327,25 @@ export function HeaderV1({ data }: { data: any }) {
                     {hasChildren ? (
                       <div className={cn("header-submenu", isOpen && "is-expanded")}>
                         <div className="header-submenu__list">
-                          {item.children!.map((c, i) => (
-                            <a
-                              key={`${c.label}-${i}`}
-                              href={c.href ?? "#"}
-                              className="header-submenu__child"
-                              onClick={() => setOpen(false)}
-                            >
-                              {c.label}
-                            </a>
-                          ))}
+                          {item.children!.map((c, i) =>
+                            c.noLink ? (
+                              <span
+                                key={`${c.label}-${i}`}
+                                className={cn("header-submenu__child", "is-no-link")}
+                              >
+                                {c.label}
+                              </span>
+                            ) : (
+                              <a
+                                key={`${c.label}-${i}`}
+                                href={c.href ?? "#"}
+                                className="header-submenu__child"
+                                onClick={() => setOpen(false)}
+                              >
+                                {c.label}
+                              </a>
+                            ),
+                          )}
                         </div>
                       </div>
                     ) : null}
@@ -480,6 +497,22 @@ function DesktopNavColumn({
           const hasChildren = Array.isArray(item.children) && item.children.length > 0;
           const key = toKey(item.label);
           const isOpen = openDropdown === key;
+          const isNoLink = item.noLink === true;
+
+          // Hover behavior: a normal parent auto-opens its dropdown on hover
+          // for fast navigation. A no-link parent ignores hover — the dropdown
+          // is only toggled by an explicit click on the parent label.
+          const onMouseEnter = () => {
+            if (isNoLink) return;
+            if (hasChildren) onToggle(key);
+            else onToggle(null);
+          };
+
+          const linkClass = cn(
+            "header-desktop__nav-link",
+            (item.active || isOpen) && "is-active",
+            isNoLink && "is-no-link"
+          );
 
           return (
             <span
@@ -490,28 +523,54 @@ function DesktopNavColumn({
               className={cn(
                 "header-desktop__nav-item",
                 hasChildren && "has-children",
-                hasChildren && isOpen && "has-open-dropdown"
+                hasChildren && isOpen && "has-open-dropdown",
+                isNoLink && "is-no-link"
               )}
-              onMouseEnter={() => {
-                if (hasChildren) onToggle(key);
-                else onToggle(null);
-              }}
+              onMouseEnter={onMouseEnter}
             >
-              <a
-                href={item.href ?? "#"}
-                className={cn("header-desktop__nav-link", (item.active || isOpen) && "is-active")}
-                onClick={
-                  hasChildren
-                    ? (e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onToggle(isOpen ? null : key);
-                    }
-                    : () => onToggle(null)
-                }
-              >
-                {item.label}
-              </a>
+              {isNoLink ? (
+                <span
+                  className={linkClass}
+                  role={hasChildren ? "button" : undefined}
+                  tabIndex={hasChildren ? 0 : undefined}
+                  onClick={
+                    hasChildren
+                      ? (e) => {
+                          e.stopPropagation();
+                          onToggle(isOpen ? null : key);
+                        }
+                      : undefined
+                  }
+                  onKeyDown={
+                    hasChildren
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onToggle(isOpen ? null : key);
+                          }
+                        }
+                      : undefined
+                  }
+                >
+                  {item.label}
+                </span>
+              ) : (
+                <a
+                  href={item.href ?? "#"}
+                  className={linkClass}
+                  onClick={
+                    hasChildren
+                      ? (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onToggle(isOpen ? null : key);
+                        }
+                      : () => onToggle(null)
+                  }
+                >
+                  {item.label}
+                </a>
+              )}
             </span>
           );
         })}
@@ -523,16 +582,33 @@ function DesktopNavColumn({
             style={{ left: `${dropdownLeft}px` }}
             onClick={(e) => e.stopPropagation()}
           >
-            {activeItem.children.map((child, i) => (
-              <a
-                key={`${activeItem.label}-${child.label}-${i}`}
-                href={child.href ?? "#"}
-                className={cn("header-desktop__subnav-link", child.active && "is-active")}
-                onClick={() => onToggle(null)}
-              >
-                {child.label}
-              </a>
-            ))}
+            {activeItem.children.map((child, i) => {
+              const linkClass = cn(
+                "header-desktop__subnav-link",
+                child.active && "is-active",
+                child.noLink && "is-no-link"
+              );
+              if (child.noLink) {
+                return (
+                  <span
+                    key={`${activeItem.label}-${child.label}-${i}`}
+                    className={linkClass}
+                  >
+                    {child.label}
+                  </span>
+                );
+              }
+              return (
+                <a
+                  key={`${activeItem.label}-${child.label}-${i}`}
+                  href={child.href ?? "#"}
+                  className={linkClass}
+                  onClick={() => onToggle(null)}
+                >
+                  {child.label}
+                </a>
+              );
+            })}
           </div>
         ) : null}
       </div>
@@ -609,6 +685,7 @@ function normalizeLink(value: any): HeaderLink | null {
     label,
     href: typeof value.href === "string" && value.href.trim() ? value.href : "#",
     active: Boolean(value.active),
+    noLink: value.noLink === true,
     children: children.length ? children : undefined,
   };
 }

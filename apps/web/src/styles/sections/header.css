@@ -302,6 +302,32 @@
   opacity: 1;
 }
 
+/* ---- "No-link" items (label only, not clickable) ---- */
+/* Visible like a normal link but never underlines on hover and uses the
+   default cursor. Parent no-link items still respond to click (to toggle
+   their dropdown), so we keep cursor:pointer when they have children. */
+.header-desktop__nav-link.is-no-link,
+.header-desktop__subnav-link.is-no-link {
+  cursor: default;
+  text-decoration: none;
+}
+.header-desktop__nav-item.has-children .header-desktop__nav-link.is-no-link {
+  cursor: pointer;
+}
+.header-desktop__nav-link.is-no-link:hover::after,
+.header-desktop__nav-link.is-no-link.is-active::after,
+.header-desktop__subnav-link.is-no-link:hover::after,
+.header-desktop__subnav-link.is-no-link.is-active::after {
+  opacity: 0;
+}
+
+/* Mobile menu — same idea, just default cursor and no link affordance */
+.ds-kicker.is-no-link,
+.header-submenu__child.is-no-link {
+  cursor: default;
+  text-decoration: none;
+}
+
 /* ---- Desktop dropdown ---- */
 
 .header-desktop__dropdown {
