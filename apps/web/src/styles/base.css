@@ -19,6 +19,24 @@ a {
   text-decoration: none;
 }
 
+/* iOS Safari "data detectors" wrap detected text (phone numbers, addresses,
+   dates, emails) into invisible <a> tags with underlines and the system blue.
+   The format-detection meta in <head> disables this on most versions, but as
+   a belt-and-suspenders fix we strip any leftover styling so wrapped
+   fragments still look exactly like the surrounding text. */
+a[x-apple-data-detectors],
+a[x-apple-data-detectors="true"],
+.appleLinks a,
+.x-apple-data-detectors {
+  color: inherit !important;
+  text-decoration: none !important;
+  font-size: inherit !important;
+  font-family: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+  pointer-events: none !important;
+}
+
 /* Optional: hide scrollbar visually — toggled via .hide-scrollbar on <html> */
 html.hide-scrollbar,
 html.hide-scrollbar body {

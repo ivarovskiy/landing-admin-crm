@@ -44,6 +44,12 @@ export default async function RootLayout({ children }: {
       style={sectionStrokeStyle}
     >
       <head>
+        {/* Disable iOS Safari "data detectors" that auto-convert phone numbers,
+            addresses, dates and emails into underlined tappable links. The
+            studio address and phone in the footer/header should look like
+            plain styled text unless explicitly wrapped in an <a>. */}
+        <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
+        <meta name="x-apple-disable-message-reformatting" content="" />
         {/* Must run synchronously before first paint to prevent zoom flash */}
         <script dangerouslySetInnerHTML={{ __html: VIEWPORT_SCRIPT }} />
       </head>
