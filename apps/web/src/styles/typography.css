@@ -14,7 +14,7 @@
   text-transform: uppercase;
   paint-order: stroke fill;
   -webkit-text-stroke: var(--text-stroke-w, 2.6px) var(--stamp-stroke, var(--color-primary)); /* 1.3px outside × 2 */
-  text-shadow: 4.15px 4.15px 0 var(--stamp-stroke, var(--color-primary));
+  filter: drop-shadow(4.15px 4.15px 0 var(--stamp-stroke, var(--color-primary)));
 }
 
 .typo-homepage-header {
@@ -117,7 +117,7 @@
   color: var(--stamp-fill, var(--color-outline-fill));
   paint-order: stroke fill;
   -webkit-text-stroke: var(--text-stroke-w, 2.6px) var(--stamp-stroke, var(--color-primary)); /* 1.3px outside × 2 */
-  text-shadow: 4.15px 4.15px 0 var(--stamp-stroke, var(--color-primary));
+  filter: drop-shadow(4.15px 4.15px 0 var(--stamp-stroke, var(--color-primary)));
 }
 
 /* ---- Nav link ---- */
@@ -156,10 +156,10 @@
    2. Per-size override toggles (Section / Hero / Subtitle title)
       When a stroke override is on for a size, we set
       `-webkit-text-stroke-width` to a fixed px value for that size's classes.
-      When a shadow override is on for a size, we set `text-shadow` to a
-      fixed offset for that size's classes. Each override is independent and
-      applied via a later, equal-specificity rule, so it wins over Link mode
-      for that specific size.
+      When a shadow override is on for a size, we set `filter: drop-shadow`
+      to a fixed offset for that size's classes. Each override is independent
+      and applied via a later, equal-specificity rule, so it wins over Link
+      mode for that specific size.
 
    3. Section / Hero shadow overrides also drive the link-mode em-ratio
       (stroke ratio from --section-title-stroke-w, shadow ratio from
@@ -187,7 +187,7 @@
 [data-stamp-link="on"] .typo-homepage-header,
 [data-stamp-link="on"] .typo-hero-title {
   -webkit-text-stroke: var(--text-stroke-w, var(--stamp-stroke-em)) var(--stamp-stroke, var(--color-primary));
-  text-shadow: var(--stamp-shadow-em) var(--stamp-shadow-em) 0 var(--stamp-stroke, var(--color-primary));
+  filter: drop-shadow(var(--stamp-shadow-em) var(--stamp-shadow-em) 0 var(--stamp-stroke, var(--color-primary)));
 }
 
 /* Per-size override rules live in components.css so they come AFTER the

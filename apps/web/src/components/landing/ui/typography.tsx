@@ -133,6 +133,13 @@ type OutlineStampTextProps = React.HTMLAttributes<HTMLElement> & {
   stamp?: OutlineStampStyle;
 };
 
+/**
+ * Single-element stamp text. Stroke comes from -webkit-text-stroke and the
+ * shadow comes from filter: drop-shadow on .ds-outline-stamp (see components.css).
+ * The drop-shadow includes the stroke contour, so the resulting shadow has the
+ * same visual thickness as the previous two-span renderer that duplicated the
+ * stroked text in shadow color.
+ */
 export function OutlineStampText({
   as: As = "span",
   stamp,
@@ -149,10 +156,7 @@ export function OutlineStampText({
       style={{ ...vars, ...(style ?? {}) }}
       {...props}
     >
-      <span className="ds-outline-stamp__shadow" aria-hidden="true">
-        {children}
-      </span>
-      <span className="ds-outline-stamp__main">{children}</span>
+      {children}
     </As>
   );
 }
