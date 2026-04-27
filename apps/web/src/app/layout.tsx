@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { fontMaru, fontMaruOblique, fontDisplay } from "./fonts";
 import { ScrollToTop } from "@/components/landing/ui/scroll-to-top";
-import { getSiteSettings } from "@/lib/api-public";
+import { getSiteSettings, type ZoomSettings } from "@/lib/api-public";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -10,11 +10,11 @@ export const metadata: Metadata = {
 };
 
 /**
- * Sets viewport width to the design base (1480px) on screens 768–1479px
- * so the browser scales the page natively before first paint — no JS zoom flash.
- * On mobile (<768px) and large desktop (≥1480px) the default viewport applies.
+ * Legacy pre-paint script — preserved verbatim as the default when
+ * `zoom.preventInitialFlicker` is OFF. Sets viewport width to 1320 on screens
+ * 768–1319 so the browser scales the page natively before first paint.
  */
-const VIEWPORT_SCRIPT = `(function(){try{
+const LEGACY_VIEWPORT_SCRIPT = `(function(){try{
   var w=window.screen.width;
   if(w>=768&&w<1320){
     var m=document.querySelector('meta[name=viewport]');
@@ -22,18 +22,88 @@ const VIEWPORT_SCRIPT = `(function(){try{
   }
 }catch(e){}})()`;
 
+type SafeZoomConfig = {
+  enableZoom: boolean;
+  designWidth: number;
+  zoomBreakpoint: number;
+  scale: number;
+  normalizeViewport: boolean;
+  normalizeViewportWidth: number;
+  hideScrollbar: boolean;
+};
+
+function sanitizeZoom(zoom: ZoomSettings | undefined): SafeZoomConfig {
+  const num = (v: unknown, dflt: number) =>
+    typeof v === "number" && isFinite(v) && v > 0 ? v : dflt;
+  return {
+    enableZoom: zoom?.enableZoom !== false,
+    designWidth: num(zoom?.designWidth, 1480),
+    zoomBreakpoint: num(zoom?.zoomBreakpoint, 768),
+    scale: num(zoom?.scale, 1),
+    normalizeViewport: zoom?.normalizeViewport === true,
+    normalizeViewportWidth: num(zoom?.normalizeViewportWidth, 1320),
+    hideScrollbar: zoom?.hideScrollbar === true,
+  };
+}
+
+/**
+ * Opt-in pre-paint script (admin: Settings → Zoom & Viewport → Prevent initial
+ * flicker). Synchronously, in <head>, before first paint:
+ *   1. sets <meta viewport content="width=N"> when normalizeViewport=true;
+ *   2. injects <style id="landing-zoom-pre"> with computed CSS `zoom` on
+ *      .landing-stack when enableZoom=true and clientWidth ≥ zoomBreakpoint;
+ *   3. adds .hide-scrollbar to <html> when hideScrollbar=true.
+ *
+ * The runtime `LandingZoom` client component remains as a failsafe for
+ * resize/font-load events and removes the prepaint <style> once it has
+ * applied its own inline zoom.
+ */
+function buildPrepaintScript(cfg: SafeZoomConfig): string {
+  const json = JSON.stringify(cfg).replace(/</g, "\\u003c");
+  return `(function(){try{
+  var s=${json};
+  if(s.normalizeViewport){
+    var m=document.querySelector('meta[name="viewport"]');
+    if(!m){m=document.createElement('meta');m.name='viewport';document.head.appendChild(m);}
+    m.content='width='+s.normalizeViewportWidth;
+  }
+  if(s.hideScrollbar){document.documentElement.classList.add('hide-scrollbar');}
+  if(s.enableZoom){
+    void document.documentElement.offsetWidth;
+    var cw=document.documentElement.clientWidth||0;
+    if(cw>=s.zoomBreakpoint){
+      var auto=Math.min(1,cw/s.designWidth);
+      var f=auto*s.scale;
+      if(f>0&&f<0.999){
+        var st=document.createElement('style');
+        st.id='landing-zoom-pre';
+        st.textContent='.landing-stack{zoom:'+f.toFixed(5)+'}';
+        document.head.appendChild(st);
+      }
+    }
+  }
+}catch(e){}})()`;
+}
+
 export default async function RootLayout({ children }: {
   children: React.ReactNode
 }) {
   const settingsRes = await getSiteSettings();
-  const scrollToTop = settingsRes.ok ? settingsRes.data?.scrollToTop : undefined;
-  const typography = settingsRes.ok ? settingsRes.data?.typography : undefined;
+  const data = settingsRes.ok ? settingsRes.data : undefined;
+  const scrollToTop = data?.scrollToTop;
+  const typography = data?.typography;
+  const zoom = data?.zoom;
   const stampLink = typography?.linkStampScale === true ? "on" : undefined;
   const sectionStroke = typography?.sectionTitleStrokeEnabled === true ? "on" : undefined;
   const sectionStrokeStyle =
     sectionStroke && typography?.sectionTitleStrokeW
       ? ({ "--section-title-stroke-w": typography.sectionTitleStrokeW } as React.CSSProperties)
       : undefined;
+
+  const prepaintScript =
+    zoom?.preventInitialFlicker === true
+      ? buildPrepaintScript(sanitizeZoom(zoom))
+      : LEGACY_VIEWPORT_SCRIPT;
 
   return (
     <html
@@ -51,7 +121,7 @@ export default async function RootLayout({ children }: {
         <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
         <meta name="x-apple-disable-message-reformatting" content="" />
         {/* Must run synchronously before first paint to prevent zoom flash */}
-        <script dangerouslySetInnerHTML={{ __html: VIEWPORT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: prepaintScript }} />
       </head>
       <body>
         {children}

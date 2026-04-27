@@ -53,6 +53,7 @@ type ZoomSettings = {
   normalizeViewport?: boolean;
   normalizeViewportWidth?: number;
   hideScrollbar?: boolean;
+  preventInitialFlicker?: boolean;
 };
 
 export function PageRenderer({ blocks, zoomSettings }: { blocks: BlockModel[]; zoomSettings?: ZoomSettings | null }) {
@@ -70,6 +71,7 @@ export function PageRenderer({ blocks, zoomSettings }: { blocks: BlockModel[]; z
         normalizeViewport={zoomSettings?.normalizeViewport === true}
         normalizeViewportWidth={zoomSettings?.normalizeViewportWidth}
         hideScrollbar={zoomSettings?.hideScrollbar === true}
+        preventInitialFlicker={zoomSettings?.preventInitialFlicker === true}
       />
       {sorted.map((block) => {
 
