@@ -116,7 +116,7 @@ export const TEMPLATE_OPTIONS: { value: SlideTemplate; label: string }[] = [
 ];
 
 /** Named presets — pre-fill specific fields for each Figma slide design */
-export type PresetKey = "1" | "2" | "3" | "4" | "5" | "6";
+export type PresetKey = "1" | "2" | "3" | "4" | "5" | "6" | "7";
 
 export const PRESET_OPTIONS: { value: PresetKey; label: string }[] = [
   { value: "1", label: "① Photo left — title + subtitle" },
@@ -125,6 +125,7 @@ export const PRESET_OPTIONS: { value: PresetKey; label: string }[] = [
   { value: "4", label: "④ Title + bullet list — photo right" },
   { value: "5", label: "⑤ Kicker + title — wide photo right" },
   { value: "6", label: "⑥ Full-width banner image" },
+  { value: "7", label: "⑦ Photo left — subtitle + bullet list (right-aligned)" },
 ];
 
 export const TEXT_VARIANT_OPTIONS = [
@@ -303,6 +304,27 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         media: media("Full image", "16/6"),
         layout: {
           desktop: { mediaWidth: "100%", mediaPadding: "0 12px" },
+          mobile: { imageFirst: true },
+        },
+      };
+      
+      case "7": // ⑦ Photo left — subtitle + bullet list (right-aligned)"
+      return {
+        template: "image-left-copy-right",
+        subtitle: "All Levels\nAge 3 and Up",
+        body: "BALLET\nPOINTE\nCONTEMPORARY\nJAZZ\nHIP HOP\nTAP COMBO CLASSES\nPRESCHOOL DANCE",
+        bodyVariant: "list",
+        cta: CTA_DEFAULT,
+        media: media("Dance styles", "788/526"),
+        titleStyle: { mt: "120px", mb: "46px" },
+        subtitleStyle: { mt: "80px", mb: "44px", typo: "typo-subtitle", align: "left" },
+        bodyStyle: { typo: "typo-text-header", align: "right", pb: "112px" },
+        layout: {
+          desktop: {
+            gap: "50px", mediaWidth: "818px", textWidth: "80%",
+            textAlign: "right", contentJustify: "center",
+            mediaPadding: "0 0 0 12px",
+          },
           mobile: { imageFirst: true },
         },
       };
