@@ -94,11 +94,47 @@ export default async function RootLayout({ children }: {
   const scrollToTop = data?.scrollToTop;
   const typography = data?.typography;
   const zoom = data?.zoom;
+
+  // Per-size override flags — each pair (toggle + value) only takes effect
+  // when both are present, so an admin who enables a toggle but leaves the
+  // value blank gets a no-op (no silent default).
   const stampLink = typography?.linkStampScale === true ? "on" : undefined;
-  const sectionStroke = typography?.sectionTitleStrokeEnabled === true ? "on" : undefined;
-  const sectionStrokeStyle =
-    sectionStroke && typography?.sectionTitleStrokeW
-      ? ({ "--section-title-stroke-w": typography.sectionTitleStrokeW } as React.CSSProperties)
+  const sectionStroke =
+    typography?.sectionTitleStrokeEnabled === true && typography?.sectionTitleStrokeW
+      ? "on"
+      : undefined;
+  const sectionShadow =
+    typography?.sectionTitleShadowEnabled === true && typography?.sectionTitleShadowOffset
+      ? "on"
+      : undefined;
+  const heroStroke =
+    typography?.heroTitleStrokeEnabled === true && typography?.heroTitleStrokeW
+      ? "on"
+      : undefined;
+  const heroShadow =
+    typography?.heroTitleShadowEnabled === true && typography?.heroTitleShadowOffset
+      ? "on"
+      : undefined;
+  const subtitleStroke =
+    typography?.subtitleStrokeEnabled === true && typography?.subtitleStrokeW
+      ? "on"
+      : undefined;
+  const subtitleShadow =
+    typography?.subtitleShadowEnabled === true && typography?.subtitleShadowOffset
+      ? "on"
+      : undefined;
+
+  const typographyStyle: Record<string, string> = {};
+  if (sectionStroke) typographyStyle["--section-title-stroke-w"] = typography!.sectionTitleStrokeW!;
+  if (sectionShadow) typographyStyle["--section-title-shadow-offset"] = typography!.sectionTitleShadowOffset!;
+  if (heroStroke) typographyStyle["--hero-title-stroke-w"] = typography!.heroTitleStrokeW!;
+  if (heroShadow) typographyStyle["--hero-title-shadow-offset"] = typography!.heroTitleShadowOffset!;
+  if (subtitleStroke) typographyStyle["--subtitle-stroke-w"] = typography!.subtitleStrokeW!;
+  if (subtitleShadow) typographyStyle["--subtitle-shadow-offset"] = typography!.subtitleShadowOffset!;
+
+  const htmlStyle =
+    Object.keys(typographyStyle).length > 0
+      ? (typographyStyle as React.CSSProperties)
       : undefined;
 
   const prepaintScript =
@@ -112,7 +148,12 @@ export default async function RootLayout({ children }: {
       className={`${fontMaru.variable} ${fontMaruOblique.variable} ${fontDisplay.variable}`}
       data-stamp-link={stampLink}
       data-section-stroke={sectionStroke}
-      style={sectionStrokeStyle}
+      data-section-shadow={sectionShadow}
+      data-hero-stroke={heroStroke}
+      data-hero-shadow={heroShadow}
+      data-subtitle-stroke={subtitleStroke}
+      data-subtitle-shadow={subtitleShadow}
+      style={htmlStyle}
     >
       <head>
         {/* Disable iOS Safari "data detectors" that auto-convert phone numbers,

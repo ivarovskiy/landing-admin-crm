@@ -31,12 +31,31 @@ export interface ScrollToTopSettings {
 }
 
 export interface TypographySettings {
-  /** Auto-scale stamp stroke + shadow proportionally to font-size (em-based) */
+  /** Auto-scale stamp stroke + shadow proportionally to font-size (em-based).
+   *  Per-size overrides below always win over this when both are enabled. */
   linkStampScale?: boolean;
-  /** Override stroke width for 104px section titles (features, studio-address, homepage-header) */
+
+  /* ── Section title (104px) — homepage-header, features-title, studio-address__title ── */
+  /** Override stroke width at 104px. Also drives the link-mode stroke em-ratio when enabled. */
   sectionTitleStrokeEnabled?: boolean;
-  /** Stroke width value when sectionTitleStrokeEnabled is on (e.g. "3.38px") */
+  /** Stroke width when sectionTitleStrokeEnabled is on (e.g. "3.38px") */
   sectionTitleStrokeW?: string;
+  /** Override text-shadow offset at 104px. Also drives the link-mode shadow em-ratio when enabled. */
+  sectionTitleShadowEnabled?: boolean;
+  /** Shadow offset when sectionTitleShadowEnabled is on (e.g. "5.56px"). Used as `<offset> <offset> 0`. */
+  sectionTitleShadowOffset?: string;
+
+  /* ── Hero title (78px) — content-header, hero-title ── */
+  heroTitleStrokeEnabled?: boolean;
+  heroTitleStrokeW?: string;
+  heroTitleShadowEnabled?: boolean;
+  heroTitleShadowOffset?: string;
+
+  /* ── Subtitle (47px) — typo-subtitle ── */
+  subtitleStrokeEnabled?: boolean;
+  subtitleStrokeW?: string;
+  subtitleShadowEnabled?: boolean;
+  subtitleShadowOffset?: string;
 }
 
 export interface SiteSettingsData {

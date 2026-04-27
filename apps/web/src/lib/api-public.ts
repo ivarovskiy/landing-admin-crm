@@ -22,8 +22,21 @@ export type ScrollToTopSettings = {
 
 export type TypographySettings = {
   linkStampScale?: boolean;
+
   sectionTitleStrokeEnabled?: boolean;
   sectionTitleStrokeW?: string;
+  sectionTitleShadowEnabled?: boolean;
+  sectionTitleShadowOffset?: string;
+
+  heroTitleStrokeEnabled?: boolean;
+  heroTitleStrokeW?: string;
+  heroTitleShadowEnabled?: boolean;
+  heroTitleShadowOffset?: string;
+
+  subtitleStrokeEnabled?: boolean;
+  subtitleStrokeW?: string;
+  subtitleShadowEnabled?: boolean;
+  subtitleShadowOffset?: string;
 };
 
 export type ZoomSettings = {
