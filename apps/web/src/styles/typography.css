@@ -144,44 +144,80 @@
 }
 
 /* =========================================================
-   Linked stamp scaling — when SiteSettings.typography.linkStampScale is ON,
-   stroke + shadow scale proportionally to font-size via em units.
+   Stamp stroke + shadow controls — driven by SiteSettings.typography.
 
-   Default baseline: 104px → stroke 2.6px (0.025em), shadow 5.56px (0.0535em).
+   Three independent layers (each optional, all play nicely together):
 
-   When SiteSettings.typography.sectionTitleStrokeEnabled is also ON, the
-   stroke baseline switches to the configured `--section-title-stroke-w`
-   value: ratio = section-stroke / 104 in em. So if you set 3.1px section
-   stroke, ALL stamp titles use a 0.0298em ratio (104px → 3.1px, 78px → ~2.32px),
-   not the default 0.025em. Shadow ratio stays untouched per spec.
+   1. Link mode (`linkStampScale = true`)
+      Applies em-based proportional stroke + shadow to the stamp typo classes
+      (.typo-content-header, .typo-homepage-header, .typo-hero-title).
+      Default ratios: stroke 0.025em (= 2.6 / 104), shadow 0.0535em (= 5.56 / 104).
+
+   2. Per-size override toggles (Section / Hero / Subtitle title)
+      When a stroke override is on for a size, we set
+      `-webkit-text-stroke-width` to a fixed px value for that size's classes.
+      When a shadow override is on for a size, we set `text-shadow` to a
+      fixed offset for that size's classes. Each override is independent and
+      applied via a later, equal-specificity rule, so it wins over Link mode
+      for that specific size.
+
+   3. Section / Hero shadow overrides also drive the link-mode em-ratio
+      (stroke ratio from --section-title-stroke-w, shadow ratio from
+       --section-title-shadow-offset, both relative to 104 px). This lets you
+      pick a single 104 px reference value and have all linked sizes scale
+      proportionally to it.
 
    Per-element --text-stroke-w (inline px) still overrides everything.
    ========================================================= */
 
 :root {
-  --stamp-stroke-em: 0.025em;
+  --stamp-stroke-em: 0.025em;   /* 2.6 / 104 — overridden by data-section-stroke=on */
+  --stamp-shadow-em: 0.0535em;  /* 5.56 / 104 — overridden by data-section-shadow=on */
 }
 
 [data-section-stroke="on"] {
-  --stamp-stroke-em: calc(var(--section-title-stroke-w, 3.38px) / 104px * 1em);
+  --stamp-stroke-em: calc(var(--section-title-stroke-w) / 104px * 1em);
+}
+[data-section-shadow="on"] {
+  --stamp-shadow-em: calc(var(--section-title-shadow-offset) / 104px * 1em);
 }
 
+/* ── Link mode — proportional stroke + shadow on all stamp sizes ── */
 [data-stamp-link="on"] .typo-content-header,
 [data-stamp-link="on"] .typo-homepage-header,
 [data-stamp-link="on"] .typo-hero-title {
   -webkit-text-stroke: var(--text-stroke-w, var(--stamp-stroke-em)) var(--stamp-stroke, var(--color-primary));
-  text-shadow: 0.0535em 0.0535em 0 var(--stamp-stroke, var(--color-primary));
+  text-shadow: var(--stamp-shadow-em) var(--stamp-shadow-em) 0 var(--stamp-stroke, var(--color-primary));
 }
 
-/* =========================================================
-   Section title stroke override (used when link is OFF) — narrower scope:
-   forces a fixed stroke value on 104px section titles only.
-   When link is ALSO on, we don't fix --text-stroke-w here — the em ratio
-   above handles it (proportional everywhere, equal to section value at 104px).
-   ========================================================= */
+/* ── Per-size overrides ── win over Link mode via equal-specificity later rules. */
 
-[data-section-stroke="on"]:not([data-stamp-link="on"]) .typo-homepage-header,
-[data-section-stroke="on"]:not([data-stamp-link="on"]) .features-title,
-[data-section-stroke="on"]:not([data-stamp-link="on"]) .studio-address__title {
-  --text-stroke-w: var(--section-title-stroke-w, 3.38px);
+/* Section title (104px) */
+[data-section-stroke="on"] .typo-homepage-header,
+[data-section-stroke="on"] .features-title,
+[data-section-stroke="on"] .studio-address__title {
+  -webkit-text-stroke-width: var(--section-title-stroke-w);
+}
+[data-section-shadow="on"] .typo-homepage-header,
+[data-section-shadow="on"] .features-title,
+[data-section-shadow="on"] .studio-address__title {
+  text-shadow: var(--section-title-shadow-offset) var(--section-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
+}
+
+/* Hero title (78px) */
+[data-hero-stroke="on"] .typo-content-header,
+[data-hero-stroke="on"] .typo-hero-title {
+  -webkit-text-stroke-width: var(--hero-title-stroke-w);
+}
+[data-hero-shadow="on"] .typo-content-header,
+[data-hero-shadow="on"] .typo-hero-title {
+  text-shadow: var(--hero-title-shadow-offset) var(--hero-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
+}
+
+/* Subtitle (47px) — base class has stroke but no shadow; override adds shadow. */
+[data-subtitle-stroke="on"] .typo-subtitle {
+  -webkit-text-stroke-width: var(--subtitle-stroke-w);
+}
+[data-subtitle-shadow="on"] .typo-subtitle {
+  text-shadow: var(--subtitle-shadow-offset) var(--subtitle-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
 }

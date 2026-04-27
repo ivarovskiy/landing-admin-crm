@@ -223,8 +223,21 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
   });
   const [typography, setTypography] = useState<SiteTypographySettings>({
     linkStampScale: initialSettings?.typography?.linkStampScale === true,
+
     sectionTitleStrokeEnabled: initialSettings?.typography?.sectionTitleStrokeEnabled === true,
     sectionTitleStrokeW: initialSettings?.typography?.sectionTitleStrokeW,
+    sectionTitleShadowEnabled: initialSettings?.typography?.sectionTitleShadowEnabled === true,
+    sectionTitleShadowOffset: initialSettings?.typography?.sectionTitleShadowOffset,
+
+    heroTitleStrokeEnabled: initialSettings?.typography?.heroTitleStrokeEnabled === true,
+    heroTitleStrokeW: initialSettings?.typography?.heroTitleStrokeW,
+    heroTitleShadowEnabled: initialSettings?.typography?.heroTitleShadowEnabled === true,
+    heroTitleShadowOffset: initialSettings?.typography?.heroTitleShadowOffset,
+
+    subtitleStrokeEnabled: initialSettings?.typography?.subtitleStrokeEnabled === true,
+    subtitleStrokeW: initialSettings?.typography?.subtitleStrokeW,
+    subtitleShadowEnabled: initialSettings?.typography?.subtitleShadowEnabled === true,
+    subtitleShadowOffset: initialSettings?.typography?.subtitleShadowOffset,
   });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
@@ -424,32 +437,127 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
         <SectionLabel>Typography</SectionLabel>
 
         <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
-
           <ToggleRow
             icon={<Link2 className="h-3.5 w-3.5" />}
             label="Link stroke & shadow to font-size"
-            description="Stamp headings auto-scale stroke + shadow proportionally (104px → 2.6 / 5.56). Per-element stroke overrides still win."
+            description="Stamp headings auto-scale stroke + shadow proportionally (em-based). Per-size overrides below win."
             value={typography.linkStampScale === true}
             onChange={(v) => updateTypography({ linkStampScale: v })}
           />
+        </div>
+      </div>
 
+      {/* ---- Section title (104px) ---- */}
+      <div className="space-y-2">
+        <SectionLabel>Section title (104px)</SectionLabel>
+
+        <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
           <ToggleRow
             icon={<Link2 className="h-3.5 w-3.5" />}
-            label="Override section title stroke"
-            description="Forces a custom stroke width on 104px section titles (features, studio-address, homepage-header). Shadow stays as-is. Narrower scope — wins over Link above."
+            label="Override stroke"
+            description="Fixed stroke width on 104px section titles (homepage-header, features, studio-address). Also drives the link-mode em-ratio when enabled."
             value={typography.sectionTitleStrokeEnabled === true}
             onChange={(v) => updateTypography({ sectionTitleStrokeEnabled: v })}
           />
-
           <TextRow
             icon={<Ruler className="h-3.5 w-3.5 opacity-50" />}
-            label="Section title stroke"
+            label="Stroke width"
             description="CSS length (e.g. 3.38px). Applied only when the toggle above is on."
             value={typography.sectionTitleStrokeW}
             placeholder="3.38px"
             onChange={(v) => updateTypography({ sectionTitleStrokeW: v })}
           />
+          <ToggleRow
+            icon={<Link2 className="h-3.5 w-3.5" />}
+            label="Override shadow"
+            description="Fixed text-shadow offset on 104px section titles. Also drives the link-mode shadow em-ratio when enabled."
+            value={typography.sectionTitleShadowEnabled === true}
+            onChange={(v) => updateTypography({ sectionTitleShadowEnabled: v })}
+          />
+          <TextRow
+            icon={<Ruler className="h-3.5 w-3.5 opacity-50" />}
+            label="Shadow offset"
+            description="CSS length (e.g. 5.56px). Used for both X and Y offsets. Applied only when the toggle above is on."
+            value={typography.sectionTitleShadowOffset}
+            placeholder="5.56px"
+            onChange={(v) => updateTypography({ sectionTitleShadowOffset: v })}
+          />
+        </div>
+      </div>
 
+      {/* ---- Hero title (78px) ---- */}
+      <div className="space-y-2">
+        <SectionLabel>Hero title (78px)</SectionLabel>
+
+        <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
+          <ToggleRow
+            icon={<Link2 className="h-3.5 w-3.5" />}
+            label="Override stroke"
+            description="Fixed stroke width on 78px stamp titles (content-header, hero-title)."
+            value={typography.heroTitleStrokeEnabled === true}
+            onChange={(v) => updateTypography({ heroTitleStrokeEnabled: v })}
+          />
+          <TextRow
+            icon={<Ruler className="h-3.5 w-3.5 opacity-50" />}
+            label="Stroke width"
+            description="CSS length (e.g. 2.6px). Applied only when the toggle above is on."
+            value={typography.heroTitleStrokeW}
+            placeholder="2.6px"
+            onChange={(v) => updateTypography({ heroTitleStrokeW: v })}
+          />
+          <ToggleRow
+            icon={<Link2 className="h-3.5 w-3.5" />}
+            label="Override shadow"
+            description="Fixed text-shadow offset on 78px stamp titles."
+            value={typography.heroTitleShadowEnabled === true}
+            onChange={(v) => updateTypography({ heroTitleShadowEnabled: v })}
+          />
+          <TextRow
+            icon={<Ruler className="h-3.5 w-3.5 opacity-50" />}
+            label="Shadow offset"
+            description="CSS length (e.g. 4.15px). Used for both X and Y offsets."
+            value={typography.heroTitleShadowOffset}
+            placeholder="4.15px"
+            onChange={(v) => updateTypography({ heroTitleShadowOffset: v })}
+          />
+        </div>
+      </div>
+
+      {/* ---- Subtitle (47px) ---- */}
+      <div className="space-y-2">
+        <SectionLabel>Subtitle (47px)</SectionLabel>
+
+        <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
+          <ToggleRow
+            icon={<Link2 className="h-3.5 w-3.5" />}
+            label="Override stroke"
+            description="Fixed stroke width on .typo-subtitle."
+            value={typography.subtitleStrokeEnabled === true}
+            onChange={(v) => updateTypography({ subtitleStrokeEnabled: v })}
+          />
+          <TextRow
+            icon={<Ruler className="h-3.5 w-3.5 opacity-50" />}
+            label="Stroke width"
+            description="CSS length (e.g. 3.6px). Applied only when the toggle above is on."
+            value={typography.subtitleStrokeW}
+            placeholder="3.6px"
+            onChange={(v) => updateTypography({ subtitleStrokeW: v })}
+          />
+          <ToggleRow
+            icon={<Link2 className="h-3.5 w-3.5" />}
+            label="Override shadow"
+            description="Add a fixed text-shadow on .typo-subtitle (base class has none)."
+            value={typography.subtitleShadowEnabled === true}
+            onChange={(v) => updateTypography({ subtitleShadowEnabled: v })}
+          />
+          <TextRow
+            icon={<Ruler className="h-3.5 w-3.5 opacity-50" />}
+            label="Shadow offset"
+            description="CSS length. Used for both X and Y offsets."
+            value={typography.subtitleShadowOffset}
+            placeholder="2.5px"
+            onChange={(v) => updateTypography({ subtitleShadowOffset: v })}
+          />
         </div>
       </div>
 

@@ -69,12 +69,27 @@ export type SiteScrollToTopSettings = {
   stopOffset?: number;
 }
 export type SiteTypographySettings = {
-  /** Auto-scale stamp stroke + shadow proportionally to font-size (em-based). Baseline 104px → 2.6px stroke, 5.56px shadow */
+  /** Auto-scale stamp stroke + shadow proportionally to font-size (em-based).
+   *  Per-size overrides below always win over this when both are enabled. */
   linkStampScale?: boolean;
-  /** Override stroke width for 104px section titles (features, studio-address, homepage-header). Narrower scope wins over linkStampScale. */
+
+  /** 104px stamp — Section title (homepage-header, features-title, studio-address__title) */
   sectionTitleStrokeEnabled?: boolean;
-  /** Stroke width value when sectionTitleStrokeEnabled is on (e.g. "3.38px") */
   sectionTitleStrokeW?: string;
+  sectionTitleShadowEnabled?: boolean;
+  sectionTitleShadowOffset?: string;
+
+  /** 78px stamp — Hero title (content-header, hero-title) */
+  heroTitleStrokeEnabled?: boolean;
+  heroTitleStrokeW?: string;
+  heroTitleShadowEnabled?: boolean;
+  heroTitleShadowOffset?: string;
+
+  /** 47px stamp — Subtitle */
+  subtitleStrokeEnabled?: boolean;
+  subtitleStrokeW?: string;
+  subtitleShadowEnabled?: boolean;
+  subtitleShadowOffset?: string;
 }
 export type SiteSettingsData = {
   zoom?: SiteZoomSettings;
