@@ -10,55 +10,57 @@ export const metadata: Metadata = {
 };
 
 /**
- * Legacy pre-paint script — preserved verbatim as the default when
- * `zoom.preventInitialFlicker` is OFF. Sets viewport width to 1320 on screens
- * 768–1319 so the browser scales the page natively before first paint.
- */
-const LEGACY_VIEWPORT_SCRIPT = `(function(){try{
-  var w=window.screen.width;
-  if(w>=768&&w<1320){
-    var m=document.querySelector('meta[name=viewport]');
-    if(m)m.content='width=1320';
-  }
-}catch(e){}})()`;
-
-type SafeZoomConfig = {
-  enableZoom: boolean;
-  designWidth: number;
-  zoomBreakpoint: number;
-  scale: number;
-  normalizeViewport: boolean;
-  normalizeViewportWidth: number;
-  hideScrollbar: boolean;
-};
-
-function sanitizeZoom(zoom: ZoomSettings | undefined): SafeZoomConfig {
-  const num = (v: unknown, dflt: number) =>
-    typeof v === "number" && isFinite(v) && v > 0 ? v : dflt;
-  return {
-    enableZoom: zoom?.enableZoom !== false,
-    designWidth: num(zoom?.designWidth, 1480),
-    zoomBreakpoint: num(zoom?.zoomBreakpoint, 768),
-    scale: num(zoom?.scale, 1),
-    normalizeViewport: zoom?.normalizeViewport === true,
-    normalizeViewportWidth: num(zoom?.normalizeViewportWidth, 1320),
-    hideScrollbar: zoom?.hideScrollbar === true,
-  };
-}
-
-/**
- * Opt-in pre-paint script (admin: Settings → Zoom & Viewport → Prevent initial
- * flicker). Synchronously, in <head>, before first paint:
- *   1. sets <meta viewport content="width=N"> when normalizeViewport=true;
- *   2. injects <style id="landing-zoom-pre"> with computed CSS `zoom` on
- *      .landing-stack when enableZoom=true and clientWidth ≥ zoomBreakpoint;
- *   3. adds .hide-scrollbar to <html> when hideScrollbar=true.
+ * Pre-paint script — emitted only when admin enables `Prevent initial
+ * flicker` in Settings. Synchronously, in <head>, before first paint:
  *
- * The runtime `LandingZoom` client component remains as a failsafe for
- * resize/font-load events and removes the prepaint <style> once it has
- * applied its own inline zoom.
+ *   1. when `normalizeViewport=true` AND `normalizeViewportWidth` is set,
+ *      writes <meta viewport content="width=N">;
+ *   2. when `enableZoom !== false`, computes CSS `zoom` for .landing-stack
+ *      and injects <style id="landing-zoom-pre"> with that value;
+ *   3. when `hideScrollbar=true`, adds .hide-scrollbar to <html>.
+ *
+ * Critically — when normalizeViewport=true, the zoom denominator is the
+ * admin-configured `normalizeViewportWidth`, NOT `document.documentElement
+ * .clientWidth`. During HTML parsing of <head>, browsers do not always
+ * synchronously re-evaluate a freshly written <meta viewport>, so reading
+ * clientWidth there can return the device's natural width and produce a
+ * different zoom value than the post-hydration LandingZoom does — which
+ * IS the flicker we are trying to eliminate.
+ *
+ * No hardcoded fallback values: if a required admin field is missing or
+ * invalid, the corresponding operation is skipped entirely.
  */
-function buildPrepaintScript(cfg: SafeZoomConfig): string {
+function buildPrepaintScript(zoom: ZoomSettings): string | null {
+  const isPosNum = (v: unknown): v is number =>
+    typeof v === "number" && isFinite(v) && v > 0;
+
+  const enableZoom = zoom.enableZoom !== false;
+  const normalizeViewport = zoom.normalizeViewport === true;
+  const hideScrollbar = zoom.hideScrollbar === true;
+
+  const designWidth = isPosNum(zoom.designWidth) ? zoom.designWidth : null;
+  const zoomBreakpoint = isPosNum(zoom.zoomBreakpoint) ? zoom.zoomBreakpoint : null;
+  const scale = isPosNum(zoom.scale) ? zoom.scale : null;
+  const normalizeViewportWidth = isPosNum(zoom.normalizeViewportWidth)
+    ? zoom.normalizeViewportWidth
+    : null;
+
+  const cfg = {
+    enableZoom,
+    normalizeViewport: normalizeViewport && normalizeViewportWidth != null,
+    hideScrollbar,
+    designWidth,
+    zoomBreakpoint,
+    scale,
+    normalizeViewportWidth,
+  };
+
+  const noOp =
+    !cfg.normalizeViewport &&
+    !cfg.hideScrollbar &&
+    !(cfg.enableZoom && cfg.designWidth != null);
+  if (noOp) return null;
+
   const json = JSON.stringify(cfg).replace(/</g, "\\u003c");
   return `(function(){try{
   var s=${json};
@@ -68,12 +70,11 @@ function buildPrepaintScript(cfg: SafeZoomConfig): string {
     m.content='width='+s.normalizeViewportWidth;
   }
   if(s.hideScrollbar){document.documentElement.classList.add('hide-scrollbar');}
-  if(s.enableZoom){
-    void document.documentElement.offsetWidth;
-    var cw=document.documentElement.clientWidth||0;
-    if(cw>=s.zoomBreakpoint){
-      var auto=Math.min(1,cw/s.designWidth);
-      var f=auto*s.scale;
+  if(s.enableZoom&&s.designWidth){
+    var basis=s.normalizeViewport?s.normalizeViewportWidth:document.documentElement.clientWidth;
+    if(s.zoomBreakpoint==null||basis>=s.zoomBreakpoint){
+      var f=Math.min(1,basis/s.designWidth);
+      if(s.scale)f*=s.scale;
       if(f>0&&f<0.999){
         var st=document.createElement('style');
         st.id='landing-zoom-pre';
@@ -101,9 +102,9 @@ export default async function RootLayout({ children }: {
       : undefined;
 
   const prepaintScript =
-    zoom?.preventInitialFlicker === true
-      ? buildPrepaintScript(sanitizeZoom(zoom))
-      : LEGACY_VIEWPORT_SCRIPT;
+    zoom?.preventInitialFlicker === true && zoom
+      ? buildPrepaintScript(zoom)
+      : null;
 
   return (
     <html
@@ -120,8 +121,9 @@ export default async function RootLayout({ children }: {
             plain styled text unless explicitly wrapped in an <a>. */}
         <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
         <meta name="x-apple-disable-message-reformatting" content="" />
-        {/* Must run synchronously before first paint to prevent zoom flash */}
-        <script dangerouslySetInnerHTML={{ __html: prepaintScript }} />
+        {prepaintScript ? (
+          <script dangerouslySetInnerHTML={{ __html: prepaintScript }} />
+        ) : null}
       </head>
       <body>
         {children}

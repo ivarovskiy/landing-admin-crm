@@ -19,16 +19,25 @@ function removePrepaintStyle() {
   if (el) el.remove();
 }
 
+function isPosNum(v: unknown): v is number {
+  return typeof v === "number" && isFinite(v) && v > 0;
+}
+
 /**
- * All zoom/viewport behaviour is driven by props — nothing is hardcoded.
+ * All zoom/viewport behaviour is driven by props from admin Settings — there
+ * are no hardcoded fallback values. If a required field is missing or
+ * invalid, the corresponding operation is skipped entirely.
  *
  * enableZoom            — master switch for CSS zoom (default true)
- * designWidth           — reference canvas width in px (default 1480)
- * zoomBreakpoint        — min viewport width where zoom activates (default 768)
- * scale                 — coefficient multiplied on top of auto-zoom (default 1.0)
+ * designWidth           — reference canvas width in px; required for zoom
+ * zoomBreakpoint        — min viewport width where zoom activates; optional
+ *                         (when missing, zoom activates at any width)
+ * scale                 — coefficient multiplied on top of auto-zoom; optional
+ *                         (when missing, treated as 1.0 — i.e. no extra scale)
  * fitViewport           — fit page to screen height via header+hero measurement
- * normalizeViewport     — set <meta viewport content="width=N"> for native browser scaling
- * normalizeViewportWidth — the N above (default 1320)
+ * normalizeViewport     — set <meta viewport content="width=N"> for native
+ *                         browser scaling; requires normalizeViewportWidth
+ * normalizeViewportWidth — the N above; required when normalizeViewport=true
  * preventInitialFlicker — coordinates with the SSR pre-paint script in
  *                         RootLayout. When true, this component:
  *                           - assumes meta viewport / hide-scrollbar / .landing-stack zoom
@@ -40,12 +49,12 @@ function removePrepaintStyle() {
  */
 export function LandingZoom({
   enableZoom = true,
-  designWidth = 1480,
-  zoomBreakpoint = 768,
-  scale = 1,
+  designWidth,
+  zoomBreakpoint,
+  scale,
   fitViewport = false,
   normalizeViewport = false,
-  normalizeViewportWidth = 1320,
+  normalizeViewportWidth,
   hideScrollbar = false,
   preventInitialFlicker = false,
 }: {
@@ -77,20 +86,24 @@ export function LandingZoom({
 
   /* ── Normalize viewport meta ── */
   useEffect(() => {
+    // Skip entirely if normalizeViewport requested but width missing.
+    if (normalizeViewport && !isPosNum(normalizeViewportWidth)) return;
+
     const meta = getOrCreateViewportMeta();
+    const desired =
+      normalizeViewport && isPosNum(normalizeViewportWidth)
+        ? `width=${normalizeViewportWidth}`
+        : VIEWPORT_DEFAULT;
+
     if (preventInitialFlicker) {
       // Pre-paint script already set this; keep in sync with prop changes only,
       // and never restore on unmount.
-      const desired = normalizeViewport
-        ? `width=${normalizeViewportWidth}`
-        : VIEWPORT_DEFAULT;
       if (meta.content !== desired) meta.content = desired;
       return;
     }
+
     const prev = meta.content;
-    if (normalizeViewport) {
-      meta.content = `width=${normalizeViewportWidth}`;
-    }
+    if (normalizeViewport) meta.content = desired;
     return () => {
       meta.content = prev || VIEWPORT_DEFAULT;
     };
@@ -101,16 +114,17 @@ export function LandingZoom({
     const stack = document.querySelector(".landing-stack") as HTMLElement | null;
     if (!stack) return;
 
-    if (!enableZoom) {
+    if (!enableZoom || !isPosNum(designWidth)) {
       stack.style.removeProperty("zoom");
       removePrepaintStyle();
       return;
     }
 
-    const mqQuery = `(min-width: ${zoomBreakpoint}px)`;
-    const mq = window.matchMedia(mqQuery);
-    const dw = designWidth > 0 ? designWidth : 1480;
-    const s = typeof scale === "number" && isFinite(scale) && scale > 0 ? scale : 1;
+    const dw = designWidth;
+    const s = isPosNum(scale) ? scale : 1;
+    const brk = isPosNum(zoomBreakpoint) ? zoomBreakpoint : null;
+
+    const mq = brk != null ? window.matchMedia(`(min-width: ${brk}px)`) : null;
 
     let prepaintCleared = false;
     const update = () => {
@@ -118,8 +132,9 @@ export function LandingZoom({
       // through an intermediate zoom-less state (which would un-do the
       // SSR prepaint style and cause a flicker).
       let target: string | null = null;
+      const passesBreakpoint = mq ? mq.matches : true;
 
-      if (mq.matches) {
+      if (passesBreakpoint) {
         if (fitViewport) {
           void stack.offsetHeight;
 
@@ -175,7 +190,7 @@ export function LandingZoom({
     const onLoad = () => update();
     window.addEventListener("load", onLoad);
     window.addEventListener("resize", update);
-    mq.addEventListener("change", update);
+    mq?.addEventListener("change", update);
 
     // Safety nets — re-measure after short delays in case font metrics or
     // image dimensions finalized after mount but before any event fired.
@@ -186,7 +201,7 @@ export function LandingZoom({
     return () => {
       window.removeEventListener("load", onLoad);
       window.removeEventListener("resize", update);
-      mq.removeEventListener("change", update);
+      mq?.removeEventListener("change", update);
       fonts?.removeEventListener?.("loadingdone", onFontsLoadingDone);
       window.clearTimeout(t1);
       window.clearTimeout(t2);
