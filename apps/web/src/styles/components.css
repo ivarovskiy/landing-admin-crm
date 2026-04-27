@@ -99,7 +99,11 @@
   text-align: right;
 }
 
-/* ---- Typography: stamp ---- */
+/* ---- Typography: stamp ----
+   Single-element renderer. Stroke comes from -webkit-text-stroke; shadow
+   comes from filter: drop-shadow which captures the stroked glyph shape
+   so the resulting shadow has the same visual thickness the previous
+   two-span renderer produced by stroking a translated duplicate. */
 
 .ds-outline-stamp {
   --stamp-fill: var(--color-outline-fill);
@@ -111,51 +115,20 @@
   --stamp-tracking: 0.02em;
   --stamp-weight: 700;
 
-  position: relative;
   display: inline-block;
   font-family: var(--font-display);
   font-weight: var(--stamp-weight);
   letter-spacing: var(--stamp-tracking);
-  /* text-transform: uppercase; */
   white-space: pre-wrap;
-}
 
-.ds-outline-stamp__shadow,
-.ds-outline-stamp__main {
-  white-space: inherit;
-  font-family: var(--font-maru);
-}
-
-.ds-outline-stamp__shadow {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  transform: translate(var(--stamp-shadow-x), var(--stamp-shadow-y));
-  color: var(--stamp-shadow-color);
-  paint-order: stroke fill;
-  -webkit-text-stroke: var(--text-stroke-w, 2.6px) var(--stamp-shadow-color);
-}
-
-/* Inline SVG icons (e.g. stars) must not duplicate in the shadow copy.
-   Keep layout space so the main copy stays perfectly aligned. */
-.ds-outline-stamp__shadow .hs-inline-icon {
-  visibility: hidden;
-}
-
-.ds-outline-stamp__main {
-  font-family: var(--font-maru);
-  position: relative;
-  z-index: 1;
   color: var(--stamp-fill);
   paint-order: stroke fill;
-  -webkit-text-stroke: var(--text-stroke-w, 2.6px) var(--stamp-stroke, var(--color-primary)); /* 1.45px outside × 2 */
-  text-shadow: var(--stamp-shadow-x) var(--stamp-shadow-y) 0 var(--stamp-shadow-color);
+  -webkit-text-stroke: var(--text-stroke-w, var(--stamp-stroke-w)) var(--stamp-stroke);
+  filter: drop-shadow(var(--stamp-shadow-x) var(--stamp-shadow-y) 0 var(--stamp-shadow-color));
 }
 
 .ds-outline-stamp--no-shadow {
-  --stamp-shadow-x: 0px;
-  --stamp-shadow-y: 0px;
+  filter: none;
 }
 
 .ds-outline-stamp--ghost {
@@ -305,35 +278,24 @@
   }
 }
 
-/* Linked stamp scaling for the two-span .ds-outline-stamp renderer.
-   Mirrors the typo-class link rule in typography.css (which targets the
-   single-element .typo-* classes). The em ratios live on :root and can be
-   overridden by [data-section-stroke=on] / [data-section-shadow=on] (see
-   typography.css). !important on --stamp-shadow-x/y is needed to beat
-   inline values written by STAMP_* presets in stamp-presets.ts. */
+/* Linked stamp scaling for .ds-outline-stamp. Mirrors the typo-class link
+   rule in typography.css. The em ratios live on :root and can be overridden
+   by [data-section-stroke=on] / [data-section-shadow=on]. */
 [data-stamp-link="on"] .ds-outline-stamp {
-  --stamp-shadow-x: var(--stamp-shadow-em) !important;
-  --stamp-shadow-y: var(--stamp-shadow-em) !important;
-}
-
-[data-stamp-link="on"] .ds-outline-stamp__shadow,
-[data-stamp-link="on"] .ds-outline-stamp__main {
-  -webkit-text-stroke: var(--text-stroke-w, var(--stamp-stroke-em)) var(--stamp-stroke, var(--color-primary));
+  -webkit-text-stroke-width: var(--stamp-stroke-em);
+  filter: drop-shadow(var(--stamp-shadow-em) var(--stamp-shadow-em) 0 var(--stamp-stroke, var(--color-primary)));
 }
 
 /* =========================================================
    Per-size stamp overrides — Section / Hero / Subtitle title.
 
-   Each rule simultaneously sets:
-     - the direct text-shadow / -webkit-text-stroke-width property
-       (used by .typo-* classes that style themselves directly in
-        typography.css)
-     - the --text-stroke-w / --stamp-shadow-x/y CSS variables
-       (used by the two-span .ds-outline-stamp renderer; --stamp-shadow-*
-        require !important to beat inline values from STAMP_* presets)
+   Both .typo-* classes (in typography.css) and .ds-outline-stamp use the
+   same single-element approach (-webkit-text-stroke for stroke,
+   filter: drop-shadow for shadow), so each override block sets exactly
+   the two properties that matter and the cascade does the rest.
 
-   Placed AFTER the [data-stamp-link=on] rules above so equal-specificity
-   override values win in source order when both link mode and a per-size
+   Placed AFTER the [data-stamp-link=on] block above so equal-specificity
+   overrides win in source order when both link mode and a per-size
    override are active.
    ========================================================= */
 
@@ -344,16 +306,13 @@
 [data-section-stroke="on"] .doc-header__title,
 [data-section-stroke="on"] .scrapbook__title {
   -webkit-text-stroke-width: var(--section-title-stroke-w);
-  --text-stroke-w: var(--section-title-stroke-w);
 }
 [data-section-shadow="on"] .typo-homepage-header,
 [data-section-shadow="on"] .features-title,
 [data-section-shadow="on"] .studio-address__title,
 [data-section-shadow="on"] .doc-header__title,
 [data-section-shadow="on"] .scrapbook__title {
-  text-shadow: var(--section-title-shadow-offset) var(--section-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
-  --stamp-shadow-x: var(--section-title-shadow-offset) !important;
-  --stamp-shadow-y: var(--section-title-shadow-offset) !important;
+  filter: drop-shadow(var(--section-title-shadow-offset) var(--section-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary)));
 }
 
 /* Hero title (78px) — typo-content-header, typo-hero-title, cp__title, hero-slide__title */
@@ -362,24 +321,20 @@
 [data-hero-stroke="on"] .cp__title,
 [data-hero-stroke="on"] .hero-slide__title {
   -webkit-text-stroke-width: var(--hero-title-stroke-w);
-  --text-stroke-w: var(--hero-title-stroke-w);
 }
 [data-hero-shadow="on"] .typo-content-header,
 [data-hero-shadow="on"] .typo-hero-title,
 [data-hero-shadow="on"] .cp__title,
 [data-hero-shadow="on"] .hero-slide__title {
-  text-shadow: var(--hero-title-shadow-offset) var(--hero-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
-  --stamp-shadow-x: var(--hero-title-shadow-offset) !important;
-  --stamp-shadow-y: var(--hero-title-shadow-offset) !important;
+  filter: drop-shadow(var(--hero-title-shadow-offset) var(--hero-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary)));
 }
 
 /* Subtitle (47px) — typo-subtitle (only class with the 47px stamp treatment) */
 [data-subtitle-stroke="on"] .typo-subtitle {
   -webkit-text-stroke-width: var(--subtitle-stroke-w);
-  --text-stroke-w: var(--subtitle-stroke-w);
 }
 [data-subtitle-shadow="on"] .typo-subtitle {
-  text-shadow: var(--subtitle-shadow-offset) var(--subtitle-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
+  filter: drop-shadow(var(--subtitle-shadow-offset) var(--subtitle-shadow-offset) 0 var(--stamp-stroke, var(--color-primary)));
 }
 
 /* ---- Scroll-to-top button ---- */
