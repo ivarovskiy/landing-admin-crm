@@ -190,34 +190,5 @@
   text-shadow: var(--stamp-shadow-em) var(--stamp-shadow-em) 0 var(--stamp-stroke, var(--color-primary));
 }
 
-/* ── Per-size overrides ── win over Link mode via equal-specificity later rules. */
-
-/* Section title (104px) */
-[data-section-stroke="on"] .typo-homepage-header,
-[data-section-stroke="on"] .features-title,
-[data-section-stroke="on"] .studio-address__title {
-  -webkit-text-stroke-width: var(--section-title-stroke-w);
-}
-[data-section-shadow="on"] .typo-homepage-header,
-[data-section-shadow="on"] .features-title,
-[data-section-shadow="on"] .studio-address__title {
-  text-shadow: var(--section-title-shadow-offset) var(--section-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
-}
-
-/* Hero title (78px) */
-[data-hero-stroke="on"] .typo-content-header,
-[data-hero-stroke="on"] .typo-hero-title {
-  -webkit-text-stroke-width: var(--hero-title-stroke-w);
-}
-[data-hero-shadow="on"] .typo-content-header,
-[data-hero-shadow="on"] .typo-hero-title {
-  text-shadow: var(--hero-title-shadow-offset) var(--hero-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
-}
-
-/* Subtitle (47px) — base class has stroke but no shadow; override adds shadow. */
-[data-subtitle-stroke="on"] .typo-subtitle {
-  -webkit-text-stroke-width: var(--subtitle-stroke-w);
-}
-[data-subtitle-shadow="on"] .typo-subtitle {
-  text-shadow: var(--subtitle-shadow-offset) var(--subtitle-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
-}
+/* Per-size override rules live in components.css so they come AFTER the
+   link-mode rules for .ds-outline-stamp and win at equal specificity. */

@@ -305,16 +305,81 @@
   }
 }
 
-/* Linked stamp scaling — see typography.css for baseline rationale.
-   !important is needed to beat inline --stamp-shadow-x/y from STAMP_TITLE preset. */
+/* Linked stamp scaling for the two-span .ds-outline-stamp renderer.
+   Mirrors the typo-class link rule in typography.css (which targets the
+   single-element .typo-* classes). The em ratios live on :root and can be
+   overridden by [data-section-stroke=on] / [data-section-shadow=on] (see
+   typography.css). !important on --stamp-shadow-x/y is needed to beat
+   inline values written by STAMP_* presets in stamp-presets.ts. */
 [data-stamp-link="on"] .ds-outline-stamp {
-  --stamp-shadow-x: 0.0535em !important;
-  --stamp-shadow-y: 0.0535em !important;
+  --stamp-shadow-x: var(--stamp-shadow-em) !important;
+  --stamp-shadow-y: var(--stamp-shadow-em) !important;
 }
 
 [data-stamp-link="on"] .ds-outline-stamp__shadow,
 [data-stamp-link="on"] .ds-outline-stamp__main {
   -webkit-text-stroke: var(--text-stroke-w, var(--stamp-stroke-em)) var(--stamp-stroke, var(--color-primary));
+}
+
+/* =========================================================
+   Per-size stamp overrides — Section / Hero / Subtitle title.
+
+   Each rule simultaneously sets:
+     - the direct text-shadow / -webkit-text-stroke-width property
+       (used by .typo-* classes that style themselves directly in
+        typography.css)
+     - the --text-stroke-w / --stamp-shadow-x/y CSS variables
+       (used by the two-span .ds-outline-stamp renderer; --stamp-shadow-*
+        require !important to beat inline values from STAMP_* presets)
+
+   Placed AFTER the [data-stamp-link=on] rules above so equal-specificity
+   override values win in source order when both link mode and a per-size
+   override are active.
+   ========================================================= */
+
+/* Section title (104px) — homepage-header, features-title, studio-address__title, doc-header__title, scrapbook__title */
+[data-section-stroke="on"] .typo-homepage-header,
+[data-section-stroke="on"] .features-title,
+[data-section-stroke="on"] .studio-address__title,
+[data-section-stroke="on"] .doc-header__title,
+[data-section-stroke="on"] .scrapbook__title {
+  -webkit-text-stroke-width: var(--section-title-stroke-w);
+  --text-stroke-w: var(--section-title-stroke-w);
+}
+[data-section-shadow="on"] .typo-homepage-header,
+[data-section-shadow="on"] .features-title,
+[data-section-shadow="on"] .studio-address__title,
+[data-section-shadow="on"] .doc-header__title,
+[data-section-shadow="on"] .scrapbook__title {
+  text-shadow: var(--section-title-shadow-offset) var(--section-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
+  --stamp-shadow-x: var(--section-title-shadow-offset) !important;
+  --stamp-shadow-y: var(--section-title-shadow-offset) !important;
+}
+
+/* Hero title (78px) — typo-content-header, typo-hero-title, cp__title, hero-slide__title */
+[data-hero-stroke="on"] .typo-content-header,
+[data-hero-stroke="on"] .typo-hero-title,
+[data-hero-stroke="on"] .cp__title,
+[data-hero-stroke="on"] .hero-slide__title {
+  -webkit-text-stroke-width: var(--hero-title-stroke-w);
+  --text-stroke-w: var(--hero-title-stroke-w);
+}
+[data-hero-shadow="on"] .typo-content-header,
+[data-hero-shadow="on"] .typo-hero-title,
+[data-hero-shadow="on"] .cp__title,
+[data-hero-shadow="on"] .hero-slide__title {
+  text-shadow: var(--hero-title-shadow-offset) var(--hero-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
+  --stamp-shadow-x: var(--hero-title-shadow-offset) !important;
+  --stamp-shadow-y: var(--hero-title-shadow-offset) !important;
+}
+
+/* Subtitle (47px) — typo-subtitle (only class with the 47px stamp treatment) */
+[data-subtitle-stroke="on"] .typo-subtitle {
+  -webkit-text-stroke-width: var(--subtitle-stroke-w);
+  --text-stroke-w: var(--subtitle-stroke-w);
+}
+[data-subtitle-shadow="on"] .typo-subtitle {
+  text-shadow: var(--subtitle-shadow-offset) var(--subtitle-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
 }
 
 /* ---- Scroll-to-top button ---- */
