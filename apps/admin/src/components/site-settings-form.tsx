@@ -207,7 +207,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     enableZoom: initialSettings?.zoom?.enableZoom !== false,
     designWidth: initialSettings?.zoom?.designWidth,
     zoomBreakpoint: initialSettings?.zoom?.zoomBreakpoint,
-    scale: initialSettings?.zoom?.scale ?? 1,
+    scale: initialSettings?.zoom?.scale,
     fitViewport: initialSettings?.zoom?.fitViewport === true,
     normalizeViewport: initialSettings?.zoom?.normalizeViewport === true,
     normalizeViewportWidth: initialSettings?.zoom?.normalizeViewportWidth,
@@ -288,7 +288,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
           <NumberRow
             icon={<Ruler className="h-3.5 w-3.5" />}
             label="Design width (px)"
-            description="Reference canvas width — zoom target (default 1480)"
+            description="Reference canvas width — zoom target. Required when CSS zoom is enabled."
             value={zoom.designWidth}
             placeholder="1480"
             onChange={(v) => update({ designWidth: v })}
@@ -298,7 +298,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
           <NumberRow
             icon={<LayoutTemplate className="h-3.5 w-3.5" />}
             label="Zoom breakpoint (px)"
-            description="Min viewport width at which zoom activates (default 768)"
+            description="Min viewport width at which zoom activates. Optional — zoom always activates when empty."
             value={zoom.zoomBreakpoint}
             placeholder="768"
             onChange={(v) => update({ zoomBreakpoint: v })}
@@ -357,7 +357,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
           <NumberRow
             icon={<MonitorSmartphone className="h-3.5 w-3.5 opacity-50" />}
             label="Viewport width (px)"
-            description="Width used in meta viewport when normalize is on (default 1320)"
+            description="Width used in meta viewport when normalize is on. Required when Normalize viewport is enabled."
             value={zoom.normalizeViewportWidth}
             placeholder="1320"
             onChange={(v) => update({ normalizeViewportWidth: v })}

@@ -66,7 +66,7 @@ export function PageRenderer({ blocks, zoomSettings }: { blocks: BlockModel[]; z
         enableZoom={zoomSettings?.enableZoom !== false}
         designWidth={zoomSettings?.designWidth}
         zoomBreakpoint={zoomSettings?.zoomBreakpoint}
-        scale={zoomSettings?.scale ?? 1}
+        scale={zoomSettings?.scale}
         fitViewport={zoomSettings?.fitViewport === true}
         normalizeViewport={zoomSettings?.normalizeViewport === true}
         normalizeViewportWidth={zoomSettings?.normalizeViewportWidth}
