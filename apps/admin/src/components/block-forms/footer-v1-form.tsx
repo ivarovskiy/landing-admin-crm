@@ -11,10 +11,11 @@ import {
   InspectorTextarea,
   InspectorSelect,
   BlockLayoutSection,
+  HrefInput,
 } from "@/components/inspector";
 import { LayoutGrid, Link2, Megaphone, Plus, Trash2, Type } from "lucide-react";
 
-type Link = { label?: string; href?: string };
+type Link = { label?: string; href?: string; noLink?: boolean };
 type Column = { links?: Link[] };
 
 export function FooterV1Form({ value, onChange }: BlockFormProps) {
@@ -34,9 +35,11 @@ export function FooterV1Form({ value, onChange }: BlockFormProps) {
     <div>
       <InspectorSection title="Brand (Left)" icon={<LayoutGrid className="h-3 w-3" />}>
         <InspectorField label="Href">
-          <InspectorInput
-            value={left?.href ?? ""}
-            onChange={(v) => set(["left", "href"], v)}
+          <HrefInput
+            hrefValue={left?.href ?? ""}
+            noLink={!!left?.noLink}
+            onHrefChange={(v) => set(["left", "href"], v)}
+            onNoLinkChange={(v) => set(["left", "noLink"], v || undefined)}
             placeholder="#top"
           />
         </InspectorField>
@@ -117,11 +120,17 @@ export function FooterV1Form({ value, onChange }: BlockFormProps) {
                       onChange={(v) => set(["columns", colIdx, "links", linkIdx, "label"], v)}
                       placeholder="Label"
                     />
-                    <InspectorInput
-                      value={l?.href ?? ""}
-                      onChange={(v) => set(["columns", colIdx, "links", linkIdx, "href"], v)}
-                      placeholder="Href"
-                    />
+                    <div className="flex-1">
+                      <HrefInput
+                        hrefValue={l?.href ?? ""}
+                        noLink={!!l?.noLink}
+                        onHrefChange={(v) => set(["columns", colIdx, "links", linkIdx, "href"], v)}
+                        onNoLinkChange={(v) =>
+                          set(["columns", colIdx, "links", linkIdx, "noLink"], v || undefined)
+                        }
+                        placeholder="Href"
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() =>
@@ -145,18 +154,18 @@ export function FooterV1Form({ value, onChange }: BlockFormProps) {
           <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             Portal
           </span>
-          <div className="grid grid-cols-2 gap-1.5">
-            <InspectorInput
-              value={portal?.label ?? ""}
-              onChange={(v) => set(["right", "portal", "label"], v)}
-              placeholder="Label"
-            />
-            <InspectorInput
-              value={portal?.href ?? ""}
-              onChange={(v) => set(["right", "portal", "href"], v)}
-              placeholder="Href"
-            />
-          </div>
+          <InspectorInput
+            value={portal?.label ?? ""}
+            onChange={(v) => set(["right", "portal", "label"], v)}
+            placeholder="Label"
+          />
+          <HrefInput
+            hrefValue={portal?.href ?? ""}
+            noLink={!!portal?.noLink}
+            onHrefChange={(v) => set(["right", "portal", "href"], v)}
+            onNoLinkChange={(v) => set(["right", "portal", "noLink"], v || undefined)}
+            placeholder="Href"
+          />
           <InspectorSelect
             value={portal?.icon ?? "lock"}
             onChange={(v) => set(["right", "portal", "icon"], v)}
@@ -172,18 +181,18 @@ export function FooterV1Form({ value, onChange }: BlockFormProps) {
           <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             Promo
           </span>
-          <div className="grid grid-cols-2 gap-1.5">
-            <InspectorInput
-              value={promo?.label ?? ""}
-              onChange={(v) => set(["right", "promo", "label"], v)}
-              placeholder="Label"
-            />
-            <InspectorInput
-              value={promo?.href ?? ""}
-              onChange={(v) => set(["right", "promo", "href"], v)}
-              placeholder="Href"
-            />
-          </div>
+          <InspectorInput
+            value={promo?.label ?? ""}
+            onChange={(v) => set(["right", "promo", "label"], v)}
+            placeholder="Label"
+          />
+          <HrefInput
+            hrefValue={promo?.href ?? ""}
+            noLink={!!promo?.noLink}
+            onHrefChange={(v) => set(["right", "promo", "href"], v)}
+            onNoLinkChange={(v) => set(["right", "promo", "noLink"], v || undefined)}
+            placeholder="Href"
+          />
           <LogoField
             value={leftLogo}
             onChange={(next) => set(["left", "logo"], next)}

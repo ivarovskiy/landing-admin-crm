@@ -19,6 +19,15 @@ a {
   text-decoration: none;
 }
 
+/* Universal "non-link" modifier — applied by header/footer renderers when an
+   editor toggled a link off in the inspector. We render <span class="is-no-link">
+   instead of <a>, so cursor and hover-underline must be neutralized. Per-element
+   rules (e.g. footer-link hover opacity) can layer on top. */
+.is-no-link {
+  cursor: default;
+  text-decoration: none;
+}
+
 /* iOS Safari "data detectors" wrap detected text (phone numbers, addresses,
    dates, emails) into invisible <a> tags with underlines and the system blue.
    The format-detection meta in <head> disables this on most versions, but as

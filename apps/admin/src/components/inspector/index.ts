@@ -14,3 +14,5 @@ export {
 export { BlockLayoutSection } from "./layout-section";
 
 export { ImageUpload } from "./image-upload";
+
+export { HrefInput } from "./href-input";

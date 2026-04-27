@@ -1,3 +1,4 @@
+import type React from "react";
 import { Container, Hairline, Kicker } from "@/components/landing/ui";
 import { Logo } from "@/components/landing/brand";
 import { Icon } from "@/components/landing/icons";
@@ -7,7 +8,7 @@ import { pickLogoSource } from "@/lib/section-utils";
 import FooterRuleAsset from "@/assets/icons/footer.svg";
 import FooterDoubleRuleAsset from "@/assets/icons/slider_v1.svg";
 
-type Link = { label?: string; href?: string };
+type Link = { label?: string; href?: string; noLink?: boolean };
 type Column = { links?: Link[] };
 
 export function FooterV1({ data }: { data: any }) {
@@ -52,7 +53,12 @@ export function FooterV1({ data }: { data: any }) {
         {/* MOBILE / TABLET */}
         <div className="footer-mobile">
           <div className="footer-mobile__brand">
-            <a href={left?.href ?? "#top"} className="footer-mobile__brand-link" data-el="left-logo">
+            <MaybeLink
+              noLink={!!left?.noLink}
+              href={left?.href ?? "#top"}
+              className="footer-mobile__brand-link"
+              data-el="left-logo"
+            >
               {leftLogo ? (
                 <Logo
                   logo={leftLogo}
@@ -69,15 +75,19 @@ export function FooterV1({ data }: { data: any }) {
                   ) : null}
                 </div>
               )}
-            </a>
+            </MaybeLink>
           </div>
 
           {portal?.label ? (
             <div className="footer-mobile__portal" data-el="portal">
-              <a href={portal?.href ?? "#"} className="footer-mobile__portal-link">
+              <MaybeLink
+                noLink={!!portal?.noLink}
+                href={portal?.href ?? "#"}
+                className="footer-mobile__portal-link"
+              >
                 <span className="footer-meta">{portal.label}</span>
                 <Icon name={portalIcon} className="footer-mobile__portal-icon" aria-hidden />
-              </a>
+              </MaybeLink>
             </div>
           ) : null}
 
@@ -89,14 +99,23 @@ export function FooterV1({ data }: { data: any }) {
 
           {promo?.label ? (
             <div className="footer-mobile__promo">
-              <a href={promo?.href ?? "#"} className="footer-mobile__promo-link" data-el="promo-link">
+              <MaybeLink
+                noLink={!!promo?.noLink}
+                href={promo?.href ?? "#"}
+                className="footer-mobile__promo-link"
+                data-el="promo-link"
+              >
                 <span className="footer-meta" data-el="promo-label">
                   {promo.label}
                 </span>
-              </a>
+              </MaybeLink>
 
               <div className="footer-mobile__promo-logo-wrap">
-                <a href={promo?.href ?? "#"} className="footer-mobile__promo-link">
+                <MaybeLink
+                  noLink={!!promo?.noLink}
+                  href={promo?.href ?? "#"}
+                  className="footer-mobile__promo-link"
+                >
                   {promoLogo ? (
                     <span data-el="promo-logo">
                       <Logo
@@ -117,7 +136,7 @@ export function FooterV1({ data }: { data: any }) {
                       ) : null}
                     </div>
                   )}
-                </a>
+                </MaybeLink>
               </div>
             </div>
           ) : null}
@@ -135,7 +154,12 @@ export function FooterV1({ data }: { data: any }) {
         <div className="footer-desktop">
           <div className="footer-desktop__grid">
             <div className="footer-desktop__brand">
-              <a href={left?.href ?? "#top"} className="footer-desktop__brand-link" data-el="left-logo">
+              <MaybeLink
+                noLink={!!left?.noLink}
+                href={left?.href ?? "#top"}
+                className="footer-desktop__brand-link"
+                data-el="left-logo"
+              >
                 {leftLogo ? (
                   <Logo
                     logo={leftLogo}
@@ -152,7 +176,7 @@ export function FooterV1({ data }: { data: any }) {
                     ) : null}
                   </div>
                 )}
-              </a>
+              </MaybeLink>
             </div>
 
             <div className="footer-desktop__columns">
@@ -168,23 +192,36 @@ export function FooterV1({ data }: { data: any }) {
             <div className="footer-desktop__right">
               {portal?.label ? (
                 <div data-el="portal" style={{width : "100%"}}>
-                  <a href={portal?.href ?? "#"} className="footer-desktop__portal-link">
+                  <MaybeLink
+                    noLink={!!portal?.noLink}
+                    href={portal?.href ?? "#"}
+                    className="footer-desktop__portal-link"
+                  >
                     <span className="footer-meta">{portal.label}</span>
                     <Icon name={portalIcon} className="footer-desktop__portal-icon" aria-hidden />
-                  </a>
+                  </MaybeLink>
                 </div>
               ) : null}
 
               {promo?.label ? (
                 <div className="footer-desktop__promo">
-                  <a href={promo?.href ?? "#"} className="footer-desktop__promo-link" data-el="promo-link">
+                  <MaybeLink
+                    noLink={!!promo?.noLink}
+                    href={promo?.href ?? "#"}
+                    className="footer-desktop__promo-link"
+                    data-el="promo-link"
+                  >
                     <span className="footer-meta" data-el="promo-label">
                       {promo.label}
                     </span>
-                  </a>
+                  </MaybeLink>
 
                   <div className="footer-desktop__promo-logo-wrap">
-                    <a href={promo?.href ?? "#"} className="footer-desktop__promo-link">
+                    <MaybeLink
+                      noLink={!!promo?.noLink}
+                      href={promo?.href ?? "#"}
+                      className="footer-desktop__promo-link"
+                    >
                       {promoLogo ? (
                         <span data-el="promo-logo">
                           <Logo
@@ -205,7 +242,7 @@ export function FooterV1({ data }: { data: any }) {
                           ) : null}
                         </div>
                       )}
-                    </a>
+                    </MaybeLink>
                   </div>
                 </div>
               ) : null}
@@ -230,15 +267,48 @@ export function FooterV1({ data }: { data: any }) {
 }
 
 function FooterLink({ link, align }: { link: Link; align: "left" | "center" }) {
+  const className = cn(
+    "footer-link",
+    align === "left" ? "footer-link--left" : "footer-link--center",
+    link?.noLink && "is-no-link"
+  );
+
+  if (link?.noLink) {
+    return <span className={className}>{link?.label ?? "Link"}</span>;
+  }
   return (
-    <a
-      href={link?.href ?? "#"}
-      className={cn(
-        "footer-link",
-        align === "left" ? "footer-link--left" : "footer-link--center"
-      )}
-    >
+    <a href={link?.href ?? "#"} className={className}>
       {link?.label ?? "Link"}
+    </a>
+  );
+}
+
+/**
+ * Renders an <a href> when interactive, or a styled <span class="is-no-link">
+ * when `noLink` is true. Used across the footer to honor per-link toggles.
+ */
+function MaybeLink({
+  noLink,
+  href,
+  className,
+  children,
+  ...rest
+}: {
+  noLink?: boolean;
+  href?: string;
+  className?: string;
+  children: React.ReactNode;
+} & React.HTMLAttributes<HTMLElement>) {
+  if (noLink) {
+    return (
+      <span className={cn(className, "is-no-link")} {...rest}>
+        {children}
+      </span>
+    );
+  }
+  return (
+    <a href={href ?? "#"} className={className} {...rest}>
+      {children}
     </a>
   );
 }

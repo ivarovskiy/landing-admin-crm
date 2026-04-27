@@ -97,6 +97,17 @@
   opacity: 0.82;
 }
 
+/* Disable hover-opacity for non-link footer items so they look static. */
+.footer-link.is-no-link:hover,
+.footer-desktop__brand-link.is-no-link:hover,
+.footer-mobile__brand-link.is-no-link:hover,
+.footer-desktop__portal-link.is-no-link:hover,
+.footer-mobile__portal-link.is-no-link:hover,
+.footer-desktop__promo-link.is-no-link:hover,
+.footer-mobile__promo-link.is-no-link:hover {
+  opacity: 1;
+}
+
 .footer-link--left {
   text-align: left;
 }

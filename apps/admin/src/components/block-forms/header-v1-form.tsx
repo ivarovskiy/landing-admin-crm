@@ -10,6 +10,7 @@ import {
   InspectorInput,
   InspectorTextarea,
   BlockLayoutSection,
+  HrefInput,
 } from "@/components/inspector";
 import { Monitor, Smartphone, PanelLeft, PanelRight, Menu, Megaphone, Plus, Eye, EyeOff, ChevronDown, ChevronRight, Link2, Link2Off } from "lucide-react";
 import { useState } from "react";
@@ -242,9 +243,11 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         </InspectorField>
 
         <InspectorField label="Brand href">
-          <InspectorInput
-            value={brand?.href ?? ""}
-            onChange={(v) => set(["brand", "href"], v)}
+          <HrefInput
+            hrefValue={brand?.href ?? ""}
+            noLink={!!brand?.noLink}
+            onHrefChange={(v) => set(["brand", "href"], v)}
+            onNoLinkChange={(v) => set(["brand", "noLink"], v || undefined)}
             placeholder="#hero"
           />
         </InspectorField>
@@ -266,9 +269,11 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         </InspectorField>
 
         <InspectorField label="Phone href">
-          <InspectorInput
-            value={desktop?.phoneHref ?? ""}
-            onChange={(v) => set(["desktop", "phoneHref"], v)}
+          <HrefInput
+            hrefValue={desktop?.phoneHref ?? ""}
+            noLink={!!desktop?.phoneNoLink}
+            onHrefChange={(v) => set(["desktop", "phoneHref"], v)}
+            onNoLinkChange={(v) => set(["desktop", "phoneNoLink"], v || undefined)}
             placeholder="tel:+16108830878"
           />
         </InspectorField>
@@ -282,9 +287,11 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         </InspectorField>
 
         <InspectorField label="Portal href">
-          <InspectorInput
-            value={desktopPortal?.href ?? ""}
-            onChange={(v) => set(["desktop", "portal", "href"], v)}
+          <HrefInput
+            hrefValue={desktopPortal?.href ?? ""}
+            noLink={!!desktopPortal?.noLink}
+            onHrefChange={(v) => set(["desktop", "portal", "href"], v)}
+            onNoLinkChange={(v) => set(["desktop", "portal", "noLink"], v || undefined)}
             placeholder="#"
           />
         </InspectorField>
@@ -298,9 +305,11 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         </InspectorField>
 
         <InspectorField label="Secondary CTA href">
-          <InspectorInput
-            value={desktop?.secondaryPortal?.href ?? ""}
-            onChange={(v) => set(["desktop", "secondaryPortal", "href"], v)}
+          <HrefInput
+            hrefValue={desktop?.secondaryPortal?.href ?? ""}
+            noLink={!!desktop?.secondaryPortal?.noLink}
+            onHrefChange={(v) => set(["desktop", "secondaryPortal", "href"], v)}
+            onNoLinkChange={(v) => set(["desktop", "secondaryPortal", "noLink"], v || undefined)}
             placeholder="#"
           />
         </InspectorField>
@@ -335,17 +344,21 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
       {/* ===== Mobile Top Bar ===== */}
       <InspectorSection title="Mobile Top Bar" icon={<Smartphone className="h-3 w-3" />} defaultOpen={false}>
         <InspectorField label="Phone href">
-          <InspectorInput
-            value={top?.phoneHref ?? ""}
-            onChange={(v) => set(["mobile", "top", "phoneHref"], v)}
+          <HrefInput
+            hrefValue={top?.phoneHref ?? ""}
+            noLink={!!top?.phoneNoLink}
+            onHrefChange={(v) => set(["mobile", "top", "phoneHref"], v)}
+            onNoLinkChange={(v) => set(["mobile", "top", "phoneNoLink"], v || undefined)}
             placeholder="tel:+16108830878"
           />
         </InspectorField>
 
         <InspectorField label="Email href">
-          <InspectorInput
-            value={top?.emailHref ?? ""}
-            onChange={(v) => set(["mobile", "top", "emailHref"], v)}
+          <HrefInput
+            hrefValue={top?.emailHref ?? ""}
+            noLink={!!top?.emailNoLink}
+            onHrefChange={(v) => set(["mobile", "top", "emailHref"], v)}
+            onNoLinkChange={(v) => set(["mobile", "top", "emailNoLink"], v || undefined)}
             placeholder="mailto:info@ibcballet.com"
           />
         </InspectorField>
@@ -373,18 +386,18 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
 
       {/* ===== Mobile Portal ===== */}
       <InspectorSection title="Mobile Portal" defaultOpen={false}>
-        <div className="grid grid-cols-2 gap-1.5">
-          <InspectorInput
-            value={portal?.label ?? ""}
-            onChange={(v) => set(["mobile", "portal", "label"], v)}
-            placeholder="Parent Portal"
-          />
-          <InspectorInput
-            value={portal?.href ?? ""}
-            onChange={(v) => set(["mobile", "portal", "href"], v)}
-            placeholder="#"
-          />
-        </div>
+        <InspectorInput
+          value={portal?.label ?? ""}
+          onChange={(v) => set(["mobile", "portal", "label"], v)}
+          placeholder="Parent Portal"
+        />
+        <HrefInput
+          hrefValue={portal?.href ?? ""}
+          noLink={!!portal?.noLink}
+          onHrefChange={(v) => set(["mobile", "portal", "href"], v)}
+          onNoLinkChange={(v) => set(["mobile", "portal", "noLink"], v || undefined)}
+          placeholder="#"
+        />
       </InspectorSection>
 
       {/* ===== Mobile Menu ===== */}
@@ -465,9 +478,11 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         </div>
 
         <InspectorField label="Href">
-          <InspectorInput
-            value={promo?.href ?? ""}
-            onChange={(v) => set(["mobile", "promo", "href"], v)}
+          <HrefInput
+            hrefValue={promo?.href ?? ""}
+            noLink={!!promo?.noLink}
+            onHrefChange={(v) => set(["mobile", "promo", "href"], v)}
+            onNoLinkChange={(v) => set(["mobile", "promo", "noLink"], v || undefined)}
             placeholder="#"
           />
         </InspectorField>

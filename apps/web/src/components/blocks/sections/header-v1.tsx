@@ -114,13 +114,25 @@ export function HeaderV1({ data }: { data: any }) {
       >
         <div className="header__bar--mobile nav-container">
           <div className="header__mobile-icons">
-            <a href={mobileTop?.phoneHref ?? "#"} aria-label="Phone" data-el="mobile-phone">
-              <Icon name="phone" className="phone-icon-mobile" />
-            </a>
+            {mobileTop?.phoneNoLink ? (
+              <span aria-label="Phone" data-el="mobile-phone" className="is-no-link">
+                <Icon name="phone" className="phone-icon-mobile" />
+              </span>
+            ) : (
+              <a href={mobileTop?.phoneHref ?? "#"} aria-label="Phone" data-el="mobile-phone">
+                <Icon name="phone" className="phone-icon-mobile" />
+              </a>
+            )}
 
-            <a href={mobileTop?.emailHref ?? "#"} aria-label="Email" data-el="mobile-email">
-              <Icon name="mail" className="mail-icon-mobile" />
-            </a>
+            {mobileTop?.emailNoLink ? (
+              <span aria-label="Email" data-el="mobile-email" className="is-no-link">
+                <Icon name="mail" className="mail-icon-mobile" />
+              </span>
+            ) : (
+              <a href={mobileTop?.emailHref ?? "#"} aria-label="Email" data-el="mobile-email">
+                <Icon name="mail" className="mail-icon-mobile" />
+              </a>
+            )}
           </div>
 
           <button
@@ -140,16 +152,28 @@ export function HeaderV1({ data }: { data: any }) {
             <div className="header-desktop__top">
               <div className="header-desktop__left">
                 {desktopPhone && desktopPhoneHref ? (
-                  <a
-                    href={desktopPhoneHref}
-                    className="header-desktop__phone"
-                    data-el="desktop-phone-link"
-                  >
-                    <Icon name="phone" className="header-desktop__phone-icon" aria-hidden />
-                    <span className="header-desktop__meta-text header-desktop__meta-text--phone" data-el="desktop-phone">
-                      {desktopPhone}
+                  desktop?.phoneNoLink ? (
+                    <span
+                      className={cn("header-desktop__phone", "is-no-link")}
+                      data-el="desktop-phone-link"
+                    >
+                      <Icon name="phone" className="header-desktop__phone-icon" aria-hidden />
+                      <span className="header-desktop__meta-text header-desktop__meta-text--phone" data-el="desktop-phone">
+                        {desktopPhone}
+                      </span>
                     </span>
-                  </a>
+                  ) : (
+                    <a
+                      href={desktopPhoneHref}
+                      className="header-desktop__phone"
+                      data-el="desktop-phone-link"
+                    >
+                      <Icon name="phone" className="header-desktop__phone-icon" aria-hidden />
+                      <span className="header-desktop__meta-text header-desktop__meta-text--phone" data-el="desktop-phone">
+                        {desktopPhone}
+                      </span>
+                    </a>
+                  )
                 ) : null}
 
                 <DesktopNavColumn
@@ -160,51 +184,93 @@ export function HeaderV1({ data }: { data: any }) {
                 />
               </div>
 
-              <a
-                href={brand.href ?? "#"}
-                className="header-desktop__center"
-                aria-label={brand.label ?? "Logo"}
-                data-el="brand-label"
-              >
-                {desktopLogo ? (
-                  <span data-el="desktop-logo">
-                    <Logo
-                      logo={desktopLogo}
-                      className="header-desktop__logo"
-                      title={brand.label ?? "Logo"}
-                    />
-                  </span>
-                ) : (
-                  <div className="header-desktop__fallback">
-                    <div className="header-desktop__fallback-title">IBC</div>
-                    <div className="header-desktop__fallback-title">BALLET</div>
-                  </div>
-                )}
-              </a>
+              {brand?.noLink ? (
+                <span
+                  className={cn("header-desktop__center", "is-no-link")}
+                  aria-label={brand.label ?? "Logo"}
+                  data-el="brand-label"
+                >
+                  {desktopLogo ? (
+                    <span data-el="desktop-logo">
+                      <Logo
+                        logo={desktopLogo}
+                        className="header-desktop__logo"
+                        title={brand.label ?? "Logo"}
+                      />
+                    </span>
+                  ) : (
+                    <div className="header-desktop__fallback">
+                      <div className="header-desktop__fallback-title">IBC</div>
+                      <div className="header-desktop__fallback-title">BALLET</div>
+                    </div>
+                  )}
+                </span>
+              ) : (
+                <a
+                  href={brand.href ?? "#"}
+                  className="header-desktop__center"
+                  aria-label={brand.label ?? "Logo"}
+                  data-el="brand-label"
+                >
+                  {desktopLogo ? (
+                    <span data-el="desktop-logo">
+                      <Logo
+                        logo={desktopLogo}
+                        className="header-desktop__logo"
+                        title={brand.label ?? "Logo"}
+                      />
+                    </span>
+                  ) : (
+                    <div className="header-desktop__fallback">
+                      <div className="header-desktop__fallback-title">IBC</div>
+                      <div className="header-desktop__fallback-title">BALLET</div>
+                    </div>
+                  )}
+                </a>
+              )}
 
               <div className="header-desktop__right">
                 <div className="header-desktop__portals">
 
                   {desktopSecondaryPortal?.label ? (
-                    <a
-                      href={desktopSecondaryPortal.href ?? "#"}
-                      className="header-desktop__portal header-desktop__portal--secondary"
-                      data-el="cta-secondary"
-                    >
-                      <span className="header-desktop__meta-text">{desktopSecondaryPortal.label}</span>
-                    </a>
+                    desktopSecondaryPortal?.noLink ? (
+                      <span
+                        className={cn("header-desktop__portal", "header-desktop__portal--secondary", "is-no-link")}
+                        data-el="cta-secondary"
+                      >
+                        <span className="header-desktop__meta-text">{desktopSecondaryPortal.label}</span>
+                      </span>
+                    ) : (
+                      <a
+                        href={desktopSecondaryPortal.href ?? "#"}
+                        className="header-desktop__portal header-desktop__portal--secondary"
+                        data-el="cta-secondary"
+                      >
+                        <span className="header-desktop__meta-text">{desktopSecondaryPortal.label}</span>
+                      </a>
+                    )
                   ) : null}
 
                   {desktopPortal?.label ? (
-                    <a
-                      href={desktopPortal.href ?? "#"}
-                      className="header-desktop__portal"
-                      data-el="cta"
-                    >
-                      <span className="header-desktop__meta-text">{desktopPortal.label}</span>
-                      <Icon name="lock" className="header-desktop__portal-icon" aria-hidden style={{ right: "-8px" }} />
-                      {/* <Icon name="unlock" className="header-desktop__portal-icon" aria-hidden /> */}
-                    </a>
+                    desktopPortal?.noLink ? (
+                      <span
+                        className={cn("header-desktop__portal", "is-no-link")}
+                        data-el="cta"
+                      >
+                        <span className="header-desktop__meta-text">{desktopPortal.label}</span>
+                        <Icon name="lock" className="header-desktop__portal-icon" aria-hidden style={{ right: "-8px" }} />
+                      </span>
+                    ) : (
+                      <a
+                        href={desktopPortal.href ?? "#"}
+                        className="header-desktop__portal"
+                        data-el="cta"
+                      >
+                        <span className="header-desktop__meta-text">{desktopPortal.label}</span>
+                        <Icon name="lock" className="header-desktop__portal-icon" aria-hidden style={{ right: "-8px" }} />
+                        {/* <Icon name="unlock" className="header-desktop__portal-icon" aria-hidden /> */}
+                      </a>
+                    )
                   ) : null}
 
 
@@ -257,12 +323,24 @@ export function HeaderV1({ data }: { data: any }) {
           <Container>
             <div className="header-menu__top-bar">
               <div className="header-menu__top-icons">
-                <a href={mobileTop?.phoneHref ?? "#"} aria-label="Phone" onClick={() => setOpen(false)}>
-                  <Icon name="phone" className="phone-icon-mobile" />
-                </a>
-                <a href={mobileTop?.emailHref ?? "#"} aria-label="Email" onClick={() => setOpen(false)}>
-                  <Icon name="mail" className="mail-icon-mobile" />
-                </a>
+                {mobileTop?.phoneNoLink ? (
+                  <span aria-label="Phone" className="is-no-link">
+                    <Icon name="phone" className="phone-icon-mobile" />
+                  </span>
+                ) : (
+                  <a href={mobileTop?.phoneHref ?? "#"} aria-label="Phone" onClick={() => setOpen(false)}>
+                    <Icon name="phone" className="phone-icon-mobile" />
+                  </a>
+                )}
+                {mobileTop?.emailNoLink ? (
+                  <span aria-label="Email" className="is-no-link">
+                    <Icon name="mail" className="mail-icon-mobile" />
+                  </span>
+                ) : (
+                  <a href={mobileTop?.emailHref ?? "#"} aria-label="Email" onClick={() => setOpen(false)}>
+                    <Icon name="mail" className="mail-icon-mobile" />
+                  </a>
+                )}
               </div>
 
               <button
@@ -275,15 +353,25 @@ export function HeaderV1({ data }: { data: any }) {
             </div>
 
             <div className="header-menu__portal-row">
-              <a
-                href={portal.href ?? "#"}
-                onClick={() => setOpen(false)}
-                data-el="mobile-portal"
-                className="header-menu__portal-btn"
-                aria-label={portal.label ?? "Parent Portal"}
-              >
-                <Icon name="parent-portal" className="header-menu__portal-btn-img" />
-              </a>
+              {portal?.noLink ? (
+                <span
+                  data-el="mobile-portal"
+                  className={cn("header-menu__portal-btn", "is-no-link")}
+                  aria-label={portal.label ?? "Parent Portal"}
+                >
+                  <Icon name="parent-portal" className="header-menu__portal-btn-img" />
+                </span>
+              ) : (
+                <a
+                  href={portal.href ?? "#"}
+                  onClick={() => setOpen(false)}
+                  data-el="mobile-portal"
+                  className="header-menu__portal-btn"
+                  aria-label={portal.label ?? "Parent Portal"}
+                >
+                  <Icon name="parent-portal" className="header-menu__portal-btn-img" />
+                </a>
+              )}
             </div>
 
             <div className="header-menu__links">
