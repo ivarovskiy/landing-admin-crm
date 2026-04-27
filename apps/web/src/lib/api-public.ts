@@ -26,10 +26,23 @@ export type TypographySettings = {
   sectionTitleStrokeW?: string;
 };
 
+export type ZoomSettings = {
+  enableZoom?: boolean;
+  designWidth?: number;
+  zoomBreakpoint?: number;
+  scale?: number;
+  fitViewport?: boolean;
+  normalizeViewport?: boolean;
+  normalizeViewportWidth?: number;
+  hideScrollbar?: boolean;
+  /** Apply viewport meta + CSS zoom synchronously before first paint to eliminate FOUC. Off by default. */
+  preventInitialFlicker?: boolean;
+};
+
 export async function getSiteSettings() {
   const url = `${BASE}/v1/public/settings`;
   return safeFetchJson<{
-    zoom?: { fitViewport?: boolean; scale?: number };
+    zoom?: ZoomSettings;
     scrollToTop?: ScrollToTopSettings;
     typography?: TypographySettings;
   }>(url, { cache: "no-store" });

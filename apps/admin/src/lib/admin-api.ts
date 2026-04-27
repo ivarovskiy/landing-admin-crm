@@ -53,6 +53,8 @@ export type SiteZoomSettings = {
   normalizeViewportWidth?: number;
   /** Hide the vertical scrollbar visually (scrolling still works) */
   hideScrollbar?: boolean;
+  /** Apply viewport meta + CSS zoom synchronously before first paint to eliminate FOUC. Off by default. */
+  preventInitialFlicker?: boolean;
 }
 export type SiteScrollToTopSettings = {
   /** Enable/disable the scroll-to-top button (default true) */

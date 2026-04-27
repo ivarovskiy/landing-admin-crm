@@ -2,8 +2,24 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 export interface ZoomSettings {
-  fitViewport?: boolean;
+  /** Master switch for CSS zoom on .landing-stack */
+  enableZoom?: boolean;
+  /** Reference canvas width in px (default 1480) */
+  designWidth?: number;
+  /** Min viewport width (px) at which CSS zoom activates (default 768) */
+  zoomBreakpoint?: number;
+  /** Coefficient applied on top of auto-zoom (default 1.0) */
   scale?: number;
+  /** Fit page height to viewport using header + hero dimensions */
+  fitViewport?: boolean;
+  /** Set <meta viewport> to a fixed width so the browser scales natively */
+  normalizeViewport?: boolean;
+  /** Width value used in meta viewport when normalizeViewport is on (default 1320) */
+  normalizeViewportWidth?: number;
+  /** Hide the vertical scrollbar visually (scrolling still works) */
+  hideScrollbar?: boolean;
+  /** Apply viewport meta + CSS zoom synchronously before first paint to eliminate FOUC. Off by default. */
+  preventInitialFlicker?: boolean;
 }
 
 export interface ScrollToTopSettings {

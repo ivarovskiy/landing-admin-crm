@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor, Link2 } from "lucide-react";
+import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor, Link2, Zap } from "lucide-react";
 import type { SiteSettingsData, SiteZoomSettings, SiteScrollToTopSettings, SiteTypographySettings } from "@/lib/admin-api";
 
 /* ----------------------------------------------------------------
@@ -212,6 +212,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     normalizeViewport: initialSettings?.zoom?.normalizeViewport === true,
     normalizeViewportWidth: initialSettings?.zoom?.normalizeViewportWidth,
     hideScrollbar: initialSettings?.zoom?.hideScrollbar === true,
+    preventInitialFlicker: initialSettings?.zoom?.preventInitialFlicker === true,
   });
   const [scrollToTop, setScrollToTop] = useState<SiteScrollToTopSettings>({
     enabled: initialSettings?.scrollToTop?.enabled !== false,
@@ -341,6 +342,15 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             description="Hides the vertical scrollbar visually — scrolling still works"
             value={zoom.hideScrollbar === true}
             onChange={(v) => update({ hideScrollbar: v })}
+          />
+
+          {/* Prevent initial flicker (opt-in FOUC fix) */}
+          <ToggleRow
+            icon={<Zap className="h-3.5 w-3.5" />}
+            label="Prevent initial flicker"
+            description="Apply viewport + zoom before first paint via inline script (opt-in FOUC fix)"
+            value={zoom.preventInitialFlicker === true}
+            onChange={(v) => update({ preventInitialFlicker: v })}
           />
 
           {/* Viewport width — only relevant when normalizeViewport is on */}
