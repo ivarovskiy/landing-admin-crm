@@ -286,19 +286,20 @@
   pointer-events: none;
 }
 
-/* Only items with children get the underline on hover */
+/* Default "parent only" mode: only top-level items WITH children show the
+   underline. Subnav children themselves do not get their own underline —
+   instead, hovering or activating a subnav child keeps the PARENT's
+   underline lit so the relationship stays visible. */
 .has-children .header-desktop__nav-link:hover::after,
 .has-children .header-desktop__nav-link.is-active::after {
   opacity: 1;
 }
 
-/* When mouse is over dropdown children — hide parent underline */
-.header-desktop__nav-row:has(.header-desktop__dropdown:hover) .header-desktop__nav-item.has-open-dropdown .header-desktop__nav-link::after {
-  opacity: 0;
-}
-
-.header-desktop__subnav-link:hover::after,
-.header-desktop__subnav-link.is-active::after {
+/* Parent stays lit when a subnav child is hovered or marked active. */
+.header-desktop__nav-item.has-children:has(.header-desktop__subnav-link:hover)
+  .header-desktop__nav-link::after,
+.header-desktop__nav-item.has-children:has(.header-desktop__subnav-link.is-active)
+  .header-desktop__nav-link::after {
   opacity: 1;
 }
 
@@ -307,10 +308,12 @@
    (attribute absent) keeps the legacy "parent-only" behavior above. The
    two opt-in modes override it with equal-specificity rules below. */
 
-/* `all`: extend the hover/active underline to every top-level item, even
-   those without children. Subnav children keep their own rule above. */
+/* `all`: extend the hover/active underline to every top-level item (even
+   childless ones) AND to subnav children. */
 [data-nav-underline="all"] .header-desktop__nav-link:hover::after,
-[data-nav-underline="all"] .header-desktop__nav-link.is-active::after {
+[data-nav-underline="all"] .header-desktop__nav-link.is-active::after,
+[data-nav-underline="all"] .header-desktop__subnav-link:hover::after,
+[data-nav-underline="all"] .header-desktop__subnav-link.is-active::after {
   opacity: 1;
 }
 
