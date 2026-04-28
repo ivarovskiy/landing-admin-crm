@@ -139,7 +139,7 @@
 
   position: absolute;
   transform: translateY(-3px);
-  right: -54px;
+  /* right: -54px; */
 }
 
 .header-desktop__meta-text {
