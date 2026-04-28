@@ -260,6 +260,8 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
   });
   const [typography, setTypography] = useState<SiteTypographySettings>({
     linkStampScale: initialSettings?.typography?.linkStampScale === true,
+    linkStampStrokeWAt104: initialSettings?.typography?.linkStampStrokeWAt104,
+    linkStampShadowOffsetAt104: initialSettings?.typography?.linkStampShadowOffsetAt104,
     stampShadowStyle:
       initialSettings?.typography?.stampShadowStyle === "extruded" ? "extruded" : "drop",
 
