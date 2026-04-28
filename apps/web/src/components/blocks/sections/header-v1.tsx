@@ -271,7 +271,7 @@ export function HeaderV1({ data }: { data: any }) {
                         data-el="cta"
                       >
                         <span className="header-desktop__meta-text">{desktopPortal.label}</span>
-                        <Icon name="lock" className="header-desktop__portal-icon" aria-hidden style={{ right: "-8px" }} />
+                        <Icon name="lock" className="header-desktop__portal-icon" aria-hidden style={{ right: "-54px" }} />
                       </span>
                     ) : (
                       <a
@@ -280,7 +280,7 @@ export function HeaderV1({ data }: { data: any }) {
                         data-el="cta"
                       >
                         <span className="header-desktop__meta-text">{desktopPortal.label}</span>
-                        <Icon name="lock" className="header-desktop__portal-icon" aria-hidden style={{ right: "-8px" }} />
+                        <Icon name="lock" className="header-desktop__portal-icon" aria-hidden style={{ right: "-54px" }} />
                         {/* <Icon name="unlock" className="header-desktop__portal-icon" aria-hidden /> */}
                       </a>
                     )
