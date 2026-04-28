@@ -73,6 +73,13 @@ export type SiteTypographySettings = {
    *  Per-size overrides below always win over this when both are enabled. */
   linkStampScale?: boolean;
 
+  /** Stamp shadow render style.
+   *  - `'drop'` (default): classic single-offset drop-shadow (fast, but
+   *    glyph holes can show page background as thin wedges).
+   *  - `'extruded'`: continuous 16-stop text-shadow stack — no wedges,
+   *    looks like 3D-extruded letters. */
+  stampShadowStyle?: 'drop' | 'extruded';
+
   /** 104px stamp — Section title (homepage-header, features-title, studio-address__title) */
   sectionTitleStrokeEnabled?: boolean;
   sectionTitleStrokeW?: string;

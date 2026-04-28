@@ -35,6 +35,16 @@ export interface TypographySettings {
    *  Per-size overrides below always win over this when both are enabled. */
   linkStampScale?: boolean;
 
+  /** How the stamp shadow is rendered on every stamp title.
+   *  - `'drop'` (default): single offset duplicate via `filter: drop-shadow`
+   *    (the classic "stamp" look — fast, but glyph holes can show the page
+   *    background as thin "wedges" between front and shadow contours).
+   *  - `'extruded'`: a 16-stop `text-shadow` stack from 1/16 of the offset
+   *    to the full offset, producing a continuous extruded 3D look without
+   *    any holes/wedges between the front and shadow.
+   *  When undefined, behaves like `'drop'`. */
+  stampShadowStyle?: 'drop' | 'extruded';
+
   /* ── Section title (104px) — homepage-header, features-title, studio-address__title ── */
   /** Override stroke width at 104px. Also drives the link-mode stroke em-ratio when enabled. */
   sectionTitleStrokeEnabled?: boolean;

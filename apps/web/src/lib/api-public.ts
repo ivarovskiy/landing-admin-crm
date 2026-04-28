@@ -23,6 +23,9 @@ export type ScrollToTopSettings = {
 export type TypographySettings = {
   linkStampScale?: boolean;
 
+  /** Stamp shadow render style — see settings.service.ts for full docs. */
+  stampShadowStyle?: 'drop' | 'extruded';
+
   sectionTitleStrokeEnabled?: boolean;
   sectionTitleStrokeW?: string;
   sectionTitleShadowEnabled?: boolean;

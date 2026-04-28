@@ -109,6 +109,9 @@ export default async function RootLayout({ children }: {
   // when both are present, so an admin who enables a toggle but leaves the
   // value blank gets a no-op (no silent default).
   const stampLink = typography?.linkStampScale === true ? "on" : undefined;
+  // Default ('drop') stays absent so legacy CSS rules apply unchanged.
+  const stampShadowStyle =
+    typography?.stampShadowStyle === "extruded" ? "extruded" : undefined;
   const sectionStroke =
     typography?.sectionTitleStrokeEnabled === true && typography?.sectionTitleStrokeW
       ? "on"
@@ -157,6 +160,7 @@ export default async function RootLayout({ children }: {
       lang="uk"
       className={`${fontMaru.variable} ${fontMaruOblique.variable} ${fontDisplay.variable}`}
       data-stamp-link={stampLink}
+      data-stamp-shadow-style={stampShadowStyle}
       data-section-stroke={sectionStroke}
       data-section-shadow={sectionShadow}
       data-hero-stroke={heroStroke}
