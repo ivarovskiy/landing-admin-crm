@@ -7,11 +7,19 @@
   flex-direction: column;
 }
 
-/* Desktop: fix layout width to design base so proportional zoom works correctly.
-   Content width = 1360px, with 60px padding on each side → total = 1480px. */
+/* Desktop: pin layout width to the design base so proportional CSS `zoom`
+   actually shrinks the rendered output without forcing the layout to wrap.
+   Without this, on viewports below the design width (e.g. iPad Pro landscape
+   at ~1194px), the stack would lay out at viewport width and elements like
+   the desktop nav would wrap to multiple rows BEFORE zoom was applied; CSS
+   `zoom` only scales the rendered output, never the layout box.
+   `min-width` (instead of `width`) keeps the stack flexible on screens
+   wider than the design canvas, where content can fill the viewport.
+   The CSS variable lets RootLayout pass through the admin-configured
+   `designWidth` so the two values cannot drift apart. */
 @media (min-width: 768px) {
   .landing-stack {
-    /* width: 1440px; */
+    min-width: var(--landing-design-width, 1440px);
     margin-inline: auto;
     padding-inline: 60px;
   }
