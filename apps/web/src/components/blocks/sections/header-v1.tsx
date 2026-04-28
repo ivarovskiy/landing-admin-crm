@@ -378,8 +378,12 @@ export function HeaderV1({ data }: { data: any }) {
               {menuLinks.map((item, idx) => {
                 const hasChildren =
                   Array.isArray(item.children) && item.children.length > 0;
-                const isOpen = !!expanded[idx];
-                const isNoLink = item.noLink === true;
+                const passive = isPassiveParent(item);
+                // Passive parents have nothing to navigate to and no navigable
+                // children — keep the subtree statically expanded and skip the
+                // toggle button so the user can never collapse it via a tap.
+                const isOpen = passive ? true : !!expanded[idx];
+                const isNoLink = item.noLink === true || passive;
 
                 return (
                   <div key={`${item.label}-${idx}`}>
@@ -398,7 +402,7 @@ export function HeaderV1({ data }: { data: any }) {
                         </a>
                       )}
 
-                      {hasChildren ? (
+                      {hasChildren && !passive ? (
                         <button
                           aria-label={isOpen ? "Collapse" : "Expand"}
                           onClick={() => toggleExpanded(idx)}
@@ -585,7 +589,11 @@ function DesktopNavColumn({
           const hasChildren = Array.isArray(item.children) && item.children.length > 0;
           const key = toKey(item.label);
           const isOpen = openDropdown === key;
-          const isNoLink = item.noLink === true;
+          const passive = isPassiveParent(item);
+          // Treat passive parents (no own link AND no navigable descendant)
+          // exactly like an explicit no-link item — render as plain text, click
+          // is a no-op so the dropdown never toggles via clicking the label.
+          const isNoLink = item.noLink === true || passive;
 
           // Hover opens the dropdown for parents (no-link or not). For no-link
           // parents the LABEL itself never reacts to a click — neither
@@ -756,6 +764,28 @@ function normalizeLink(value: any): HeaderLink | null {
 
 function toKey(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/** True when the item is a navigable link (own href that isn't a placeholder). */
+function hasOwnLink(item: HeaderLink): boolean {
+  if (item.noLink) return false;
+  if (typeof item.href !== "string") return false;
+  const trimmed = item.href.trim();
+  return trimmed !== "" && trimmed !== "#";
+}
+
+function hasNavigableDescendant(item: HeaderLink): boolean {
+  if (!item.children?.length) return false;
+  return item.children.some((c) => hasOwnLink(c) || hasNavigableDescendant(c));
+}
+
+/** Parent that has children but neither it nor any descendant has a navigable link.
+ *  Clicking such an item is meaningless — disable click toggle on desktop and the
+ *  expand/collapse button on mobile, but still render its subtree statically so
+ *  the labels remain visible. */
+function isPassiveParent(item: HeaderLink): boolean {
+  if (!item.children?.length) return false;
+  return !hasOwnLink(item) && !hasNavigableDescendant(item);
 }
 
 
