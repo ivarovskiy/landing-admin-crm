@@ -495,7 +495,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
 
       {/* ---- Section title (104px) ---- */}
       <div className="space-y-2">
-        <SectionLabel>Section title (104px)</SectionLabel>
+        <SectionLabel>Header / Block Title (104px)</SectionLabel>
 
         <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
           <ToggleRow
@@ -533,7 +533,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
 
       {/* ---- Hero title (78px) ---- */}
       <div className="space-y-2">
-        <SectionLabel>Hero title (78px)</SectionLabel>
+        <SectionLabel>Header / Content & Slider (78px)</SectionLabel>
 
         <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
           <ToggleRow
@@ -571,7 +571,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
 
       {/* ---- Subtitle (47px) ---- */}
       <div className="space-y-2">
-        <SectionLabel>Subtitle (47px)</SectionLabel>
+        <SectionLabel>Header Tagline (47px)</SectionLabel>
 
         <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
           <ToggleRow
