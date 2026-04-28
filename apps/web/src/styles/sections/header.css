@@ -291,14 +291,16 @@
    instead, hovering or activating a subnav child keeps the PARENT's
    underline lit so the relationship stays visible. */
 .has-children .header-desktop__nav-link:hover::after,
-.has-children .header-desktop__nav-link.is-active::after {
+.has-children .header-desktop__nav-link.is-active::after,
+.has-children .header-desktop__nav-link.has-active-descendant::after {
   opacity: 1;
 }
 
-/* Parent stays lit when a subnav child is hovered or marked active. */
+/* Parent stays lit when a subnav child is hovered. Active-descendant case
+   is handled by the `.has-active-descendant` class above (set in JS) — the
+   subnav DOM only exists while the dropdown is open, so a CSS-only :has()
+   rule can't cover the closed-dropdown state. */
 .header-desktop__nav-item.has-children:has(.header-desktop__subnav-link:hover)
-  .header-desktop__nav-link::after,
-.header-desktop__nav-item.has-children:has(.header-desktop__subnav-link.is-active)
   .header-desktop__nav-link::after {
   opacity: 1;
 }
@@ -323,6 +325,7 @@
 [data-nav-underline="none"] .header-desktop__nav-link::after,
 [data-nav-underline="none"] .header-desktop__nav-link:hover::after,
 [data-nav-underline="none"] .header-desktop__nav-link.is-active::after,
+[data-nav-underline="none"] .header-desktop__nav-link.has-active-descendant::after,
 [data-nav-underline="none"] .header-desktop__subnav-link::after,
 [data-nav-underline="none"] .header-desktop__subnav-link:hover::after,
 [data-nav-underline="none"] .header-desktop__subnav-link.is-active::after {

@@ -595,6 +595,16 @@ function DesktopNavColumn({
           // is a no-op so the dropdown never toggles via clicking the label.
           const isNoLink = item.noLink === true || passive;
 
+          // True when the current page corresponds to one of this item's
+          // descendants (any level). The subnav children only render in the
+          // DOM when their parent's dropdown is open, so we cannot rely on a
+          // CSS `:has(.subnav-link.is-active)` rule alone — we surface this
+          // signal as a dedicated class on the parent's nav-link so the
+          // underline can be lit even when the dropdown is closed.
+          const hasActiveDescendant = hasChildren
+            ? hasActiveDescendantOf(item)
+            : false;
+
           // Hover opens the dropdown for parents (no-link or not). For no-link
           // parents the LABEL itself never reacts to a click — neither
           // navigates nor toggles the dropdown — so the menu is purely
@@ -607,6 +617,7 @@ function DesktopNavColumn({
           const linkClass = cn(
             "header-desktop__nav-link",
             (item.active || isOpen) && "is-active",
+            hasActiveDescendant && "has-active-descendant",
             isNoLink && "is-no-link"
           );
 
@@ -620,6 +631,7 @@ function DesktopNavColumn({
                 "header-desktop__nav-item",
                 hasChildren && "has-children",
                 hasChildren && isOpen && "has-open-dropdown",
+                hasActiveDescendant && "has-active-descendant",
                 isNoLink && "is-no-link"
               )}
               onMouseEnter={onMouseEnter}
@@ -771,6 +783,12 @@ function hasOwnLink(item: HeaderLink): boolean {
   if (typeof item.href !== "string") return false;
   const trimmed = item.href.trim();
   return trimmed !== "" && trimmed !== "#";
+}
+
+/** True when any descendant (any depth) of `item` has `active === true`. */
+function hasActiveDescendantOf(item: HeaderLink): boolean {
+  if (!item.children?.length) return false;
+  return item.children.some((c) => c.active === true || hasActiveDescendantOf(c));
 }
 
 function hasNavigableDescendant(item: HeaderLink): boolean {
