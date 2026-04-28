@@ -124,6 +124,7 @@ export function HeroSliderV1Form({ value, onChange }: BlockFormProps) {
   const showArrows = options?.showArrows === true;
   const fillViewport = options?.fillViewport === true;
   const showGuides = options?.showGuides === true;
+  const showElementGuides = options?.showElementGuides === true;
   const autoPlayMs = Number(options?.autoPlayMs ?? 0);
   const inlineIconMargin = options?.inlineIconMargin ?? "";
   const inlineIconSize = options?.inlineIconSize ?? "";
@@ -165,6 +166,11 @@ export function HeroSliderV1Form({ value, onChange }: BlockFormProps) {
           label="Show guidelines"
           checked={showGuides}
           onChange={(v) => set(["options", "showGuides"], v || undefined)}
+        />
+        <InspectorToggle
+          label="Show element guidelines"
+          checked={showElementGuides}
+          onChange={(v) => set(["options", "showElementGuides"], v || undefined)}
         />
 
         <div className="grid grid-cols-2 gap-1.5">
