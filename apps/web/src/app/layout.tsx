@@ -157,6 +157,17 @@ export default async function RootLayout({ children }: {
     typographyStyle["--link-stamp-shadow-em"] = `calc(${typography.linkStampShadowOffsetAt104} / 104px * 1em)`;
   }
 
+  // Make the admin-configured `designWidth` available to layout.css as a
+  // CSS variable so `.landing-stack` can pin its layout width to the design
+  // canvas (`min-width: var(--landing-design-width, 1440px)`). This lets the
+  // existing CSS `zoom` shrink rendered output to fit the viewport without
+  // the layout itself wrapping at small-but-not-mobile sizes (e.g. iPad Pro
+  // landscape at ~1194px). The default in CSS already matches the legacy
+  // hardcoded 1440px so behaviour is unchanged when admin keeps that value.
+  if (zoom?.designWidth && typeof zoom.designWidth === "number" && zoom.designWidth > 0) {
+    typographyStyle["--landing-design-width"] = `${zoom.designWidth}px`;
+  }
+
   const htmlStyle =
     Object.keys(typographyStyle).length > 0
       ? (typographyStyle as React.CSSProperties)
