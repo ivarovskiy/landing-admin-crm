@@ -112,6 +112,7 @@
 }
 
 .header-desktop__portals {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 30px;
@@ -138,7 +139,7 @@
 
   position: absolute;
   transform: translateY(-3px);
-  right: -12px;
+  right: -54px;
 }
 
 .header-desktop__meta-text {
