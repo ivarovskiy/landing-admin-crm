@@ -35,6 +35,20 @@ export interface TypographySettings {
    *  Per-size overrides below always win over this when both are enabled. */
   linkStampScale?: boolean;
 
+  /** Stroke width at the 104px reference size used to derive the link-mode
+   *  em-ratio (CSS length, e.g. "2.6px"). Resolved on the web side as
+   *  `calc(<value> / 104px * 1em)` and applied as `--stamp-stroke-em` on
+   *  every linked stamp size. When undefined, the legacy default
+   *  `0.025em` (= 2.6 / 104) is used. Per-size stroke overrides still win. */
+  linkStampStrokeWAt104?: string;
+
+  /** Shadow offset at the 104px reference size used to derive the link-mode
+   *  em-ratio (CSS length, e.g. "5.56px"). Resolved on the web side as
+   *  `calc(<value> / 104px * 1em)` and applied as `--stamp-shadow-em` on
+   *  every linked stamp size. When undefined, the legacy default
+   *  `0.0535em` (= 5.56 / 104) is used. Per-size shadow overrides still win. */
+  linkStampShadowOffsetAt104?: string;
+
   /** How the stamp shadow is rendered on every stamp title.
    *  - `'drop'` (default): single offset duplicate via `filter: drop-shadow`.
    *    Renders correctly on Chromium/Firefox, but on iPad/Safari the filter

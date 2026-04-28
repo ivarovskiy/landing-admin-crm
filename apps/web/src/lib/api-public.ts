@@ -23,6 +23,14 @@ export type ScrollToTopSettings = {
 export type TypographySettings = {
   linkStampScale?: boolean;
 
+  /** Link-mode em-ratio source values (CSS lengths at the 104px reference,
+   *  e.g. "2.6px" / "5.56px"). The web layout converts each to
+   *  `calc(<value> / 104px * 1em)` and applies it as `--link-stamp-stroke-em`
+   *  / `--link-stamp-shadow-em` so the corresponding `--stamp-*-em` defaults
+   *  pick them up via var() fallback. */
+  linkStampStrokeWAt104?: string;
+  linkStampShadowOffsetAt104?: string;
+
   /** Stamp shadow render style — see settings.service.ts for full docs. */
   stampShadowStyle?: 'drop' | 'extruded';
 

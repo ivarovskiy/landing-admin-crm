@@ -171,8 +171,16 @@
    ========================================================= */
 
 :root {
-  --stamp-stroke-em: 0.025em;   /* 2.6 / 104 — overridden by data-section-stroke=on */
-  --stamp-shadow-em: 0.0535em;  /* 5.56 / 104 — overridden by data-section-shadow=on */
+  /* Link-mode em-ratios for stamp stroke + shadow.
+     Defaults match the historic hardcoded values (2.6 / 104 and 5.56 / 104).
+     Admin-supplied coefficients arrive as `--link-stamp-stroke-em` /
+     `--link-stamp-shadow-em` set inline on <html> (calc(<px> / 104px * 1em)),
+     so they transparently override the defaults via var() fallback.
+     [data-section-stroke=on] / [data-section-shadow=on] write
+     --stamp-stroke-em / --stamp-shadow-em directly with higher source order
+     so per-size overrides still win when both layers are enabled. */
+  --stamp-stroke-em: var(--link-stamp-stroke-em, 0.025em);
+  --stamp-shadow-em: var(--link-stamp-shadow-em, 0.0535em);
 }
 
 [data-section-stroke="on"] {
