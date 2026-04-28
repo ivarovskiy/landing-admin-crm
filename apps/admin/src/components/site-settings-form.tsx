@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor, Link2, Zap, Underline } from "lucide-react";
+import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor, Link2, Zap, Underline, Layers } from "lucide-react";
 import type { SiteSettingsData, SiteZoomSettings, SiteScrollToTopSettings, SiteTypographySettings, SiteHeaderSettings, NavUnderlineMode } from "@/lib/admin-api";
 
 /* ----------------------------------------------------------------
@@ -260,6 +260,8 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
   });
   const [typography, setTypography] = useState<SiteTypographySettings>({
     linkStampScale: initialSettings?.typography?.linkStampScale === true,
+    stampShadowStyle:
+      initialSettings?.typography?.stampShadowStyle === "extruded" ? "extruded" : "drop",
 
     sectionTitleStrokeEnabled: initialSettings?.typography?.sectionTitleStrokeEnabled === true,
     sectionTitleStrokeW: initialSettings?.typography?.sectionTitleStrokeW,
@@ -489,6 +491,17 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             description="Stamp headings auto-scale stroke + shadow proportionally (em-based). Per-size overrides below win."
             value={typography.linkStampScale === true}
             onChange={(v) => updateTypography({ linkStampScale: v })}
+          />
+          <SelectRow<"drop" | "extruded">
+            icon={<Layers className="h-3.5 w-3.5" />}
+            label="Stamp shadow style"
+            description="Drop = classic single offset duplicate via filter:drop-shadow. Extruded = continuous 16-stop text-shadow stack with no cream wedges inside hollow glyph holes (O, U, R, S, C, H, etc)."
+            value={typography.stampShadowStyle === "extruded" ? "extruded" : "drop"}
+            options={[
+              { value: "drop", label: "Drop shadow (classic stamp)" },
+              { value: "extruded", label: "Extruded (no holes)" },
+            ]}
+            onChange={(v) => updateTypography({ stampShadowStyle: v })}
           />
         </div>
       </div>

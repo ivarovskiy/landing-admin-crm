@@ -337,6 +337,69 @@
   filter: drop-shadow(var(--subtitle-shadow-offset) var(--subtitle-shadow-offset) 0 var(--stamp-stroke, var(--color-primary)));
 }
 
+/* =========================================================
+   Stamp shadow style — extruded variant.
+
+   When [data-stamp-shadow-style="extruded"] is set on <html>, every stamp
+   selector that would otherwise apply `filter: drop-shadow(<offset> 0 <c>)`
+   instead sets `filter: none` and renders a 16-stop `text-shadow` stack
+   (see --stamp-shadow-extrude-stack in typography.css). The stack fills the
+   diagonal between the front glyph and the full-offset shadow continuously,
+   eliminating the cream "wedges" drop-shadow leaves inside hollow glyph
+   holes (O, U, R, S, C, H, etc).
+
+   Each rule mirrors a corresponding `filter: drop-shadow(...)` rule from
+   above and feeds the same offset + color into the extrude vars so the
+   visual offset matches.
+   ========================================================= */
+
+[data-stamp-shadow-style="extruded"] .ds-outline-stamp {
+  --stamp-extrude-x: var(--stamp-shadow-x);
+  --stamp-extrude-y: var(--stamp-shadow-y);
+  --stamp-extrude-color: var(--stamp-shadow-color);
+  filter: none;
+  text-shadow: var(--stamp-shadow-extrude-stack);
+}
+
+[data-stamp-shadow-style="extruded"][data-stamp-link="on"] .ds-outline-stamp {
+  --stamp-extrude-x: var(--stamp-shadow-em);
+  --stamp-extrude-y: var(--stamp-shadow-em);
+  --stamp-extrude-color: var(--stamp-stroke, var(--color-primary));
+  filter: none;
+  text-shadow: var(--stamp-shadow-extrude-stack);
+}
+
+[data-stamp-shadow-style="extruded"][data-section-shadow="on"] .typo-homepage-header,
+[data-stamp-shadow-style="extruded"][data-section-shadow="on"] .features-title,
+[data-stamp-shadow-style="extruded"][data-section-shadow="on"] .studio-address__title,
+[data-stamp-shadow-style="extruded"][data-section-shadow="on"] .doc-header__title,
+[data-stamp-shadow-style="extruded"][data-section-shadow="on"] .scrapbook__title {
+  --stamp-extrude-x: var(--section-title-shadow-offset);
+  --stamp-extrude-y: var(--section-title-shadow-offset);
+  --stamp-extrude-color: var(--stamp-stroke, var(--color-primary));
+  filter: none;
+  text-shadow: var(--stamp-shadow-extrude-stack);
+}
+
+[data-stamp-shadow-style="extruded"][data-hero-shadow="on"] .typo-content-header,
+[data-stamp-shadow-style="extruded"][data-hero-shadow="on"] .typo-hero-title,
+[data-stamp-shadow-style="extruded"][data-hero-shadow="on"] .cp__title,
+[data-stamp-shadow-style="extruded"][data-hero-shadow="on"] .hero-slide__title {
+  --stamp-extrude-x: var(--hero-title-shadow-offset);
+  --stamp-extrude-y: var(--hero-title-shadow-offset);
+  --stamp-extrude-color: var(--stamp-stroke, var(--color-primary));
+  filter: none;
+  text-shadow: var(--stamp-shadow-extrude-stack);
+}
+
+[data-stamp-shadow-style="extruded"][data-subtitle-shadow="on"] .typo-subtitle {
+  --stamp-extrude-x: var(--subtitle-shadow-offset);
+  --stamp-extrude-y: var(--subtitle-shadow-offset);
+  --stamp-extrude-color: var(--stamp-stroke, var(--color-primary));
+  filter: none;
+  text-shadow: var(--stamp-shadow-extrude-stack);
+}
+
 /* ---- Scroll-to-top button ---- */
 
 .scroll-to-top {
