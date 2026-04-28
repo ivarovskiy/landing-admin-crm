@@ -279,7 +279,7 @@
   bottom: 0;
   width: calc(100% + 4px);
   height: 5px;
-  background: url("/icons/vector.svg") left center / auto 100% no-repeat;
+  background: url("/icons/vector.svg") left center / 100% 100% no-repeat;
   opacity: 0;
   transform: none;
   transition: opacity 180ms ease;

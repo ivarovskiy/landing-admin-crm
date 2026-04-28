@@ -675,7 +675,6 @@ function DesktopNavColumn({
                   key={`${activeItem.label}-${child.label}-${i}`}
                   href={child.href ?? "#"}
                   className={linkClass}
-                  onClick={() => onToggle(null)}
                 >
                   {child.label}
                 </a>
