@@ -58,10 +58,16 @@ export interface TypographySettings {
   subtitleShadowOffset?: string;
 }
 
+export interface HeaderSettings {
+  /** Show the hover/active underline under desktop nav links. Default: true. */
+  navHoverUnderline?: boolean;
+}
+
 export interface SiteSettingsData {
   zoom?: ZoomSettings;
   scrollToTop?: ScrollToTopSettings;
   typography?: TypographySettings;
+  header?: HeaderSettings;
 }
 
 @Injectable()

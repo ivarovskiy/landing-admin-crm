@@ -91,10 +91,15 @@ export type SiteTypographySettings = {
   subtitleShadowEnabled?: boolean;
   subtitleShadowOffset?: string;
 }
+export type SiteHeaderSettings = {
+  /** Show the hover/active underline under desktop nav links. Default: true. */
+  navHoverUnderline?: boolean;
+}
 export type SiteSettingsData = {
   zoom?: SiteZoomSettings;
   scrollToTop?: SiteScrollToTopSettings;
   typography?: SiteTypographySettings;
+  header?: SiteHeaderSettings;
 }
 
 export async function fetchSiteSettings(): Promise<SiteSettingsData> {

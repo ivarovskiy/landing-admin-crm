@@ -141,6 +141,7 @@ model SiteSettings {
   zoom         Json?
   scrollToTop  Json?
   typography   Json?
+  header       Json?
   updatedAt    DateTime @updatedAt
 }
 

@@ -587,11 +587,11 @@ function DesktopNavColumn({
           const isOpen = openDropdown === key;
           const isNoLink = item.noLink === true;
 
-          // Hover behavior: a normal parent auto-opens its dropdown on hover
-          // for fast navigation. A no-link parent ignores hover — the dropdown
-          // is only toggled by an explicit click on the parent label.
+          // Hover opens the dropdown for parents (no-link or not). For no-link
+          // parents the LABEL itself never reacts to a click — neither
+          // navigates nor toggles the dropdown — so the menu is purely
+          // hover-driven and no accidental tap collapses it.
           const onMouseEnter = () => {
-            if (isNoLink) return;
             if (hasChildren) onToggle(key);
             else onToggle(null);
           };
@@ -617,31 +617,7 @@ function DesktopNavColumn({
               onMouseEnter={onMouseEnter}
             >
               {isNoLink ? (
-                <span
-                  className={linkClass}
-                  role={hasChildren ? "button" : undefined}
-                  tabIndex={hasChildren ? 0 : undefined}
-                  onClick={
-                    hasChildren
-                      ? (e) => {
-                          e.stopPropagation();
-                          onToggle(isOpen ? null : key);
-                        }
-                      : undefined
-                  }
-                  onKeyDown={
-                    hasChildren
-                      ? (e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            onToggle(isOpen ? null : key);
-                          }
-                        }
-                      : undefined
-                  }
-                >
-                  {item.label}
-                </span>
+                <span className={linkClass}>{item.label}</span>
               ) : (
                 <a
                   href={item.href ?? "#"}
