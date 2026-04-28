@@ -228,6 +228,7 @@ export function HeroSliderV1({ data }: { data: any }) {
   const showDots = options?.showDots !== false;
   const showArrows = options?.showArrows === true;
   const showGuides = options?.showGuides === true;
+  const showElementGuides = options?.showElementGuides === true;
 
   // Real slide currently displayed (for dots / aria / live preview)
   const active = hasLoop
@@ -457,6 +458,7 @@ export function HeroSliderV1({ data }: { data: any }) {
                     isDragging={!!drag.current?.moved}
                     slideIndex={realIndex}
                     showGuides={showGuides}
+                    showElementGuides={showElementGuides}
                   />
                 </div>
               );
@@ -512,11 +514,13 @@ function HeroSlide({
   isDragging,
   slideIndex: i,
   showGuides = false,
+  showElementGuides = false,
 }: {
   slide: Slide;
   isDragging: boolean;
   slideIndex: number;
   showGuides?: boolean;
+  showElementGuides?: boolean;
 }) {
   const template = resolveTemplate(slide);
   const mobileImageFirst = !!slide?.layout?.mobile?.imageFirst;
@@ -535,44 +539,80 @@ function HeroSlide({
     stretchTop: number;
     stretchBottom: number;
   };
+  type ElementRect = {
+    key: string;
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+  };
   const [mediaRect, setMediaRect] = useState<MediaRect | null>(null);
+  const [elementRects, setElementRects] = useState<ElementRect[]>([]);
   // Measurement is needed for guides and for media-aligned text stretching.
-  const measureNeeded = showGuides || stretchToMedia;
+  const measureNeeded = showGuides || showElementGuides || stretchToMedia;
 
   useLayoutEffect(() => {
     if (!measureNeeded) {
       setMediaRect(null);
+      setElementRects([]);
       return;
     }
     const slideEl = slideRef.current;
     if (!slideEl) return;
     const measure = () => {
       const media = slideEl.querySelector<HTMLElement>(".hero-slide__media-box");
-      if (!media) {
-        setMediaRect(null);
-        return;
-      }
-      const textCol = slideEl.querySelector<HTMLElement>(".hero-slide__text-col");
       const sr = slideEl.getBoundingClientRect();
-      const mr = media.getBoundingClientRect();
-      if (!sr.width || !mr.width) return;
+      if (!sr.width) return;
       // Convert visual px → layout px in case parent uses CSS zoom/scale.
       const scale = sr.width / slideEl.offsetWidth || 1;
-      const tc = textCol?.getBoundingClientRect();
-      // Stretch insets are computed relative to text-col so that hero-slide's
-      // own padding is automatically excluded — copy lives inside text-col
-      // and shares its content box.
-      const refTop = tc?.top ?? sr.top;
-      const refBottom = tc?.bottom ?? sr.bottom;
-      setMediaRect({
-        left: (mr.left - sr.left) / scale,
-        right: (mr.right - sr.left) / scale,
-        top: (mr.top - sr.top) / scale,
-        bottom: (mr.bottom - sr.top) / scale,
-        height: sr.height / scale,
-        stretchTop: Math.max(0, (mr.top - refTop) / scale),
-        stretchBottom: Math.max(0, (refBottom - mr.bottom) / scale),
-      });
+
+      if (!media) {
+        setMediaRect(null);
+      } else {
+        const mr = media.getBoundingClientRect();
+        if (mr.width) {
+          const textCol = slideEl.querySelector<HTMLElement>(".hero-slide__text-col");
+          const tc = textCol?.getBoundingClientRect();
+          // Stretch insets are computed relative to text-col so that hero-slide's
+          // own padding is automatically excluded — copy lives inside text-col
+          // and shares its content box.
+          const refTop = tc?.top ?? sr.top;
+          const refBottom = tc?.bottom ?? sr.bottom;
+          setMediaRect({
+            left: (mr.left - sr.left) / scale,
+            right: (mr.right - sr.left) / scale,
+            top: (mr.top - sr.top) / scale,
+            bottom: (mr.bottom - sr.top) / scale,
+            height: sr.height / scale,
+            stretchTop: Math.max(0, (mr.top - refTop) / scale),
+            stretchBottom: Math.max(0, (refBottom - mr.bottom) / scale),
+          });
+        }
+      }
+
+      // Per-element guide rects — collected from every `[data-el]` descendant
+      // of this slide (titles, kickers, subtitles, body, extras, cta…). The
+      // media-box already has its own pair of lines via `showGuides`, so we
+      // exclude it here when both modes are on to avoid double-drawing.
+      if (showElementGuides) {
+        const dataEls = slideEl.querySelectorAll<HTMLElement>("[data-el]");
+        const rects: ElementRect[] = [];
+        dataEls.forEach((el) => {
+          if (showGuides && el.classList.contains("hero-slide__media-box")) return;
+          const r = el.getBoundingClientRect();
+          if (!r.width || !r.height) return;
+          rects.push({
+            key: el.getAttribute("data-el") ?? "",
+            left: (r.left - sr.left) / scale,
+            right: (r.right - sr.left) / scale,
+            top: (r.top - sr.top) / scale,
+            bottom: (r.bottom - sr.top) / scale,
+          });
+        });
+        setElementRects(rects);
+      } else {
+        setElementRects([]);
+      }
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -581,12 +621,17 @@ function HeroSlide({
     if (media) ro.observe(media);
     const textCol = slideEl.querySelector<HTMLElement>(".hero-slide__text-col");
     if (textCol) ro.observe(textCol);
+    if (showElementGuides) {
+      slideEl.querySelectorAll<HTMLElement>("[data-el]").forEach((el) => {
+        ro.observe(el);
+      });
+    }
     window.addEventListener("resize", measure);
     return () => {
       ro.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [measureNeeded, slide]);
+  }, [measureNeeded, showGuides, showElementGuides, slide]);
 
   const slideClass = cn(
     "hero-slide",
@@ -594,15 +639,31 @@ function HeroSlide({
     mobileImageFirst && "hero-slide--mobile-image-first",
     slide?.layout?.desktop?.textAlignFullWidth && "hs-text-wide",
     slide?.stretchTextToMedia && "hero-slide--copy-stretch",
-    showGuides && "hero-slide--with-guides"
+    (showGuides || showElementGuides) && "hero-slide--with-guides"
   );
 
-  const guides = showGuides && mediaRect ? (
+  const hasMediaGuides = showGuides && mediaRect;
+  const hasElementGuides = showElementGuides && elementRects.length > 0;
+  const guides = hasMediaGuides || hasElementGuides ? (
     <div className="hero-slide__guides" aria-hidden="true">
-      <div className="hero-slide__guide hero-slide__guide--vertical" style={{ left: `${mediaRect.left}px` }} />
-      <div className="hero-slide__guide hero-slide__guide--vertical" style={{ left: `${mediaRect.right}px` }} />
-      <div className="hero-slide__guide hero-slide__guide--horizontal" style={{ top: `${mediaRect.top}px` }} />
-      <div className="hero-slide__guide hero-slide__guide--horizontal" style={{ top: `${mediaRect.bottom}px` }} />
+      {hasMediaGuides ? (
+        <>
+          <div className="hero-slide__guide hero-slide__guide--vertical" style={{ left: `${mediaRect!.left}px` }} />
+          <div className="hero-slide__guide hero-slide__guide--vertical" style={{ left: `${mediaRect!.right}px` }} />
+          <div className="hero-slide__guide hero-slide__guide--horizontal" style={{ top: `${mediaRect!.top}px` }} />
+          <div className="hero-slide__guide hero-slide__guide--horizontal" style={{ top: `${mediaRect!.bottom}px` }} />
+        </>
+      ) : null}
+      {hasElementGuides
+        ? elementRects.map((r, idx) => (
+            <React.Fragment key={`${r.key}-${idx}`}>
+              <div className="hero-slide__guide hero-slide__guide--vertical hero-slide__guide--element" style={{ left: `${r.left}px`, top: `${r.top}px`, height: `${r.bottom - r.top}px`, bottom: "auto" }} />
+              <div className="hero-slide__guide hero-slide__guide--vertical hero-slide__guide--element" style={{ left: `${r.right}px`, top: `${r.top}px`, height: `${r.bottom - r.top}px`, bottom: "auto" }} />
+              <div className="hero-slide__guide hero-slide__guide--horizontal hero-slide__guide--element" style={{ top: `${r.top}px`, left: `${r.left}px`, width: `${r.right - r.left}px`, right: "auto" }} />
+              <div className="hero-slide__guide hero-slide__guide--horizontal hero-slide__guide--element" style={{ top: `${r.bottom}px`, left: `${r.left}px`, width: `${r.right - r.left}px`, right: "auto" }} />
+            </React.Fragment>
+          ))
+        : null}
     </div>
   ) : null;
 
