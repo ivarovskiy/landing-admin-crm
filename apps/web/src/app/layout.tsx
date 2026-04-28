@@ -94,6 +94,16 @@ export default async function RootLayout({ children }: {
   const scrollToTop = data?.scrollToTop;
   const typography = data?.typography;
   const zoom = data?.zoom;
+  const header = data?.header;
+
+  // Default mode keeps the legacy "parent only" behavior — childless top
+  // items show no underline. Only `'all'` or `'none'` materialize a
+  // data-attribute override on <html>; for `'parent'` we leave it absent so
+  // bare CSS rules (which already encode "parent only") apply unchanged.
+  const navUnderlineMode =
+    header?.navUnderlineMode === "all" || header?.navUnderlineMode === "none"
+      ? header.navUnderlineMode
+      : undefined;
 
   // Per-size override flags — each pair (toggle + value) only takes effect
   // when both are present, so an admin who enables a toggle but leaves the
@@ -153,6 +163,7 @@ export default async function RootLayout({ children }: {
       data-hero-shadow={heroShadow}
       data-subtitle-stroke={subtitleStroke}
       data-subtitle-shadow={subtitleShadow}
+      data-nav-underline={navUnderlineMode}
       style={htmlStyle}
     >
       <head>

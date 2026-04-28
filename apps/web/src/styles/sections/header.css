@@ -302,6 +302,30 @@
   opacity: 1;
 }
 
+/* ===== Global nav-underline mode (Site Settings → Header) =====
+   `data-nav-underline` is emitted on <html> by the root layout. Default
+   (attribute absent) keeps the legacy "parent-only" behavior above. The
+   two opt-in modes override it with equal-specificity rules below. */
+
+/* `all`: extend the hover/active underline to every top-level item, even
+   those without children. Subnav children keep their own rule above. */
+[data-nav-underline="all"] .header-desktop__nav-link:hover::after,
+[data-nav-underline="all"] .header-desktop__nav-link.is-active::after {
+  opacity: 1;
+}
+
+/* `none`: suppress every nav underline (parents, childless items, subnav
+   children). `is-no-link` already neutralizes its own underline; this
+   covers all remaining selectors. */
+[data-nav-underline="none"] .header-desktop__nav-link::after,
+[data-nav-underline="none"] .header-desktop__nav-link:hover::after,
+[data-nav-underline="none"] .header-desktop__nav-link.is-active::after,
+[data-nav-underline="none"] .header-desktop__subnav-link::after,
+[data-nav-underline="none"] .header-desktop__subnav-link:hover::after,
+[data-nav-underline="none"] .header-desktop__subnav-link.is-active::after {
+  opacity: 0;
+}
+
 /* ---- "No-link" items (label only, not clickable) ---- */
 /* Visible like a normal link but never underlines on hover and uses the
    default cursor. Parent no-link items still respond to click (to toggle

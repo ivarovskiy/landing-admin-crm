@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor, Link2, Zap } from "lucide-react";
-import type { SiteSettingsData, SiteZoomSettings, SiteScrollToTopSettings, SiteTypographySettings } from "@/lib/admin-api";
+import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor, Link2, Zap, Underline } from "lucide-react";
+import type { SiteSettingsData, SiteZoomSettings, SiteScrollToTopSettings, SiteTypographySettings, SiteHeaderSettings, NavUnderlineMode } from "@/lib/admin-api";
 
 /* ----------------------------------------------------------------
    Sub-components
@@ -78,6 +78,43 @@ function TextRow({
         onChange={(e) => onChange(e.target.value || undefined)}
         className="w-24 h-7 rounded-md bg-[oklch(1_0_0/6%)] border border-[oklch(1_0_0/10%)] text-xs text-right text-[oklch(0.88_0_0)] tabular-nums px-2 focus:outline-none focus:ring-1 focus:ring-[oklch(0.58_0.22_25)]"
       />
+    </div>
+  );
+}
+
+function SelectRow<T extends string>({
+  icon,
+  label,
+  description,
+  value,
+  options,
+  onChange,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  value: T;
+  options: ReadonlyArray<{ value: T; label: string }>;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <span className="shrink-0 text-[oklch(0.45_0_0)]">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold text-[oklch(0.88_0_0)] leading-none">{label}</p>
+        <p className="text-[10px] text-[oklch(0.5_0_0)] mt-0.5 leading-snug">{description}</p>
+      </div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className="h-7 rounded-md bg-[oklch(1_0_0/6%)] border border-[oklch(1_0_0/10%)] text-xs text-[oklch(0.88_0_0)] px-2 focus:outline-none focus:ring-1 focus:ring-[oklch(0.58_0.22_25)]"
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value} className="bg-[oklch(0.18_0_0)]">
+            {opt.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -239,6 +276,9 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     subtitleShadowEnabled: initialSettings?.typography?.subtitleShadowEnabled === true,
     subtitleShadowOffset: initialSettings?.typography?.subtitleShadowOffset,
   });
+  const [header, setHeader] = useState<SiteHeaderSettings>({
+    navUnderlineMode: initialSettings?.header?.navUnderlineMode ?? "parent",
+  });
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   async function save(body: SiteSettingsData) {
@@ -274,6 +314,12 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     const next = { ...typography, ...patch };
     setTypography(next);
     save({ typography: next });
+  }
+
+  function updateHeader(patch: Partial<SiteHeaderSettings>) {
+    const next = { ...header, ...patch };
+    setHeader(next);
+    save({ header: next });
   }
 
   return (
@@ -557,6 +603,26 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             value={typography.subtitleShadowOffset}
             placeholder="2.5px"
             onChange={(v) => updateTypography({ subtitleShadowOffset: v })}
+          />
+        </div>
+      </div>
+
+      {/* ---- Header section ---- */}
+      <div className="space-y-2">
+        <SectionLabel>Header</SectionLabel>
+
+        <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
+          <SelectRow<NavUnderlineMode>
+            icon={<Underline className="h-3.5 w-3.5" />}
+            label="Nav underline mode"
+            description="Controls the hover/active underline under desktop nav links. Parent = only items with children (current behavior). All = also underline childless top items. None = no underline anywhere."
+            value={header.navUnderlineMode ?? "parent"}
+            options={[
+              { value: "parent", label: "Parent only (default)" },
+              { value: "all", label: "All items" },
+              { value: "none", label: "None" },
+            ]}
+            onChange={(v) => updateHeader({ navUnderlineMode: v })}
           />
         </div>
       </div>
