@@ -342,31 +342,28 @@
 
    When [data-stamp-shadow-style="extruded"] is set on <html>, every stamp
    selector that would otherwise apply `filter: drop-shadow(<offset> 0 <c>)`
-   instead sets `filter: none` and renders a 16-stop `text-shadow` stack
-   (see --stamp-shadow-extrude-stack in typography.css). The stack fills the
-   diagonal between the front glyph and the full-offset shadow continuously,
-   eliminating the cream "wedges" drop-shadow leaves inside hollow glyph
-   holes (O, U, R, S, C, H, etc).
+   instead sets `filter: none` and renders an equivalent single-layer
+   `text-shadow` at the same offset and color.
+
+   This avoids the cream "wedges" `filter: drop-shadow` leaves inside hollow
+   glyph holes (O, U, R, S, C, H, etc) on iPad/Safari, where the filter
+   pipeline captures the painted fill of the source element instead of just
+   the glyph silhouette. `text-shadow` is purely glyph-shaped and renders
+   identically across browsers.
 
    Each rule mirrors a corresponding `filter: drop-shadow(...)` rule from
-   above and feeds the same offset + color into the extrude vars so the
-   visual offset matches.
+   above and uses the same offset + color CSS variables, so admin-driven
+   shadow size changes flow through both modes equally.
    ========================================================= */
 
 [data-stamp-shadow-style="extruded"] .ds-outline-stamp {
-  --stamp-extrude-x: var(--stamp-shadow-x);
-  --stamp-extrude-y: var(--stamp-shadow-y);
-  --stamp-extrude-color: var(--stamp-shadow-color);
   filter: none;
-  text-shadow: var(--stamp-shadow-extrude-stack);
+  text-shadow: var(--stamp-shadow-x) var(--stamp-shadow-y) 0 var(--stamp-shadow-color);
 }
 
 [data-stamp-shadow-style="extruded"][data-stamp-link="on"] .ds-outline-stamp {
-  --stamp-extrude-x: var(--stamp-shadow-em);
-  --stamp-extrude-y: var(--stamp-shadow-em);
-  --stamp-extrude-color: var(--stamp-stroke, var(--color-primary));
   filter: none;
-  text-shadow: var(--stamp-shadow-extrude-stack);
+  text-shadow: var(--stamp-shadow-em) var(--stamp-shadow-em) 0 var(--stamp-stroke, var(--color-primary));
 }
 
 [data-stamp-shadow-style="extruded"][data-section-shadow="on"] .typo-homepage-header,
@@ -374,30 +371,21 @@
 [data-stamp-shadow-style="extruded"][data-section-shadow="on"] .studio-address__title,
 [data-stamp-shadow-style="extruded"][data-section-shadow="on"] .doc-header__title,
 [data-stamp-shadow-style="extruded"][data-section-shadow="on"] .scrapbook__title {
-  --stamp-extrude-x: var(--section-title-shadow-offset);
-  --stamp-extrude-y: var(--section-title-shadow-offset);
-  --stamp-extrude-color: var(--stamp-stroke, var(--color-primary));
   filter: none;
-  text-shadow: var(--stamp-shadow-extrude-stack);
+  text-shadow: var(--section-title-shadow-offset) var(--section-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
 }
 
 [data-stamp-shadow-style="extruded"][data-hero-shadow="on"] .typo-content-header,
 [data-stamp-shadow-style="extruded"][data-hero-shadow="on"] .typo-hero-title,
 [data-stamp-shadow-style="extruded"][data-hero-shadow="on"] .cp__title,
 [data-stamp-shadow-style="extruded"][data-hero-shadow="on"] .hero-slide__title {
-  --stamp-extrude-x: var(--hero-title-shadow-offset);
-  --stamp-extrude-y: var(--hero-title-shadow-offset);
-  --stamp-extrude-color: var(--stamp-stroke, var(--color-primary));
   filter: none;
-  text-shadow: var(--stamp-shadow-extrude-stack);
+  text-shadow: var(--hero-title-shadow-offset) var(--hero-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
 }
 
 [data-stamp-shadow-style="extruded"][data-subtitle-shadow="on"] .typo-subtitle {
-  --stamp-extrude-x: var(--subtitle-shadow-offset);
-  --stamp-extrude-y: var(--subtitle-shadow-offset);
-  --stamp-extrude-color: var(--stamp-stroke, var(--color-primary));
   filter: none;
-  text-shadow: var(--stamp-shadow-extrude-stack);
+  text-shadow: var(--subtitle-shadow-offset) var(--subtitle-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
 }
 
 /* ---- Scroll-to-top button ---- */

@@ -36,12 +36,13 @@ export interface TypographySettings {
   linkStampScale?: boolean;
 
   /** How the stamp shadow is rendered on every stamp title.
-   *  - `'drop'` (default): single offset duplicate via `filter: drop-shadow`
-   *    (the classic "stamp" look — fast, but glyph holes can show the page
-   *    background as thin "wedges" between front and shadow contours).
-   *  - `'extruded'`: a 16-stop `text-shadow` stack from 1/16 of the offset
-   *    to the full offset, producing a continuous extruded 3D look without
-   *    any holes/wedges between the front and shadow.
+   *  - `'drop'` (default): single offset duplicate via `filter: drop-shadow`.
+   *    Renders correctly on Chromium/Firefox, but on iPad/Safari the filter
+   *    pipeline captures the painted fill of the source element, which can
+   *    show as thin cream "wedges" inside hollow glyph holes (O, U, R, S, etc).
+   *  - `'extruded'`: same offset and colour, but rendered via a single-layer
+   *    `text-shadow` instead of `filter: drop-shadow`. text-shadow uses only
+   *    the glyph silhouette so there is no cross-browser fill leakage.
    *  When undefined, behaves like `'drop'`. */
   stampShadowStyle?: 'drop' | 'extruded';
 
