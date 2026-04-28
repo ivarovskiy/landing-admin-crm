@@ -88,7 +88,20 @@ export function HeaderV1({ data }: { data: any }) {
 
   useEffect(() => {
     if (!desktopDropdown) return;
-    const close = () => setDesktopDropdown(null);
+    // Close the dropdown only when the user clicks OUTSIDE the header.
+    // We can't rely on `e.stopPropagation()` inside the dropdown's onClick
+    // to prevent a blanket document-click closer: in React 18+ (Next.js)
+    // React attaches its delegated listener directly to `document`, so the
+    // user-handler's stopPropagation calls nativeEvent.stopPropagation —
+    // but the close listener is on the same node (document), and
+    // stopPropagation does NOT block other listeners on the same node
+    // (only stopImmediatePropagation does). Container-based check is
+    // simpler and works regardless of where React delegates.
+    const close = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (target && headerRef.current?.contains(target)) return;
+      setDesktopDropdown(null);
+    };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setDesktopDropdown(null);
     };
