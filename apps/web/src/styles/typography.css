@@ -173,34 +173,6 @@
 :root {
   --stamp-stroke-em: 0.025em;   /* 2.6 / 104 — overridden by data-section-stroke=on */
   --stamp-shadow-em: 0.0535em;  /* 5.56 / 104 — overridden by data-section-shadow=on */
-
-  /* 16-stop extruded shadow stack — used when [data-stamp-shadow-style="extruded"]
-     is set on <html>. Each stop is independently rendered (text-shadow is not
-     compounded), so stops at 1/16, 2/16, … 16/16 of the offset fill in the
-     diagonal between the front glyph and its full-offset shadow, eliminating
-     the cream "wedges" that drop-shadow leaves inside hollow glyph holes
-     (O, U, R, S, C, H, etc).
-
-     The stack is late-bound: each consumer sets --stamp-extrude-x,
-     --stamp-extrude-y, --stamp-extrude-color and the same single stack
-     value renders correctly. */
-  --stamp-shadow-extrude-stack:
-    calc(var(--stamp-extrude-x) * 0.0625) calc(var(--stamp-extrude-y) * 0.0625) 0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.125)  calc(var(--stamp-extrude-y) * 0.125)  0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.1875) calc(var(--stamp-extrude-y) * 0.1875) 0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.25)   calc(var(--stamp-extrude-y) * 0.25)   0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.3125) calc(var(--stamp-extrude-y) * 0.3125) 0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.375)  calc(var(--stamp-extrude-y) * 0.375)  0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.4375) calc(var(--stamp-extrude-y) * 0.4375) 0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.5)    calc(var(--stamp-extrude-y) * 0.5)    0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.5625) calc(var(--stamp-extrude-y) * 0.5625) 0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.625)  calc(var(--stamp-extrude-y) * 0.625)  0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.6875) calc(var(--stamp-extrude-y) * 0.6875) 0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.75)   calc(var(--stamp-extrude-y) * 0.75)   0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.8125) calc(var(--stamp-extrude-y) * 0.8125) 0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.875)  calc(var(--stamp-extrude-y) * 0.875)  0 var(--stamp-extrude-color),
-    calc(var(--stamp-extrude-x) * 0.9375) calc(var(--stamp-extrude-y) * 0.9375) 0 var(--stamp-extrude-color),
-    var(--stamp-extrude-x) var(--stamp-extrude-y) 0 var(--stamp-extrude-color);
 }
 
 [data-section-stroke="on"] {
@@ -220,28 +192,24 @@
 
 /* ── Extruded shadow style — overrides base + link-mode filter rules above ──
    Rules for [data-stamp-shadow-style="extruded"] live in components.css too
-   (for .ds-outline-stamp + per-size shadow-on overrides). The two rules
-   below cover the typo-* base shadow rules (hardcoded 4.15px) and the
-   link-mode rule (--stamp-shadow-em) so extruded mode also works when no
-   per-size shadow-on toggle is enabled. */
+   (for .ds-outline-stamp + per-size shadow-on overrides). Each rule swaps
+   the matching `filter: drop-shadow(...)` for an equivalent single-layer
+   `text-shadow` with the same offset and color. Same compact look on Chrome,
+   but rendered via the text-shadow path which doesn't leak the front fill
+   into hollow glyph holes on iPad/Safari (where filter: drop-shadow can
+   leave cream wedges inside O, U, R, S, C, H, etc). */
 [data-stamp-shadow-style="extruded"] .typo-content-header,
 [data-stamp-shadow-style="extruded"] .typo-homepage-header,
 [data-stamp-shadow-style="extruded"] .typo-hero-title {
-  --stamp-extrude-x: 4.15px;
-  --stamp-extrude-y: 4.15px;
-  --stamp-extrude-color: var(--stamp-stroke, var(--color-primary));
   filter: none;
-  text-shadow: var(--stamp-shadow-extrude-stack);
+  text-shadow: 4.15px 4.15px 0 var(--stamp-stroke, var(--color-primary));
 }
 
 [data-stamp-shadow-style="extruded"][data-stamp-link="on"] .typo-content-header,
 [data-stamp-shadow-style="extruded"][data-stamp-link="on"] .typo-homepage-header,
 [data-stamp-shadow-style="extruded"][data-stamp-link="on"] .typo-hero-title {
-  --stamp-extrude-x: var(--stamp-shadow-em);
-  --stamp-extrude-y: var(--stamp-shadow-em);
-  --stamp-extrude-color: var(--stamp-stroke, var(--color-primary));
   filter: none;
-  text-shadow: var(--stamp-shadow-extrude-stack);
+  text-shadow: var(--stamp-shadow-em) var(--stamp-shadow-em) 0 var(--stamp-stroke, var(--color-primary));
 }
 
 /* Per-size override rules live in components.css so they come AFTER the

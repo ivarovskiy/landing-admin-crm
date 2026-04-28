@@ -74,10 +74,12 @@ export type SiteTypographySettings = {
   linkStampScale?: boolean;
 
   /** Stamp shadow render style.
-   *  - `'drop'` (default): classic single-offset drop-shadow (fast, but
-   *    glyph holes can show page background as thin wedges).
-   *  - `'extruded'`: continuous 16-stop text-shadow stack — no wedges,
-   *    looks like 3D-extruded letters. */
+   *  - `'drop'` (default): classic single-offset `filter: drop-shadow`. On
+   *    iPad/Safari this can leak the painted cream fill into hollow glyph
+   *    holes as thin wedges; Chromium/Firefox render it cleanly.
+   *  - `'extruded'`: same compact offset rendered via single-layer
+   *    `text-shadow`. Glyph-silhouette only — no cross-browser fill
+   *    leakage inside hollow letters. */
   stampShadowStyle?: 'drop' | 'extruded';
 
   /** 104px stamp — Section title (homepage-header, features-title, studio-address__title) */
