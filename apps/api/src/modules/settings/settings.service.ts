@@ -58,9 +58,17 @@ export interface TypographySettings {
   subtitleShadowOffset?: string;
 }
 
+export type NavUnderlineMode = 'parent' | 'all' | 'none';
+
 export interface HeaderSettings {
-  /** Show the hover/active underline under desktop nav links. Default: true. */
-  navHoverUnderline?: boolean;
+  /** Controls the hover/active underline under desktop nav links.
+   *  - `'parent'` (default): only items that have children get the underline,
+   *    plus subnav children inside the open dropdown.
+   *  - `'all'`: every top-level item underlines on hover/active, including
+   *    childless ones, plus subnav children.
+   *  - `'none'`: no underline anywhere in the desktop nav.
+   *  When undefined, the renderer falls back to `'parent'` (current behavior). */
+  navUnderlineMode?: NavUnderlineMode;
 }
 
 export interface SiteSettingsData {

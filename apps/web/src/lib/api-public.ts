@@ -52,12 +52,23 @@ export type ZoomSettings = {
   preventInitialFlicker?: boolean;
 };
 
+export type NavUnderlineMode = 'parent' | 'all' | 'none';
+
+export type HeaderSettings = {
+  /** Controls the hover/active underline under desktop nav links.
+   *  parent = only parents with children (current behavior, also default).
+   *  all    = parents + childless top items + subnav children.
+   *  none   = no underline anywhere in the desktop nav. */
+  navUnderlineMode?: NavUnderlineMode;
+};
+
 export async function getSiteSettings() {
   const url = `${BASE}/v1/public/settings`;
   return safeFetchJson<{
     zoom?: ZoomSettings;
     scrollToTop?: ScrollToTopSettings;
     typography?: TypographySettings;
+    header?: HeaderSettings;
   }>(url, { cache: "no-store" });
 }
 

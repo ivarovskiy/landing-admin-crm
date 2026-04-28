@@ -91,9 +91,14 @@ export type SiteTypographySettings = {
   subtitleShadowEnabled?: boolean;
   subtitleShadowOffset?: string;
 }
+export type NavUnderlineMode = 'parent' | 'all' | 'none';
+
 export type SiteHeaderSettings = {
-  /** Show the hover/active underline under desktop nav links. Default: true. */
-  navHoverUnderline?: boolean;
+  /** Controls the hover/active underline under desktop nav links.
+   *  parent = only parents with children (current behavior).
+   *  all    = parents + childless top items + subnav children.
+   *  none   = no underline anywhere in the desktop nav. */
+  navUnderlineMode?: NavUnderlineMode;
 }
 export type SiteSettingsData = {
   zoom?: SiteZoomSettings;
