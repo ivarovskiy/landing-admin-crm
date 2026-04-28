@@ -344,8 +344,15 @@
 .header-desktop__nav-item.has-children .header-desktop__nav-link.is-no-link {
   cursor: pointer;
 }
-.header-desktop__nav-link.is-no-link:hover::after,
-.header-desktop__nav-link.is-no-link.is-active::after,
+/* Suppress underline only on truly passive items:
+   - top-level no-link items WITHOUT children (childless plain labels)
+   - subnav children that are no-link
+   Top-level no-link items WITH children (passive parents — i.e. parents
+   with no own href and no navigable child) intentionally keep their
+   underline because hovering them still triggers the dropdown, and the
+   underline is the visual signal of which group is being interacted with. */
+.header-desktop__nav-item:not(.has-children) .header-desktop__nav-link.is-no-link:hover::after,
+.header-desktop__nav-item:not(.has-children) .header-desktop__nav-link.is-no-link.is-active::after,
 .header-desktop__subnav-link.is-no-link:hover::after,
 .header-desktop__subnav-link.is-no-link.is-active::after {
   opacity: 0;
