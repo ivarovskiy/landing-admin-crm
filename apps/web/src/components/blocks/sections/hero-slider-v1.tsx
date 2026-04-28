@@ -657,10 +657,10 @@ function HeroSlide({
       {hasElementGuides
         ? elementRects.map((r, idx) => (
             <React.Fragment key={`${r.key}-${idx}`}>
-              <div className="hero-slide__guide hero-slide__guide--vertical hero-slide__guide--element" style={{ left: `${r.left}px`, top: `${r.top}px`, height: `${r.bottom - r.top}px`, bottom: "auto" }} />
-              <div className="hero-slide__guide hero-slide__guide--vertical hero-slide__guide--element" style={{ left: `${r.right}px`, top: `${r.top}px`, height: `${r.bottom - r.top}px`, bottom: "auto" }} />
-              <div className="hero-slide__guide hero-slide__guide--horizontal hero-slide__guide--element" style={{ top: `${r.top}px`, left: `${r.left}px`, width: `${r.right - r.left}px`, right: "auto" }} />
-              <div className="hero-slide__guide hero-slide__guide--horizontal hero-slide__guide--element" style={{ top: `${r.bottom}px`, left: `${r.left}px`, width: `${r.right - r.left}px`, right: "auto" }} />
+              <div className="hero-slide__guide hero-slide__guide--vertical hero-slide__guide--element" style={{ left: `${r.left}px` }} />
+              <div className="hero-slide__guide hero-slide__guide--vertical hero-slide__guide--element" style={{ left: `${r.right}px` }} />
+              <div className="hero-slide__guide hero-slide__guide--horizontal hero-slide__guide--element" style={{ top: `${r.top}px` }} />
+              <div className="hero-slide__guide hero-slide__guide--horizontal hero-slide__guide--element" style={{ top: `${r.bottom}px` }} />
             </React.Fragment>
           ))
         : null}
@@ -751,7 +751,11 @@ function CopyStack({
   const main = (
     <div className="hero-slide__copy-main">
       {kicker ? (
-        <div className={slide.kickerStyle?.typo || undefined} style={elStyle(slide.kickerStyle)}>
+        <div
+          className={slide.kickerStyle?.typo || undefined}
+          style={elStyle(slide.kickerStyle)}
+          data-el={`slide-${slideIndex}-kicker`}
+        >
           <SlideKicker text={kicker} />
         </div>
       ) : null}
@@ -778,7 +782,11 @@ function CopyStack({
       ) : null}
 
       {body ? (
-        <div className={slide.bodyStyle?.typo || undefined} style={elStyle(slide.bodyStyle)}>
+        <div
+          className={slide.bodyStyle?.typo || undefined}
+          style={elStyle(slide.bodyStyle)}
+          data-el={`slide-${slideIndex}-body`}
+        >
           <SlideBody text={body} variant={slide?.bodyVariant} />
         </div>
       ) : null}
@@ -792,7 +800,11 @@ function CopyStack({
   return (
     <div className={cn("hero-slide__copy", spread && "hero-slide__copy--spread")}>
       {quote ? (
-        <p className={cn("hero-slide__quote", slide.quoteStyle?.typo)} style={elStyle(slide.quoteStyle)}>
+        <p
+          className={cn("hero-slide__quote", slide.quoteStyle?.typo)}
+          style={elStyle(slide.quoteStyle)}
+          data-el={`slide-${slideIndex}-quote`}
+        >
           <InlineText text={quote} />
         </p>
       ) : spread ? (

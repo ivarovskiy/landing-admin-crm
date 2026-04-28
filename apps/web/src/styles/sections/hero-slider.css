@@ -556,9 +556,12 @@
 }
 
 /* Per-element guides (kicker, title, subtitle, body, extras, cta…). Rendered
-   only when the slider's `showElementGuides` option is on. Distinct color
-   from the media guides so the two layers stay visually separable when both
-   modes are enabled simultaneously. */
+   only when the slider's `showElementGuides` option is on. Like the media
+   guides, each element produces 4 cross-slide lines (top/bottom edges as
+   horizontal lines spanning the full slide width; left/right edges as
+   vertical lines spanning the full slide height). Distinct color from the
+   media guides so the two layers stay visually separable when both modes
+   are enabled simultaneously. */
 .hero-slide__guide--element {
   background: oklch(0.78 0.18 200 / 65%);
   box-shadow: 0 0 0 0.5px oklch(1 0 0 / 25%);
