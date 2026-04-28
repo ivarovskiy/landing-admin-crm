@@ -145,6 +145,18 @@ export default async function RootLayout({ children }: {
   if (subtitleStroke) typographyStyle["--subtitle-stroke-w"] = typography!.subtitleStrokeW!;
   if (subtitleShadow) typographyStyle["--subtitle-shadow-offset"] = typography!.subtitleShadowOffset!;
 
+  // Link-mode coefficients — when set, override the legacy 0.025em / 0.0535em
+  // defaults. Value is a CSS length at the 104px reference, converted to em
+  // here so the same single rule in typography.css uses it without further
+  // plumbing. Per-size overrides still beat these because they write
+  // --stamp-stroke-em / --stamp-shadow-em directly at higher source order.
+  if (typography?.linkStampStrokeWAt104) {
+    typographyStyle["--link-stamp-stroke-em"] = `calc(${typography.linkStampStrokeWAt104} / 104px * 1em)`;
+  }
+  if (typography?.linkStampShadowOffsetAt104) {
+    typographyStyle["--link-stamp-shadow-em"] = `calc(${typography.linkStampShadowOffsetAt104} / 104px * 1em)`;
+  }
+
   const htmlStyle =
     Object.keys(typographyStyle).length > 0
       ? (typographyStyle as React.CSSProperties)

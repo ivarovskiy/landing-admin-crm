@@ -492,6 +492,22 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             value={typography.linkStampScale === true}
             onChange={(v) => updateTypography({ linkStampScale: v })}
           />
+          <TextRow
+            icon={<Ruler className="h-3.5 w-3.5 opacity-50" />}
+            label="Link stroke at 104px"
+            description="Stroke width at the 104px reference. Drives the link-mode em-ratio across all linked sizes. Default 2.6px (= 0.025em)."
+            value={typography.linkStampStrokeWAt104}
+            placeholder="2.6px"
+            onChange={(v) => updateTypography({ linkStampStrokeWAt104: v })}
+          />
+          <TextRow
+            icon={<Ruler className="h-3.5 w-3.5 opacity-50" />}
+            label="Link shadow at 104px"
+            description="Shadow offset at the 104px reference. Drives the link-mode em-ratio across all linked sizes. Default 5.56px (= 0.0535em)."
+            value={typography.linkStampShadowOffsetAt104}
+            placeholder="5.56px"
+            onChange={(v) => updateTypography({ linkStampShadowOffsetAt104: v })}
+          />
           <SelectRow<"drop" | "extruded">
             icon={<Layers className="h-3.5 w-3.5" />}
             label="Stamp shadow style"

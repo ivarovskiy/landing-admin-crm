@@ -73,6 +73,14 @@ export type SiteTypographySettings = {
    *  Per-size overrides below always win over this when both are enabled. */
   linkStampScale?: boolean;
 
+  /** Stroke width at 104px reference (e.g. "2.6px"). Drives the link-mode
+   *  em-ratio as `calc(<value> / 104px * 1em)`. Default 2.6px (= 0.025em). */
+  linkStampStrokeWAt104?: string;
+
+  /** Shadow offset at 104px reference (e.g. "5.56px"). Drives the link-mode
+   *  em-ratio as `calc(<value> / 104px * 1em)`. Default 5.56px (= 0.0535em). */
+  linkStampShadowOffsetAt104?: string;
+
   /** Stamp shadow render style.
    *  - `'drop'` (default): classic single-offset `filter: drop-shadow`. On
    *    iPad/Safari this can leak the painted cream fill into hollow glyph
