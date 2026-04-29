@@ -25,9 +25,11 @@
     padding-inline: 60px;
   }
 
-  /* Hide overflow flash before JS zoom kicks in */
+  /* Clip the 1440px stack on narrower viewports (before JS zoom kicks in).
+     `clip` prevents horizontal overflow without creating a new scroll container —
+     unlike `hidden`, it does not break `position: sticky` on iOS Safari. */
   html {
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 }
 
