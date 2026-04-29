@@ -236,7 +236,7 @@
   /* Take the full cross-axis width of the parent .header-desktop__nav-column
      even when its parent forces shrink-fit alignment
      (.header-desktop__nav-column--right uses align-items: flex-end). */
-  /* align-self: stretch; */
+  align-self: stretch;
   /* Spread items across the entire side column. Figma distributes the four
      nav items so the first one sits at the outer edge of the side column
      and the last sits next to the logo — `space-between` reproduces that
@@ -247,6 +247,7 @@
   /* `gap` becomes the *minimum* gap when items overflow the column;
      `space-between` adds the remaining slack on top. */
   gap: var(--header-nav-gap, 27.6px);
+  font-stretch: condensed;
   padding-top: 15px;
 }
 
