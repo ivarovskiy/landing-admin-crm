@@ -215,7 +215,7 @@
   margin-left: -1px;
   position: relative;
   display: flex;
-  flex-wrap: wrap;
+  /* flex-wrap: wrap; */
   align-items: flex-start;
   gap: var(--header-nav-gap, 28.3px);
   padding-top: 17px;
