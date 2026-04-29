@@ -16,6 +16,12 @@ html {
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   tab-size: 4;
+  /* Disable the default grey/black flash that iOS Safari (and some
+     Android browsers) paints behind any tappable element on tap.
+     Setting it on `html` cascades to every descendant. Keyboard focus
+     rings are unaffected because they use `outline`, not the tap
+     highlight. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
