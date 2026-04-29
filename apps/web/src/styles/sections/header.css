@@ -243,7 +243,7 @@
      proportionally at every viewport (the layout box of .landing-stack is
      pinned to designWidth so items keep their Figma proportions through
      the CSS zoom). */
-  justify-content: space-between;
+  /* justify-content: space-between; */
   /* `gap` becomes the *minimum* gap when items overflow the column;
      `space-between` adds the remaining slack on top. */
   gap: var(--header-nav-gap, 28.3px);
