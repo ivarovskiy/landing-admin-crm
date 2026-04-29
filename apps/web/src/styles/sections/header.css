@@ -215,7 +215,7 @@
      shrink-fit the column to its widest child). With the column at full cell
      width, the nav-row inside can use `space-between` to distribute items
      across the entire side, matching the Figma layout. */
-  align-self: stretch;
+  /* align-self: stretch; */
 }
 
 .header-desktop__nav-column--right {
