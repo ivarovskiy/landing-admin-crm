@@ -7,25 +7,23 @@
   flex-direction: column;
 }
 
-/* Desktop: pin layout width to the design canvas so proportional CSS `zoom`
-   shrinks the rendered output without forcing the layout to wrap.
-   On viewports narrower than the design width (e.g. iPad Pro landscape at
-   ~1194px) the stack would otherwise lay out at viewport width and elements
-   like the desktop nav would wrap to multiple rows BEFORE zoom was applied;
-   CSS `zoom` only scales the rendered output, never the layout box.
-   We use explicit `width` (not `min-width`) because WebKit/iOS Safari
-   conflates `min-width` with the `zoom` factor, effectively clamping the
-   min-width back down to the viewport — so `min-width` alone lets Safari
-   re-wrap the nav despite the zoom. Explicit `width` is a deterministic
-   layout box in every engine, which is what CSS `zoom` needs to then scale.
-   Side effect: on screens WIDER than the design canvas, the stack is also
-   clamped to `designWidth` and centred via `margin-inline: auto`, i.e. the
-   layout is always Figma-faithful and the extra horizontal space becomes
-   the page background. This matches the admin-configured `designWidth`
-   (default 1440) so layout and zoom calculations never drift apart. */
+/* Desktop: layout-width strategy
+   - On viewports NARROWER than the design canvas (e.g. iPad Pro landscape
+     ~1194px), pin layout to `designWidth` so the desktop nav and other
+     fixed-pixel elements always have room to lay out as designed. CSS
+     `zoom` then shrinks the rendered output to fit. Without this, layout
+     happens at viewport width and the nav wraps BEFORE zoom is applied —
+     `zoom` only scales the rendered output, never the layout box.
+   - On viewports WIDER than the design canvas (regular desktop, 1920+),
+     let the stack fill the viewport so wide monitors don't show empty
+     side margins around a 1440 canvas.
+   `width: max(var(--landing-design-width), 100%)` does both with a single
+   deterministic length, which is also what WebKit/iOS Safari needs to
+   apply `zoom` correctly (Safari interacts with `min-width` + `zoom`
+   inconsistently and would otherwise let the nav re-wrap). */
 @media (min-width: 768px) {
   .landing-stack {
-    width: var(--landing-design-width, 1440px);
+    width: max(var(--landing-design-width, 1440px), 100%);
     margin-inline: auto;
     padding-inline: 60px;
   }

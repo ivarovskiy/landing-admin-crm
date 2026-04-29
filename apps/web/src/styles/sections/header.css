@@ -65,7 +65,12 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 165.5px minmax(0, 1fr);
   align-items: start;
-  column-gap: clamp(16px, 3vw, 74px);
+  /* Tighter gap clamp than before (was 16/3vw/74) — at design width
+     1440 this returns ~28px instead of ~43px, giving each side nav
+     column ~15px of extra horizontal room. That margin is what keeps
+     longer labels (e.g. "Summer Program") from spilling onto a 2nd
+     row in the nav-row below. */
+  column-gap: clamp(16px, 2vw, 44px);
   /* display: flex;
   align-items: flex-start;
   justify-content: space-between; */
@@ -215,7 +220,11 @@
   margin-left: -1px;
   position: relative;
   display: flex;
-  flex-wrap: wrap;
+  /* Hard requirement: the nav must NEVER wrap to a 2nd row. If item
+     widths ever do exceed the column (e.g. an admin enters very long
+     labels), they stay on one line — visually crowding the logo is
+     acceptable, splitting the nav across rows is not. */
+  flex-wrap: nowrap;
   align-items: flex-start;
   gap: var(--header-nav-gap, 28.3px);
   padding-top: 17px;
