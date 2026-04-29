@@ -210,6 +210,12 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* Stretch the nav-column to fill its parent cell (.header-desktop__left/right
+     uses `align-items: flex-start` / `flex-end`, which would otherwise
+     shrink-fit the column to its widest child). With the column at full cell
+     width, the nav-row inside can use `space-between` to distribute items
+     across the entire side, matching the Figma layout. */
+  align-self: stretch;
 }
 
 .header-desktop__nav-column--right {
@@ -227,12 +233,26 @@
   flex-wrap: nowrap;
   /* flex-wrap: wrap; */
   align-items: flex-start;
+  /* Take the full cross-axis width of the parent .header-desktop__nav-column
+     even when its parent forces shrink-fit alignment
+     (.header-desktop__nav-column--right uses align-items: flex-end). */
+  align-self: stretch;
+  /* Spread items across the entire side column. Figma distributes the four
+     nav items so the first one sits at the outer edge of the side column
+     and the last sits next to the logo — `space-between` reproduces that
+     proportionally at every viewport (the layout box of .landing-stack is
+     pinned to designWidth so items keep their Figma proportions through
+     the CSS zoom). */
+  justify-content: space-between;
+  /* `gap` becomes the *minimum* gap when items overflow the column;
+     `space-between` adds the remaining slack on top. */
   gap: var(--header-nav-gap, 28.3px);
   padding-top: 17px;
 }
 
 .header-desktop__nav-row--right {
-  justify-content: flex-end;
+  /* `justify-content: space-between` on the base rule already pins the last
+     item to the right edge of the column; no need for `flex-end`. */
   padding-top: 33px;
   margin-right: 2px;
   gap: var(--header-nav-gap, 30.4px);
