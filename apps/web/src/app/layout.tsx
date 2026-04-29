@@ -38,7 +38,10 @@ function buildPrepaintScript(zoom: ZoomSettings): string | null {
   const normalizeViewport = zoom.normalizeViewport === true;
   const hideScrollbar = zoom.hideScrollbar === true;
 
-  const designWidth = isPosNum(zoom.designWidth) ? zoom.designWidth : null;
+  // Fall back to 1440 (matching the CSS --landing-design-width default) so the
+  // prepaint script can apply zoom even when the admin hasn't set designWidth.
+  const designWidth = isPosNum(zoom.designWidth) ? zoom.designWidth
+    : zoom.enableZoom !== false ? 1440 : null;
   const zoomBreakpoint = isPosNum(zoom.zoomBreakpoint) ? zoom.zoomBreakpoint : null;
   const scale = isPosNum(zoom.scale) ? zoom.scale : null;
   const normalizeViewportWidth = isPosNum(zoom.normalizeViewportWidth)
@@ -157,16 +160,14 @@ export default async function RootLayout({ children }: {
     typographyStyle["--link-stamp-shadow-em"] = `calc(${typography.linkStampShadowOffsetAt104} / 104px * 1em)`;
   }
 
-  // Make the admin-configured `designWidth` available to layout.css as a
-  // CSS variable so `.landing-stack` can pin its layout width to the design
-  // canvas (`min-width: var(--landing-design-width, 1440px)`). This lets the
-  // existing CSS `zoom` shrink rendered output to fit the viewport without
-  // the layout itself wrapping at small-but-not-mobile sizes (e.g. iPad Pro
-  // landscape at ~1194px). The default in CSS already matches the legacy
-  // hardcoded 1440px so behaviour is unchanged when admin keeps that value.
-  if (zoom?.designWidth && typeof zoom.designWidth === "number" && zoom.designWidth > 0) {
-    typographyStyle["--landing-design-width"] = `${zoom.designWidth}px`;
-  }
+  // Always set --landing-design-width so both layout.css and landing-zoom.tsx
+  // use the same canvas width. Defaults to 1440 (1320px content + 60px padding
+  // each side) when the admin hasn't configured designWidth explicitly.
+  const landingDesignWidth =
+    zoom?.designWidth && typeof zoom.designWidth === "number" && zoom.designWidth > 0
+      ? zoom.designWidth
+      : 1440;
+  typographyStyle["--landing-design-width"] = `${landingDesignWidth}px`;
 
   const htmlStyle =
     Object.keys(typographyStyle).length > 0

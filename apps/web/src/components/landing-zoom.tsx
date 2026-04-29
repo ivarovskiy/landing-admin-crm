@@ -114,13 +114,30 @@ export function LandingZoom({
     const stack = document.querySelector(".landing-stack") as HTMLElement | null;
     if (!stack) return;
 
-    if (!enableZoom || !isPosNum(designWidth)) {
+    if (!enableZoom) {
       stack.style.removeProperty("zoom");
       removePrepaintStyle();
       return;
     }
 
-    const dw = designWidth;
+    // When designWidth prop is not provided, fall back to --landing-design-width CSS
+    // variable (always set by RootLayout, defaults to 1440px) so zoom is consistent
+    // with the layout width even when the admin hasn't explicitly configured designWidth.
+    let dw: number;
+    if (isPosNum(designWidth)) {
+      dw = designWidth;
+    } else {
+      const cssVal = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--landing-design-width").trim()
+      );
+      if (isFinite(cssVal) && cssVal > 0) {
+        dw = cssVal;
+      } else {
+        stack.style.removeProperty("zoom");
+        removePrepaintStyle();
+        return;
+      }
+    }
     const s = isPosNum(scale) ? scale : 1;
     const brk = isPosNum(zoomBreakpoint) ? zoomBreakpoint : null;
 
@@ -153,7 +170,9 @@ export function LandingZoom({
         }
 
         if (target == null) {
-          const auto = Math.min(1, document.documentElement.clientWidth / dw);
+          // Use window.innerWidth (not clientWidth) — more reliable on iOS Safari
+          // when content overflows the viewport before zoom is applied.
+          const auto = Math.min(1, window.innerWidth / dw);
           const final = auto * s;
           if (final < 0.999) target = final.toFixed(5);
         }
