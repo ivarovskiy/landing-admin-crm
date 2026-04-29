@@ -55,8 +55,8 @@
 }
 
 .header-desktop__top-rule {
-  height: clamp(5px, 0.6vw, 7px);
-  margin: 0 0 clamp(12px, 1.5vw, 18px);
+  height: 7px;
+  margin: 0 0 18px;
   border-top: 1px solid var(--color-line);
   border-bottom: 1px solid var(--color-line);
 }
@@ -70,7 +70,7 @@
      column ~15px of extra horizontal room. That margin is what keeps
      longer labels (e.g. "Summer Program") from spilling onto a 2nd
      row in the nav-row below. */
-  column-gap: clamp(16px, 2vw, 44px);
+  column-gap: 28.8px;
   /* display: flex;
   align-items: flex-start;
   justify-content: space-between; */
@@ -113,7 +113,7 @@
 }
 
 .header-desktop__phone {
-  gap: clamp(1px, 0.2vw, 2px);
+  gap: 2px;
 }
 
 .header-desktop__portals {
@@ -192,17 +192,17 @@
 }
 
 .header-desktop__fallback-title {
-  font-size: clamp(28px, 3vw, 38px);
+  font-size: 38px;
   font-weight: 700;
   letter-spacing: 0.12em;
   line-height: 1;
 }
 
 .header-desktop__nav {
-  margin-top: clamp(-22px, -1.8vw, -14px);
+  margin-top: -22px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  column-gap: clamp(72px, 8vw, 130px);
+  column-gap: 115.2px;
   align-items: start;
 }
 
@@ -430,7 +430,8 @@
 }
 
 
-/* clamp() handles responsive scaling — no breakpoint override needed */
+/* Desktop header geometry is fixed to the 1440px design canvas; page-level
+   CSS zoom handles responsive scaling. */
 
 /* ---- Mobile masthead ---- */
 

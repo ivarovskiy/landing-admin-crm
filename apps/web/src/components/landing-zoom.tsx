@@ -141,15 +141,14 @@ export function LandingZoom({
     const s = isPosNum(scale) ? scale : 1;
     const brk = isPosNum(zoomBreakpoint) ? zoomBreakpoint : null;
 
-    const mq = brk != null ? window.matchMedia(`(min-width: ${brk}px)`) : null;
-
     let prepaintCleared = false;
     const update = () => {
       // Compute target zoom value first so we can apply it without going
       // through an intermediate zoom-less state (which would un-do the
       // SSR prepaint style and cause a flicker).
       let target: string | null = null;
-      const passesBreakpoint = mq ? mq.matches : true;
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth || dw;
+      const passesBreakpoint = brk != null ? viewportWidth >= brk : true;
 
       if (passesBreakpoint) {
         if (fitViewport) {
@@ -172,7 +171,7 @@ export function LandingZoom({
         if (target == null) {
           // Use window.innerWidth (not clientWidth) — more reliable on iOS Safari
           // when content overflows the viewport before zoom is applied.
-          const auto = Math.min(1, window.innerWidth / dw);
+          const auto = Math.min(1, viewportWidth / dw);
           const final = auto * s;
           if (final < 0.999) target = final.toFixed(5);
         }
@@ -209,7 +208,6 @@ export function LandingZoom({
     const onLoad = () => update();
     window.addEventListener("load", onLoad);
     window.addEventListener("resize", update);
-    mq?.addEventListener("change", update);
 
     // Safety nets — re-measure after short delays in case font metrics or
     // image dimensions finalized after mount but before any event fired.
@@ -220,7 +218,6 @@ export function LandingZoom({
     return () => {
       window.removeEventListener("load", onLoad);
       window.removeEventListener("resize", update);
-      mq?.removeEventListener("change", update);
       fonts?.removeEventListener?.("loadingdone", onFontsLoadingDone);
       window.clearTimeout(t1);
       window.clearTimeout(t2);

@@ -19,13 +19,10 @@ export const metadata: Metadata = {
  *      and injects <style id="landing-zoom-pre"> with that value;
  *   3. when `hideScrollbar=true`, adds .hide-scrollbar to <html>.
  *
- * Critically — when normalizeViewport=true, the zoom denominator is the
- * admin-configured `normalizeViewportWidth`, NOT `document.documentElement
- * .clientWidth`. During HTML parsing of <head>, browsers do not always
- * synchronously re-evaluate a freshly written <meta viewport>, so reading
- * clientWidth there can return the device's natural width and produce a
- * different zoom value than the post-hydration LandingZoom does — which
- * IS the flicker we are trying to eliminate.
+ * pre-paint script and LandingZoom intentionally use the same viewport basis:
+ * `window.innerWidth`, then `documentElement.clientWidth`, then configured
+ * fallbacks. Keeping both calculations aligned avoids an iPad/Safari scale
+ * jump between first paint and hydration.
  *
  * No hardcoded fallback values: if a required admin field is missing or
  * invalid, the corresponding operation is skipped entirely.
@@ -74,7 +71,7 @@ function buildPrepaintScript(zoom: ZoomSettings): string | null {
   }
   if(s.hideScrollbar){document.documentElement.classList.add('hide-scrollbar');}
   if(s.enableZoom&&s.designWidth){
-    var basis=s.normalizeViewport?s.normalizeViewportWidth:document.documentElement.clientWidth;
+    var basis=window.innerWidth||document.documentElement.clientWidth||(s.normalizeViewport?s.normalizeViewportWidth:0)||s.designWidth;
     if(s.zoomBreakpoint==null||basis>=s.zoomBreakpoint){
       var f=Math.min(1,basis/s.designWidth);
       if(s.scale)f*=s.scale;
