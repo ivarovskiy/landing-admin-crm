@@ -225,6 +225,7 @@
      labels), they stay on one line — visually crowding the logo is
      acceptable, splitting the nav across rows is not. */
   flex-wrap: nowrap;
+  /* flex-wrap: wrap; */
   align-items: flex-start;
   gap: var(--header-nav-gap, 28.3px);
   padding-top: 17px;
