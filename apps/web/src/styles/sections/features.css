@@ -93,7 +93,7 @@
   font-weight: 700;
   line-height: 38px;
   /* 38/26 */
-  letter-spacing: 32.7%;
+  letter-spacing: 0.327em;
   /* 0.327em/1.3ch */
   text-transform: uppercase;
   text-align: center;
@@ -108,7 +108,7 @@
   font-family: var(--font-maru);
   font-size: 20px;
   line-height: 29.4px;
-  letter-spacing: 0.7%;
+  letter-spacing: 0.007em;
   text-align: center;
   white-space: pre-line;
 }

@@ -353,7 +353,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             label="Design width (px)"
             description="Reference canvas width — zoom target. Required when CSS zoom is enabled."
             value={zoom.designWidth}
-            placeholder="1480"
+            placeholder="1440"
             onChange={(v) => update({ designWidth: v })}
           />
 

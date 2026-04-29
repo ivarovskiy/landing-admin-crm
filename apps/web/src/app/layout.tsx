@@ -30,6 +30,7 @@ export const metadata: Metadata = {
 function buildPrepaintScript(zoom: ZoomSettings): string | null {
   const isPosNum = (v: unknown): v is number =>
     typeof v === "number" && isFinite(v) && v > 0;
+  const resolveDesignWidth = (v: unknown) => isPosNum(v) ? Math.max(1440, v) : null;
 
   const enableZoom = zoom.enableZoom !== false;
   const normalizeViewport = zoom.normalizeViewport === true;
@@ -37,8 +38,8 @@ function buildPrepaintScript(zoom: ZoomSettings): string | null {
 
   // Fall back to 1440 (matching the CSS --landing-design-width default) so the
   // prepaint script can apply zoom even when the admin hasn't set designWidth.
-  const designWidth = isPosNum(zoom.designWidth) ? zoom.designWidth
-    : zoom.enableZoom !== false ? 1440 : null;
+  const designWidth = resolveDesignWidth(zoom.designWidth)
+    ?? (zoom.enableZoom !== false ? 1440 : null);
   const zoomBreakpoint = isPosNum(zoom.zoomBreakpoint) ? zoom.zoomBreakpoint : null;
   const scale = isPosNum(zoom.scale) ? zoom.scale : null;
   const normalizeViewportWidth = isPosNum(zoom.normalizeViewportWidth)
@@ -159,10 +160,11 @@ export default async function RootLayout({ children }: {
 
   // Always set --landing-design-width so both layout.css and landing-zoom.tsx
   // use the same canvas width. Defaults to 1440 (1320px content + 60px padding
-  // each side) when the admin hasn't configured designWidth explicitly.
+  // each side). Values below 1440 are clamped because the IBC Figma artboard is
+  // fixed at 1440px; e.g. 1420px would collapse the content width to 1300px.
   const landingDesignWidth =
     zoom?.designWidth && typeof zoom.designWidth === "number" && zoom.designWidth > 0
-      ? zoom.designWidth
+      ? Math.max(1440, zoom.designWidth)
       : 1440;
   typographyStyle["--landing-design-width"] = `${landingDesignWidth}px`;
 

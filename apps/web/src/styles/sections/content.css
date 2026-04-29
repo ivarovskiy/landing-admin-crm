@@ -183,7 +183,7 @@
   gap: clamp(10px, 1.2vw, 16px);
 
   font-size: clamp(16px, 1.8vw, 22px);
-  letter-spacing: 20%;
+  letter-spacing: 0.2em;
   line-height: clamp(24px, 2.8vw, 34px);
   font-weight: 700;
 }
@@ -272,7 +272,7 @@
   margin-bottom: 12px;
   font-size: 78px;
   line-height: 86px;
-  letter-spacing: 2%;
+  letter-spacing: 0.02em;
   white-space: normal;
   text-wrap: balance;
 }
@@ -380,13 +380,13 @@
   max-width: none;
   font-size: 22px;
   line-height: 33.2px;
-  letter-spacing: 32.1%;
+  letter-spacing: 0.321em;
 }
 
 .cp__prose {
   font-size: 20px;
   line-height: 29.4px;
-  letter-spacing: 0.7%;
+  letter-spacing: 0.007em;
 }
 
 .cp__prose p+p {

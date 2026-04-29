@@ -39,7 +39,7 @@ export async function createPreviewToken(pageId: string): Promise<{ token: strin
 export type SiteZoomSettings = {
   /** Enable/disable CSS zoom entirely */
   enableZoom?: boolean;
-  /** Reference canvas width in px (default 1320) */
+  /** Reference canvas width in px (default/minimum 1440 = 60 + 1320 + 60) */
   designWidth?: number;
   /** Min viewport width (px) at which CSS zoom activates (default 768) */
   zoomBreakpoint?: number;

@@ -141,7 +141,7 @@
   color: var(--color-primary);
   font-size: 21px;
   font-weight: 700;
-  letter-spacing: 26%;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
   line-height: 31px;
 }

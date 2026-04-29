@@ -23,6 +23,10 @@ function isPosNum(v: unknown): v is number {
   return typeof v === "number" && isFinite(v) && v > 0;
 }
 
+function resolveDesignWidth(v: number) {
+  return Math.max(1440, v);
+}
+
 /**
  * All zoom/viewport behaviour is driven by props from admin Settings — there
  * are no hardcoded fallback values. If a required field is missing or
@@ -125,13 +129,13 @@ export function LandingZoom({
     // with the layout width even when the admin hasn't explicitly configured designWidth.
     let dw: number;
     if (isPosNum(designWidth)) {
-      dw = designWidth;
+      dw = resolveDesignWidth(designWidth);
     } else {
       const cssVal = parseFloat(
         getComputedStyle(document.documentElement).getPropertyValue("--landing-design-width").trim()
       );
       if (isFinite(cssVal) && cssVal > 0) {
-        dw = cssVal;
+        dw = resolveDesignWidth(cssVal);
       } else {
         stack.style.removeProperty("zoom");
         removePrepaintStyle();

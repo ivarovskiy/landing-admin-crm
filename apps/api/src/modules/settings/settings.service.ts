@@ -4,7 +4,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 export interface ZoomSettings {
   /** Master switch for CSS zoom on .landing-stack */
   enableZoom?: boolean;
-  /** Reference canvas width in px (default 1480) */
+  /** Reference canvas width in px (default/minimum 1440 = 60 + 1320 + 60) */
   designWidth?: number;
   /** Min viewport width (px) at which CSS zoom activates (default 768) */
   zoomBreakpoint?: number;
