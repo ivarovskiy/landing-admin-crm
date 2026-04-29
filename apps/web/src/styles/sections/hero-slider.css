@@ -179,6 +179,15 @@
   white-space: pre-line;
 }
 
+@media (min-width: 768px) {
+  /* Inside CSS zoom, vw resolves against the real viewport, not the design
+     canvas — double-scaling the value below its designed size. Override with
+     the design-width equivalent: 1.1 × 1440px ≈ 16px (the clamp maximum). */
+  .hero-slide__quote {
+    font-size: 16px;
+  }
+}
+
 .hero-slide__kicker {
   /* margin: 0 0 clamp(6px, 0.8vw, 10px);
   font-size: var(--hs-kicker-size);
@@ -212,6 +221,12 @@
      even when the column has spare room. Stretching makes the wrapping
      decision use the actual column width, matching Figma at all viewports. */
   align-self: stretch;
+  /* Belt-and-suspenders for Safari: when the column flex ancestor has
+     flex-basis:0 (flex: 1 1 0), Safari may not use the resolved flex-item
+     width as the containing block for align-self:stretch, causing the
+     subtitle to shrink-fit and wrap. An explicit width:100% forces the
+     correct containing-block size on all engines. */
+  width: 100%;
 }
 
 .hero-slide__subtitle--no-stamp {
@@ -340,6 +355,13 @@
     /* justify-content: flex-end; */
     gap: var(--hs-gap);
     padding: 20px 0;
+    /* Override the vw-based --hs-gap default with the design-width equivalent
+       (2.8 × 1440px = 40px). Inside a CSS-zoomed container, vw resolves
+       against the real viewport (e.g. 1194px), not the design canvas, so
+       zoom × vw double-scales the gap below its designed value. A fixed px
+       value scales proportionally with CSS zoom as intended. Admin per-slide
+       overrides via desktop.gap still apply via the inline --hs-gap var. */
+    --hs-gap: 40px;
   }
 
   .hero-slide__text-col {
