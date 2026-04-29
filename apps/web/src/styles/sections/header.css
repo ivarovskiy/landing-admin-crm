@@ -311,7 +311,7 @@
   bottom: 0;
   width: calc(100% + 4px);
   height: 5px;
-  background: url("/icons/vector.svg") left center 100% no-repeat;
+  background: url(/icons/vector.svg) left center no-repeat;
   opacity: 0;
   transform: none;
   transition: opacity 180ms ease;
