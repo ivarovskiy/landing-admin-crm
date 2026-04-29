@@ -256,6 +256,7 @@
   padding-top: 33px;
   margin-right: 2px;
   gap: var(--header-nav-gap, 30.4px);
+  justify-content: end;
 }
 
 .header-desktop__nav-item {
@@ -331,8 +332,7 @@
    is handled by the `.has-active-descendant` class above (set in JS) — the
    subnav DOM only exists while the dropdown is open, so a CSS-only :has()
    rule can't cover the closed-dropdown state. */
-.header-desktop__nav-item.has-children:has(.header-desktop__subnav-link:hover)
-  .header-desktop__nav-link::after {
+.header-desktop__nav-item.has-children:has(.header-desktop__subnav-link:hover) .header-desktop__nav-link::after {
   opacity: 1;
 }
 
@@ -372,9 +372,11 @@
   cursor: default;
   text-decoration: none;
 }
+
 .header-desktop__nav-item.has-children .header-desktop__nav-link.is-no-link {
   cursor: pointer;
 }
+
 /* Suppress underline only on truly passive items:
    - top-level no-link items WITHOUT children (childless plain labels)
    - subnav children that are no-link
