@@ -203,6 +203,15 @@
 
 .hero-slide__subtitle {
   white-space: pre-line;
+  /* Force the subtitle to take the full cross-axis width of its column-flex
+     parent (.hero-slide__copy-main has `align-items: flex-start`, which by
+     default shrink-fits block children to their max-content width).
+     In Blink that shrink-fit happens to equal max-content of the rendered
+     text, so the line fits inside .hero-slide__text-col. In iOS/Safari the
+     same flow can compute a smaller cross size and force the line to wrap
+     even when the column has spare room. Stretching makes the wrapping
+     decision use the actual column width, matching Figma at all viewports. */
+  align-self: stretch;
 }
 
 .hero-slide__subtitle--no-stamp {
@@ -334,8 +343,15 @@
   }
 
   .hero-slide__text-col {
-    /* flex: 1 1 0; */
-    width: 100%;
+    /* `flex: 1 1 0` makes the text column always claim exactly the row's
+       remaining space (row width − media-col width − gap). Previously this
+       used `width: 100%`, which has the same intent but produces a different
+       flex-basis (`100%` vs `0`); some WebKit/iOS Safari builds resolve the
+       resulting shrink incorrectly and end up with a text column narrower
+       than intended, which forces the subtitle/title to wrap even when they
+       fit at the design width. The explicit `flex: 1 1 0` is deterministic
+       across engines. */
+    flex: 1 1 0;
     min-width: 0;
   }
 
