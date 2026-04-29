@@ -247,7 +247,7 @@
   /* `gap` becomes the *minimum* gap when items overflow the column;
      `space-between` adds the remaining slack on top. */
   gap: var(--header-nav-gap, 27.6px);
-  padding-top: 17px;
+  padding-top: 15px;
 }
 
 .header-desktop__nav-row--right {
