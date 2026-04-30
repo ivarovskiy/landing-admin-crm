@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { fontMaru, fontMaruOblique, fontDisplay } from "./fonts";
 import { ScrollToTop } from "@/components/landing/ui/scroll-to-top";
-import { getSiteSettings, type TextMetricsSettings, type ZoomSettings } from "@/lib/api-public";
+import {
+  getSiteSettings,
+  type TextMetricsSettings,
+  type TypographySettings,
+  type TypographyViewportProfileKey,
+  type ZoomSettings,
+} from "@/lib/api-public";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -96,6 +102,86 @@ function applyTextMetrics(
   if (metrics.fontSize) style[`--${prefix}-font-size`] = metrics.fontSize;
   if (metrics.lineHeight) style[`--${prefix}-line-height`] = metrics.lineHeight;
   if (metrics.letterSpacing) style[`--${prefix}-letter-spacing`] = metrics.letterSpacing;
+}
+
+const TEXT_METRIC_CSS_FIELDS: {
+  key: keyof Pick<
+    TypographySettings,
+    | "contentHeader"
+    | "homepageHeader"
+    | "subtitle"
+    | "bodyText"
+    | "sectionHeader"
+    | "textHeader"
+    | "promoHeader"
+    | "teachersHeader"
+    | "body"
+    | "bodyItalic"
+    | "heroTitle"
+    | "nav"
+    | "meta"
+  >;
+  prefix: string;
+}[] = [
+  { key: "contentHeader", prefix: "typo-content-header" },
+  { key: "homepageHeader", prefix: "typo-homepage-header" },
+  { key: "subtitle", prefix: "typo-subtitle" },
+  { key: "bodyText", prefix: "typo-body-text" },
+  { key: "sectionHeader", prefix: "typo-section-header" },
+  { key: "textHeader", prefix: "typo-text-header" },
+  { key: "promoHeader", prefix: "typo-promo-header" },
+  { key: "teachersHeader", prefix: "typo-teachers-header" },
+  { key: "body", prefix: "typo-body" },
+  { key: "bodyItalic", prefix: "typo-body-italic" },
+  { key: "heroTitle", prefix: "typo-hero-title" },
+  { key: "nav", prefix: "typo-nav" },
+  { key: "meta", prefix: "typo-meta" },
+];
+
+const TYPOGRAPHY_VIEWPORT_PROFILES: {
+  key: TypographyViewportProfileKey;
+  query: string;
+}[] = [
+  { key: "mobile", query: "(max-width: 767px)" },
+  { key: "tablet", query: "(min-width: 768px) and (max-width: 1199px)" },
+  { key: "ipadPro", query: "(min-width: 1200px) and (max-width: 1439px)" },
+  { key: "desktop", query: "(min-width: 1440px)" },
+];
+
+function sanitizeCssValue(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed || /[{};<>]/.test(trimmed)) return null;
+  return trimmed;
+}
+
+function buildTypographyViewportStyle(typography?: TypographySettings): string | null {
+  const profiles = typography?.viewportProfiles;
+  if (!profiles) return null;
+
+  const chunks: string[] = [];
+
+  for (const profile of TYPOGRAPHY_VIEWPORT_PROFILES) {
+    const values = profiles[profile.key];
+    if (!values) continue;
+
+    const declarations: string[] = [];
+    for (const field of TEXT_METRIC_CSS_FIELDS) {
+      const metrics = values[field.key];
+      const fontSize = metrics?.fontSize ? sanitizeCssValue(metrics.fontSize) : null;
+      const lineHeight = metrics?.lineHeight ? sanitizeCssValue(metrics.lineHeight) : null;
+      const letterSpacing = metrics?.letterSpacing ? sanitizeCssValue(metrics.letterSpacing) : null;
+
+      if (fontSize) declarations.push(`--${field.prefix}-font-size:${fontSize}!important;`);
+      if (lineHeight) declarations.push(`--${field.prefix}-line-height:${lineHeight}!important;`);
+      if (letterSpacing) declarations.push(`--${field.prefix}-letter-spacing:${letterSpacing}!important;`);
+    }
+
+    if (declarations.length > 0) {
+      chunks.push(`@media ${profile.query}{:root{${declarations.join("")}}}`);
+    }
+  }
+
+  return chunks.length > 0 ? chunks.join("") : null;
 }
 
 export default async function RootLayout({ children }: {
@@ -202,6 +288,7 @@ export default async function RootLayout({ children }: {
     zoom?.preventInitialFlicker === true && zoom
       ? buildPrepaintScript(zoom)
       : null;
+  const typographyViewportStyle = buildTypographyViewportStyle(typography);
 
   return (
     <html
@@ -227,6 +314,12 @@ export default async function RootLayout({ children }: {
         <meta name="x-apple-disable-message-reformatting" content="" />
         {prepaintScript ? (
           <script dangerouslySetInnerHTML={{ __html: prepaintScript }} />
+        ) : null}
+        {typographyViewportStyle ? (
+          <style
+            id="typography-viewport-overrides"
+            dangerouslySetInnerHTML={{ __html: typographyViewportStyle }}
+          />
         ) : null}
       </head>
       <body>

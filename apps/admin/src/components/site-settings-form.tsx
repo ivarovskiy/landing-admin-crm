@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor, Link2, Zap, Underline, Layers, Type } from "lucide-react";
-import type { SiteSettingsData, SiteZoomSettings, SiteScrollToTopSettings, SiteTypographySettings, SiteHeaderSettings, SiteTextMetrics, NavUnderlineMode } from "@/lib/admin-api";
+import type {
+  SiteSettingsData,
+  SiteZoomSettings,
+  SiteScrollToTopSettings,
+  SiteTypographySettings,
+  SiteHeaderSettings,
+  SiteTextMetrics,
+  SiteTypographyViewportProfileKey,
+  NavUnderlineMode,
+} from "@/lib/admin-api";
 
 /* ----------------------------------------------------------------
    Sub-components
@@ -221,11 +230,20 @@ function SliderRow({
 }
 
 type SettingsTab = "layout" | "typography" | "header";
+type TypographyMetricScope = "all" | SiteTypographyViewportProfileKey;
 
 const SETTINGS_TABS: { value: SettingsTab; label: string }[] = [
   { value: "layout", label: "Layout" },
   { value: "typography", label: "Typography" },
   { value: "header", label: "Header" },
+];
+
+const TYPOGRAPHY_METRIC_SCOPE_OPTIONS: { value: TypographyMetricScope; label: string }[] = [
+  { value: "all", label: "All / Default" },
+  { value: "mobile", label: "Mobile <= 767" },
+  { value: "tablet", label: "Tablet 768-1199" },
+  { value: "ipadPro", label: "iPad Pro 1200-1439" },
+  { value: "desktop", label: "Desktop >= 1440" },
 ];
 
 const TEXT_METRIC_GROUPS: {
@@ -460,6 +478,8 @@ function StatusBadge({ status }: { status: "idle" | "saving" | "saved" | "error"
 
 export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSettingsData }) {
   const [activeTab, setActiveTab] = useState<SettingsTab>("layout");
+  const [typographyMetricScope, setTypographyMetricScope] =
+    useState<TypographyMetricScope>("all");
   const [zoom, setZoom] = useState<SiteZoomSettings>({
     enableZoom: initialSettings?.zoom?.enableZoom !== false,
     designWidth: initialSettings?.zoom?.designWidth,
@@ -513,6 +533,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     heroTitle: initialSettings?.typography?.heroTitle,
     nav: initialSettings?.typography?.nav,
     meta: initialSettings?.typography?.meta,
+    viewportProfiles: initialSettings?.typography?.viewportProfiles,
   });
   const [header, setHeader] = useState<SiteHeaderSettings>({
     navUnderlineMode: initialSettings?.header?.navUnderlineMode ?? "parent",
@@ -558,6 +579,43 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     const next = { ...header, ...patch };
     setHeader(next);
     save({ header: next });
+  }
+
+  function getTextMetricValue(
+    key: (typeof TEXT_METRIC_GROUPS)[number]["key"],
+  ): SiteTextMetrics | undefined {
+    if (typographyMetricScope === "all") {
+      return typography[key] as SiteTextMetrics | undefined;
+    }
+    return typography.viewportProfiles?.[typographyMetricScope]?.[key];
+  }
+
+  function updateTextMetricValue(
+    key: (typeof TEXT_METRIC_GROUPS)[number]["key"],
+    next: SiteTextMetrics | undefined,
+  ) {
+    if (typographyMetricScope === "all") {
+      updateTypography({ [key]: next } as Partial<SiteTypographySettings>);
+      return;
+    }
+
+    const viewportProfiles = { ...(typography.viewportProfiles ?? {}) };
+    const currentProfile = { ...(viewportProfiles[typographyMetricScope] ?? {}) };
+
+    if (next) {
+      currentProfile[key] = next;
+    } else {
+      delete currentProfile[key];
+    }
+
+    const hasProfileValues = TEXT_METRIC_GROUPS.some((group) => currentProfile[group.key]);
+    if (hasProfileValues) {
+      viewportProfiles[typographyMetricScope] = currentProfile;
+    } else {
+      delete viewportProfiles[typographyMetricScope];
+    }
+
+    updateTypography({ viewportProfiles });
   }
 
   return (
@@ -771,14 +829,22 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
         <SectionLabel>Text Metrics Overrides</SectionLabel>
 
         <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
+          <SelectRow<TypographyMetricScope>
+            icon={<MonitorSmartphone className="h-3.5 w-3.5" />}
+            label="Screen scope"
+            description="All / Default keeps the current global behavior. Screen scopes override only the fields filled here."
+            value={typographyMetricScope}
+            options={TYPOGRAPHY_METRIC_SCOPE_OPTIONS}
+            onChange={setTypographyMetricScope}
+          />
           {TEXT_METRIC_GROUPS.map((group) => (
             <TextMetricCard
               key={group.key}
               label={group.label}
               description={group.description}
               defaults={group.defaults}
-              value={typography[group.key] as SiteTextMetrics | undefined}
-              onChange={(next) => updateTypography({ [group.key]: next } as Partial<SiteTypographySettings>)}
+              value={getTextMetricValue(group.key)}
+              onChange={(next) => updateTextMetricValue(group.key, next)}
             />
           ))}
         </div>

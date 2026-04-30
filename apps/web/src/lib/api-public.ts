@@ -63,12 +63,38 @@ export type TypographySettings = {
   heroTitle?: TextMetricsSettings;
   nav?: TextMetricsSettings;
   meta?: TextMetricsSettings;
+
+  /** Optional screen-specific text metric overrides. Empty fields fall back to
+   *  global values above, then to CSS defaults. */
+  viewportProfiles?: Partial<Record<TypographyViewportProfileKey, TypographyViewportProfile>>;
 };
 
 export type TextMetricsSettings = {
   fontSize?: string;
   lineHeight?: string;
   letterSpacing?: string;
+};
+
+export type TypographyViewportProfileKey =
+  | 'mobile'
+  | 'tablet'
+  | 'ipadPro'
+  | 'desktop';
+
+export type TypographyViewportProfile = {
+  contentHeader?: TextMetricsSettings;
+  homepageHeader?: TextMetricsSettings;
+  subtitle?: TextMetricsSettings;
+  bodyText?: TextMetricsSettings;
+  sectionHeader?: TextMetricsSettings;
+  textHeader?: TextMetricsSettings;
+  promoHeader?: TextMetricsSettings;
+  teachersHeader?: TextMetricsSettings;
+  body?: TextMetricsSettings;
+  bodyItalic?: TextMetricsSettings;
+  heroTitle?: TextMetricsSettings;
+  nav?: TextMetricsSettings;
+  meta?: TextMetricsSettings;
 };
 
 export type ZoomSettings = {

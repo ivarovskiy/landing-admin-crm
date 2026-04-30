@@ -122,12 +122,38 @@ export type SiteTypographySettings = {
   heroTitle?: SiteTextMetrics;
   nav?: SiteTextMetrics;
   meta?: SiteTextMetrics;
+
+  /** Optional screen-specific text metric overrides. Empty fields fall back to
+   *  the global values above, then to CSS defaults. */
+  viewportProfiles?: Partial<Record<SiteTypographyViewportProfileKey, SiteTypographyViewportProfile>>;
 }
 
 export type SiteTextMetrics = {
   fontSize?: string;
   lineHeight?: string;
   letterSpacing?: string;
+}
+
+export type SiteTypographyViewportProfileKey =
+  | 'mobile'
+  | 'tablet'
+  | 'ipadPro'
+  | 'desktop';
+
+export type SiteTypographyViewportProfile = {
+  contentHeader?: SiteTextMetrics;
+  homepageHeader?: SiteTextMetrics;
+  subtitle?: SiteTextMetrics;
+  bodyText?: SiteTextMetrics;
+  sectionHeader?: SiteTextMetrics;
+  textHeader?: SiteTextMetrics;
+  promoHeader?: SiteTextMetrics;
+  teachersHeader?: SiteTextMetrics;
+  body?: SiteTextMetrics;
+  bodyItalic?: SiteTextMetrics;
+  heroTitle?: SiteTextMetrics;
+  nav?: SiteTextMetrics;
+  meta?: SiteTextMetrics;
 }
 export type NavUnderlineMode = 'parent' | 'all' | 'none';
 
