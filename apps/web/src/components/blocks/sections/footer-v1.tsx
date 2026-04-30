@@ -249,7 +249,7 @@ export function FooterV1({ data }: { data: any }) {
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "end", justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", alignItems: "end", justifyContent: "flex-end", width: "100%" }}>
             <img src="/icons/footer.svg" alt="" className="footer-desktop__rule"/>
             {/* <FooterRule className="footer-desktop__rule" /> */}
           </div>
