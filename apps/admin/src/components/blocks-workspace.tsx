@@ -55,7 +55,7 @@ type Block = {
 
 type Banner = { kind: "success" | "error"; message: string } | null;
 type ViewportMode = "all" | "mobile" | "desktop";
-type ViewMode = "desktop" | "mobile";
+type ViewMode = "desktop" | "ipadPro" | "mobile";
 
 /* ================================================================
    Helpers
@@ -102,6 +102,29 @@ function blockIcon(type: string) {
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 const DEFAULT_ZOOM_IDX = 2; // "1x" = fit to container
 const CANVAS_PADDING = 24; // vertical padding from canvas edge to artboard top
+const VIEWPORT_PRESETS: Record<
+  ViewMode,
+  { width: number; label: string; tooltip: string; formMode: "desktop" | "mobile" }
+> = {
+  desktop: {
+    width: 1440,
+    label: "Desktop",
+    tooltip: "Desktop view (1440px)",
+    formMode: "desktop",
+  },
+  ipadPro: {
+    width: 1366,
+    label: "iPad Pro",
+    tooltip: "iPad Pro view (1366px)",
+    formMode: "desktop",
+  },
+  mobile: {
+    width: 390,
+    label: "Mobile",
+    tooltip: "Mobile view (390px)",
+    formMode: "mobile",
+  },
+};
 
 /* ================================================================
    Main workspace component
@@ -238,11 +261,16 @@ export function BlocksWorkspace({
 
   const availableWidth = canvasWidth > 0 ? canvasWidth - CANVAS_PADDING * 2 : 1440;
 
-  // Desktop: viewport is always 1440px; zoom is purely visual scale (Figma-style).
-  //   "Fit" (multiplier=1) fills the canvas width; 50% = half canvas width, etc.
-  // Mobile:  viewport always 390px; zoom multiplier = display scale directly.
-  const iframeWidth  = viewMode === "mobile" ? 390 : 1440;
-  const scale        = viewMode === "mobile" ? zoomMultiplier : zoomMultiplier * (availableWidth / 1440);
+  const viewportPreset = VIEWPORT_PRESETS[viewMode];
+  const iframeWidth = viewportPreset.width;
+  const inspectorViewMode = viewportPreset.formMode;
+
+  // Desktop/iPad: viewport is fixed to the selected device width, while canvas
+  // scale is visual only (Figma-style). Mobile keeps the previous direct scale.
+  const scale =
+    viewMode === "mobile"
+      ? zoomMultiplier
+      : zoomMultiplier * (availableWidth / iframeWidth);
   const displayWidth = Math.round(iframeWidth * scale);
 
   // Artboard top-left in canvas coords (transform-based, no scroll)
@@ -561,18 +589,19 @@ export function BlocksWorkspace({
           {/* Viewport toggle */}
           <div className="flex rounded-lg border bg-muted/40 p-0.5">
             {([
-              { mode: "desktop" as const, label: "Desktop view", Icon: Monitor, text: "Desktop" },
-              { mode: "mobile" as const, label: "Mobile view (390px)", Icon: Smartphone, text: "Mobile" },
-            ]).map(({ mode, label, Icon, text }) => (
+              { mode: "desktop" as const, Icon: Monitor },
+              { mode: "ipadPro" as const, Icon: Monitor },
+              { mode: "mobile" as const, Icon: Smartphone },
+            ]).map(({ mode, Icon }) => (
               <TToolBtn
                 key={mode}
-                label={label}
+                label={VIEWPORT_PRESETS[mode].tooltip}
                 active={viewMode === mode}
                 onClick={() => setViewMode(mode)}
                 wide
               >
                 <Icon className="h-3.5 w-3.5" />
-                {text}
+                {VIEWPORT_PRESETS[mode].label}
               </TToolBtn>
             ))}
           </div>
@@ -958,7 +987,7 @@ export function BlocksWorkspace({
                 type={active.type}
                 variant={active.variant}
                 initial={active.data}
-                viewMode={viewMode}
+                viewMode={inspectorViewMode}
                 externalSelectedElementId={selectedElementId}
                 onElementSelect={handleElementSelect}
                 onDraftChange={(blockId, data) => {
