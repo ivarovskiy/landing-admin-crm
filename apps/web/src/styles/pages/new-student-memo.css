@@ -24,10 +24,10 @@
 
 .nsm__title {
   margin: 0;
-  line-height: 0.92;
-  letter-spacing: 0.02em;
+  line-height: var(--typo-homepage-header-line-height, 0.92);
+  letter-spacing: var(--typo-homepage-header-letter-spacing, 0.02em);
   text-transform: uppercase;
-  font-size: clamp(48px, 7.5vw, 104px);
+  font-size: var(--typo-homepage-header-font-size, clamp(48px, 7.5vw, 104px));
 }
 
 .nsm__subtitle {
