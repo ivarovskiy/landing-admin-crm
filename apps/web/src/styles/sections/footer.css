@@ -315,7 +315,8 @@
     align-items: end;
     justify-content: flex-end;
     /* width: min(calc(100% - clamp(0px, 13.26vw, 191px)), 1130px); */
-    /* width: 100%; */
+    width: 100%;
+    object-position: right;
     /* margin-left: clamp(0px, 13.26vw, 191px); */
     margin-top: 43px;
     /* margin-left: clamp(0px, 13.26vw, 191px); */
