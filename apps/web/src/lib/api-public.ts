@@ -48,6 +48,27 @@ export type TypographySettings = {
   subtitleStrokeW?: string;
   subtitleShadowEnabled?: boolean;
   subtitleShadowOffset?: string;
+
+  /** MVP text metric overrides. Values are raw CSS lengths/values. */
+  contentHeader?: TextMetricsSettings;
+  homepageHeader?: TextMetricsSettings;
+  subtitle?: TextMetricsSettings;
+  bodyText?: TextMetricsSettings;
+  sectionHeader?: TextMetricsSettings;
+  textHeader?: TextMetricsSettings;
+  promoHeader?: TextMetricsSettings;
+  teachersHeader?: TextMetricsSettings;
+  body?: TextMetricsSettings;
+  bodyItalic?: TextMetricsSettings;
+  heroTitle?: TextMetricsSettings;
+  nav?: TextMetricsSettings;
+  meta?: TextMetricsSettings;
+};
+
+export type TextMetricsSettings = {
+  fontSize?: string;
+  lineHeight?: string;
+  letterSpacing?: string;
 };
 
 export type ZoomSettings = {

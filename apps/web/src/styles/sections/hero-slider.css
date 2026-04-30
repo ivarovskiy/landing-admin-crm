@@ -93,7 +93,7 @@
   --hs-gap: clamp(20px, 2.8vw, 42px);
   --hs-media-w: 42%;
   --hs-text-w: 100%;
-  --hs-title-size: 78px;
+  --hs-title-size: var(--typo-content-header-font-size, 78px);
   /* --hs-title-size: clamp(44px, 5.7vw, 78px); */
   --hs-subtitle-size: inherit;
   --hs-kicker-size: inherit;
@@ -205,8 +205,8 @@
   display: inline-block;
   margin: 0;
   font-size: var(--hs-title-size);
-  line-height: 86px;
-  letter-spacing: 0.02em;
+  line-height: var(--typo-content-header-line-height, 86px);
+  letter-spacing: var(--typo-content-header-letter-spacing, 0.02em);
   white-space: pre-line;
 }
 

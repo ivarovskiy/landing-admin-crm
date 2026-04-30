@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor, Link2, Zap, Underline, Layers } from "lucide-react";
-import type { SiteSettingsData, SiteZoomSettings, SiteScrollToTopSettings, SiteTypographySettings, SiteHeaderSettings, NavUnderlineMode } from "@/lib/admin-api";
+import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor, Link2, Zap, Underline, Layers, Type } from "lucide-react";
+import type { SiteSettingsData, SiteZoomSettings, SiteScrollToTopSettings, SiteTypographySettings, SiteHeaderSettings, SiteTextMetrics, NavUnderlineMode } from "@/lib/admin-api";
 
 /* ----------------------------------------------------------------
    Sub-components
@@ -220,6 +220,225 @@ function SliderRow({
   );
 }
 
+type SettingsTab = "layout" | "typography" | "header";
+
+const SETTINGS_TABS: { value: SettingsTab; label: string }[] = [
+  { value: "layout", label: "Layout" },
+  { value: "typography", label: "Typography" },
+  { value: "header", label: "Header" },
+];
+
+const TEXT_METRIC_GROUPS: {
+  key: keyof Pick<
+    SiteTypographySettings,
+    | "contentHeader"
+    | "homepageHeader"
+    | "subtitle"
+    | "bodyText"
+    | "sectionHeader"
+    | "textHeader"
+    | "promoHeader"
+    | "teachersHeader"
+    | "body"
+    | "bodyItalic"
+    | "heroTitle"
+    | "nav"
+    | "meta"
+  >;
+  label: string;
+  description: string;
+  defaults: { fontSize: string; lineHeight: string; letterSpacing: string };
+}[] = [
+  {
+    key: "nav",
+    label: "Nav / Header Meta",
+    description: "Desktop nav links and top phone / portal text.",
+    defaults: { fontSize: "16px", lineHeight: "24px", letterSpacing: "0" },
+  },
+  {
+    key: "contentHeader",
+    label: "Hero / Content Header",
+    description: "78px stamp titles, including hero slider titles.",
+    defaults: { fontSize: "78px", lineHeight: "86px", letterSpacing: "0.02em" },
+  },
+  {
+    key: "homepageHeader",
+    label: "Homepage / Section Title",
+    description: "104px stamp titles, e.g. Our School.",
+    defaults: { fontSize: "104px", lineHeight: "126px", letterSpacing: "0.02em" },
+  },
+  {
+    key: "subtitle",
+    label: "Subtitle Stamp",
+    description: "47px oblique stamp subtitles.",
+    defaults: { fontSize: "47px", lineHeight: "60px", letterSpacing: "0.01em" },
+  },
+  {
+    key: "bodyText",
+    label: "Body Text",
+    description: "20px body copy style.",
+    defaults: { fontSize: "20px", lineHeight: "29.4px", letterSpacing: "0.007em" },
+  },
+  {
+    key: "sectionHeader",
+    label: "Section Header",
+    description: "22px uppercase spaced headers.",
+    defaults: { fontSize: "22px", lineHeight: "1.51", letterSpacing: "0.327em" },
+  },
+  {
+    key: "textHeader",
+    label: "Text Header",
+    description: "22px uppercase spaced text-header variant.",
+    defaults: { fontSize: "22px", lineHeight: "1.51", letterSpacing: "0.321em" },
+  },
+  {
+    key: "teachersHeader",
+    label: "Teachers Header",
+    description: "22px uppercase teachers-list style.",
+    defaults: { fontSize: "22px", lineHeight: "33.2px", letterSpacing: "0.327em" },
+  },
+  {
+    key: "promoHeader",
+    label: "Promo Header",
+    description: "26px uppercase promo style.",
+    defaults: { fontSize: "26px", lineHeight: "38px", letterSpacing: "0.327em" },
+  },
+  {
+    key: "body",
+    label: "Body",
+    description: "Responsive regular body style.",
+    defaults: { fontSize: "20px", lineHeight: "1.47", letterSpacing: "0.007em" },
+  },
+  {
+    key: "bodyItalic",
+    label: "Body Italic",
+    description: "Responsive italic body style.",
+    defaults: { fontSize: "27px", lineHeight: "1.30", letterSpacing: "0" },
+  },
+  {
+    key: "heroTitle",
+    label: "Legacy Hero Title",
+    description: "typo-hero-title class if used by older blocks.",
+    defaults: { fontSize: "78px", lineHeight: "0.92", letterSpacing: "0.02em" },
+  },
+  {
+    key: "meta",
+    label: "Meta",
+    description: "Generic typo-meta class.",
+    defaults: { fontSize: "16px", lineHeight: "1.05", letterSpacing: "0" },
+  },
+];
+
+function TabsRow({
+  value,
+  onChange,
+}: {
+  value: SettingsTab;
+  onChange: (v: SettingsTab) => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-1 rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] p-1">
+      {SETTINGS_TABS.map((tab) => (
+        <button
+          key={tab.value}
+          type="button"
+          onClick={() => onChange(tab.value)}
+          className={[
+            "h-8 rounded-lg text-xs font-semibold transition-colors",
+            value === tab.value
+              ? "bg-[oklch(0.58_0.22_25)] text-white"
+              : "text-[oklch(0.58_0_0)] hover:bg-[oklch(1_0_0/6%)] hover:text-[oklch(0.88_0_0)]",
+          ].join(" ")}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MetricInput({
+  label,
+  value,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string | undefined;
+  placeholder: string;
+  onChange: (v: string | undefined) => void;
+}) {
+  return (
+    <label className="space-y-1">
+      <span className="block text-[9px] font-medium uppercase tracking-wide text-[oklch(0.48_0_0)]">
+        {label}
+      </span>
+      <input
+        type="text"
+        value={value ?? ""}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value || undefined)}
+        className="w-full h-7 rounded-md bg-[oklch(1_0_0/6%)] border border-[oklch(1_0_0/10%)] text-xs text-[oklch(0.88_0_0)] px-2 focus:outline-none focus:ring-1 focus:ring-[oklch(0.58_0.22_25)]"
+      />
+    </label>
+  );
+}
+
+function TextMetricCard({
+  label,
+  description,
+  value,
+  defaults,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  value: SiteTextMetrics | undefined;
+  defaults: { fontSize: string; lineHeight: string; letterSpacing: string };
+  onChange: (next: SiteTextMetrics | undefined) => void;
+}) {
+  const patch = (key: keyof SiteTextMetrics, v: string | undefined) => {
+    const next = { ...(value ?? {}), [key]: v };
+    if (!next.fontSize && !next.lineHeight && !next.letterSpacing) {
+      onChange(undefined);
+    } else {
+      onChange(next);
+    }
+  };
+
+  return (
+    <div className="px-4 py-3 space-y-3">
+      <div className="flex items-start gap-3">
+        <Type className="h-3.5 w-3.5 mt-0.5 shrink-0 text-[oklch(0.45_0_0)]" />
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-[oklch(0.88_0_0)] leading-none">{label}</p>
+          <p className="text-[10px] text-[oklch(0.5_0_0)] mt-0.5 leading-snug">{description}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <MetricInput
+          label="Size"
+          value={value?.fontSize}
+          placeholder={defaults.fontSize}
+          onChange={(v) => patch("fontSize", v)}
+        />
+        <MetricInput
+          label="Line"
+          value={value?.lineHeight}
+          placeholder={defaults.lineHeight}
+          onChange={(v) => patch("lineHeight", v)}
+        />
+        <MetricInput
+          label="Spacing"
+          value={value?.letterSpacing}
+          placeholder={defaults.letterSpacing}
+          onChange={(v) => patch("letterSpacing", v)}
+        />
+      </div>
+    </div>
+  );
+}
+
 function StatusBadge({ status }: { status: "idle" | "saving" | "saved" | "error" }) {
   if (status === "idle") return null;
   if (status === "saving") return (
@@ -240,6 +459,7 @@ function StatusBadge({ status }: { status: "idle" | "saving" | "saved" | "error"
 ---------------------------------------------------------------- */
 
 export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSettingsData }) {
+  const [activeTab, setActiveTab] = useState<SettingsTab>("layout");
   const [zoom, setZoom] = useState<SiteZoomSettings>({
     enableZoom: initialSettings?.zoom?.enableZoom !== false,
     designWidth: initialSettings?.zoom?.designWidth,
@@ -279,6 +499,20 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     subtitleStrokeW: initialSettings?.typography?.subtitleStrokeW,
     subtitleShadowEnabled: initialSettings?.typography?.subtitleShadowEnabled === true,
     subtitleShadowOffset: initialSettings?.typography?.subtitleShadowOffset,
+
+    contentHeader: initialSettings?.typography?.contentHeader,
+    homepageHeader: initialSettings?.typography?.homepageHeader,
+    subtitle: initialSettings?.typography?.subtitle,
+    bodyText: initialSettings?.typography?.bodyText,
+    sectionHeader: initialSettings?.typography?.sectionHeader,
+    textHeader: initialSettings?.typography?.textHeader,
+    promoHeader: initialSettings?.typography?.promoHeader,
+    teachersHeader: initialSettings?.typography?.teachersHeader,
+    body: initialSettings?.typography?.body,
+    bodyItalic: initialSettings?.typography?.bodyItalic,
+    heroTitle: initialSettings?.typography?.heroTitle,
+    nav: initialSettings?.typography?.nav,
+    meta: initialSettings?.typography?.meta,
   });
   const [header, setHeader] = useState<SiteHeaderSettings>({
     navUnderlineMode: initialSettings?.header?.navUnderlineMode ?? "parent",
@@ -328,7 +562,10 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
 
   return (
     <div className="space-y-6">
+      <TabsRow value={activeTab} onChange={setActiveTab} />
 
+      {activeTab === "layout" ? (
+        <>
       {/* ---- Zoom section ---- */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -482,6 +719,11 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
         </div>
       </div>
 
+        </>
+      ) : null}
+
+      {activeTab === "typography" ? (
+        <>
       {/* ---- Typography section ---- */}
       <div className="space-y-2">
         <SectionLabel>Typography</SectionLabel>
@@ -521,6 +763,24 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             ]}
             onChange={(v) => updateTypography({ stampShadowStyle: v })}
           />
+        </div>
+      </div>
+
+      {/* ---- Text metrics section ---- */}
+      <div className="space-y-2">
+        <SectionLabel>Text Metrics Overrides</SectionLabel>
+
+        <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
+          {TEXT_METRIC_GROUPS.map((group) => (
+            <TextMetricCard
+              key={group.key}
+              label={group.label}
+              description={group.description}
+              defaults={group.defaults}
+              value={typography[group.key] as SiteTextMetrics | undefined}
+              onChange={(next) => updateTypography({ [group.key]: next } as Partial<SiteTypographySettings>)}
+            />
+          ))}
         </div>
       </div>
 
@@ -638,6 +898,11 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
         </div>
       </div>
 
+        </>
+      ) : null}
+
+      {activeTab === "header" ? (
+        <>
       {/* ---- Header section ---- */}
       <div className="space-y-2">
         <SectionLabel>Header</SectionLabel>
@@ -657,6 +922,8 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
           />
         </div>
       </div>
+        </>
+      ) : null}
 
     </div>
   );

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { fontMaru, fontMaruOblique, fontDisplay } from "./fonts";
 import { ScrollToTop } from "@/components/landing/ui/scroll-to-top";
-import { getSiteSettings, type ZoomSettings } from "@/lib/api-public";
+import { getSiteSettings, type TextMetricsSettings, type ZoomSettings } from "@/lib/api-public";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -87,6 +87,17 @@ function buildPrepaintScript(zoom: ZoomSettings): string | null {
 }catch(e){}})()`;
 }
 
+function applyTextMetrics(
+  style: Record<string, string>,
+  prefix: string,
+  metrics?: TextMetricsSettings,
+) {
+  if (!metrics) return;
+  if (metrics.fontSize) style[`--${prefix}-font-size`] = metrics.fontSize;
+  if (metrics.lineHeight) style[`--${prefix}-line-height`] = metrics.lineHeight;
+  if (metrics.letterSpacing) style[`--${prefix}-letter-spacing`] = metrics.letterSpacing;
+}
+
 export default async function RootLayout({ children }: {
   children: React.ReactNode
 }) {
@@ -145,6 +156,20 @@ export default async function RootLayout({ children }: {
   if (heroShadow) typographyStyle["--hero-title-shadow-offset"] = typography!.heroTitleShadowOffset!;
   if (subtitleStroke) typographyStyle["--subtitle-stroke-w"] = typography!.subtitleStrokeW!;
   if (subtitleShadow) typographyStyle["--subtitle-shadow-offset"] = typography!.subtitleShadowOffset!;
+
+  applyTextMetrics(typographyStyle, "typo-content-header", typography?.contentHeader);
+  applyTextMetrics(typographyStyle, "typo-homepage-header", typography?.homepageHeader);
+  applyTextMetrics(typographyStyle, "typo-subtitle", typography?.subtitle);
+  applyTextMetrics(typographyStyle, "typo-body-text", typography?.bodyText);
+  applyTextMetrics(typographyStyle, "typo-section-header", typography?.sectionHeader);
+  applyTextMetrics(typographyStyle, "typo-text-header", typography?.textHeader);
+  applyTextMetrics(typographyStyle, "typo-promo-header", typography?.promoHeader);
+  applyTextMetrics(typographyStyle, "typo-teachers-header", typography?.teachersHeader);
+  applyTextMetrics(typographyStyle, "typo-body", typography?.body);
+  applyTextMetrics(typographyStyle, "typo-body-italic", typography?.bodyItalic);
+  applyTextMetrics(typographyStyle, "typo-hero-title", typography?.heroTitle);
+  applyTextMetrics(typographyStyle, "typo-nav", typography?.nav);
+  applyTextMetrics(typographyStyle, "typo-meta", typography?.meta);
 
   // Link-mode coefficients — when set, override the legacy 0.025em / 0.0535em
   // defaults. Value is a CSS length at the 104px reference, converted to em

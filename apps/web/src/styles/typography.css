@@ -7,9 +7,9 @@
 .typo-homepage-header {
   font-family: var(--font-maru);
   font-weight: 500;
-  font-size: 78px;
-  line-height: 86px;
-  letter-spacing: 0.02em;
+  font-size: var(--typo-content-header-font-size, 78px);
+  line-height: var(--typo-content-header-line-height, 86px);
+  letter-spacing: var(--typo-content-header-letter-spacing, 0.02em);
   color: var(--stamp-fill, var(--color-outline-fill));
   text-transform: uppercase;
   paint-order: stroke fill;
@@ -18,17 +18,18 @@
 }
 
 .typo-homepage-header {
-  font-size: 104px;
-  line-height: 126px;
+  font-size: var(--typo-homepage-header-font-size, 104px);
+  line-height: var(--typo-homepage-header-line-height, 126px);
+  letter-spacing: var(--typo-homepage-header-letter-spacing, 0.02em);
 }
 
 .typo-subtitle {
   font-family: var(--font-maru-oblique);
   font-weight: 500;
   font-style: normal;
-  font-size: 47px;
-  line-height: 60px; /* 60/47 */
-  letter-spacing: 0.01em;
+  font-size: var(--typo-subtitle-font-size, 47px);
+  line-height: var(--typo-subtitle-line-height, 60px); /* 60/47 */
+  letter-spacing: var(--typo-subtitle-letter-spacing, 0.01em);
   color: var(--stamp-fill, var(--color-outline-fill));
   paint-order: stroke fill;
   -webkit-text-stroke: var(--text-stroke-w, 3.6px) var(--stamp-stroke, var(--color-primary)); /* 2px outside × 2 */
@@ -37,24 +38,26 @@
 .typo-body-text {
   font-family: var(--font-maru);
   color: var(--color-primary);
-  font-size: 20px;
-  line-height: 29.4px; /* 33.2/22 */
-  letter-spacing: 0.007em;
+  font-size: var(--typo-body-text-font-size, 20px);
+  line-height: var(--typo-body-text-line-height, 29.4px); /* 33.2/22 */
+  letter-spacing: var(--typo-body-text-letter-spacing, 0.007em);
 }
 
 .typo-section-header,
 .typo-text-header {
   font-family: var(--font-maru);
   font-weight: 700;
-  font-size: clamp(14px, 2vw, 22px);
-  line-height: 1.51;
-  letter-spacing: 0.327em;
+  font-size: var(--typo-section-header-font-size, clamp(14px, 2vw, 22px));
+  line-height: var(--typo-section-header-line-height, 1.51);
+  letter-spacing: var(--typo-section-header-letter-spacing, 0.327em);
   text-transform: uppercase;
   color: var(--color-primary);
 }
 
 .typo-text-header {
-  letter-spacing: 0.321em;
+  font-size: var(--typo-text-header-font-size, var(--typo-section-header-font-size, clamp(14px, 2vw, 22px)));
+  line-height: var(--typo-text-header-line-height, var(--typo-section-header-line-height, 1.51));
+  letter-spacing: var(--typo-text-header-letter-spacing, 0.321em);
 }
 
 
@@ -62,9 +65,9 @@
   font-family: var(--font-maru);
   color: var(--color-primary);
   font-weight: 700;
-  font-size: 26px;
-  line-height: 38px; /* 38/26 */
-  letter-spacing: 0.327em;
+  font-size: var(--typo-promo-header-font-size, 26px);
+  line-height: var(--typo-promo-header-line-height, 38px); /* 38/26 */
+  letter-spacing: var(--typo-promo-header-letter-spacing, 0.327em);
   text-transform: uppercase;
 }
 
@@ -75,9 +78,9 @@
   font-family: var(--font-maru);
   color: var(--color-primary);
   font-weight: 700;
-  font-size: 22px;
-  line-height: 33.2px; /* 33.2/22 */
-  letter-spacing: 0.327em;
+  font-size: var(--typo-teachers-header-font-size, 22px);
+  line-height: var(--typo-teachers-header-line-height, 33.2px); /* 33.2/22 */
+  letter-spacing: var(--typo-teachers-header-letter-spacing, 0.327em);
   text-transform: uppercase;
 }
 
@@ -87,9 +90,9 @@
 .typo-body {
   font-family: var(--font-maru);
   font-weight: 400;
-  font-size: clamp(14px, 1.8vw, 20px);
-  line-height: 1.47; /* 29.4/20 */
-  letter-spacing: 0.007em;
+  font-size: var(--typo-body-font-size, clamp(14px, 1.8vw, 20px));
+  line-height: var(--typo-body-line-height, 1.47); /* 29.4/20 */
+  letter-spacing: var(--typo-body-letter-spacing, 0.007em);
 }
 
 /* ---- Body italic (feature descriptions, quotes) ---- */
@@ -99,9 +102,9 @@
   font-family: var(--font-alpina, var(--font-maru));
   font-weight: 500;
   font-style: italic;
-  font-size: clamp(16px, 2.2vw, 27px);
-  line-height: 1.30; /* 35/27 */
-  letter-spacing: 0;
+  font-size: var(--typo-body-italic-font-size, clamp(16px, 2.2vw, 27px));
+  line-height: var(--typo-body-italic-line-height, 1.30); /* 35/27 */
+  letter-spacing: var(--typo-body-italic-letter-spacing, 0);
 }
 
 /* ---- Hero slider title (stamp) ---- */
@@ -111,9 +114,9 @@
 .typo-hero-title {
   font-family: var(--font-maru);
   font-weight: 500;
-  font-size: clamp(44px, 5.7vw, 78px);
-  line-height: 0.92;
-  letter-spacing: 0.02em;
+  font-size: var(--typo-hero-title-font-size, clamp(44px, 5.7vw, 78px));
+  line-height: var(--typo-hero-title-line-height, 0.92);
+  letter-spacing: var(--typo-hero-title-letter-spacing, 0.02em);
   color: var(--stamp-fill, var(--color-outline-fill));
   paint-order: stroke fill;
   -webkit-text-stroke: var(--text-stroke-w, 2.6px) var(--stamp-stroke, var(--color-primary)); /* 1.3px outside × 2 */
@@ -126,9 +129,9 @@
 .typo-nav {
   font-family: var(--font-maru);
   font-weight: 700;
-  font-size: clamp(12px, 1.2vw, 16px);
-  line-height: 1.5;
-  letter-spacing: 0;
+  font-size: var(--typo-nav-font-size, clamp(12px, 1.2vw, 16px));
+  line-height: var(--typo-nav-line-height, 1.5);
+  letter-spacing: var(--typo-nav-letter-spacing, 0);
   text-transform: none;
 }
 
@@ -137,9 +140,9 @@
 .typo-meta {
   font-family: var(--font-maru);
   font-weight: 700;
-  font-size: clamp(12px, 1.2vw, 16px);
-  line-height: 1.05;
-  letter-spacing: 0;
+  font-size: var(--typo-meta-font-size, clamp(12px, 1.2vw, 16px));
+  line-height: var(--typo-meta-line-height, 1.05);
+  letter-spacing: var(--typo-meta-letter-spacing, 0);
   text-transform: none;
 }
 

@@ -107,6 +107,27 @@ export type SiteTypographySettings = {
   subtitleStrokeW?: string;
   subtitleShadowEnabled?: boolean;
   subtitleShadowOffset?: string;
+
+  /** MVP text metric overrides. Values are raw CSS lengths/values. */
+  contentHeader?: SiteTextMetrics;
+  homepageHeader?: SiteTextMetrics;
+  subtitle?: SiteTextMetrics;
+  bodyText?: SiteTextMetrics;
+  sectionHeader?: SiteTextMetrics;
+  textHeader?: SiteTextMetrics;
+  promoHeader?: SiteTextMetrics;
+  teachersHeader?: SiteTextMetrics;
+  body?: SiteTextMetrics;
+  bodyItalic?: SiteTextMetrics;
+  heroTitle?: SiteTextMetrics;
+  nav?: SiteTextMetrics;
+  meta?: SiteTextMetrics;
+}
+
+export type SiteTextMetrics = {
+  fontSize?: string;
+  lineHeight?: string;
+  letterSpacing?: string;
 }
 export type NavUnderlineMode = 'parent' | 'all' | 'none';
 

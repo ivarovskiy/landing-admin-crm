@@ -14,7 +14,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-[oklch(0.13_0_0)] text-[oklch(0.93_0_0)] p-6">
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
 
         <Link
           href="/admin"
