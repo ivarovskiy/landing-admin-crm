@@ -11,6 +11,7 @@ export type SlideTemplate =
 export type TextVariant = "plain" | "stamp";
 export type BodyVariant = "plain" | "list";
 export type ObjectFit = "cover" | "contain";
+export type HeroViewportProfileKey = "ipadPro";
 
 export type SlideMedia = {
   kind?: "image";
@@ -44,7 +45,10 @@ export type ElementStyle = {
   size?: string;  // font-size override
   typo?: TypoClass; // typography class from design system
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
+  viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
 };
+
+export type ElementStyleProfile = Omit<ElementStyle, "viewportProfiles">;
 
 /** Extra text block that can be added to any slide */
 export type SlideExtra = {
@@ -52,6 +56,26 @@ export type SlideExtra = {
   kind: "text" | "kicker" | "stamp";
   text: string;
   style?: ElementStyle;
+};
+
+export type HeroDesktopLayout = {
+  gap?: string;
+  mediaWidth?: string;
+  textWidth?: string;
+  titleSize?: string;
+  subtitleSize?: string;
+  kickerSize?: string;
+  bodySize?: string;
+  textAlign?: "left" | "center" | "right";
+  contentJustify?: "start" | "center" | "end";
+  contentOffsetX?: string;
+  contentOffsetY?: string;
+  padding?: string;
+  mediaPadding?: string;
+  mediaHeight?: string;
+  mediaAlign?: "start" | "center" | "end" | "stretch";
+  textAlignFullWidth?: boolean;
+  imageSide?: "left" | "right";
 };
 
 export type Slide = {
@@ -84,28 +108,13 @@ export type Slide = {
   bodyStyle?: ElementStyle;
   ctaStyle?: ElementStyle;
   layout?: {
-    desktop?: {
-      gap?: string;
-      mediaWidth?: string;
-      textWidth?: string;
-      titleSize?: string;
-      subtitleSize?: string;
-      kickerSize?: string;
-      bodySize?: string;
-      textAlign?: "left" | "center" | "right";
-      contentJustify?: "start" | "center" | "end";
-      contentOffsetX?: string;
-      contentOffsetY?: string;
-      padding?: string;
-      mediaPadding?: string;
-      mediaHeight?: string;
-      mediaAlign?: "start" | "center" | "end" | "stretch";
-      textAlignFullWidth?: boolean;
-      imageSide?: "left" | "right";
-    };
+    desktop?: HeroDesktopLayout;
     mobile?: {
       imageFirst?: boolean;
     };
+    viewportProfiles?: Partial<Record<HeroViewportProfileKey, {
+      desktop?: HeroDesktopLayout;
+    }>>;
   };
 };
 

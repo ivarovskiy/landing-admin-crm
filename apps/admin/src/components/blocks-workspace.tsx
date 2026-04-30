@@ -104,25 +104,22 @@ const DEFAULT_ZOOM_IDX = 2; // "1x" = fit to container
 const CANVAS_PADDING = 24; // vertical padding from canvas edge to artboard top
 const VIEWPORT_PRESETS: Record<
   ViewMode,
-  { width: number; label: string; tooltip: string; formMode: "desktop" | "mobile" }
+  { width: number; label: string; tooltip: string }
 > = {
   desktop: {
     width: 1440,
     label: "Desktop",
     tooltip: "Desktop view (1440px)",
-    formMode: "desktop",
   },
   ipadPro: {
     width: 1366,
     label: "iPad Pro",
     tooltip: "iPad Pro view (1366px)",
-    formMode: "desktop",
   },
   mobile: {
     width: 390,
     label: "Mobile",
     tooltip: "Mobile view (390px)",
-    formMode: "mobile",
   },
 };
 
@@ -263,7 +260,6 @@ export function BlocksWorkspace({
 
   const viewportPreset = VIEWPORT_PRESETS[viewMode];
   const iframeWidth = viewportPreset.width;
-  const inspectorViewMode = viewportPreset.formMode;
 
   // Desktop/iPad: viewport is fixed to the selected device width, while canvas
   // scale is visual only (Figma-style). Mobile keeps the previous direct scale.
@@ -987,7 +983,7 @@ export function BlocksWorkspace({
                 type={active.type}
                 variant={active.variant}
                 initial={active.data}
-                viewMode={inspectorViewMode}
+                viewMode={viewMode}
                 externalSelectedElementId={selectedElementId}
                 onElementSelect={handleElementSelect}
                 onDraftChange={(blockId, data) => {

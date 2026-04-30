@@ -4,7 +4,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { ChevronRight, Smartphone, Monitor } from "lucide-react";
 
 type ResponsiveHide = { base?: boolean; md?: boolean; lg?: boolean };
-type ViewMode = "desktop" | "mobile";
+type ViewMode = "desktop" | "ipadPro" | "mobile";
 
 /**
  * Collapsible inspector section — like Figma's right panel sections.
@@ -403,7 +403,7 @@ export function InspectorResponsiveToggle({
         title={desktopHidden ? "Hidden on desktop — click to show" : "Visible on desktop — click to hide"}
         className={[
           "flex items-center justify-center rounded-md px-1.5 py-1 transition-all",
-          viewMode === "desktop"
+          viewMode !== "mobile"
             ? "bg-muted ring-1 ring-border"          // active viewport — highlighted
             : "opacity-60 hover:opacity-100",
           desktopHidden

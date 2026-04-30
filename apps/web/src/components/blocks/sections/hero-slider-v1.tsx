@@ -14,6 +14,7 @@ type SlideTemplate =
 type TextVariant = "plain" | "stamp";
 type BodyVariant = "plain" | "list";
 type ObjectFit = "cover" | "contain";
+type HeroViewportProfileKey = "ipadPro";
 
 type ElementStyle = {
   mt?: string;
@@ -26,7 +27,10 @@ type ElementStyle = {
   size?: string;
   typo?: string; // typography class from design system
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
+  viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
 };
+
+type ElementStyleProfile = Omit<ElementStyle, "viewportProfiles">;
 
 type SlideExtra = {
   id?: string;
@@ -41,6 +45,26 @@ type SlideMedia = {
   alt?: string;
   aspectRatio?: string;
   objectFit?: ObjectFit;
+};
+
+type HeroDesktopLayout = {
+  imageSide?: "left" | "right";
+  gap?: string;
+  mediaWidth?: string;
+  textWidth?: string;
+  titleSize?: string;
+  subtitleSize?: string;
+  kickerSize?: string;
+  bodySize?: string;
+  textAlign?: "left" | "center" | "right";
+  contentJustify?: "start" | "center" | "end";
+  contentOffsetX?: string;
+  contentOffsetY?: string;
+  padding?: string;
+  mediaPadding?: string;
+  mediaHeight?: string;
+  mediaAlign?: "start" | "center" | "end" | "stretch";
+  textAlignFullWidth?: boolean;
 };
 
 type Slide = {
@@ -68,28 +92,11 @@ type Slide = {
   bodyStyle?: ElementStyle;
   ctaStyle?: ElementStyle;
   layout?: {
-    desktop?: {
-      imageSide?: "left" | "right";
-      gap?: string;
-      mediaWidth?: string;
-      textWidth?: string;
-      titleSize?: string;
-      subtitleSize?: string;
-      kickerSize?: string;
-      bodySize?: string;
-      textAlign?: "left" | "center" | "right";
-      contentJustify?: "start" | "center" | "end";
-      contentOffsetX?: string;
-      contentOffsetY?: string;
-      padding?: string;
-      mediaPadding?: string;
-      mediaHeight?: string;
-      mediaAlign?: "start" | "center" | "end" | "stretch";
-      textAlignFullWidth?: boolean;
-    };
+    desktop?: HeroDesktopLayout;
     mobile?: {
       imageFirst?: boolean;
     };
+    viewportProfiles?: Partial<Record<HeroViewportProfileKey, { desktop?: HeroDesktopLayout }>>;
     contentJustify?: "start" | "center" | "end";
   };
 };
@@ -117,6 +124,45 @@ function resolveDesignViewportUnits(value?: string) {
   });
 }
 
+function mergeElementStyle(
+  style?: ElementStyle,
+  profile?: HeroViewportProfileKey | null,
+): ElementStyle | undefined {
+  if (!style) return undefined;
+  if (!profile) return style;
+  const profileStyle = style.viewportProfiles?.[profile];
+  if (!profileStyle) return style;
+  return { ...style, ...profileStyle };
+}
+
+function mergeDesktopLayout(
+  slide: Slide,
+  profile?: HeroViewportProfileKey | null,
+): HeroDesktopLayout {
+  const base = slide?.layout?.desktop ?? {};
+  if (!profile) return base;
+  return {
+    ...base,
+    ...(slide?.layout?.viewportProfiles?.[profile]?.desktop ?? {}),
+  };
+}
+
+function useHeroViewportProfile(): HeroViewportProfileKey | null {
+  const [profile, setProfile] = useState<HeroViewportProfileKey | null>(null);
+
+  useEffect(() => {
+    const query = "(min-width: 1200px) and (max-width: 1439px)";
+    const mql = window.matchMedia(query);
+    const update = () => setProfile(mql.matches ? "ipadPro" : null);
+
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
+
+  return profile;
+}
+
 /** Convert ElementStyle to inline CSS */
 function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
   if (!es) return undefined;
@@ -136,10 +182,10 @@ function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
   return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
 }
 
-function resolveTemplate(slide: Slide): SlideTemplate {
+function resolveTemplate(slide: Slide, profile?: HeroViewportProfileKey | null): SlideTemplate {
   const base: SlideTemplate = slide?.template
     ? slide.template
-    : (slide?.layout?.desktop?.imageSide ?? "right") === "left"
+    : (mergeDesktopLayout(slide, profile)?.imageSide ?? "right") === "left"
       ? "image-left-copy-right"
       : "copy-left-image-right";
 
@@ -175,8 +221,8 @@ function mapItems(value?: "left" | "center" | "right") {
   return "flex-start";
 }
 
-function slideStyle(slide: Slide): React.CSSProperties {
-  const desktop = slide?.layout?.desktop ?? {};
+function slideStyle(slide: Slide, profile?: HeroViewportProfileKey | null): React.CSSProperties {
+  const desktop = mergeDesktopLayout(slide, profile);
   const style: Record<string, string> = {};
 
   if (desktop.gap) style["--hs-gap"] = resolveDesignViewportUnits(desktop.gap)!;
@@ -254,6 +300,7 @@ export function HeroSliderV1({ data }: { data: any }) {
   const showArrows = options?.showArrows === true;
   const showGuides = options?.showGuides === true;
   const showElementGuides = options?.showElementGuides === true;
+  const viewportProfile = useHeroViewportProfile();
 
   // Real slide currently displayed (for dots / aria / live preview)
   const active = hasLoop
@@ -484,6 +531,7 @@ export function HeroSliderV1({ data }: { data: any }) {
                     slideIndex={realIndex}
                     showGuides={showGuides}
                     showElementGuides={showElementGuides}
+                    viewportProfile={viewportProfile}
                   />
                 </div>
               );
@@ -540,16 +588,19 @@ function HeroSlide({
   slideIndex: i,
   showGuides = false,
   showElementGuides = false,
+  viewportProfile,
 }: {
   slide: Slide;
   isDragging: boolean;
   slideIndex: number;
   showGuides?: boolean;
   showElementGuides?: boolean;
+  viewportProfile?: HeroViewportProfileKey | null;
 }) {
-  const template = resolveTemplate(slide);
+  const template = resolveTemplate(slide, viewportProfile);
   const mobileImageFirst = !!slide?.layout?.mobile?.imageFirst;
   const stretchToMedia = !!slide?.stretchTextToMedia;
+  const desktopLayout = mergeDesktopLayout(slide, viewportProfile);
   const slideRef = useRef<HTMLDivElement>(null);
   type MediaRect = {
     /** Media-box rect relative to the slide root — used for guide-line overlay. */
@@ -662,7 +713,7 @@ function HeroSlide({
     "hero-slide",
     `hero-slide--${template}`,
     mobileImageFirst && "hero-slide--mobile-image-first",
-    slide?.layout?.desktop?.textAlignFullWidth && "hs-text-wide",
+    desktopLayout.textAlignFullWidth && "hs-text-wide",
     slide?.stretchTextToMedia && "hero-slide--copy-stretch",
     (showGuides || showElementGuides) && "hero-slide--with-guides"
   );
@@ -707,15 +758,16 @@ function HeroSlide({
   );
 
   const standardCopy = (
-    <CopyStack slide={slide} slideIndex={i} spread={false} />
+    <CopyStack slide={slide} slideIndex={i} spread={false} viewportProfile={viewportProfile} />
   );
 
   const cta = slide?.cta;
   const imgSide = imageSide(template);
   const autoCtaAlign = imgSide === "left" ? "right" : "left";
-  const ctaSide = slide.ctaStyle?.align || autoCtaAlign;
+  const ctaStyle = mergeElementStyle(slide.ctaStyle, viewportProfile);
+  const ctaSide = ctaStyle?.align || autoCtaAlign;
 
-  const rootStyle = { ...slideStyle(slide), ...(stretchInsets ?? {}) };
+  const rootStyle = { ...slideStyle(slide, viewportProfile), ...(stretchInsets ?? {}) };
 
   if (template === "full-image") {
     return (
@@ -745,7 +797,7 @@ function HeroSlide({
           href={cta.href}
           className={cn("hero-slide__cta", `hero-slide__cta--${ctaSide}`)}
           data-el={`slide-${i}-cta`}
-          style={elStyle(slide.ctaStyle)}
+          style={elStyle(ctaStyle)}
           onClick={(e) => {
             if (isDragging) e.preventDefault();
           }}
@@ -761,10 +813,12 @@ function CopyStack({
   slide,
   slideIndex,
   spread,
+  viewportProfile,
 }: {
   slide: Slide;
   slideIndex: number;
   spread?: boolean;
+  viewportProfile?: HeroViewportProfileKey | null;
 }) {
   const kicker = slide?.kicker;
   const quote = slide?.quote;
@@ -777,8 +831,8 @@ function CopyStack({
     <div className="hero-slide__copy-main">
       {kicker ? (
         <div
-          className={slide.kickerStyle?.typo || undefined}
-          style={elStyle(slide.kickerStyle)}
+          className={mergeElementStyle(slide.kickerStyle, viewportProfile)?.typo || undefined}
+          style={elStyle(mergeElementStyle(slide.kickerStyle, viewportProfile))}
           data-el={`slide-${slideIndex}-kicker`}
         >
           <SlideKicker text={kicker} />
@@ -787,17 +841,20 @@ function CopyStack({
 
       {title ? (
         <OutlineStampText
-          className={cn("hero-slide__title", slide.titleStyle?.typo)}
+          className={cn("hero-slide__title", mergeElementStyle(slide.titleStyle, viewportProfile)?.typo)}
           data-el={`slide-${slideIndex}-title`}
           stamp={STAMP_HERO_TITLE}
-          style={elStyle(slide.titleStyle)}
+          style={elStyle(mergeElementStyle(slide.titleStyle, viewportProfile))}
         >
           <InlineText text={title} />
         </OutlineStampText>
       ) : null}
 
       {subtitle ? (
-        <div className={slide.subtitleStyle?.typo || undefined} style={elStyle(slide.subtitleStyle)}>
+        <div
+          className={mergeElementStyle(slide.subtitleStyle, viewportProfile)?.typo || undefined}
+          style={elStyle(mergeElementStyle(slide.subtitleStyle, viewportProfile))}
+        >
           <SlideSubtitle
             text={subtitle}
             variant={slide?.subtitleVariant}
@@ -808,8 +865,8 @@ function CopyStack({
 
       {body ? (
         <div
-          className={slide.bodyStyle?.typo || undefined}
-          style={elStyle(slide.bodyStyle)}
+          className={mergeElementStyle(slide.bodyStyle, viewportProfile)?.typo || undefined}
+          style={elStyle(mergeElementStyle(slide.bodyStyle, viewportProfile))}
           data-el={`slide-${slideIndex}-body`}
         >
           <SlideBody text={body} variant={slide?.bodyVariant} />
@@ -817,7 +874,13 @@ function CopyStack({
       ) : null}
 
       {extras.map((ex, exIdx) => (
-        <ExtraElement key={ex.id ?? exIdx} extra={ex} slideIndex={slideIndex} extraIndex={exIdx} />
+        <ExtraElement
+          key={ex.id ?? exIdx}
+          extra={ex}
+          slideIndex={slideIndex}
+          extraIndex={exIdx}
+          viewportProfile={viewportProfile}
+        />
       ))}
     </div>
   );
@@ -826,8 +889,8 @@ function CopyStack({
     <div className={cn("hero-slide__copy", spread && "hero-slide__copy--spread")}>
       {quote ? (
         <p
-          className={cn("hero-slide__quote", slide.quoteStyle?.typo)}
-          style={elStyle(slide.quoteStyle)}
+          className={cn("hero-slide__quote", mergeElementStyle(slide.quoteStyle, viewportProfile)?.typo)}
+          style={elStyle(mergeElementStyle(slide.quoteStyle, viewportProfile))}
           data-el={`slide-${slideIndex}-quote`}
         >
           <InlineText text={quote} />
@@ -845,13 +908,16 @@ function ExtraElement({
   extra,
   slideIndex,
   extraIndex,
+  viewportProfile,
 }: {
   extra: SlideExtra;
   slideIndex: number;
   extraIndex: number;
+  viewportProfile?: HeroViewportProfileKey | null;
 }) {
-  const style = elStyle(extra.style);
-  const typo = extra.style?.typo;
+  const resolvedStyle = mergeElementStyle(extra.style, viewportProfile);
+  const style = elStyle(resolvedStyle);
+  const typo = resolvedStyle?.typo;
   const slotId = `slide-${slideIndex}-extra-${extraIndex}`;
 
   if (extra.kind === "stamp") {

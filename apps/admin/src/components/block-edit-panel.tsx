@@ -33,7 +33,7 @@ export function BlockEditPanel({
   type: string;
   variant: string;
   initial: any;
-  viewMode: "desktop" | "mobile";
+  viewMode: "desktop" | "ipadPro" | "mobile";
   externalSelectedElementId?: string | null;
   onElementSelect?: (elementId: string | null) => void;
   onDraftChange?: (blockId: string, data: any) => void;

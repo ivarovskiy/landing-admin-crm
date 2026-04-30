@@ -13,7 +13,7 @@ import { DocBodyV1Form } from "./doc-body-v1-form";
 export type BlockFormProps = {
   value: any;
   onChange: (next: any) => void;
-  viewMode: "desktop" | "mobile";
+  viewMode: "desktop" | "ipadPro" | "mobile";
 };
 
 const REGISTRY: Record<string, ComponentType<BlockFormProps>> = {

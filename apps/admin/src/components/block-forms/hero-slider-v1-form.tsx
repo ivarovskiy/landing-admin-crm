@@ -33,6 +33,9 @@ import {
   type SlideTemplate,
   type PresetKey,
   type ElementStyle,
+  type ElementStyleProfile,
+  type HeroDesktopLayout,
+  type HeroViewportProfileKey,
   type SlideExtra,
   type TypoClass,
   TEMPLATE_OPTIONS,
@@ -68,6 +71,9 @@ const STAR_VARIANTS: { marker: string; label: string }[] = [
   { marker: "{{icon:star-v3}}", label: "v3" },
 ];
 
+type HeroTuningScope = "default" | HeroViewportProfileKey;
+type ElementStyleField = Exclude<keyof ElementStyle, "viewportProfiles">;
+
 function IconInsertBar({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const insert = (marker: string) => onChange((value ?? "") + marker);
   return (
@@ -95,6 +101,62 @@ function updateDesktopLayout(slide: Slide, patch: Record<string, string | boolea
   });
 }
 
+function updateScopedDesktopLayout(
+  slide: Slide,
+  scope: HeroTuningScope,
+  patch: Record<string, string | boolean | undefined>,
+) {
+  if (scope === "default") {
+    return updateDesktopLayout(slide, patch);
+  }
+
+  return updatePath(slide, ["layout", "viewportProfiles", scope, "desktop"], {
+    ...(slide?.layout?.viewportProfiles?.[scope]?.desktop ?? {}),
+    ...patch,
+  });
+}
+
+function getScopedDesktopLayout(slide: Slide, scope: HeroTuningScope): HeroDesktopLayout {
+  if (scope === "default") return slide?.layout?.desktop ?? {};
+  return slide?.layout?.viewportProfiles?.[scope]?.desktop ?? {};
+}
+
+function getScopeFallbackLayout(slide: Slide, scope: HeroTuningScope): HeroDesktopLayout {
+  return scope === "default" ? {} : (slide?.layout?.desktop ?? {});
+}
+
+function getScopedElementStyle(style: ElementStyle | undefined, scope: HeroTuningScope): ElementStyle {
+  if (scope === "default") return style ?? {};
+  return style?.viewportProfiles?.[scope] ?? {};
+}
+
+function getScopeFallbackElementStyle(style: ElementStyle | undefined, scope: HeroTuningScope): ElementStyle {
+  return scope === "default" ? {} : (style ?? {});
+}
+
+function updateScopedElementStyle(
+  style: ElementStyle | undefined,
+  scope: HeroTuningScope,
+  patch: Partial<ElementStyleProfile>,
+): ElementStyle {
+  const base = style ?? {};
+
+  if (scope === "default") {
+    return { ...base, ...patch } as ElementStyle;
+  }
+
+  return {
+    ...base,
+    viewportProfiles: {
+      ...(base.viewportProfiles ?? {}),
+      [scope]: {
+        ...(base.viewportProfiles?.[scope] ?? {}),
+        ...patch,
+      } as ElementStyleProfile,
+    },
+  } as ElementStyle;
+}
+
 function updateMobileLayout(slide: Slide, patch: Record<string, boolean | undefined>) {
   return updatePath(slide, ["layout", "mobile"], {
     ...(slide?.layout?.mobile ?? {}),
@@ -116,7 +178,7 @@ function updateMedia(
   };
 }
 
-export function HeroSliderV1Form({ value, onChange }: BlockFormProps) {
+export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) {
   const slides: Slide[] = arr<Slide>(value?.slides);
   const options = value?.options ?? {};
 
@@ -217,6 +279,7 @@ export function HeroSliderV1Form({ value, onChange }: BlockFormProps) {
               onChange={(next) => set(["slides"], setAt(slides, idx, next))}
               onRemove={() => set(["slides"], removeAt(slides, idx))}
               onMove={(dir) => set(["slides"], moveAt(slides, idx, dir))}
+              tuningScope={viewMode === "ipadPro" ? "ipadPro" : "default"}
             />
           ))}
         </div>
@@ -238,6 +301,7 @@ function SlideEditor({
   onChange,
   onRemove,
   onMove,
+  tuningScope,
 }: {
   slide: Slide;
   index: number;
@@ -245,11 +309,14 @@ function SlideEditor({
   onChange: (next: Slide) => void;
   onRemove: () => void;
   onMove: (dir: "up" | "down") => void;
+  tuningScope: HeroTuningScope;
 }) {
   const [collapsed, setCollapsed] = useState(true);
-  const desktop = s?.layout?.desktop ?? {};
+  const desktop = getScopedDesktopLayout(s, tuningScope);
+  const desktopFallback = getScopeFallbackLayout(s, tuningScope);
   const mobile = s?.layout?.mobile ?? {};
   const template = s?.template ?? "copy-left-image-right";
+  const tuningScopeLabel = tuningScope === "ipadPro" ? "iPad Pro overrides" : "Desktop/default";
 
   return (
     <div className="rounded-md border bg-muted/10">
@@ -553,28 +620,28 @@ function SlideEditor({
             <InspectorField label="Gap to text" hint="Space between media and text column">
               <InspectorInput
                 value={desktop?.gap ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { gap: v }))}
-                placeholder="42px"
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { gap: v }))}
+                placeholder={desktopFallback.gap ?? "42px"}
               />
             </InspectorField>
             <InspectorField label="Media padding">
               <InspectorInput
                 value={desktop?.mediaPadding ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { mediaPadding: v }))}
-                placeholder="0 10px 30px 0"
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaPadding: v }))}
+                placeholder={desktopFallback.mediaPadding ?? "0 10px 30px 0"}
               />
             </InspectorField>
             <InspectorField label="Media height">
               <InspectorInput
                 value={desktop?.mediaHeight ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { mediaHeight: v }))}
-                placeholder="auto"
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaHeight: v }))}
+                placeholder={desktopFallback.mediaHeight ?? "auto"}
               />
             </InspectorField>
             <InspectorField label="Media vertical align">
               <InspectorSelect
                 value={desktop?.mediaAlign ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { mediaAlign: v || undefined }))}
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaAlign: v || undefined }))}
                 options={MEDIA_ALIGN_OPTIONS}
               />
             </InspectorField>
@@ -583,17 +650,22 @@ function SlideEditor({
 
         {/* Desktop layout tuning */}
         <InspectorSection
-          title="Desktop Tuning"
+          title={`Desktop Tuning - ${tuningScopeLabel}`}
           icon={<LayoutTemplate className="h-3 w-3" />}
 
           defaultOpen={false}
         >
+          {tuningScope === "ipadPro" ? (
+            <p className="text-[10px] text-muted-foreground/80">
+              Editing iPad Pro-only layout values. Empty fields inherit Desktop/default.
+            </p>
+          ) : null}
           <div className="mb-1.5">
             <div className="mb-1 text-[10px] text-muted-foreground">Padding</div>
             <InspectorInput
               value={desktop?.padding ?? ""}
-              onChange={(v) => onChange(updateDesktopLayout(s, { padding: v }))}
-              placeholder="10px 0"
+              onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { padding: v }))}
+              placeholder={desktopFallback.padding ?? "10px 0"}
             />
           </div>
 
@@ -602,32 +674,32 @@ function SlideEditor({
               <div className="mb-1 text-[10px] text-muted-foreground">Media width</div>
               <InspectorInput
                 value={desktop?.mediaWidth ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { mediaWidth: v }))}
-                placeholder="40%"
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaWidth: v }))}
+                placeholder={desktopFallback.mediaWidth ?? "40%"}
               />
             </div>
             <div>
               <div className="mb-1 text-[10px] text-muted-foreground">Text width</div>
               <InspectorInput
                 value={desktop?.textWidth ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { textWidth: v }))}
-                placeholder="92%"
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { textWidth: v }))}
+                placeholder={desktopFallback.textWidth ?? "92%"}
               />
             </div>
             <div>
               <div className="mb-1 text-[10px] text-muted-foreground">Offset X</div>
               <InspectorInput
                 value={desktop?.contentOffsetX ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { contentOffsetX: v }))}
-                placeholder="0px"
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { contentOffsetX: v }))}
+                placeholder={desktopFallback.contentOffsetX ?? "0px"}
               />
             </div>
             <div>
               <div className="mb-1 text-[10px] text-muted-foreground">Offset Y</div>
               <InspectorInput
                 value={desktop?.contentOffsetY ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { contentOffsetY: v }))}
-                placeholder="0px"
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { contentOffsetY: v }))}
+                placeholder={desktopFallback.contentOffsetY ?? "0px"}
               />
             </div>
           </div>
@@ -637,32 +709,32 @@ function SlideEditor({
               <div className="mb-1 text-[10px] text-muted-foreground">Title size</div>
               <InspectorInput
                 value={desktop?.titleSize ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { titleSize: v }))}
-                placeholder="clamp(54px, 5.5vw, 84px)"
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { titleSize: v }))}
+                placeholder={desktopFallback.titleSize ?? "clamp(54px, 5.5vw, 84px)"}
               />
             </div>
             <div>
               <div className="mb-1 text-[10px] text-muted-foreground">Tagline size</div>
               <InspectorInput
                 value={desktop?.subtitleSize ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { subtitleSize: v }))}
-                placeholder="clamp(20px, 2vw, 30px)"
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { subtitleSize: v }))}
+                placeholder={desktopFallback.subtitleSize ?? "clamp(20px, 2vw, 30px)"}
               />
             </div>
             <div>
               <div className="mb-1 text-[10px] text-muted-foreground">Kicker size</div>
               <InspectorInput
                 value={desktop?.kickerSize ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { kickerSize: v }))}
-                placeholder="clamp(22px, 1.8vw, 28px)"
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { kickerSize: v }))}
+                placeholder={desktopFallback.kickerSize ?? "clamp(22px, 1.8vw, 28px)"}
               />
             </div>
             <div>
               <div className="mb-1 text-[10px] text-muted-foreground">Body size</div>
               <InspectorInput
                 value={desktop?.bodySize ?? ""}
-                onChange={(v) => onChange(updateDesktopLayout(s, { bodySize: v }))}
-                placeholder="clamp(13px, 1vw, 15px)"
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { bodySize: v }))}
+                placeholder={desktopFallback.bodySize ?? "clamp(13px, 1vw, 15px)"}
               />
             </div>
           </div>
@@ -671,14 +743,14 @@ function SlideEditor({
             <InspectorField label="Align">
               <InspectorSelect
                 value={desktop?.textAlign ?? "center"}
-                onChange={(v) => onChange(updateDesktopLayout(s, { textAlign: v }))}
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { textAlign: v }))}
                 options={ALIGN_OPTIONS}
               />
             </InspectorField>
             <InspectorField label="Justify">
               <InspectorSelect
                 value={desktop?.contentJustify ?? "center"}
-                onChange={(v) => onChange(updateDesktopLayout(s, { contentJustify: v }))}
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { contentJustify: v }))}
                 options={JUSTIFY_OPTIONS}
               />
             </InspectorField>
@@ -687,7 +759,7 @@ function SlideEditor({
           <InspectorToggle
             label="Align text ignoring gap"
             checked={!!desktop?.textAlignFullWidth}
-            onChange={(v) => onChange(updateDesktopLayout(s, { textAlignFullWidth: v || undefined }))}
+            onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { textAlignFullWidth: v || undefined }))}
           />
 
           <InspectorToggle
@@ -709,6 +781,7 @@ function SlideEditor({
               style={s.quoteStyle}
               onChange={(es) => onChange({ ...s, quoteStyle: es })}
               showTypo
+              tuningScope={tuningScope}
             />
           )}
           {s?.kicker !== undefined && (
@@ -717,6 +790,7 @@ function SlideEditor({
               style={s.kickerStyle}
               onChange={(es) => onChange({ ...s, kickerStyle: es })}
               showTypo
+              tuningScope={tuningScope}
             />
           )}
           <ElementStyleEditor
@@ -724,6 +798,7 @@ function SlideEditor({
             style={s.titleStyle}
             onChange={(es) => onChange({ ...s, titleStyle: es })}
             showTypo
+            tuningScope={tuningScope}
           />
           {s?.subtitle !== undefined && (
             <ElementStyleEditor
@@ -731,6 +806,7 @@ function SlideEditor({
               style={s.subtitleStyle}
               onChange={(es) => onChange({ ...s, subtitleStyle: es })}
               showTypo
+              tuningScope={tuningScope}
             />
           )}
           {s?.body !== undefined && (
@@ -739,12 +815,14 @@ function SlideEditor({
               style={s.bodyStyle}
               onChange={(es) => onChange({ ...s, bodyStyle: es })}
               showTypo
+              tuningScope={tuningScope}
             />
           )}
           <ElementStyleEditor
             label="CTA"
             style={s.ctaStyle}
             onChange={(es) => onChange({ ...s, ctaStyle: es })}
+            tuningScope={tuningScope}
           />
         </InspectorSection>
 
@@ -757,6 +835,7 @@ function SlideEditor({
           <ExtrasEditor
             extras={Array.isArray(s?.extras) ? s.extras : []}
             onChange={(next) => onChange({ ...s, extras: next })}
+            tuningScope={tuningScope}
           />
         </InspectorSection>
       </div>}
@@ -773,20 +852,23 @@ function ElementStyleEditor({
   style,
   onChange,
   showTypo = false,
+  tuningScope = "default",
 }: {
   label: string;
   style?: ElementStyle;
   onChange: (next: ElementStyle) => void;
   showTypo?: boolean;
+  tuningScope?: HeroTuningScope;
 }) {
-  const s = style ?? {};
-  const patch = (key: keyof ElementStyle, v: string) =>
-    onChange({ ...s, [key]: v || undefined });
+  const s = getScopedElementStyle(style, tuningScope);
+  const fallback = getScopeFallbackElementStyle(style, tuningScope);
+  const patch = (key: ElementStyleField, v: string) =>
+    onChange(updateScopedElementStyle(style, tuningScope, { [key]: v || undefined } as Partial<ElementStyleProfile>));
 
   return (
     <div className="space-y-1">
       <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-        {label}
+        {label}{tuningScope === "ipadPro" ? " - iPad" : ""}
       </span>
       {showTypo && (
         <div>
@@ -804,7 +886,7 @@ function ElementStyleEditor({
           <InspectorInput
             value={s.mt ?? ""}
             onChange={(v) => patch("mt", v)}
-            placeholder="0"
+            placeholder={fallback.mt ?? "0"}
           />
         </div>
         <div>
@@ -812,7 +894,7 @@ function ElementStyleEditor({
           <InspectorInput
             value={s.mb ?? ""}
             onChange={(v) => patch("mb", v)}
-            placeholder="0"
+            placeholder={fallback.mb ?? "0"}
           />
         </div>
         <div>
@@ -820,7 +902,7 @@ function ElementStyleEditor({
           <InspectorInput
             value={s.ml ?? ""}
             onChange={(v) => patch("ml", v)}
-            placeholder="0"
+            placeholder={fallback.ml ?? "0"}
           />
         </div>
         <div>
@@ -828,7 +910,7 @@ function ElementStyleEditor({
           <InspectorInput
             value={s.mr ?? ""}
             onChange={(v) => patch("mr", v)}
-            placeholder="0"
+            placeholder={fallback.mr ?? "0"}
           />
         </div>
       </div>
@@ -846,7 +928,7 @@ function ElementStyleEditor({
           <InspectorInput
             value={s.size ?? ""}
             onChange={(v) => patch("size", v)}
-            placeholder="inherit"
+            placeholder={fallback.size ?? "inherit"}
           />
         </div>
         <div>
@@ -854,7 +936,7 @@ function ElementStyleEditor({
           <InspectorInput
             value={s.strokeW ?? ""}
             onChange={(v) => patch("strokeW", v)}
-            placeholder="3.6px"
+            placeholder={fallback.strokeW ?? "3.6px"}
           />
         </div>
       </div>
@@ -875,9 +957,11 @@ const EXTRA_KIND_OPTIONS = [
 function ExtrasEditor({
   extras,
   onChange,
+  tuningScope = "default",
 }: {
   extras: SlideExtra[];
   onChange: (next: SlideExtra[]) => void;
+  tuningScope?: HeroTuningScope;
 }) {
   return (
     <div className="space-y-2">
@@ -918,6 +1002,7 @@ function ExtrasEditor({
           <ElementStyleEditor
             label="Position"
             style={ex.style}
+            tuningScope={tuningScope}
             onChange={(s) => {
               const next = [...extras];
               next[idx] = { ...ex, style: s };
