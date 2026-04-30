@@ -88,7 +88,7 @@ export type SiteTypographySettings = {
    *  - `'extruded'`: same compact offset rendered via single-layer
    *    `text-shadow`. Glyph-silhouette only — no cross-browser fill
    *    leakage inside hollow letters. */
-  stampShadowStyle?: 'drop' | 'extruded';
+  stampShadowStyle?: 'drop' | 'extruded' | 'layered';
 
   /** 104px stamp — Section title (homepage-header, features-title, studio-address__title) */
   sectionTitleStrokeEnabled?: boolean;

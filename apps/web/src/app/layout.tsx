@@ -209,7 +209,9 @@ export default async function RootLayout({ children }: {
   const stampLink = typography?.linkStampScale === true ? "on" : undefined;
   // Default ('drop') stays absent so legacy CSS rules apply unchanged.
   const stampShadowStyle =
-    typography?.stampShadowStyle === "extruded" ? "extruded" : undefined;
+    typography?.stampShadowStyle === "extruded" || typography?.stampShadowStyle === "layered"
+      ? typography.stampShadowStyle
+      : undefined;
   const sectionStroke =
     typography?.sectionTitleStrokeEnabled === true && typography?.sectionTitleStrokeW
       ? "on"

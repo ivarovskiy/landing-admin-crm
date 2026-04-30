@@ -58,7 +58,7 @@ export interface TypographySettings {
    *    `text-shadow` instead of `filter: drop-shadow`. text-shadow uses only
    *    the glyph silhouette so there is no cross-browser fill leakage.
    *  When undefined, behaves like `'drop'`. */
-  stampShadowStyle?: 'drop' | 'extruded';
+  stampShadowStyle?: 'drop' | 'extruded' | 'layered';
 
   /* ── Section title (104px) — homepage-header, features-title, studio-address__title ── */
   /** Override stroke width at 104px. Also drives the link-mode stroke em-ratio when enabled. */

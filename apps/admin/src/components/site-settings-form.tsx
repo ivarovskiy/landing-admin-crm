@@ -503,7 +503,10 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     linkStampStrokeWAt104: initialSettings?.typography?.linkStampStrokeWAt104,
     linkStampShadowOffsetAt104: initialSettings?.typography?.linkStampShadowOffsetAt104,
     stampShadowStyle:
-      initialSettings?.typography?.stampShadowStyle === "extruded" ? "extruded" : "drop",
+      initialSettings?.typography?.stampShadowStyle === "extruded" ||
+      initialSettings?.typography?.stampShadowStyle === "layered"
+        ? initialSettings.typography.stampShadowStyle
+        : "drop",
 
     sectionTitleStrokeEnabled: initialSettings?.typography?.sectionTitleStrokeEnabled === true,
     sectionTitleStrokeW: initialSettings?.typography?.sectionTitleStrokeW,
@@ -810,14 +813,19 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             placeholder="5.56px"
             onChange={(v) => updateTypography({ linkStampShadowOffsetAt104: v })}
           />
-          <SelectRow<"drop" | "extruded">
+          <SelectRow<"drop" | "extruded" | "layered">
             icon={<Layers className="h-3.5 w-3.5" />}
             label="Stamp shadow style"
-            description="Drop = filter:drop-shadow (renders cleanly on Chromium/Firefox; on iPad/Safari may leak cream fill into hollow glyph holes as thin wedges). Extruded = same compact offset, but rendered via text-shadow — glyph-silhouette only, no cross-browser fill leakage."
-            value={typography.stampShadowStyle === "extruded" ? "extruded" : "drop"}
+            description="Drop keeps the current filter shadow. Extruded uses text-shadow. Layered uses a real duplicate stamp behind the text for a closer iPad-safe fallback."
+            value={
+              typography.stampShadowStyle === "extruded" || typography.stampShadowStyle === "layered"
+                ? typography.stampShadowStyle
+                : "drop"
+            }
             options={[
               { value: "drop", label: "Drop shadow (classic stamp)" },
               { value: "extruded", label: "Extruded (no holes)" },
+              { value: "layered", label: "Layered duplicate (iPad-safe)" },
             ]}
             onChange={(v) => updateTypography({ stampShadowStyle: v })}
           />

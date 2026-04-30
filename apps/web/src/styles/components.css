@@ -127,6 +127,14 @@
   filter: drop-shadow(var(--stamp-shadow-x) var(--stamp-shadow-y) 0 var(--stamp-shadow-color));
 }
 
+.ds-outline-stamp__shadow {
+  display: none;
+}
+
+.ds-outline-stamp__front {
+  display: inline;
+}
+
 .ds-outline-stamp--no-shadow {
   filter: none;
 }
@@ -386,6 +394,68 @@
 [data-stamp-shadow-style="extruded"][data-subtitle-shadow="on"] .typo-subtitle {
   filter: none;
   text-shadow: var(--subtitle-shadow-offset) var(--subtitle-shadow-offset) 0 var(--stamp-stroke, var(--color-primary));
+}
+
+/* Optional iPad/Safari-safe stamp mode.
+   Unlike "extruded", this keeps the old two-layer stamp feel: the shadow is a
+   translated stroked duplicate behind the front text. Default/drop behavior is
+   untouched because the duplicate layer is hidden until this mode is selected. */
+[data-stamp-shadow-style="layered"] .ds-outline-stamp {
+  position: relative;
+  filter: none;
+  text-shadow: none;
+}
+
+[data-stamp-shadow-style="layered"] .ds-outline-stamp__front {
+  position: relative;
+  z-index: 1;
+  display: inline;
+  color: var(--stamp-fill);
+  paint-order: stroke fill;
+  -webkit-text-stroke: inherit;
+}
+
+[data-stamp-shadow-style="layered"] .ds-outline-stamp__shadow {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  color: var(--stamp-shadow-color);
+  text-align: inherit;
+  white-space: inherit;
+  paint-order: stroke fill;
+  -webkit-text-stroke-width: inherit;
+  -webkit-text-stroke-color: var(--stamp-shadow-color);
+  transform: translate(var(--stamp-shadow-x), var(--stamp-shadow-y));
+  pointer-events: none;
+}
+
+[data-stamp-shadow-style="layered"] .ds-outline-stamp--no-shadow .ds-outline-stamp__shadow {
+  display: none;
+}
+
+[data-stamp-shadow-style="layered"][data-stamp-link="on"] .ds-outline-stamp__shadow {
+  transform: translate(var(--stamp-shadow-em), var(--stamp-shadow-em));
+}
+
+[data-stamp-shadow-style="layered"][data-section-shadow="on"] .typo-homepage-header .ds-outline-stamp__shadow,
+[data-stamp-shadow-style="layered"][data-section-shadow="on"] .features-title .ds-outline-stamp__shadow,
+[data-stamp-shadow-style="layered"][data-section-shadow="on"] .studio-address__title .ds-outline-stamp__shadow,
+[data-stamp-shadow-style="layered"][data-section-shadow="on"] .doc-header__title .ds-outline-stamp__shadow,
+[data-stamp-shadow-style="layered"][data-section-shadow="on"] .scrapbook__title .ds-outline-stamp__shadow {
+  transform: translate(var(--section-title-shadow-offset), var(--section-title-shadow-offset));
+}
+
+[data-stamp-shadow-style="layered"][data-hero-shadow="on"] .typo-content-header .ds-outline-stamp__shadow,
+[data-stamp-shadow-style="layered"][data-hero-shadow="on"] .typo-hero-title .ds-outline-stamp__shadow,
+[data-stamp-shadow-style="layered"][data-hero-shadow="on"] .cp__title .ds-outline-stamp__shadow,
+[data-stamp-shadow-style="layered"][data-hero-shadow="on"] .hero-slide__title .ds-outline-stamp__shadow {
+  transform: translate(var(--hero-title-shadow-offset), var(--hero-title-shadow-offset));
+}
+
+[data-stamp-shadow-style="layered"][data-subtitle-shadow="on"] .typo-subtitle .ds-outline-stamp__shadow {
+  transform: translate(var(--subtitle-shadow-offset), var(--subtitle-shadow-offset));
 }
 
 /* ---- Scroll-to-top button ---- */

@@ -32,7 +32,7 @@ export type TypographySettings = {
   linkStampShadowOffsetAt104?: string;
 
   /** Stamp shadow render style — see settings.service.ts for full docs. */
-  stampShadowStyle?: 'drop' | 'extruded';
+  stampShadowStyle?: 'drop' | 'extruded' | 'layered';
 
   sectionTitleStrokeEnabled?: boolean;
   sectionTitleStrokeW?: string;
