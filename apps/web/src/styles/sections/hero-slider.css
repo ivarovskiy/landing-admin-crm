@@ -186,16 +186,6 @@
   .hero-slide__quote {
     font-size: 16px;
   }
-
-  /* Subtitle is a short designed-to-fit phrase — prevent browser word-wrap.
-     Browser font metrics differ slightly from Figma, causing a line that fits
-     in the Figma canvas to wrap in the browser. `nowrap` keeps it on one line
-     at the logical column width (layout always happens at design-canvas width
-     due to CSS zoom). Subtitles intended to span multiple lines should use
-     the stamp/extra element system instead of the subtitle field. */
-  .hero-slide__subtitle {
-    white-space: nowrap;
-  }
 }
 
 .hero-slide__kicker {
