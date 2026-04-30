@@ -46,7 +46,7 @@
   width: 100%;
   flex-shrink: 0;
   /* margin-right: 16px; */
-  overflow: hidden;
+  overflow: visible;
 }
 
 .hero-slider__arrows {
@@ -95,14 +95,15 @@
   --hs-text-w: 100%;
   --hs-title-size: 78px;
   /* --hs-title-size: clamp(44px, 5.7vw, 78px); */
-  --hs-subtitle-size: clamp(18px, 46px, 45px);
-  --hs-kicker-size: clamp(13px, 1.3vw, 16px);
-  --hs-body-size: clamp(13px, 1.2vw, 15px);
+  --hs-subtitle-size: inherit;
+  --hs-kicker-size: inherit;
+  --hs-body-size: inherit;
   --hs-text-align: left;
   --hs-copy-items: flex-start;
   --hs-content-justify: center;
   --hs-offset-x: 0px;
   --hs-offset-y: 0px;
+  --hs-text-fit-scale: 1;
   --hs-media-aspect: 1 / 1;
   --hs-media-fit: cover;
 
@@ -137,16 +138,15 @@
 }
 
 .hero-slide__copy {
-  width: 100%;
+  width: min(100%, var(--hs-text-w, 100%));
   /* display: flex; */
   flex-direction: column;
   justify-content: var(--hs-content-justify);
   align-items: var(--hs-copy-items);
   text-align: var(--hs-text-align);
-  /* width: min(100%, var(--hs-text-w, 100%)); */
   max-width: 100%;
   min-height: 100%;
-  /* margin-left: var(--hs-offset-x); */
+  margin-left: var(--hs-offset-x);
   margin-top: var(--hs-offset-y);
 }
 
@@ -190,8 +190,8 @@
 
 .hero-slide__kicker {
   /* margin: 0 0 clamp(6px, 0.8vw, 10px);
-  font-size: var(--hs-kicker-size);
   line-height: 1.15; */
+  font-size: var(--hs-kicker-size);
   white-space: pre-line;
   margin: 0;
 }
@@ -211,6 +211,7 @@
 }
 
 .hero-slide__subtitle {
+  font-size: var(--hs-subtitle-size);
   white-space: pre-line;
   /* Force the subtitle to take the full cross-axis width of its column-flex
      parent (.hero-slide__copy-main has `align-items: flex-start`, which by
@@ -247,8 +248,8 @@
 
 .hero-slide__body {
   /* margin-top: 30px; */
-  /* font-size: var(--hs-body-size);
-  line-height: 1.45; */
+  font-size: var(--hs-body-size);
+  /* line-height: 1.45; */
 }
 
 .hero-slide__body--plain p {
@@ -374,7 +375,12 @@
        fit at the design width. The explicit `flex: 1 1 0` is deterministic
        across engines. */
     flex: 1 1 0;
+    justify-content: var(--hs-copy-items);
     min-width: 0;
+  }
+
+  .hero-slide__copy-main {
+    zoom: var(--hs-text-fit-scale);
   }
 
   .hero-slide__media-col {

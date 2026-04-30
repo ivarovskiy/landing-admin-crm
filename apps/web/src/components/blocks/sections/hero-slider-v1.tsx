@@ -94,22 +94,45 @@ type Slide = {
   };
 };
 
+const DESIGN_WIDTH_PX = 1440;
+const VW_UNIT_RE = /(-?(?:\d+\.?\d*|\.\d+))vw\b/g;
+
+function trimNumber(value: number) {
+  return Number(value.toFixed(4)).toString();
+}
+
+/**
+ * Desktop landing pages are laid out on a fixed 1440px artboard and then
+ * scaled with CSS zoom. Browser `vw` units still resolve against the real
+ * viewport inside that zoomed tree, so `zoom * vw` makes admin-entered sizes
+ * smaller than the Figma canvas value on iPad. Convert those viewport units
+ * to their 1440px design equivalent before they enter inline styles / CSS vars.
+ */
+function resolveDesignViewportUnits(value?: string) {
+  if (!value || !value.includes("vw")) return value;
+  return value.replace(VW_UNIT_RE, (_, raw: string) => {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return `${raw}vw`;
+    return `${trimNumber((n / 100) * DESIGN_WIDTH_PX)}px`;
+  });
+}
+
 /** Convert ElementStyle to inline CSS */
 function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
   if (!es) return undefined;
   const s: Record<string, string> = {};
-  if (es.mt) s.marginTop = es.mt;
-  if (es.mb) s.marginBottom = es.mb;
-  if (es.ml) s.marginLeft = es.ml;
-  if (es.mr) s.marginRight = es.mr;
-  if (es.pt) s.paddingTop = es.pt;
-  if (es.pb) s.paddingBottom = es.pb;
+  if (es.mt) s.marginTop = resolveDesignViewportUnits(es.mt)!;
+  if (es.mb) s.marginBottom = resolveDesignViewportUnits(es.mb)!;
+  if (es.ml) s.marginLeft = resolveDesignViewportUnits(es.ml)!;
+  if (es.mr) s.marginRight = resolveDesignViewportUnits(es.mr)!;
+  if (es.pt) s.paddingTop = resolveDesignViewportUnits(es.pt)!;
+  if (es.pb) s.paddingBottom = resolveDesignViewportUnits(es.pb)!;
   if (es.align) {
     s.textAlign = es.align;
     s.alignSelf = es.align === "center" ? "center" : es.align === "right" ? "flex-end" : "flex-start";
   }
-  if (es.size) s.fontSize = es.size;
-  if (es.strokeW) s["--text-stroke-w"] = es.strokeW;
+  if (es.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
+  if (es.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
   return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
 }
 
@@ -156,14 +179,16 @@ function slideStyle(slide: Slide): React.CSSProperties {
   const desktop = slide?.layout?.desktop ?? {};
   const style: Record<string, string> = {};
 
-  if (desktop.gap) style["--hs-gap"] = desktop.gap;
-  if (desktop.mediaWidth) style["--hs-media-w"] = desktop.mediaWidth;
-  if (desktop.textWidth) style["--hs-text-w"] = desktop.textWidth;
-  if (desktop.kickerSize) style["--hs-kicker-size"] = desktop.kickerSize;
-  if (desktop.bodySize) style["--hs-body-size"] = desktop.bodySize;
+  if (desktop.gap) style["--hs-gap"] = resolveDesignViewportUnits(desktop.gap)!;
+  if (desktop.mediaWidth) style["--hs-media-w"] = resolveDesignViewportUnits(desktop.mediaWidth)!;
+  if (desktop.textWidth) style["--hs-text-w"] = resolveDesignViewportUnits(desktop.textWidth)!;
+  if (desktop.titleSize) style["--hs-title-size"] = resolveDesignViewportUnits(desktop.titleSize)!;
+  if (desktop.subtitleSize) style["--hs-subtitle-size"] = resolveDesignViewportUnits(desktop.subtitleSize)!;
+  if (desktop.kickerSize) style["--hs-kicker-size"] = resolveDesignViewportUnits(desktop.kickerSize)!;
+  if (desktop.bodySize) style["--hs-body-size"] = resolveDesignViewportUnits(desktop.bodySize)!;
   if (desktop.textAlign) style["--hs-text-align"] = desktop.textAlign;
-  if (desktop.contentOffsetX) style["--hs-offset-x"] = desktop.contentOffsetX;
-  if (desktop.contentOffsetY) style["--hs-offset-y"] = desktop.contentOffsetY;
+  if (desktop.contentOffsetX) style["--hs-offset-x"] = resolveDesignViewportUnits(desktop.contentOffsetX)!;
+  if (desktop.contentOffsetY) style["--hs-offset-y"] = resolveDesignViewportUnits(desktop.contentOffsetY)!;
 
   style["--hs-content-justify"] = mapJustify(
     desktop.contentJustify ?? slide?.layout?.contentJustify
@@ -177,13 +202,13 @@ function slideStyle(slide: Slide): React.CSSProperties {
     style["--hs-media-fit"] = slide.media.objectFit;
   }
   if (desktop.padding) {
-    style["--hs-padding"] = desktop.padding;
+    style["--hs-padding"] = resolveDesignViewportUnits(desktop.padding)!;
   }
   if (desktop.mediaPadding) {
-    style["--hs-media-padding"] = desktop.mediaPadding;
+    style["--hs-media-padding"] = resolveDesignViewportUnits(desktop.mediaPadding)!;
   }
   if (desktop.mediaHeight) {
-    style["--hs-media-h"] = desktop.mediaHeight;
+    style["--hs-media-h"] = resolveDesignViewportUnits(desktop.mediaHeight)!;
   }
   if (desktop.mediaAlign) {
     const map = { start: "flex-start", center: "center", end: "flex-end", stretch: "stretch" } as const;
@@ -550,6 +575,105 @@ function HeroSlide({
   const [elementRects, setElementRects] = useState<ElementRect[]>([]);
   // Measurement is needed for guides and for media-aligned text stretching.
   const measureNeeded = showGuides || showElementGuides || stretchToMedia;
+
+  useLayoutEffect(() => {
+    const slideEl = slideRef.current;
+    if (!slideEl) return;
+
+    let measureFrame = 0;
+    let applyFrame = 0;
+    const resetFit = () => {
+      slideEl.style.setProperty("--hs-text-fit-scale", "1");
+    };
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(measureFrame);
+      cancelAnimationFrame(applyFrame);
+      measureFrame = requestAnimationFrame(() => {
+        if (window.innerWidth < 768) {
+          resetFit();
+          return;
+        }
+
+        const textCol = slideEl.querySelector<HTMLElement>(".hero-slide__text-col");
+        if (!textCol) {
+          resetFit();
+          return;
+        }
+
+        const els = Array.from(textCol.querySelectorAll<HTMLElement>("[data-el]"))
+          .filter((el) => el.offsetParent !== null);
+        if (!els.length) {
+          resetFit();
+          return;
+        }
+
+        resetFit();
+
+        applyFrame = requestAnimationFrame(() => {
+          const bounds = textCol.getBoundingClientRect();
+          if (!bounds.width || !bounds.height) {
+            resetFit();
+            return;
+          }
+
+          let left = Infinity;
+          let right = -Infinity;
+          let top = Infinity;
+          let bottom = -Infinity;
+
+          els.forEach((el) => {
+            const r = el.getBoundingClientRect();
+            if (!r.width || !r.height) return;
+            left = Math.min(left, r.left);
+            right = Math.max(right, r.right);
+            top = Math.min(top, r.top);
+            bottom = Math.max(bottom, r.bottom);
+          });
+
+          if (!Number.isFinite(left) || !Number.isFinite(right) || !Number.isFinite(top) || !Number.isFinite(bottom)) {
+            resetFit();
+            return;
+          }
+
+          const contentW = right - left;
+          const contentH = bottom - top;
+          const widthScale = contentW > bounds.width ? bounds.width / contentW : 1;
+          const heightScale = contentH > bounds.height ? bounds.height / contentH : 1;
+          const next = Math.min(1, widthScale, heightScale);
+
+          if (next < 0.995) {
+            slideEl.style.setProperty("--hs-text-fit-scale", Math.max(0.72, next * 0.995).toFixed(4));
+          } else {
+            resetFit();
+          }
+        });
+      });
+    };
+
+    scheduleMeasure();
+
+    const ro = new ResizeObserver(scheduleMeasure);
+    ro.observe(slideEl);
+    const textCol = slideEl.querySelector<HTMLElement>(".hero-slide__text-col");
+    if (textCol) ro.observe(textCol);
+    slideEl.querySelectorAll<HTMLElement>(".hero-slide__text-col [data-el]").forEach((el) => {
+      ro.observe(el);
+    });
+
+    const fonts = (document as { fonts?: FontFaceSet }).fonts;
+    fonts?.ready?.then(scheduleMeasure).catch(() => {});
+    fonts?.addEventListener?.("loadingdone", scheduleMeasure);
+    window.addEventListener("resize", scheduleMeasure);
+
+    return () => {
+      cancelAnimationFrame(measureFrame);
+      cancelAnimationFrame(applyFrame);
+      ro.disconnect();
+      fonts?.removeEventListener?.("loadingdone", scheduleMeasure);
+      window.removeEventListener("resize", scheduleMeasure);
+      slideEl.style.removeProperty("--hs-text-fit-scale");
+    };
+  }, [slide]);
 
   useLayoutEffect(() => {
     if (!measureNeeded) {
