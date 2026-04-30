@@ -103,7 +103,6 @@
   --hs-content-justify: center;
   --hs-offset-x: 0px;
   --hs-offset-y: 0px;
-  --hs-text-fit-scale: 1;
   --hs-media-aspect: 1 / 1;
   --hs-media-fit: cover;
 
@@ -377,10 +376,6 @@
     flex: 1 1 0;
     justify-content: var(--hs-copy-items);
     min-width: 0;
-  }
-
-  .hero-slide__copy-main {
-    zoom: var(--hs-text-fit-scale);
   }
 
   .hero-slide__media-col {
