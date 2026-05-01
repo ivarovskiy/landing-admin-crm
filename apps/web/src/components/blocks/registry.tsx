@@ -11,6 +11,7 @@ import { ScrapbookV1 } from "./sections/scrapbook-v1";
 import { TextBlockV1 } from "./sections/text-block-v1";
 import { DocHeaderV1 } from "./sections/doc-header-v1";
 import { DocBodyV1 } from "./sections/doc-body-v1";
+import { ScrollStoryV1 } from "./sections/scroll-story-v1";
 
 const K = getBlockKey;
 
@@ -25,4 +26,5 @@ export const blockRegistry: Record<string, BlockComponent> = {
   [K("text-block", "v1")]: TextBlockV1,
   [K("doc-header", "v1")]: DocHeaderV1,
   [K("doc-body", "v1")]: DocBodyV1,
+  [K("scroll-story", "v1")]: ScrollStoryV1,
 };

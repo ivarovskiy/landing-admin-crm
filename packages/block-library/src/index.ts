@@ -403,6 +403,27 @@ export const BLOCK_LIBRARY: BlockDefinition[] = [
     },
   },
   {
+    key: "scroll-story:v1",
+    type: "scroll-story",
+    variant: "v1",
+    label: "Scroll Story (v1)",
+    description: "Sticky-scroll layout: коротша колонка прилипає, довша скролиться",
+    defaultData: {
+      stickyTop: "0px",
+      showProgress: false,
+      entries: [
+        {
+          label: "SECTION TITLE",
+          text: "First paragraph of text here.\n\nSecond paragraph of text here.",
+          imagePosition: "right",
+          images: [
+            { src: "", alt: "" }
+          ],
+        },
+      ],
+    },
+  },
+  {
     key: "content-page:v1",
     type: "content-page",
     variant: "v1",

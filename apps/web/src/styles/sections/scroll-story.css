@@ -1,0 +1,128 @@
+/* ---- Scroll Story — sticky-media / scrolling-text layout ----
+ *
+ * HOW IT WORKS (pure CSS, no JS for stickiness):
+ *
+ *   .scroll-story__entry  →  display: grid; align-items: start
+ *     Each column sizes to its own natural height (not the row height).
+ *
+ *   .scroll-story__media  →  position: sticky; top: var(--ss-top)
+ *     The media column sticks within its entry container.
+ *     - text taller than media → media sticks while text scrolls
+ *     - media taller than text → media fills its full container, sticky has
+ *       no room to "travel" so both columns scroll together naturally
+ *
+ * DEBUGGING:
+ *   Add class `scroll-story--debug` to <section> to see column boundaries.
+ */
+
+.scroll-story {
+  position: relative; /* stacking context for the progress dot */
+}
+
+/* ---- Entry ---- */
+
+.scroll-story__entry {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start; /* ← the key: columns are their natural height */
+  column-gap: clamp(32px, 4.5vw, 60px);
+  padding-block: clamp(40px, 6vw, 80px);
+  border-top: 1px solid var(--color-line, rgba(0, 0, 0, 0.12));
+}
+
+.scroll-story__entry:last-child {
+  border-bottom: 1px solid var(--color-line, rgba(0, 0, 0, 0.12));
+}
+
+/* ---- Text column ---- */
+
+.scroll-story__label {
+  font-size: clamp(11px, 0.9vw, 13px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: clamp(16px, 2.2vw, 28px);
+  text-decoration: underline;
+}
+
+.scroll-story__body {
+  font-size: clamp(15px, 1.2vw, 17px);
+  line-height: 1.65;
+}
+
+.scroll-story__body p + p {
+  margin-top: 1em;
+}
+
+/* ---- Sticky columns ----
+ *
+ * Both columns are sticky. CSS resolves which one actually sticks:
+ * the shorter column has room to travel within the grid cell
+ * (grid cell height = row height = max(text, media)), so it sticks.
+ * The taller column fills the entire cell — no room to travel — scrolls.
+ *
+ *   text > media  →  media sticks, text scrolls
+ *   media > text  →  text sticks, media scrolls
+ */
+
+.scroll-story__text,
+.scroll-story__media {
+  position: sticky;
+  top: var(--ss-top, 0px);
+}
+
+.scroll-story__image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.scroll-story__image + .scroll-story__image {
+  margin-top: clamp(12px, 2vw, 20px);
+}
+
+.scroll-story__image--placeholder {
+  background: var(--color-line, rgba(0, 0, 0, 0.08));
+  aspect-ratio: 4 / 3;
+}
+
+/* ---- Progress dot ---- */
+
+.scroll-story__dot {
+  position: fixed;
+  right: clamp(12px, 1.5vw, 24px);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-primary, currentColor);
+  pointer-events: none;
+  /* top is set via inline style from JS */
+  transition: top 80ms linear, opacity 200ms ease;
+}
+
+/* ---- Debug mode ---- */
+
+.scroll-story--debug .scroll-story__text {
+  outline: 2px solid blue;
+}
+
+.scroll-story--debug .scroll-story__media {
+  outline: 2px solid red;
+}
+
+.scroll-story--debug .scroll-story__entry {
+  outline: 1px dashed green;
+}
+
+/* ---- Mobile: disable sticky, stack vertically ---- */
+
+@media (max-width: 767px) {
+  .scroll-story__entry {
+    display: block;
+    padding-block: clamp(28px, 6vw, 48px);
+  }
+
+  .scroll-story__media {
+    position: static;
+    margin-bottom: clamp(16px, 4vw, 24px);
+  }
+}
