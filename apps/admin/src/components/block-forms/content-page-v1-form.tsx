@@ -284,9 +284,88 @@ function ColumnEditor({
   );
 }
 
+function EntryEditor({
+  entry,
+  idx,
+  onChange,
+  onRemove,
+}: {
+  entry: { left: any[]; right: any[] };
+  idx: number;
+  onChange: (next: { left: any[]; right: any[] }) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold text-primary uppercase tracking-wider">
+          Entry {idx + 1}
+        </span>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-muted-foreground hover:text-red-500 transition-colors"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div className="space-y-1 pl-2 border-l-2 border-blue-400/60">
+        <ColumnEditor
+          label="Left column"
+          items={arr(entry.left)}
+          onChange={(next) => onChange({ ...entry, left: next })}
+        />
+      </div>
+
+      <div className="h-px bg-border/60" />
+
+      <div className="space-y-1 pl-2 border-l-2 border-rose-400/60">
+        <ColumnEditor
+          label="Right column"
+          items={arr(entry.right)}
+          onChange={(next) => onChange({ ...entry, right: next })}
+        />
+      </div>
+    </div>
+  );
+}
+
+function EntriesEditor({
+  entries,
+  onChange,
+}: {
+  entries: { left: any[]; right: any[] }[];
+  onChange: (next: { left: any[]; right: any[] }[]) => void;
+}) {
+  const addEntry = () => {
+    onChange([...entries, { left: [], right: [] }]);
+  };
+
+  return (
+    <div className="space-y-3">
+      {entries.map((entry, idx) => (
+        <EntryEditor
+          key={idx}
+          entry={entry}
+          idx={idx}
+          onChange={(next) => onChange(setAt(entries, idx, next))}
+          onRemove={() => onChange(removeAt(entries, idx))}
+        />
+      ))}
+      <button
+        type="button"
+        onClick={addEntry}
+        className="w-full rounded-md border border-dashed border-border py-2 text-[11px] font-medium text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+      >
+        + Add entry
+      </button>
+    </div>
+  );
+}
+
 export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
-  const left = arr(value?.left);
-  const right = arr(value?.right);
+  const scrollStory = !!value?.scrollStory;
 
   return (
     <div>
@@ -491,38 +570,76 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
         </InspectorField>
       </InspectorSection>
 
-      <InspectorSection title="Columns" icon={<Columns2 className="h-3 w-3" />}>
-        <InspectorField label="Layout">
-          <InspectorSelect
-            value={value?.columns ?? "two"}
-            onChange={(v) => onChange({ ...value, columns: v })}
-            options={COLUMNS_MODE_OPTIONS}
+      <InspectorSection title="Content" icon={<Columns2 className="h-3 w-3" />}>
+        <InspectorField label="Scroll Story">
+          <InspectorToggle
+            checked={scrollStory}
+            onChange={(v) => onChange({ ...value, scrollStory: v })}
+            label="Enable per-entry sticky scroll"
           />
         </InspectorField>
 
-        <div className="mb-2 text-[10px] text-muted-foreground">
-          Mobile order = цифри з макета. Desktop width / offset / top gap = вільна композиція без grid.
-        </div>
+        {scrollStory ? (
+          <>
+            <div className="grid grid-cols-2 gap-1.5">
+              <InspectorField label="Sticky top offset">
+                <InspectorInput
+                  value={value?.stickyTop ?? ""}
+                  onChange={(v) => onChange({ ...value, stickyTop: v || undefined })}
+                  placeholder="80px"
+                />
+              </InspectorField>
+              <InspectorField label="Progress dot">
+                <InspectorToggle
+                  checked={!!value?.showProgress}
+                  onChange={(v) => onChange({ ...value, showProgress: v })}
+                  label="Show"
+                />
+              </InspectorField>
+            </div>
 
-        <div className="space-y-4">
-          <ColumnEditor
-            label={value?.columns === "one" ? "Items" : "Left column"}
-            items={left}
-            onChange={(next) => onChange({ ...value, left: next })}
-          />
-
-          {value?.columns === "one" ? null : (
-            <>
-              <div className="h-px bg-border" />
-
-              <ColumnEditor
-                label="Right column"
-                items={right}
-                onChange={(next) => onChange({ ...value, right: next })}
+            <div className="mt-1">
+              <EntriesEditor
+                entries={arr(value?.entries)}
+                onChange={(next) => onChange({ ...value, entries: next })}
               />
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <InspectorField label="Layout">
+              <InspectorSelect
+                value={value?.columns ?? "two"}
+                onChange={(v) => onChange({ ...value, columns: v })}
+                options={COLUMNS_MODE_OPTIONS}
+              />
+            </InspectorField>
+
+            <div className="mb-2 text-[10px] text-muted-foreground">
+              Mobile order = цифри з макета. Desktop width / offset / top gap = вільна композиція без grid.
+            </div>
+
+            <div className="space-y-4">
+              <ColumnEditor
+                label={value?.columns === "one" ? "Items" : "Left column"}
+                items={arr(value?.left)}
+                onChange={(next) => onChange({ ...value, left: next })}
+              />
+
+              {value?.columns === "one" ? null : (
+                <>
+                  <div className="h-px bg-border" />
+
+                  <ColumnEditor
+                    label="Right column"
+                    items={arr(value?.right)}
+                    onChange={(next) => onChange({ ...value, right: next })}
+                  />
+                </>
+              )}
+            </div>
+          </>
+        )}
       </InspectorSection>
 
       <BlockLayoutSection value={value} onChange={onChange} />

@@ -218,19 +218,46 @@ export function ContentPageV1({ data }: { data: any }) {
   const stickyTop = (data?.stickyTop as string | undefined) ?? "0px";
   const showProgress = !!data?.showProgress;
 
+  // Entries for scroll-story mode: each entry is an independent sticky pair
+  const entries: { left: ContentItem[]; right: ContentItem[] }[] = Array.isArray(data?.entries)
+    ? data.entries.map((e: any) => ({
+        left: normalize(e?.left),
+        right: normalize(e?.right),
+      }))
+    : [];
+
   const columnsStyle: React.CSSProperties = {
     ...(contentMaxWidth ? { "--cp-content-max-w": contentMaxWidth } : {}),
-    ...(scrollStory ? { "--ss-top": stickyTop } : {}),
   } as React.CSSProperties;
 
   const columnsClass = [
     "cp__columns",
     columnsMode === "one" ? "cp__columns--single" : "",
-    scrollStory && columnsMode !== "one" ? "cp__columns--sticky" : "",
   ]
     .filter(Boolean)
     .join(" ");
 
+  // Scroll-story entries layout (each entry has its own sticky context)
+  const entriesContent =
+    scrollStory && entries.length > 0 ? (
+      <div
+        className="cp__entries"
+        style={{ "--ss-top": stickyTop } as React.CSSProperties}
+      >
+        {entries.map((entry, idx) => (
+          <div key={idx} className="cp__entry">
+            <div className="cp__col cp__col--left">
+              {entry.left.map((item, i) => renderItem(item, i, "left"))}
+            </div>
+            <div className="cp__col cp__col--right">
+              {entry.right.map((item, i) => renderItem(item, i, "right"))}
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : null;
+
+  // Normal flat columns layout
   const columns =
     columnsMode === "one" ? (
       left.length > 0 ? (
@@ -250,6 +277,15 @@ export function ContentPageV1({ data }: { data: any }) {
         </div>
       </div>
     ) : null;
+
+  const bodyContent = entriesContent ?? (boxed ? (
+    <div className="cp__box">
+      <div className="cp__box-clip" aria-hidden="true">
+        <ClipIcon />
+      </div>
+      {columns}
+    </div>
+  ) : columns);
 
   const heroClass = ["cp__hero", heroAlign ? `cp__hero--align-${heroAlign}` : ""]
     .filter(Boolean)
@@ -312,14 +348,7 @@ export function ContentPageV1({ data }: { data: any }) {
           </div>
         ) : null}
 
-        {boxed ? (
-          <div className="cp__box">
-            <div className="cp__box-clip" aria-hidden="true">
-              <ClipIcon />
-            </div>
-            {columns}
-          </div>
-        ) : columns}
+        {bodyContent}
       </Container>
       {scrollStory && showProgress && <ScrollProgressDot />}
     </section>
