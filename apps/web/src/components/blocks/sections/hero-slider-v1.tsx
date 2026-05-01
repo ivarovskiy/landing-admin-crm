@@ -300,6 +300,8 @@ export function HeroSliderV1({ data }: { data: any }) {
   const showArrows = options?.showArrows === true;
   const showGuides = options?.showGuides === true;
   const showElementGuides = options?.showElementGuides === true;
+  const showCompositionGuides = options?.compositionGuides === true;
+  const compositionGuideColor = options?.compositionGuideColor as string | undefined;
   const viewportProfile = useHeroViewportProfile();
 
   // Real slide currently displayed (for dots / aria / live preview)
@@ -531,6 +533,8 @@ export function HeroSliderV1({ data }: { data: any }) {
                     slideIndex={realIndex}
                     showGuides={showGuides}
                     showElementGuides={showElementGuides}
+                    showCompositionGuides={showCompositionGuides}
+                    compositionGuideColor={compositionGuideColor}
                     viewportProfile={viewportProfile}
                   />
                 </div>
@@ -588,6 +592,8 @@ function HeroSlide({
   slideIndex: i,
   showGuides = false,
   showElementGuides = false,
+  showCompositionGuides = false,
+  compositionGuideColor,
   viewportProfile,
 }: {
   slide: Slide;
@@ -595,6 +601,8 @@ function HeroSlide({
   slideIndex: number;
   showGuides?: boolean;
   showElementGuides?: boolean;
+  showCompositionGuides?: boolean;
+  compositionGuideColor?: string;
   viewportProfile?: HeroViewportProfileKey | null;
 }) {
   const template = resolveTemplate(slide, viewportProfile);
@@ -624,8 +632,10 @@ function HeroSlide({
   };
   const [mediaRect, setMediaRect] = useState<MediaRect | null>(null);
   const [elementRects, setElementRects] = useState<ElementRect[]>([]);
+  type CompLine = { axis: "v" | "h"; pos: number };
+  const [compGuides, setCompGuides] = useState<CompLine[]>([]);
   // Measurement is needed for guides and for media-aligned text stretching.
-  const measureNeeded = showGuides || showElementGuides || stretchToMedia;
+  const measureNeeded = showGuides || showElementGuides || stretchToMedia || showCompositionGuides;
 
   useLayoutEffect(() => {
     if (!measureNeeded) {
@@ -689,6 +699,78 @@ function HeroSlide({
       } else {
         setElementRects([]);
       }
+
+      // Composition guides: media all 4 sides, text hierarchy vertical,
+      // text-col gap edge vertical, symmetric vertical, CTA horizontal bottom.
+      if (showCompositionGuides) {
+        const compMedia = slideEl.querySelector<HTMLElement>(".hero-slide__media-box");
+        const cmr = compMedia?.getBoundingClientRect();
+        if (!cmr?.width) {
+          setCompGuides([]);
+        } else {
+          const slideWidth = slideEl.offsetWidth;
+          const mediaLeft = (cmr.left - sr.left) / scale;
+          const mediaRight = (cmr.right - sr.left) / scale;
+          const mediaTop = (cmr.top - sr.top) / scale;
+          const mediaBottom = (cmr.bottom - sr.top) / scale;
+          const mediaOnRight = (mediaLeft + mediaRight) / 2 > slideWidth / 2;
+
+          const lines: CompLine[] = [
+            { axis: "v", pos: mediaLeft },
+            { axis: "v", pos: mediaRight },
+            { axis: "h", pos: mediaTop },
+            { axis: "h", pos: mediaBottom },
+          ];
+
+          // Text hierarchy: title → tagline/subtitle → body (vertical sides)
+          const textRef =
+            slideEl.querySelector<HTMLElement>('[data-el$="-title"]') ||
+            slideEl.querySelector<HTMLElement>('[data-el$="-subtitle"]') ||
+            slideEl.querySelector<HTMLElement>('[data-el$="-body"]');
+
+          if (textRef) {
+            const tr = textRef.getBoundingClientRect();
+            lines.push(
+              { axis: "v", pos: (tr.left - sr.left) / scale },
+              { axis: "v", pos: (tr.right - sr.left) / scale }
+            );
+          }
+
+          // Text column edge facing media — where the gap begins
+          const compTextCol = slideEl.querySelector<HTMLElement>(".hero-slide__text-col");
+          if (compTextCol) {
+            const tc = compTextCol.getBoundingClientRect();
+            lines.push({
+              axis: "v",
+              pos: mediaOnRight
+                ? (tc.right - sr.left) / scale
+                : (tc.left - sr.left) / scale,
+            });
+          }
+
+          // Symmetric line: mirror of media outer edge offset
+          const mediaOuterOffset = mediaOnRight
+            ? slideWidth - mediaRight
+            : mediaLeft;
+          lines.push({
+            axis: "v",
+            pos: mediaOnRight ? mediaOuterOffset : slideWidth - mediaOuterOffset,
+          });
+
+          // CTA: horizontal line at its bottom edge
+          const ctaEl = slideEl.querySelector<HTMLElement>(".hero-slide__cta");
+          if (ctaEl) {
+            const cr = ctaEl.getBoundingClientRect();
+            if (cr.height) {
+              lines.push({ axis: "h", pos: (cr.bottom - sr.top) / scale });
+            }
+          }
+
+          setCompGuides(lines);
+        }
+      } else {
+        setCompGuides([]);
+      }
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -707,7 +789,7 @@ function HeroSlide({
       ro.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [measureNeeded, showGuides, showElementGuides, slide]);
+  }, [measureNeeded, showGuides, showElementGuides, showCompositionGuides, slide]);
 
   const slideClass = cn(
     "hero-slide",
@@ -715,12 +797,14 @@ function HeroSlide({
     mobileImageFirst && "hero-slide--mobile-image-first",
     desktopLayout.textAlignFullWidth && "hs-text-wide",
     slide?.stretchTextToMedia && "hero-slide--copy-stretch",
-    (showGuides || showElementGuides) && "hero-slide--with-guides"
+    (showGuides || showElementGuides || showCompositionGuides) && "hero-slide--with-guides"
   );
 
   const hasMediaGuides = showGuides && mediaRect;
   const hasElementGuides = showElementGuides && elementRects.length > 0;
-  const guides = hasMediaGuides || hasElementGuides ? (
+  const hasCompGuides = showCompositionGuides && compGuides.length > 0;
+  const compGuideColor = compositionGuideColor || "rgba(0, 200, 100, 0.8)";
+  const guides = hasMediaGuides || hasElementGuides || hasCompGuides ? (
     <div className="hero-slide__guides" aria-hidden="true">
       {hasMediaGuides ? (
         <>
@@ -739,6 +823,23 @@ function HeroSlide({
               <div className="hero-slide__guide hero-slide__guide--horizontal hero-slide__guide--element" style={{ top: `${r.bottom}px` }} />
             </React.Fragment>
           ))
+        : null}
+      {hasCompGuides
+        ? compGuides.map((line, idx) =>
+            line.axis === "v" ? (
+              <div
+                key={`comp-${idx}`}
+                className="hero-slide__guide hero-slide__guide--vertical"
+                style={{ left: `${line.pos}px`, background: compGuideColor }}
+              />
+            ) : (
+              <div
+                key={`comp-${idx}`}
+                className="hero-slide__guide hero-slide__guide--horizontal"
+                style={{ top: `${line.pos}px`, background: compGuideColor }}
+              />
+            )
+          )
         : null}
     </div>
   ) : null;

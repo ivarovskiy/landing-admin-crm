@@ -234,6 +234,20 @@ export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) 
           checked={showElementGuides}
           onChange={(v) => set(["options", "showElementGuides"], v || undefined)}
         />
+        <InspectorToggle
+          label="Composition guides"
+          checked={!!options?.compositionGuides}
+          onChange={(v) => set(["options", "compositionGuides"], v || undefined)}
+        />
+        {options?.compositionGuides ? (
+          <InspectorField label="Guide color">
+            <InspectorInput
+              value={options?.compositionGuideColor ?? ""}
+              onChange={(v) => set(["options", "compositionGuideColor"], v || undefined)}
+              placeholder="rgba(0,200,100,0.8)"
+            />
+          </InspectorField>
+        ) : null}
 
         <div className="grid grid-cols-2 gap-1.5">
           <InspectorField label="Star size" hint="width/height of inline star icons (e.g. 0.9em, 24px)">
