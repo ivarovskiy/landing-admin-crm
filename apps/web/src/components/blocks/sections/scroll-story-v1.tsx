@@ -5,27 +5,73 @@ import type React from "react";
 import { Container } from "@/components/landing/ui";
 import { MediaImage } from "@/components/media-image";
 
-type StoryImage = { src: string; alt?: string };
-
-type StoryEntry = {
-  label?: string;
-  text?: string;
-  images?: StoryImage[];
-  imagePosition?: "left" | "right"; // default: "right"
+// Same item schema as content-page-v1 — copy the JSON as-is
+type ContentItem = {
+  kind: "image" | "text";
+  // image
+  src?: string;
+  alt?: string;
+  // text
+  heading?: string;
+  body?: string;
 };
 
 type ScrollStoryV1Data = {
-  entries?: StoryEntry[];
-  // CSS length applied as `top` when the media column is sticky.
-  // Set to your header height, e.g. "80px".
-  stickyTop?: string;
-  // Render the scroll-progress dot on the right edge of the viewport.
-  showProgress?: boolean;
+  left?: ContentItem[];
+  right?: ContentItem[];
+  stickyTop?: string;    // CSS length — offset from top when sticky, e.g. "80px"
+  showProgress?: boolean; // scroll-progress dot on right viewport edge
 };
+
+function normalize(raw: unknown): ContentItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (x: any) => x && (x.kind === "image" || x.kind === "text"),
+  ) as ContentItem[];
+}
+
+function Col({ items }: { items: ContentItem[] }) {
+  return (
+    <>
+      {items.map((item, idx) => {
+        if (item.kind === "image") {
+          return (
+            <div key={idx} className="ss__image-wrap">
+              {item.src ? (
+                <MediaImage
+                  src={item.src}
+                  alt={item.alt ?? ""}
+                  className="ss__image"
+                  sizes="(max-width: 767px) 100vw, 50vw"
+                />
+              ) : (
+                <div className="ss__image ss__image--placeholder" />
+              )}
+            </div>
+          );
+        }
+
+        return (
+          <div key={idx} className="ss__text-item">
+            {item.heading ? <p className="ss__label">{item.heading}</p> : null}
+            {item.body ? (
+              <div className="ss__body">
+                {item.body.split("\n\n").map((p, i) => (
+                  <p key={i}>{p}</p>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </>
+  );
+}
 
 export function ScrollStoryV1({ data }: { data: any }) {
   const d = data as ScrollStoryV1Data;
-  const entries: StoryEntry[] = Array.isArray(d?.entries) ? d.entries : [];
+  const left = normalize(d?.left);
+  const right = normalize(d?.right);
   const stickyTop = d?.stickyTop ?? "0px";
   const showProgress = d?.showProgress ?? false;
 
@@ -46,13 +92,8 @@ export function ScrollStoryV1({ data }: { data: any }) {
         return;
       }
 
-      const scrolled = Math.max(0, -top);
-      const total = Math.max(1, height - vh);
-      const p = Math.min(1, scrolled / total);
-      // keep dot 24px from top / bottom of viewport
-      const dotY = 24 + p * (vh - 48);
-
-      setDotStyle({ opacity: 1, top: dotY });
+      const p = Math.min(1, Math.max(0, -top / Math.max(1, height - vh)));
+      setDotStyle({ opacity: 1, top: 24 + p * (vh - 48) });
     }
 
     window.addEventListener("scroll", update, { passive: true });
@@ -60,65 +101,30 @@ export function ScrollStoryV1({ data }: { data: any }) {
     return () => window.removeEventListener("scroll", update);
   }, [showProgress]);
 
-  if (!entries.length) return null;
+  if (!left.length && !right.length) return null;
 
   return (
     <section className="scroll-story" ref={sectionRef}>
       <Container>
-        {entries.map((entry, idx) => {
-          const imgLeft = (entry.imagePosition ?? "right") === "left";
-          const images = Array.isArray(entry.images) ? entry.images : [];
-
-          const textCol = (
-            <div className="scroll-story__text">
-              {entry.label ? (
-                <p className="scroll-story__label">{entry.label}</p>
-              ) : null}
-              {entry.text ? (
-                <div className="scroll-story__body">
-                  {entry.text.split("\n\n").map((p, i) => (
-                    <p key={i}>{p}</p>
-                  ))}
-                </div>
-              ) : null}
+        <div
+          className="ss__cols"
+          style={{ "--ss-top": stickyTop } as React.CSSProperties}
+        >
+          {left.length > 0 && (
+            <div className="ss__col">
+              <Col items={left} />
             </div>
-          );
-
-          const mediaCol = (
-            <div
-              className="scroll-story__media"
-              style={{ "--ss-top": stickyTop } as React.CSSProperties}
-            >
-              {images.map((img, i) => (
-                <MediaImage
-                  key={i}
-                  src={img.src}
-                  alt={img.alt ?? ""}
-                  className="scroll-story__image"
-                  sizes="(max-width: 767px) 100vw, 50vw"
-                />
-              ))}
-              {images.length === 0 ? (
-                <div className="scroll-story__image scroll-story__image--placeholder" />
-              ) : null}
+          )}
+          {right.length > 0 && (
+            <div className="ss__col">
+              <Col items={right} />
             </div>
-          );
-
-          return (
-            <div key={idx} className="scroll-story__entry">
-              {imgLeft ? mediaCol : textCol}
-              {imgLeft ? textCol : mediaCol}
-            </div>
-          );
-        })}
+          )}
+        </div>
       </Container>
 
       {showProgress ? (
-        <div
-          className="scroll-story__dot"
-          style={dotStyle}
-          aria-hidden="true"
-        />
+        <div className="scroll-story__dot" style={dotStyle} aria-hidden="true" />
       ) : null}
     </section>
   );

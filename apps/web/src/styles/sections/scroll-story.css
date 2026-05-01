@@ -1,88 +1,81 @@
-/* ---- Scroll Story — sticky-media / scrolling-text layout ----
+/* ---- Scroll Story — sticky-column layout ----
  *
  * HOW IT WORKS (pure CSS, no JS for stickiness):
  *
- *   .scroll-story__entry  →  display: grid; align-items: start
- *     Each column sizes to its own natural height (not the row height).
+ *   .ss__cols  →  display: grid; align-items: start
+ *     Each column sizes to its own natural content height.
  *
- *   .scroll-story__media  →  position: sticky; top: var(--ss-top)
- *     The media column sticks within its entry container.
- *     - text taller than media → media sticks while text scrolls
- *     - media taller than text → media fills its full container, sticky has
- *       no room to "travel" so both columns scroll together naturally
+ *   .ss__col   →  position: sticky; top: var(--ss-top)
+ *     Both columns are sticky. CSS auto-resolves which one actually sticks:
+ *     the SHORTER column has room to travel within the grid row
+ *     (row height = max of both columns), so it sticks.
+ *     The TALLER column fills the entire row — nowhere to travel — scrolls.
  *
- * DEBUGGING:
- *   Add class `scroll-story--debug` to <section> to see column boundaries.
+ *   text taller than media  →  media column sticks
+ *   media taller than text  →  text column sticks
+ *
+ * DEBUG: add class `scroll-story--debug` to <section>.
  */
 
 .scroll-story {
-  position: relative; /* stacking context for the progress dot */
+  position: relative;
 }
 
-/* ---- Entry ---- */
+/* ---- Two-column grid ---- */
 
-.scroll-story__entry {
+.ss__cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  align-items: start; /* ← the key: columns are their natural height */
+  align-items: start; /* ← the key: each column is its natural height */
   column-gap: clamp(32px, 4.5vw, 60px);
   padding-block: clamp(40px, 6vw, 80px);
-  border-top: 1px solid var(--color-line, rgba(0, 0, 0, 0.12));
 }
 
-.scroll-story__entry:last-child {
-  border-bottom: 1px solid var(--color-line, rgba(0, 0, 0, 0.12));
-}
+/* ---- Each column is sticky ---- */
 
-/* ---- Text column ---- */
-
-.scroll-story__label {
-  font-size: clamp(11px, 0.9vw, 13px);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-bottom: clamp(16px, 2.2vw, 28px);
-  text-decoration: underline;
-}
-
-.scroll-story__body {
-  font-size: clamp(15px, 1.2vw, 17px);
-  line-height: 1.65;
-}
-
-.scroll-story__body p + p {
-  margin-top: 1em;
-}
-
-/* ---- Sticky columns ----
- *
- * Both columns are sticky. CSS resolves which one actually sticks:
- * the shorter column has room to travel within the grid cell
- * (grid cell height = row height = max(text, media)), so it sticks.
- * The taller column fills the entire cell — no room to travel — scrolls.
- *
- *   text > media  →  media sticks, text scrolls
- *   media > text  →  text sticks, media scrolls
- */
-
-.scroll-story__text,
-.scroll-story__media {
+.ss__col {
   position: sticky;
   top: var(--ss-top, 0px);
 }
 
-.scroll-story__image {
+/* ---- Image items ---- */
+
+.ss__image-wrap + .ss__image-wrap {
+  margin-top: clamp(12px, 2vw, 20px);
+}
+
+.ss__image {
   display: block;
   width: 100%;
   height: auto;
 }
 
-.scroll-story__image + .scroll-story__image {
-  margin-top: clamp(12px, 2vw, 20px);
-}
-
-.scroll-story__image--placeholder {
+.ss__image--placeholder {
   background: var(--color-line, rgba(0, 0, 0, 0.08));
   aspect-ratio: 4 / 3;
+}
+
+/* ---- Text items ---- */
+
+.ss__text-item + .ss__text-item {
+  margin-top: clamp(24px, 3vw, 40px);
+}
+
+.ss__label {
+  font-size: clamp(11px, 0.9vw, 13px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  margin-bottom: clamp(12px, 1.6vw, 20px);
+}
+
+.ss__body {
+  font-size: clamp(15px, 1.2vw, 17px);
+  line-height: 1.65;
+}
+
+.ss__body p + p {
+  margin-top: 1em;
 }
 
 /* ---- Progress dot ---- */
@@ -95,34 +88,36 @@
   border-radius: 50%;
   background: var(--color-primary, currentColor);
   pointer-events: none;
-  /* top is set via inline style from JS */
   transition: top 80ms linear, opacity 200ms ease;
 }
 
 /* ---- Debug mode ---- */
 
-.scroll-story--debug .scroll-story__text {
+.scroll-story--debug .ss__col:first-child {
   outline: 2px solid blue;
 }
 
-.scroll-story--debug .scroll-story__media {
+.scroll-story--debug .ss__col:last-child {
   outline: 2px solid red;
 }
 
-.scroll-story--debug .scroll-story__entry {
+.scroll-story--debug .ss__cols {
   outline: 1px dashed green;
 }
 
 /* ---- Mobile: disable sticky, stack vertically ---- */
 
 @media (max-width: 767px) {
-  .scroll-story__entry {
+  .ss__cols {
     display: block;
     padding-block: clamp(28px, 6vw, 48px);
   }
 
-  .scroll-story__media {
+  .ss__col {
     position: static;
-    margin-bottom: clamp(16px, 4vw, 24px);
+  }
+
+  .ss__col + .ss__col {
+    margin-top: clamp(20px, 5vw, 32px);
   }
 }

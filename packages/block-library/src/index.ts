@@ -411,15 +411,11 @@ export const BLOCK_LIBRARY: BlockDefinition[] = [
     defaultData: {
       stickyTop: "0px",
       showProgress: false,
-      entries: [
-        {
-          label: "SECTION TITLE",
-          text: "First paragraph of text here.\n\nSecond paragraph of text here.",
-          imagePosition: "right",
-          images: [
-            { src: "", alt: "" }
-          ],
-        },
+      left: [
+        { kind: "image", src: "", alt: "" },
+      ],
+      right: [
+        { kind: "text", heading: "SECTION TITLE", body: "First paragraph.\n\nSecond paragraph." },
       ],
     },
   },
