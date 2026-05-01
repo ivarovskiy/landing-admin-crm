@@ -813,6 +813,38 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             placeholder="5.56px"
             onChange={(v) => updateTypography({ linkStampShadowOffsetAt104: v })}
           />
+          {typography.linkStampScale && (() => {
+            const strokeRef = parseFloat(typography.linkStampStrokeWAt104 ?? "") || 2.6;
+            const shadowRef = parseFloat(typography.linkStampShadowOffsetAt104 ?? "") || 5.56;
+            const fmt = (n: number) => `${(Math.round(n * 100) / 100).toFixed(2)}px`;
+            const sizes = [
+              { label: "Title", px: 104 },
+              { label: "Tagline", px: 78 },
+            ];
+            return (
+              <div className="px-4 py-3 flex gap-3">
+                {sizes.map(({ label, px }) => {
+                  const stroke = fmt((px * strokeRef) / 104);
+                  const shadow = fmt((px * shadowRef) / 104);
+                  return (
+                    <div key={label} className="flex-1 rounded-lg bg-[oklch(1_0_0/5%)] px-3 py-2.5 space-y-1.5">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-[oklch(0.5_0_0)]">
+                        {label} · {px}px
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-[oklch(0.55_0_0)]">stroke</span>
+                        <span className="font-mono text-[11px] font-semibold text-foreground">{stroke}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-[oklch(0.55_0_0)]">shadow</span>
+                        <span className="font-mono text-[11px] font-semibold text-foreground">{shadow}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
           <SelectRow<"drop" | "extruded" | "layered">
             icon={<Layers className="h-3.5 w-3.5" />}
             label="Stamp shadow style"
