@@ -430,6 +430,10 @@ export const BLOCK_LIBRARY: BlockDefinition[] = [
       title: "PAGE TITLE",
       subtitle: "Subtitle text here",
       cta: { label: "", href: "#" },
+      // Scroll-story mode: shorter column sticks, taller scrolls (pure CSS)
+      scrollStory: false,
+      stickyTop: "0px",
+      showProgress: false,
       left: [
         {
           kind: "image",

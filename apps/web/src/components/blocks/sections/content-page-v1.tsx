@@ -2,6 +2,7 @@ import type React from "react";
 import { Container, Kicker, OutlineStampText, STAMP_TITLE } from "@/components/landing/ui";
 import { MediaImage } from "@/components/media-image";
 import ClipIcon from "@/assets/icons/clip.svg";
+import { ScrollProgressDot } from "./scroll-progress-dot";
 
 type ResponsiveItemLayout = {
   width?: string;
@@ -213,12 +214,20 @@ export function ContentPageV1({ data }: { data: any }) {
   const ctaMaxW = data?.ctaMaxW as string | undefined;
 
   const columnsMode: "one" | "two" = data?.columns === "one" ? "one" : "two";
+  const scrollStory = !!data?.scrollStory;
+  const stickyTop = (data?.stickyTop as string | undefined) ?? "0px";
+  const showProgress = !!data?.showProgress;
 
-  const columnsStyle = contentMaxWidth
-    ? ({ "--cp-content-max-w": contentMaxWidth } as React.CSSProperties)
-    : undefined;
+  const columnsStyle: React.CSSProperties = {
+    ...(contentMaxWidth ? { "--cp-content-max-w": contentMaxWidth } : {}),
+    ...(scrollStory ? { "--ss-top": stickyTop } : {}),
+  } as React.CSSProperties;
 
-  const columnsClass = ["cp__columns", columnsMode === "one" ? "cp__columns--single" : ""]
+  const columnsClass = [
+    "cp__columns",
+    columnsMode === "one" ? "cp__columns--single" : "",
+    scrollStory && columnsMode !== "one" ? "cp__columns--sticky" : "",
+  ]
     .filter(Boolean)
     .join(" ");
 
@@ -312,6 +321,7 @@ export function ContentPageV1({ data }: { data: any }) {
           </div>
         ) : columns}
       </Container>
+      {scrollStory && showProgress && <ScrollProgressDot />}
     </section>
   );
 }

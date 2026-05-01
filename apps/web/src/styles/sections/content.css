@@ -447,6 +447,33 @@
   }
 }
 
+/* ---- Scroll-story mode (scrollStory: true) ----
+ *
+ * Both columns get position: sticky. CSS resolves which one actually sticks:
+ * the shorter column has room to travel within the grid row
+ * (row height = max of both), so it sticks automatically.
+ * The taller column fills the row entirely — scrolls.
+ */
+@media (min-width: 768px) {
+  .cp__columns--sticky .cp__col {
+    position: sticky;
+    top: var(--ss-top, 0px);
+  }
+}
+
+/* Progress dot — rendered by ScrollProgressDot client component */
+.cp__scroll-dot {
+  position: fixed;
+  right: clamp(12px, 1.5vw, 24px);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-primary, currentColor);
+  pointer-events: none;
+  opacity: 0;
+  transition: top 80ms linear, opacity 200ms ease;
+}
+
 /* ---- Single-column mode ---- */
 .cp__columns--single {
   display: flex;

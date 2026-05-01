@@ -11,6 +11,7 @@ type ContentItem = {
   // image
   src?: string;
   alt?: string;
+  aspectRatio?: string; // e.g. "342 / 207" — required for MediaImage fill mode
   // text
   heading?: string;
   body?: string;
@@ -35,6 +36,13 @@ function Col({ items }: { items: ContentItem[] }) {
     <>
       {items.map((item, idx) => {
         if (item.kind === "image") {
+          // MediaImage uses Next.js fill — the wrapper must have a height.
+          // aspectRatio (e.g. "342 / 207") is passed as inline style so the
+          // wrapper div sizes itself correctly without explicit height.
+          const imgStyle = item.aspectRatio
+            ? { aspectRatio: item.aspectRatio }
+            : { aspectRatio: "4 / 3" };
+
           return (
             <div key={idx} className="ss__image-wrap">
               {item.src ? (
@@ -42,10 +50,11 @@ function Col({ items }: { items: ContentItem[] }) {
                   src={item.src}
                   alt={item.alt ?? ""}
                   className="ss__image"
+                  style={imgStyle}
                   sizes="(max-width: 767px) 100vw, 50vw"
                 />
               ) : (
-                <div className="ss__image ss__image--placeholder" />
+                <div className="ss__image ss__image--placeholder" style={imgStyle} />
               )}
             </div>
           );
