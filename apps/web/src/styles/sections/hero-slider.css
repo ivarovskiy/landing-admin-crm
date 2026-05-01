@@ -204,14 +204,21 @@
 .hero-slide__title {
   display: inline-block;
   margin: 0;
-  font-size: var(--hs-title-size);
-  line-height: var(--typo-content-header-line-height, 86px);
-  letter-spacing: var(--typo-content-header-letter-spacing, 0.02em);
   white-space: pre-line;
 }
 
-.hero-slide__subtitle {
+/* font-size/line-height/letter-spacing at specificity 0 so any .typo-* class wins */
+:where(.hero-slide__title) {
+  font-size: var(--hs-title-size);
+  line-height: var(--typo-content-header-line-height, 86px);
+  letter-spacing: var(--typo-content-header-letter-spacing, 0.02em);
+}
+
+:where(.hero-slide__subtitle) {
   font-size: var(--hs-subtitle-size);
+}
+
+.hero-slide__subtitle {
   white-space: pre-line;
   /* Force the subtitle to take the full cross-axis width of its column-flex
      parent (.hero-slide__copy-main has `align-items: flex-start`, which by
@@ -498,11 +505,11 @@
     margin-top: 0;
   }
 
-  .hero-slide__title {
+  :where(.hero-slide__title) {
     font-size: clamp(32px, 9vw, 52px);
   }
 
-  .hero-slide__subtitle {
+  :where(.hero-slide__subtitle) {
     font-size: clamp(14px, 4vw, 20px);
     margin-top: clamp(4px, 1.5vw, 8px);
   }
