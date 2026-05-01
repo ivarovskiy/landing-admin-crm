@@ -216,6 +216,7 @@ export function ContentPageV1({ data }: { data: any }) {
   const columnsMode: "one" | "two" = data?.columns === "one" ? "one" : "two";
   const scrollStory = !!data?.scrollStory;
   const stickyTop = (data?.stickyTop as string | undefined) ?? "0px";
+  const entryGap = data?.entryGap as string | undefined;
   const showProgress = !!data?.showProgress;
 
   // Entries for scroll-story mode: each entry is an independent sticky pair
@@ -242,7 +243,7 @@ export function ContentPageV1({ data }: { data: any }) {
     scrollStory && entries.length > 0 ? (
       <div
         className="cp__entries"
-        style={{ "--ss-top": stickyTop } as React.CSSProperties}
+        style={{ "--ss-top": stickyTop, ...(entryGap ? { "--cp-entry-gap": entryGap } : {}) } as React.CSSProperties}
       >
         {entries.map((entry, idx) => (
           <div key={idx} className="cp__entry">

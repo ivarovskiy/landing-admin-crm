@@ -471,7 +471,7 @@
 }
 
 .cp__entry {
-  padding-block: clamp(40px, 5vw, 72px);
+  padding-block: var(--cp-entry-gap, 0px);
 }
 
 .cp__entry + .cp__entry {

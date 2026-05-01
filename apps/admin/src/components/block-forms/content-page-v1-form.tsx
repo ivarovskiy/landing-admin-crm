@@ -589,6 +589,13 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
                   placeholder="80px"
                 />
               </InspectorField>
+              <InspectorField label="Entry gap">
+                <InspectorInput
+                  value={value?.entryGap ?? ""}
+                  onChange={(v) => onChange({ ...value, entryGap: v || undefined })}
+                  placeholder="0px"
+                />
+              </InspectorField>
               <InspectorField label="Progress dot">
                 <InspectorToggle
                   checked={!!value?.showProgress}
