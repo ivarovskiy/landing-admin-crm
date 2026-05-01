@@ -487,15 +487,15 @@ function SlideEditor({
               <div className="grid grid-cols-2 gap-1.5">
                 <InspectorField label="Kicker typography">
                   <InspectorSelect
-                    value={s.kickerStyle?.typo ?? ""}
-                    onChange={(v) => onChange({ ...s, kickerStyle: { ...s.kickerStyle, typo: (v || undefined) as TypoClass | undefined } })}
+                    value={getScopedElementStyle(s.kickerStyle, tuningScope).typo ?? ""}
+                    onChange={(v) => onChange({ ...s, kickerStyle: updateScopedElementStyle(s.kickerStyle, tuningScope, { typo: (v || undefined) as TypoClass | undefined }) })}
                     options={TYPO_OPTIONS}
                   />
                 </InspectorField>
                 <InspectorField label="Kicker align">
                   <InspectorSelect
-                    value={s.kickerStyle?.align ?? ""}
-                    onChange={(v) => onChange({ ...s, kickerStyle: { ...s.kickerStyle, align: v || undefined } as any })}
+                    value={getScopedElementStyle(s.kickerStyle, tuningScope).align ?? ""}
+                    onChange={(v) => onChange({ ...s, kickerStyle: updateScopedElementStyle(s.kickerStyle, tuningScope, { align: (v || undefined) as any }) })}
                     options={ELEMENT_ALIGN_OPTIONS}
                   />
                 </InspectorField>
@@ -517,15 +517,15 @@ function SlideEditor({
           <div className="grid grid-cols-2 gap-1.5">
             <InspectorField label="Title typography">
               <InspectorSelect
-                value={s.titleStyle?.typo ?? ""}
-                onChange={(v) => onChange({ ...s, titleStyle: { ...s.titleStyle, typo: (v || undefined) as TypoClass | undefined } })}
+                value={getScopedElementStyle(s.titleStyle, tuningScope).typo ?? ""}
+                onChange={(v) => onChange({ ...s, titleStyle: updateScopedElementStyle(s.titleStyle, tuningScope, { typo: (v || undefined) as TypoClass | undefined }) })}
                 options={TYPO_OPTIONS}
               />
             </InspectorField>
             <InspectorField label="Title align">
               <InspectorSelect
-                value={s.titleStyle?.align ?? ""}
-                onChange={(v) => onChange({ ...s, titleStyle: { ...s.titleStyle, align: v || undefined } as any })}
+                value={getScopedElementStyle(s.titleStyle, tuningScope).align ?? ""}
+                onChange={(v) => onChange({ ...s, titleStyle: updateScopedElementStyle(s.titleStyle, tuningScope, { align: (v || undefined) as any }) })}
                 options={ELEMENT_ALIGN_OPTIONS}
               />
             </InspectorField>
@@ -547,15 +547,15 @@ function SlideEditor({
               <div className="grid grid-cols-2 gap-1.5">
                 <InspectorField label="Tagline typography">
                   <InspectorSelect
-                    value={s.subtitleStyle?.typo ?? ""}
-                    onChange={(v) => onChange({ ...s, subtitleStyle: { ...s.subtitleStyle, typo: (v || undefined) as TypoClass | undefined } })}
+                    value={getScopedElementStyle(s.subtitleStyle, tuningScope).typo ?? ""}
+                    onChange={(v) => onChange({ ...s, subtitleStyle: updateScopedElementStyle(s.subtitleStyle, tuningScope, { typo: (v || undefined) as TypoClass | undefined }) })}
                     options={TYPO_OPTIONS}
                   />
                 </InspectorField>
                 <InspectorField label="Tagline align">
                   <InspectorSelect
-                    value={s.subtitleStyle?.align ?? ""}
-                    onChange={(v) => onChange({ ...s, subtitleStyle: { ...s.subtitleStyle, align: v || undefined } as any })}
+                    value={getScopedElementStyle(s.subtitleStyle, tuningScope).align ?? ""}
+                    onChange={(v) => onChange({ ...s, subtitleStyle: updateScopedElementStyle(s.subtitleStyle, tuningScope, { align: (v || undefined) as any }) })}
                     options={ELEMENT_ALIGN_OPTIONS}
                   />
                 </InspectorField>
@@ -579,15 +579,15 @@ function SlideEditor({
               <div className="grid grid-cols-2 gap-1.5">
                 <InspectorField label="Body typography">
                   <InspectorSelect
-                    value={s.bodyStyle?.typo ?? ""}
-                    onChange={(v) => onChange({ ...s, bodyStyle: { ...s.bodyStyle, typo: (v || undefined) as TypoClass | undefined } })}
+                    value={getScopedElementStyle(s.bodyStyle, tuningScope).typo ?? ""}
+                    onChange={(v) => onChange({ ...s, bodyStyle: updateScopedElementStyle(s.bodyStyle, tuningScope, { typo: (v || undefined) as TypoClass | undefined }) })}
                     options={TYPO_OPTIONS}
                   />
                 </InspectorField>
                 <InspectorField label="Body align">
                   <InspectorSelect
-                    value={s.bodyStyle?.align ?? ""}
-                    onChange={(v) => onChange({ ...s, bodyStyle: { ...s.bodyStyle, align: v || undefined } as any })}
+                    value={getScopedElementStyle(s.bodyStyle, tuningScope).align ?? ""}
+                    onChange={(v) => onChange({ ...s, bodyStyle: updateScopedElementStyle(s.bodyStyle, tuningScope, { align: (v || undefined) as any }) })}
                     options={ELEMENT_ALIGN_OPTIONS}
                   />
                 </InspectorField>
@@ -977,13 +977,19 @@ function ExtrasEditor({
   onChange: (next: SlideExtra[]) => void;
   tuningScope?: HeroTuningScope;
 }) {
+  const updateExtra = (idx: number, patch: Partial<SlideExtra>) => {
+    const next = [...extras];
+    next[idx] = { ...extras[idx], ...patch };
+    onChange(next);
+  };
+
   return (
     <div className="space-y-2">
       {extras.map((ex, idx) => (
-        <div key={ex.id ?? idx} className="rounded border p-1.5 space-y-1 bg-muted/5">
+        <div key={ex.id ?? idx} className="rounded border p-1.5 space-y-1.5 bg-muted/5">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold text-muted-foreground">
-              Extra {idx + 1}
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Block {idx + 1}
             </span>
             <button
               type="button"
@@ -993,35 +999,47 @@ function ExtrasEditor({
               <Trash2 className="h-3 w-3" />
             </button>
           </div>
-          <div className="grid grid-cols-[1fr_80px] gap-1">
-            <InspectorInput
-              value={ex.text}
-              onChange={(v) => {
-                const next = [...extras];
-                next[idx] = { ...ex, text: v };
-                onChange(next);
-              }}
-              placeholder="Text"
-            />
+
+          {/* Kind */}
+          <div>
+            <div className="mb-0.5 text-[9px] text-muted-foreground">Kind</div>
             <InspectorSelect
               value={ex.kind}
-              onChange={(v) => {
-                const next = [...extras];
-                next[idx] = { ...ex, kind: v as any };
-                onChange(next);
-              }}
+              onChange={(v) => updateExtra(idx, { kind: v as SlideExtra["kind"] })}
               options={EXTRA_KIND_OPTIONS}
             />
           </div>
+
+          {/* Typography — primary control */}
+          <div>
+            <div className="mb-0.5 text-[9px] text-muted-foreground">Typography</div>
+            <InspectorSelect
+              value={getScopedElementStyle(ex.style, tuningScope).typo ?? ""}
+              onChange={(v) =>
+                updateExtra(idx, {
+                  style: updateScopedElementStyle(ex.style, tuningScope, {
+                    typo: (v || undefined) as TypoClass | undefined,
+                  }),
+                })
+              }
+              options={TYPO_OPTIONS}
+            />
+          </div>
+
+          {/* Text */}
+          <InspectorTextarea
+            value={ex.text}
+            onChange={(v) => updateExtra(idx, { text: v })}
+            placeholder="Text content..."
+            rows={2}
+          />
+
+          {/* Position (margins, align, size, stroke) */}
           <ElementStyleEditor
             label="Position"
             style={ex.style}
             tuningScope={tuningScope}
-            onChange={(s) => {
-              const next = [...extras];
-              next[idx] = { ...ex, style: s };
-              onChange(next);
-            }}
+            onChange={(s) => updateExtra(idx, { style: s })}
           />
         </div>
       ))}
@@ -1035,7 +1053,7 @@ function ExtrasEditor({
         }
         className="flex items-center gap-0.5 text-[10px] font-medium text-primary hover:text-primary/80"
       >
-        <Plus className="h-2.5 w-2.5" /> Add element
+        <Plus className="h-2.5 w-2.5" /> Add text block
       </button>
     </div>
   );
