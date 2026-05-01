@@ -803,7 +803,7 @@ function HeroSlide({
   const hasMediaGuides = showGuides && mediaRect;
   const hasElementGuides = showElementGuides && elementRects.length > 0;
   const hasCompGuides = showCompositionGuides && compGuides.length > 0;
-  const compGuideColor = compositionGuideColor || "rgba(0, 200, 100, 0.8)";
+  const compGuideColor = compositionGuideColor || "rgba(255, 6, 102, 0.8)"; // цвет guidlines
   const guides = hasMediaGuides || hasElementGuides || hasCompGuides ? (
     <div className="hero-slide__guides" aria-hidden="true">
       {hasMediaGuides ? (
