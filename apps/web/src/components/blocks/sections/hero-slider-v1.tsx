@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Container, Hairline, Kicker, OutlineStampText, STAMP_HERO_TITLE, STAMP_KICKER, STAMP_SUBTITLE } from "@/components/landing/ui";
+import { Container, Hairline, Kicker, OutlineStampText, STAMP_TITLE, STAMP_SECTION_TITLE, STAMP_SUBTITLE } from "@/components/landing/ui";
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { InlineText } from "./inline-icons";
@@ -123,6 +123,15 @@ function resolveDesignViewportUnits(value?: string) {
     if (!Number.isFinite(n)) return `${raw}vw`;
     return `${trimNumber((n / 100) * DESIGN_WIDTH_PX)}px`;
   });
+}
+
+/** Pick the stamp preset that matches the typo class so default shadow/stroke
+ *  values are correct for each size. Admin per-size overrides (data-hero-shadow,
+ *  data-section-shadow, etc.) still win via higher CSS specificity. */
+function stampForTypo(typo?: string) {
+  if (typo === "typo-homepage-header") return STAMP_SECTION_TITLE;
+  if (typo === "typo-subtitle") return STAMP_SUBTITLE;
+  return STAMP_TITLE; // default, typo-content-header, typo-hero-title
 }
 
 function mergeElementStyle(
@@ -977,16 +986,34 @@ function CopyStack({
       );
     }
     if (key === "title" && title) {
+      const titleEs = mergeElementStyle(slide.titleStyle, viewportProfile);
+      const titleTypo = titleEs?.typo;
+      const titleStyle = elStyle(titleEs);
+      const titleClass = cn("hero-slide__title", titleTypo);
+      // Use stamp rendering only for stamp typo classes; plain element otherwise
+      const isTitleStamp = !titleTypo || titleTypo === "typo-content-header" || titleTypo === "typo-homepage-header" || titleTypo === "typo-subtitle";
+      if (isTitleStamp) {
+        return (
+          <OutlineStampText
+            key="title"
+            className={titleClass}
+            data-el={`slide-${slideIndex}-title`}
+            stamp={stampForTypo(titleTypo)}
+            style={titleStyle}
+          >
+            <InlineText text={title} />
+          </OutlineStampText>
+        );
+      }
       return (
-        <OutlineStampText
+        <p
           key="title"
-          className={cn("hero-slide__title", mergeElementStyle(slide.titleStyle, viewportProfile)?.typo)}
+          className={titleClass}
           data-el={`slide-${slideIndex}-title`}
-          stamp={STAMP_HERO_TITLE}
-          style={elStyle(mergeElementStyle(slide.titleStyle, viewportProfile))}
+          style={titleStyle}
         >
           <InlineText text={title} />
-        </OutlineStampText>
+        </p>
       );
     }
     if (key === "subtitle" && subtitle) {
@@ -1074,7 +1101,7 @@ function ExtraElement({
       <OutlineStampText
         className={cn("hero-slide__title", typo)}
         data-el={slotId}
-        stamp={STAMP_HERO_TITLE}
+        stamp={stampForTypo(typo)}
         style={style}
       >
         <InlineText text={extra.text} />
