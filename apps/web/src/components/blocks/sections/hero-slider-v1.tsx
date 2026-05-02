@@ -423,7 +423,10 @@ export function HeroSliderV1({ data }: { data: any }) {
   const finishDrag = (e: React.PointerEvent) => {
     if (!drag.current?.active) return;
 
-    const dx = e.clientX - drag.current.startX;
+    // Use lastX (updated on every pointermove) so pointercancel events from
+    // iOS "swipe back" gesture — which fire with the original clientX — still
+    // measure the full drag distance.
+    const dx = drag.current.lastX - drag.current.startX;
     const moved = drag.current.moved;
 
     try {
@@ -653,18 +656,15 @@ function HeroSlide({
       const scale = sr.width / slideEl.offsetWidth || 1;
 
       if (!media) {
-        setMediaRect(null);
+        setMediaRect((prev) => (prev === null ? null : null));
       } else {
         const mr = media.getBoundingClientRect();
         if (mr.width) {
           const textCol = slideEl.querySelector<HTMLElement>(".hero-slide__text-col");
           const tc = textCol?.getBoundingClientRect();
-          // Stretch insets are computed relative to text-col so that hero-slide's
-          // own padding is automatically excluded — copy lives inside text-col
-          // and shares its content box.
           const refTop = tc?.top ?? sr.top;
           const refBottom = tc?.bottom ?? sr.bottom;
-          setMediaRect({
+          const next: MediaRect = {
             left: (mr.left - sr.left) / scale,
             right: (mr.right - sr.left) / scale,
             top: (mr.top - sr.top) / scale,
@@ -672,7 +672,16 @@ function HeroSlide({
             height: sr.height / scale,
             stretchTop: Math.max(0, (mr.top - refTop) / scale),
             stretchBottom: Math.max(0, (refBottom - mr.bottom) / scale),
-          });
+          };
+          // Skip state update if nothing changed to avoid ResizeObserver feedback loop.
+          setMediaRect((prev) =>
+            prev &&
+            prev.left === next.left && prev.right === next.right &&
+            prev.top === next.top && prev.bottom === next.bottom &&
+            prev.stretchTop === next.stretchTop && prev.stretchBottom === next.stretchBottom
+              ? prev
+              : next
+          );
         }
       }
 

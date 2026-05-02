@@ -214,7 +214,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         subtitle: "For 2026-27 Academic Year",
         cta: CTA_DEFAULT,
         media: media("Children's programs", "1/1"),
-        titleStyle: { mt: "120px", mb: "46px" },
+        titleStyle: { typo: "typo-content-header", mt: "120px", mb: "46px" },
         subtitleStyle: { typo: "typo-subtitle", pb: "132px" },
         ctaStyle: { mb: "4px" },
         layout: {
@@ -234,7 +234,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         subtitle: "Registration Now Open",
         cta: CTA_DEFAULT,
         media: media("School year", "1/1"),
-        titleStyle: { mt: "73px", mb: "18px" },
+        titleStyle: { typo: "typo-content-header", mt: "73px", mb: "18px" },
         subtitleStyle: { typo: "typo-subtitle", ml: "15px" },
         layout: {
           desktop: {
@@ -295,7 +295,7 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         cta: CTA_DEFAULT,
         ctaStyle: { align: "right" },
         kickerStyle: { mt: "60px", mb: "76px", typo: "typo-subtitle", align: "right" },
-        titleStyle: { mb: "66px", ml: "30px", align: "right" },
+        titleStyle: { typo: "typo-content-header", mb: "66px", ml: "30px", align: "right" },
         media: media("Program photo", "796/448"),
         layout: {
           desktop: {

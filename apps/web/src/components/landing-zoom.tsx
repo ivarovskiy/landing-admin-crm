@@ -181,10 +181,11 @@ export function LandingZoom({
         }
       }
 
+      const current = stack.style.zoom || null;
       if (target == null) {
-        stack.style.removeProperty("zoom");
+        if (current != null) stack.style.removeProperty("zoom");
       } else {
-        stack.style.zoom = target;
+        if (current !== target) stack.style.zoom = target;
       }
 
       // After we have applied (or explicitly cleared) zoom via inline style,

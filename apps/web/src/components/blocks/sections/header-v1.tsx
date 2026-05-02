@@ -23,7 +23,13 @@ type HeaderNavGroups = {
 };
 
 export function HeaderV1({ data }: { data: any }) {
-  const brand = data?.brand ?? { label: "Ballet School", href: "#hero" };
+  const brandRaw = data?.brand ?? {};
+  const brand = {
+    ...brandRaw,
+    href: brandRaw.href && brandRaw.href !== "#" && brandRaw.href !== "#hero"
+      ? brandRaw.href
+      : "/",
+  };
   const desktopLinks = useMemo(() => normalizeLinks(data?.links), [data?.links]);
 
   const mobile = data?.mobile ?? {};

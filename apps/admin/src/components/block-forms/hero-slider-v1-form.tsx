@@ -18,6 +18,7 @@ import {
 import {
   ChevronDown,
   ChevronUp,
+  Copy,
   Eye,
   EyeOff,
   Image,
@@ -293,6 +294,11 @@ export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) 
               onChange={(next) => set(["slides"], setAt(slides, idx, next))}
               onRemove={() => set(["slides"], removeAt(slides, idx))}
               onMove={(dir) => set(["slides"], moveAt(slides, idx, dir))}
+              onDuplicate={() => {
+                const clone = { ...s, id: crypto?.randomUUID?.() ?? `slide-${Date.now()}` };
+                const next = [...slides.slice(0, idx + 1), clone, ...slides.slice(idx + 1)];
+                set(["slides"], next);
+              }}
               tuningScope={viewMode === "ipadPro" ? "ipadPro" : "default"}
             />
           ))}
@@ -315,6 +321,7 @@ function SlideEditor({
   onChange,
   onRemove,
   onMove,
+  onDuplicate,
   tuningScope,
 }: {
   slide: Slide;
@@ -323,6 +330,7 @@ function SlideEditor({
   onChange: (next: Slide) => void;
   onRemove: () => void;
   onMove: (dir: "up" | "down") => void;
+  onDuplicate: () => void;
   tuningScope: HeroTuningScope;
 }) {
   const [collapsed, setCollapsed] = useState(true);
@@ -372,6 +380,14 @@ function SlideEditor({
             className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
           >
             <ChevronDown className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            onClick={onDuplicate}
+            className="text-muted-foreground hover:text-foreground p-0.5"
+            title="Duplicate slide"
+          >
+            <Copy className="h-3 w-3" />
           </button>
           <button
             type="button"
@@ -991,13 +1007,31 @@ function ExtrasEditor({
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               Block {idx + 1}
             </span>
-            <button
-              type="button"
-              onClick={() => onChange(extras.filter((_, i) => i !== idx))}
-              className="text-muted-foreground hover:text-red-500"
-            >
-              <Trash2 className="h-3 w-3" />
-            </button>
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => onChange(moveAt(extras, idx, "up"))}
+                disabled={idx === 0}
+                className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
+              >
+                <ChevronUp className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange(moveAt(extras, idx, "down"))}
+                disabled={idx === extras.length - 1}
+                className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
+              >
+                <ChevronDown className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange(extras.filter((_, i) => i !== idx))}
+                className="text-muted-foreground hover:text-red-500 p-0.5"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
           </div>
 
           {/* Kind */}
