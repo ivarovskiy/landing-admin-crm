@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 
 const VIEWPORT_DEFAULT = "width=device-width, initial-scale=1";
 const PREPAINT_STYLE_ID = "landing-zoom-pre";
@@ -114,7 +114,7 @@ export function LandingZoom({
   }, [normalizeViewport, normalizeViewportWidth, preventInitialFlicker]);
 
   /* ── CSS zoom ── */
-  useEffect(() => {
+  useLayoutEffect(() => {
     const stack = document.querySelector(".landing-stack") as HTMLElement | null;
     if (!stack) return;
 
