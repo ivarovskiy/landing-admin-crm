@@ -83,6 +83,8 @@ export type Slide = {
   template?: SlideTemplate;
   /** Hide this slide from the carousel without deleting it (admin-only state) */
   hidden?: boolean;
+  /** Render order of text elements: fixed keys ('quote'|'kicker'|'title'|'subtitle'|'body') or extra ids */
+  elementOrder?: string[];
   /** Mirror the layout — swaps media ↔ text horizontally for templates with both columns */
   mirror?: boolean;
   /** Stretch the text column to match media height — children spread top↔bottom */

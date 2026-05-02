@@ -23,7 +23,6 @@ import {
   EyeOff,
   Image,
   LayoutTemplate,
-  Move,
   Plus,
   SlidersHorizontal,
   Trash2,
@@ -39,6 +38,7 @@ import {
   type HeroViewportProfileKey,
   type SlideExtra,
   type TypoClass,
+  type BodyVariant,
   TEMPLATE_OPTIONS,
   PRESET_OPTIONS,
   FIT_OPTIONS,
@@ -46,6 +46,7 @@ import {
   ALIGN_OPTIONS,
   JUSTIFY_OPTIONS,
   TYPO_OPTIONS,
+  BODY_VARIANT_OPTIONS,
   presetSlide,
   newSlide,
 } from "./hero-slider-presets";
@@ -457,174 +458,31 @@ function SlideEditor({
           </div>
         </InspectorSection>
 
-        {/* Text content */}
+        {/* Text content — collapsible + reorderable cards */}
         <InspectorSection
           title="Text"
           icon={<Type className="h-3 w-3" />}
-
           defaultOpen
         >
-          {s?.quote !== undefined && (
-            <>
-              <InspectorField label="Quote" stacked>
-                <InspectorTextarea
-                  value={s.quote ?? ""}
-                  onChange={(v) => onChange({ ...s, quote: v })}
-                  rows={2}
-                />
-                <IconInsertBar
-                  value={s.quote ?? ""}
-                  onChange={(v) => onChange({ ...s, quote: v })}
-                />
-              </InspectorField>
-              <InspectorField label="Quote typography">
-                <InspectorSelect
-                  value={s.quoteStyle?.typo ?? ""}
-                  onChange={(v) => onChange({ ...s, quoteStyle: { ...s.quoteStyle, typo: (v || undefined) as TypoClass | undefined } })}
-                  options={TYPO_OPTIONS}
-                />
-              </InspectorField>
-            </>
-          )}
+          <TextElementsEditor slide={s} tuningScope={tuningScope} onChange={onChange} />
+        </InspectorSection>
 
-          {s?.kicker !== undefined && (
-            <>
-              <InspectorField label="Kicker" stacked>
-                <InspectorTextarea
-                  value={s.kicker ?? ""}
-                  onChange={(v) => onChange({ ...s, kicker: v })}
-                  rows={2}
-                />
-                <IconInsertBar
-                  value={s.kicker ?? ""}
-                  onChange={(v) => onChange({ ...s, kicker: v })}
-                />
-              </InspectorField>
-              <div className="grid grid-cols-2 gap-1.5">
-                <InspectorField label="Kicker typography">
-                  <InspectorSelect
-                    value={getScopedElementStyle(s.kickerStyle, tuningScope).typo ?? ""}
-                    onChange={(v) => onChange({ ...s, kickerStyle: updateScopedElementStyle(s.kickerStyle, tuningScope, { typo: (v || undefined) as TypoClass | undefined }) })}
-                    options={TYPO_OPTIONS}
-                  />
-                </InspectorField>
-                <InspectorField label="Kicker align">
-                  <InspectorSelect
-                    value={getScopedElementStyle(s.kickerStyle, tuningScope).align ?? ""}
-                    onChange={(v) => onChange({ ...s, kickerStyle: updateScopedElementStyle(s.kickerStyle, tuningScope, { align: (v || undefined) as any }) })}
-                    options={ELEMENT_ALIGN_OPTIONS}
-                  />
-                </InspectorField>
-              </div>
-            </>
-          )}
-
-          <InspectorField label="Title" stacked>
-            <InspectorTextarea
-              value={s?.title ?? ""}
-              onChange={(v) => onChange({ ...s, title: v })}
-              rows={2}
-            />
-            <IconInsertBar
-              value={s?.title ?? ""}
-              onChange={(v) => onChange({ ...s, title: v })}
-            />
-          </InspectorField>
-          <div className="grid grid-cols-2 gap-1.5">
-            <InspectorField label="Title typography">
-              <InspectorSelect
-                value={getScopedElementStyle(s.titleStyle, tuningScope).typo ?? ""}
-                onChange={(v) => onChange({ ...s, titleStyle: updateScopedElementStyle(s.titleStyle, tuningScope, { typo: (v || undefined) as TypoClass | undefined }) })}
-                options={TYPO_OPTIONS}
-              />
-            </InspectorField>
-            <InspectorField label="Title align">
-              <InspectorSelect
-                value={getScopedElementStyle(s.titleStyle, tuningScope).align ?? ""}
-                onChange={(v) => onChange({ ...s, titleStyle: updateScopedElementStyle(s.titleStyle, tuningScope, { align: (v || undefined) as any }) })}
-                options={ELEMENT_ALIGN_OPTIONS}
-              />
-            </InspectorField>
-          </div>
-
-          {s?.subtitle !== undefined && (
-            <>
-              <InspectorField label="Tagline" stacked>
-                <InspectorTextarea
-                  value={s.subtitle ?? ""}
-                  onChange={(v) => onChange({ ...s, subtitle: v })}
-                  rows={2}
-                />
-                <IconInsertBar
-                  value={s.subtitle ?? ""}
-                  onChange={(v) => onChange({ ...s, subtitle: v })}
-                />
-              </InspectorField>
-              <div className="grid grid-cols-2 gap-1.5">
-                <InspectorField label="Tagline typography">
-                  <InspectorSelect
-                    value={getScopedElementStyle(s.subtitleStyle, tuningScope).typo ?? ""}
-                    onChange={(v) => onChange({ ...s, subtitleStyle: updateScopedElementStyle(s.subtitleStyle, tuningScope, { typo: (v || undefined) as TypoClass | undefined }) })}
-                    options={TYPO_OPTIONS}
-                  />
-                </InspectorField>
-                <InspectorField label="Tagline align">
-                  <InspectorSelect
-                    value={getScopedElementStyle(s.subtitleStyle, tuningScope).align ?? ""}
-                    onChange={(v) => onChange({ ...s, subtitleStyle: updateScopedElementStyle(s.subtitleStyle, tuningScope, { align: (v || undefined) as any }) })}
-                    options={ELEMENT_ALIGN_OPTIONS}
-                  />
-                </InspectorField>
-              </div>
-            </>
-          )}
-
-          {s?.body !== undefined && (
-            <>
-              <InspectorField label="Body" stacked>
-                <InspectorTextarea
-                  value={s.body ?? ""}
-                  onChange={(v) => onChange({ ...s, body: v })}
-                  rows={4}
-                />
-                <IconInsertBar
-                  value={s.body ?? ""}
-                  onChange={(v) => onChange({ ...s, body: v })}
-                />
-              </InspectorField>
-              <div className="grid grid-cols-2 gap-1.5">
-                <InspectorField label="Body typography">
-                  <InspectorSelect
-                    value={getScopedElementStyle(s.bodyStyle, tuningScope).typo ?? ""}
-                    onChange={(v) => onChange({ ...s, bodyStyle: updateScopedElementStyle(s.bodyStyle, tuningScope, { typo: (v || undefined) as TypoClass | undefined }) })}
-                    options={TYPO_OPTIONS}
-                  />
-                </InspectorField>
-                <InspectorField label="Body align">
-                  <InspectorSelect
-                    value={getScopedElementStyle(s.bodyStyle, tuningScope).align ?? ""}
-                    onChange={(v) => onChange({ ...s, bodyStyle: updateScopedElementStyle(s.bodyStyle, tuningScope, { align: (v || undefined) as any }) })}
-                    options={ELEMENT_ALIGN_OPTIONS}
-                  />
-                </InspectorField>
-              </div>
-            </>
-          )}
-
-          <InspectorField label="CTA label">
+        {/* CTA */}
+        <InspectorSection title="CTA" icon={<Type className="h-3 w-3" />} defaultOpen={false}>
+          <InspectorField label="Label">
             <InspectorInput
               value={s?.cta?.label ?? ""}
               onChange={(v) => onChange({ ...s, cta: { ...s?.cta, label: v } })}
             />
           </InspectorField>
           <div className="grid grid-cols-2 gap-1.5">
-            <InspectorField label="CTA href">
+            <InspectorField label="Href">
               <InspectorInput
                 value={s?.cta?.href ?? ""}
                 onChange={(v) => onChange({ ...s, cta: { ...s?.cta, href: v } })}
               />
             </InspectorField>
-            <InspectorField label="CTA align">
+            <InspectorField label="Align">
               <InspectorSelect
                 value={s.ctaStyle?.align ?? ""}
                 onChange={(v) => onChange({ ...s, ctaStyle: { ...s.ctaStyle, align: v || undefined } as any })}
@@ -799,75 +657,6 @@ function SlideEditor({
           />
         </InspectorSection>
 
-        {/* Per-element positioning */}
-        <InspectorSection
-          title="Element Positioning"
-          icon={<Move className="h-3 w-3" />}
-          defaultOpen={false}
-        >
-          {s?.quote !== undefined && (
-            <ElementStyleEditor
-              label="Quote"
-              style={s.quoteStyle}
-              onChange={(es) => onChange({ ...s, quoteStyle: es })}
-              showTypo
-              tuningScope={tuningScope}
-            />
-          )}
-          {s?.kicker !== undefined && (
-            <ElementStyleEditor
-              label="Kicker"
-              style={s.kickerStyle}
-              onChange={(es) => onChange({ ...s, kickerStyle: es })}
-              showTypo
-              tuningScope={tuningScope}
-            />
-          )}
-          <ElementStyleEditor
-            label="Title"
-            style={s.titleStyle}
-            onChange={(es) => onChange({ ...s, titleStyle: es })}
-            showTypo
-            tuningScope={tuningScope}
-          />
-          {s?.subtitle !== undefined && (
-            <ElementStyleEditor
-              label="Tagline"
-              style={s.subtitleStyle}
-              onChange={(es) => onChange({ ...s, subtitleStyle: es })}
-              showTypo
-              tuningScope={tuningScope}
-            />
-          )}
-          {s?.body !== undefined && (
-            <ElementStyleEditor
-              label="Body"
-              style={s.bodyStyle}
-              onChange={(es) => onChange({ ...s, bodyStyle: es })}
-              showTypo
-              tuningScope={tuningScope}
-            />
-          )}
-          <ElementStyleEditor
-            label="CTA"
-            style={s.ctaStyle}
-            onChange={(es) => onChange({ ...s, ctaStyle: es })}
-            tuningScope={tuningScope}
-          />
-        </InspectorSection>
-
-        {/* Extra elements */}
-        <InspectorSection
-          title="Extra Elements"
-          icon={<Plus className="h-3 w-3" />}
-          defaultOpen={false}
-        >
-          <ExtrasEditor
-            extras={Array.isArray(s?.extras) ? s.extras : []}
-            onChange={(next) => onChange({ ...s, extras: next })}
-            tuningScope={tuningScope}
-          />
-        </InspectorSection>
       </div>}
     </div>
   );
@@ -897,9 +686,11 @@ function ElementStyleEditor({
 
   return (
     <div className="space-y-1">
-      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-        {label}{tuningScope === "ipadPro" ? " - iPad" : ""}
-      </span>
+      {label ? (
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          {label}{tuningScope === "ipadPro" ? " - iPad" : ""}
+        </span>
+      ) : null}
       {showTypo && (
         <div>
           <div className="text-[9px] text-muted-foreground mb-0.5">Typography</div>
@@ -975,7 +766,7 @@ function ElementStyleEditor({
 }
 
 /* ------------------------------------------------------------------ */
-/*  ExtrasEditor — add/edit extra text elements on a slide             */
+/*  TextElementsEditor — unified reorderable list of all text elements */
 /* ------------------------------------------------------------------ */
 
 const EXTRA_KIND_OPTIONS = [
@@ -984,111 +775,224 @@ const EXTRA_KIND_OPTIONS = [
   { value: "stamp", label: "Stamp" },
 ];
 
-function ExtrasEditor({
-  extras,
+const FIXED_ELEMENT_LABELS: Record<string, string> = {
+  quote: "Quote",
+  kicker: "Kicker",
+  title: "Title",
+  subtitle: "Tagline",
+  body: "Body",
+};
+
+function TextElementsEditor({
+  slide: s,
+  tuningScope,
   onChange,
-  tuningScope = "default",
 }: {
-  extras: SlideExtra[];
-  onChange: (next: SlideExtra[]) => void;
-  tuningScope?: HeroTuningScope;
+  slide: Slide;
+  tuningScope: HeroTuningScope;
+  onChange: (next: Slide) => void;
 }) {
-  const updateExtra = (idx: number, patch: Partial<SlideExtra>) => {
-    const next = [...extras];
-    next[idx] = { ...extras[idx], ...patch };
-    onChange(next);
+  const extras = Array.isArray(s?.extras) ? s.extras : [];
+
+  const activeFixed: string[] = [];
+  if (s?.kicker !== undefined) activeFixed.push("kicker");
+  activeFixed.push("title");
+  if (s?.subtitle !== undefined) activeFixed.push("subtitle");
+  if (s?.body !== undefined) activeFixed.push("body");
+  if (s?.quote !== undefined) activeFixed.push("quote");
+
+  const extraKeys = extras.map((e, i) => e.id ?? String(i));
+  const allKeys = [...activeFixed, ...extraKeys];
+  const allKeysSet = new Set(allKeys);
+
+  const stored = s?.elementOrder ?? [];
+  const orderedKeys = [
+    ...stored.filter(k => allKeysSet.has(k)),
+    ...allKeys.filter(k => !stored.includes(k)),
+  ];
+
+  const moveElement = (idx: number, dir: "up" | "down") => {
+    const next = [...orderedKeys];
+    const target = dir === "up" ? idx - 1 : idx + 1;
+    [next[idx], next[target]] = [next[target], next[idx]];
+    onChange({ ...s, elementOrder: next });
+  };
+
+  const removeExtra = (id: string) => {
+    const newExtras = extras.filter(e => e.id !== id);
+    const newOrder = orderedKeys.filter(k => k !== id);
+    onChange({ ...s, extras: newExtras, elementOrder: newOrder.length ? newOrder : undefined });
+  };
+
+  const addExtra = () => {
+    const newExtra: SlideExtra = {
+      id: crypto?.randomUUID?.() ?? `ex-${Date.now()}`,
+      kind: "text",
+      text: "",
+    };
+    onChange({
+      ...s,
+      extras: [...extras, newExtra],
+      elementOrder: [...orderedKeys, newExtra.id!],
+    });
   };
 
   return (
-    <div className="space-y-2">
-      {extras.map((ex, idx) => (
-        <div key={ex.id ?? idx} className="rounded border p-1.5 space-y-1.5 bg-muted/5">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Block {idx + 1}
-            </span>
-            <div className="flex items-center gap-0.5">
-              <button
-                type="button"
-                onClick={() => onChange(moveAt(extras, idx, "up"))}
-                disabled={idx === 0}
-                className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
-              >
-                <ChevronUp className="h-3 w-3" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onChange(moveAt(extras, idx, "down"))}
-                disabled={idx === extras.length - 1}
-                className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
-              >
-                <ChevronDown className="h-3 w-3" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onChange(extras.filter((_, i) => i !== idx))}
-                className="text-muted-foreground hover:text-red-500 p-0.5"
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
-            </div>
-          </div>
-
-          {/* Kind */}
-          <div>
-            <div className="mb-0.5 text-[9px] text-muted-foreground">Kind</div>
-            <InspectorSelect
-              value={ex.kind}
-              onChange={(v) => updateExtra(idx, { kind: v as SlideExtra["kind"] })}
-              options={EXTRA_KIND_OPTIONS}
-            />
-          </div>
-
-          {/* Typography — primary control */}
-          <div>
-            <div className="mb-0.5 text-[9px] text-muted-foreground">Typography</div>
-            <InspectorSelect
-              value={getScopedElementStyle(ex.style, tuningScope).typo ?? ""}
-              onChange={(v) =>
-                updateExtra(idx, {
-                  style: updateScopedElementStyle(ex.style, tuningScope, {
-                    typo: (v || undefined) as TypoClass | undefined,
-                  }),
-                })
-              }
-              options={TYPO_OPTIONS}
-            />
-          </div>
-
-          {/* Text */}
-          <InspectorTextarea
-            value={ex.text}
-            onChange={(v) => updateExtra(idx, { text: v })}
-            placeholder="Text content..."
-            rows={2}
-          />
-
-          {/* Position (margins, align, size, stroke) */}
-          <ElementStyleEditor
-            label="Position"
-            style={ex.style}
-            tuningScope={tuningScope}
-            onChange={(s) => updateExtra(idx, { style: s })}
-          />
-        </div>
+    <div className="space-y-1.5">
+      {orderedKeys.map((key, idx) => (
+        <TextElementCard
+          key={key}
+          elementKey={key}
+          slide={s}
+          index={idx}
+          total={orderedKeys.length}
+          tuningScope={tuningScope}
+          onChange={onChange}
+          onMove={(dir) => moveElement(idx, dir)}
+          onRemove={extraKeys.includes(key) ? () => removeExtra(key) : undefined}
+        />
       ))}
       <button
         type="button"
-        onClick={() =>
-          onChange([
-            ...extras,
-            { id: crypto?.randomUUID?.() ?? `ex-${Date.now()}`, kind: "text", text: "" },
-          ])
-        }
+        onClick={addExtra}
         className="flex items-center gap-0.5 text-[10px] font-medium text-primary hover:text-primary/80"
       >
         <Plus className="h-2.5 w-2.5" /> Add text block
       </button>
+    </div>
+  );
+}
+
+function TextElementCard({
+  elementKey,
+  slide: s,
+  index,
+  total,
+  tuningScope,
+  onChange,
+  onMove,
+  onRemove,
+}: {
+  elementKey: string;
+  slide: Slide;
+  index: number;
+  total: number;
+  tuningScope: HeroTuningScope;
+  onChange: (next: Slide) => void;
+  onMove: (dir: "up" | "down") => void;
+  onRemove?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const extras = Array.isArray(s?.extras) ? s.extras : [];
+  const extra = extras.find(e => e.id === elementKey);
+  const isExtra = !!extra;
+
+  const updateExtra = (patch: Partial<SlideExtra>) =>
+    onChange({ ...s, extras: extras.map(e => e.id === elementKey ? { ...e, ...patch } : e) });
+
+  const label = isExtra
+    ? `Extra${extra.text ? ": " + extra.text.split("\n")[0].slice(0, 22) : ""}`
+    : (FIXED_ELEMENT_LABELS[elementKey] ?? elementKey);
+
+  return (
+    <div className="rounded border bg-muted/5">
+      <div
+        className="flex items-center justify-between px-2 py-1 cursor-pointer select-none"
+        onClick={() => setOpen(o => !o)}
+      >
+        <span className="text-[11px] font-semibold text-muted-foreground truncate max-w-[150px]">
+          {open ? "▾" : "▸"} {label}
+        </span>
+        <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => onMove("up")}
+            disabled={index === 0}
+            className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
+          >
+            <ChevronUp className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onMove("down")}
+            disabled={index === total - 1}
+            className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
+          >
+            <ChevronDown className="h-3 w-3" />
+          </button>
+          {onRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              className="text-muted-foreground hover:text-red-500 p-0.5"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {open && (
+        <div className="px-2 pb-2 pt-1 space-y-1.5 border-t">
+          {elementKey === "kicker" && (
+            <>
+              <InspectorTextarea value={s.kicker ?? ""} onChange={(v) => onChange({ ...s, kicker: v })} rows={2} />
+              <IconInsertBar value={s.kicker ?? ""} onChange={(v) => onChange({ ...s, kicker: v })} />
+              <ElementStyleEditor label="" style={s.kickerStyle} onChange={(es) => onChange({ ...s, kickerStyle: es })} showTypo tuningScope={tuningScope} />
+            </>
+          )}
+          {elementKey === "title" && (
+            <>
+              <InspectorTextarea value={s.title ?? ""} onChange={(v) => onChange({ ...s, title: v })} rows={2} />
+              <IconInsertBar value={s.title ?? ""} onChange={(v) => onChange({ ...s, title: v })} />
+              <ElementStyleEditor label="" style={s.titleStyle} onChange={(es) => onChange({ ...s, titleStyle: es })} showTypo tuningScope={tuningScope} />
+            </>
+          )}
+          {elementKey === "subtitle" && (
+            <>
+              <InspectorTextarea value={s.subtitle ?? ""} onChange={(v) => onChange({ ...s, subtitle: v })} rows={2} />
+              <IconInsertBar value={s.subtitle ?? ""} onChange={(v) => onChange({ ...s, subtitle: v })} />
+              <ElementStyleEditor label="" style={s.subtitleStyle} onChange={(es) => onChange({ ...s, subtitleStyle: es })} showTypo tuningScope={tuningScope} />
+            </>
+          )}
+          {elementKey === "body" && (
+            <>
+              <InspectorTextarea value={s.body ?? ""} onChange={(v) => onChange({ ...s, body: v })} rows={4} />
+              <IconInsertBar value={s.body ?? ""} onChange={(v) => onChange({ ...s, body: v })} />
+              <div>
+                <div className="mb-0.5 text-[9px] text-muted-foreground">Variant</div>
+                <InspectorSelect
+                  value={s.bodyVariant ?? "plain"}
+                  onChange={(v) => onChange({ ...s, bodyVariant: v as BodyVariant })}
+                  options={BODY_VARIANT_OPTIONS}
+                />
+              </div>
+              <ElementStyleEditor label="" style={s.bodyStyle} onChange={(es) => onChange({ ...s, bodyStyle: es })} showTypo tuningScope={tuningScope} />
+            </>
+          )}
+          {elementKey === "quote" && (
+            <>
+              <InspectorTextarea value={s.quote ?? ""} onChange={(v) => onChange({ ...s, quote: v })} rows={2} />
+              <IconInsertBar value={s.quote ?? ""} onChange={(v) => onChange({ ...s, quote: v })} />
+              <ElementStyleEditor label="" style={s.quoteStyle} onChange={(es) => onChange({ ...s, quoteStyle: es })} showTypo tuningScope={tuningScope} />
+            </>
+          )}
+          {isExtra && extra && (
+            <>
+              <div>
+                <div className="mb-0.5 text-[9px] text-muted-foreground">Kind</div>
+                <InspectorSelect
+                  value={extra.kind}
+                  onChange={(v) => updateExtra({ kind: v as SlideExtra["kind"] })}
+                  options={EXTRA_KIND_OPTIONS}
+                />
+              </div>
+              <InspectorTextarea value={extra.text} onChange={(v) => updateExtra({ text: v })} rows={2} placeholder="Text content..." />
+              <ElementStyleEditor label="" style={extra.style} tuningScope={tuningScope} onChange={(es) => updateExtra({ style: es })} showTypo />
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

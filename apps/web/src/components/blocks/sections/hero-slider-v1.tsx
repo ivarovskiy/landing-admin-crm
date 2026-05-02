@@ -85,6 +85,7 @@ type Slide = {
   cta?: { label?: string; href?: string };
   media?: SlideMedia;
   extras?: SlideExtra[];
+  elementOrder?: string[];
   quoteStyle?: ElementStyle;
   kickerStyle?: ElementStyle;
   titleStyle?: ElementStyle;
@@ -936,21 +937,49 @@ function CopyStack({
   const subtitle = slide?.subtitle;
   const body = slide?.body;
   const extras = Array.isArray(slide?.extras) ? slide.extras : [];
+  const extraById = new Map(extras.map(e => [e.id ?? "", e]));
+  const extraIndexById = new Map(extras.map((e, i) => [e.id ?? "", i]));
 
-  const main = (
-    <div className="hero-slide__copy-main">
-      {kicker ? (
+  const activeFixed: string[] = [
+    ...(kicker != null ? ["kicker"] : []),
+    ...(title ? ["title"] : []),
+    ...(subtitle != null ? ["subtitle"] : []),
+    ...(body != null ? ["body"] : []),
+    ...(quote != null ? ["quote"] : []),
+  ];
+  const extraKeys = extras.map(e => e.id ?? "");
+  const defaultOrder = [...activeFixed, ...extraKeys];
+
+  const stored = slide?.elementOrder;
+  let orderedKeys: string[];
+  if (stored && stored.length > 0) {
+    const knownSet = new Set(defaultOrder);
+    const used = new Set<string>();
+    orderedKeys = [
+      ...stored.filter(k => knownSet.has(k) && !used.has(k) && (used.add(k), true)),
+      ...defaultOrder.filter(k => !used.has(k)),
+    ];
+  } else {
+    orderedKeys = defaultOrder;
+  }
+
+  function renderElement(key: string) {
+    if (key === "kicker" && kicker) {
+      return (
         <div
+          key="kicker"
           className={mergeElementStyle(slide.kickerStyle, viewportProfile)?.typo || undefined}
           style={elStyle(mergeElementStyle(slide.kickerStyle, viewportProfile))}
           data-el={`slide-${slideIndex}-kicker`}
         >
           <SlideKicker text={kicker} />
         </div>
-      ) : null}
-
-      {title ? (
+      );
+    }
+    if (key === "title" && title) {
+      return (
         <OutlineStampText
+          key="title"
           className={cn("hero-slide__title", mergeElementStyle(slide.titleStyle, viewportProfile)?.typo)}
           data-el={`slide-${slideIndex}-title`}
           stamp={STAMP_HERO_TITLE}
@@ -958,10 +987,12 @@ function CopyStack({
         >
           <InlineText text={title} />
         </OutlineStampText>
-      ) : null}
-
-      {subtitle ? (
+      );
+    }
+    if (key === "subtitle" && subtitle) {
+      return (
         <div
+          key="subtitle"
           className={mergeElementStyle(slide.subtitleStyle, viewportProfile)?.typo || undefined}
           style={elStyle(mergeElementStyle(slide.subtitleStyle, viewportProfile))}
         >
@@ -971,45 +1002,53 @@ function CopyStack({
             slotId={`slide-${slideIndex}-subtitle`}
           />
         </div>
-      ) : null}
-
-      {body ? (
+      );
+    }
+    if (key === "body" && body) {
+      return (
         <div
+          key="body"
           className={mergeElementStyle(slide.bodyStyle, viewportProfile)?.typo || undefined}
           style={elStyle(mergeElementStyle(slide.bodyStyle, viewportProfile))}
           data-el={`slide-${slideIndex}-body`}
         >
           <SlideBody text={body} variant={slide?.bodyVariant} />
         </div>
-      ) : null}
-
-      {extras.map((ex, exIdx) => (
-        <ExtraElement
-          key={ex.id ?? exIdx}
-          extra={ex}
-          slideIndex={slideIndex}
-          extraIndex={exIdx}
-          viewportProfile={viewportProfile}
-        />
-      ))}
-    </div>
-  );
-
-  return (
-    <div className={cn("hero-slide__copy", spread && "hero-slide__copy--spread")}>
-      {quote ? (
+      );
+    }
+    if (key === "quote" && quote) {
+      return (
         <p
+          key="quote"
           className={cn("hero-slide__quote", mergeElementStyle(slide.quoteStyle, viewportProfile)?.typo)}
           style={elStyle(mergeElementStyle(slide.quoteStyle, viewportProfile))}
           data-el={`slide-${slideIndex}-quote`}
         >
           <InlineText text={quote} />
         </p>
-      ) : spread ? (
-        <div />
-      ) : null}
+      );
+    }
+    const extra = extraById.get(key);
+    if (extra) {
+      const exIdx = extraIndexById.get(key) ?? 0;
+      return (
+        <ExtraElement
+          key={key}
+          extra={extra}
+          slideIndex={slideIndex}
+          extraIndex={exIdx}
+          viewportProfile={viewportProfile}
+        />
+      );
+    }
+    return null;
+  }
 
-      {main}
+  return (
+    <div className={cn("hero-slide__copy", spread && "hero-slide__copy--spread")}>
+      <div className="hero-slide__copy-main">
+        {orderedKeys.map(key => renderElement(key))}
+      </div>
     </div>
   );
 }
