@@ -151,7 +151,7 @@ function mergeDesktopLayout(
 function useHeroViewportProfile(): HeroViewportProfileKey | null {
   const [profile, setProfile] = useState<HeroViewportProfileKey | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const query = "(min-width: 1200px) and (max-width: 1439px)";
     const mql = window.matchMedia(query);
     const update = () => setProfile(mql.matches ? "ipadPro" : null);
