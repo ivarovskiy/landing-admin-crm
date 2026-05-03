@@ -1,17 +1,13 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import { ChevronRight, Smartphone, Monitor } from "lucide-react";
+import { ChevronRight, Monitor, Smartphone } from "lucide-react";
 
-// ─── Scrub helpers ────────────────────────────────────────────────────────────
-
-/** Parse a CSS value like "120px", "3.6em", "100%", "1.5vw" into num + unit. */
 function parseNum(v: string): { num: number; unit: string } | null {
   const m = v.trim().match(/^(-?(?:\d+\.?\d*|\.\d+))(px|em|rem|vw|vh|%|)$/i);
   if (!m) return null;
   const num = parseFloat(m[1]);
-  if (!isFinite(num)) return null;
-  return { num, unit: m[2] };
+  return Number.isFinite(num) ? { num, unit: m[2] } : null;
 }
 
 function fmtNum(num: number, unit: string): string {
@@ -19,24 +15,19 @@ function fmtNum(num: number, unit: string): string {
   return `${Math.round(num * 100) / 100}${unit}`;
 }
 
-/** 1px drag = this many units. Small-range units (em/vw) use 0.1 sensitivity. */
 function scrubStep(unit: string): number {
   return unit === "em" || unit === "rem" || unit === "vw" || unit === "vh" ? 0.1 : 1;
+}
+
+function scrubMultiplier(e: React.PointerEvent<HTMLElement>): number {
+  if (e.shiftKey) return 10;
+  if (e.altKey) return 0.1;
+  return 1;
 }
 
 type ResponsiveHide = { base?: boolean; md?: boolean; lg?: boolean };
 type ViewMode = "desktop" | "ipadPro" | "mobile";
 
-/**
- * Collapsible inspector section — like Figma's right panel sections.
- *
- * Usage:
- *   <InspectorSection title="Content" defaultOpen>
- *     <InspectorField label="Title">
- *       <input ... />
- *     </InspectorField>
- *   </InspectorSection>
- */
 export function InspectorSection({
   title,
   icon,
@@ -58,7 +49,6 @@ export function InspectorSection({
         role="button"
         tabIndex={0}
         onClick={(e) => {
-          // Don't toggle when clicking badge actions
           if ((e.target as HTMLElement).closest("[data-section-badge]")) return;
           setOpen((v) => !v);
         }}
@@ -69,7 +59,7 @@ export function InspectorSection({
             setOpen((v) => !v);
           }
         }}
-        className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer select-none"
+        className="flex h-9 w-full cursor-pointer select-none items-center gap-2 px-3 transition-colors hover:bg-muted/45"
       >
         <ChevronRight
           className={[
@@ -77,33 +67,26 @@ export function InspectorSection({
             open ? "rotate-90" : "",
           ].join(" ")}
         />
-
-        {icon && (
-          <span className="text-muted-foreground shrink-0">{icon}</span>
-        )}
-
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex-1 text-left">
+        {icon ? <span className="shrink-0 text-muted-foreground">{icon}</span> : null}
+        <span className="flex-1 text-left text-[10px] font-semibold uppercase text-muted-foreground">
           {title}
         </span>
-
-        {badge && <span className="shrink-0" data-section-badge>{badge}</span>}
+        {badge ? (
+          <span className="shrink-0" data-section-badge>
+            {badge}
+          </span>
+        ) : null}
       </div>
 
-      {open && <div className="px-4 pb-3 space-y-2.5">{children}</div>}
+      {open ? <div className="space-y-2 px-3 pb-3">{children}</div> : null}
     </div>
   );
 }
 
-/**
- * A single field row inside an inspector section.
- *
- * Layout: label on left (fixed width), control on right (flex).
- * Or stacked if `stacked` is true.
- */
 export function InspectorField({
   label,
   hint,
-  stacked = true,
+  stacked = false,
   children,
 }: {
   label: string;
@@ -111,46 +94,27 @@ export function InspectorField({
   stacked?: boolean;
   children: ReactNode;
 }) {
-  if (!stacked) {
+  if (stacked) {
     return (
-      <div className="flex items-start gap-3">
-        <label className="text-xs font-medium text-muted-foreground w-20 shrink-0 pt-2 text-right">
-          {label}
-        </label>
-        <div className="flex-1 min-w-0">
-          {children}
-          {hint && (
-            <p className="text-[11px] text-muted-foreground/70 mt-0.5">
-              {hint}
-            </p>
-          )}
-        </div>
+      <div className="space-y-1">
+        {label ? <label className="text-[11px] font-medium text-muted-foreground">{label}</label> : null}
+        {children}
+        {hint ? <p className="text-[10px] leading-snug text-muted-foreground/70">{hint}</p> : null}
       </div>
     );
   }
 
   return (
-    <div className="space-y-1">
-      {label && (
-        <label className="text-xs font-medium text-muted-foreground">
-          {label}
-        </label>
-      )}
-      {children}
-      {hint && (
-        <p className="text-[11px] text-muted-foreground/70">{hint}</p>
-      )}
+    <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-2">
+      <label className="truncate text-[11px] font-medium text-muted-foreground">{label}</label>
+      <div className="min-w-0">
+        {children}
+        {hint ? <p className="mt-1 text-[10px] leading-snug text-muted-foreground/70">{hint}</p> : null}
+      </div>
     </div>
   );
 }
 
-/**
- * Inspector text input with Figma-like scrubbing for numeric CSS values.
- *
- * When the value looks like a CSS number ("120px", "3.6em", "100%"…) and the
- * field is not focused, dragging vertically increments/decrements the number.
- * Shift key = 10× sensitivity. A short click (no drag) focuses for text entry.
- */
 export function InspectorInput({
   value,
   onChange,
@@ -164,10 +128,10 @@ export function InspectorInput({
   type?: string;
   className?: string;
 }) {
-  const ref = useRef<HTMLTextAreaElement & HTMLInputElement>(null);
+  const ref = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const scrub = useRef<{
-    startY: number;
+    startX: number;
     startNum: number;
     unit: string;
     step: number;
@@ -177,12 +141,12 @@ export function InspectorInput({
   const parsed = parseNum(value);
   const scrubable = !!parsed && !focused;
 
-  const onPD = (e: React.PointerEvent<HTMLElement>) => {
+  const onPointerDown = (e: React.PointerEvent<HTMLInputElement>) => {
     if (!scrubable || !parsed) return;
-    e.preventDefault(); // block focus until we know it's a click, not a drag
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
     scrub.current = {
-      startY: e.clientY,
+      startX: e.clientX,
       startNum: parsed.num,
       unit: parsed.unit,
       step: scrubStep(parsed.unit),
@@ -190,72 +154,46 @@ export function InspectorInput({
     };
   };
 
-  const onPM = (e: React.PointerEvent<HTMLElement>) => {
+  const onPointerMove = (e: React.PointerEvent<HTMLInputElement>) => {
     const d = scrub.current;
     if (!d) return;
-    const dy = d.startY - e.clientY; // drag up → positive → increase
-    if (Math.abs(dy) > 3) d.moved = true;
+    const dx = e.clientX - d.startX;
+    if (Math.abs(dx) > 3) d.moved = true;
     if (!d.moved) return;
-    const mult = e.shiftKey ? 10 : 1;
-    onChange(fmtNum(d.startNum + dy * d.step * mult, d.unit));
+    onChange(fmtNum(d.startNum + dx * d.step * scrubMultiplier(e), d.unit));
   };
 
-  const onPU = () => {
+  const onPointerUp = () => {
     const d = scrub.current;
     scrub.current = null;
-    if (!d?.moved) ref.current?.focus(); // short click → focus for typing
+    if (!d?.moved) ref.current?.focus();
   };
-
-  const baseClass = [
-    "w-full border bg-muted text-foreground px-2 text-sm",
-    "focus:outline-none focus:ring-1 focus:ring-ring",
-    "placeholder:text-muted-foreground/40",
-    scrubable ? "cursor-ns-resize" : "",
-    className,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  if (type === "text") {
-    return (
-      <textarea
-        ref={ref as React.RefObject<HTMLTextAreaElement>}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        onPointerDown={onPD}
-        onPointerMove={onPM}
-        onPointerUp={onPU}
-        onPointerCancel={() => { scrub.current = null; }}
-        placeholder={placeholder}
-        rows={1}
-        className={[baseClass, "py-2 resize-y leading-tight"].join(" ")}
-      />
-    );
-  }
 
   return (
     <input
-      ref={ref as React.RefObject<HTMLInputElement>}
+      ref={ref}
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
-      onPointerDown={onPD}
-      onPointerMove={onPM}
-      onPointerUp={onPU}
-      onPointerCancel={() => { scrub.current = null; }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={() => {
+        scrub.current = null;
+      }}
       placeholder={placeholder}
-      className={[baseClass, "h-8"].join(" ")}
+      className={[
+        "h-7 w-full rounded-sm border border-border/70 bg-muted/80 px-2 text-xs tabular-nums text-foreground",
+        "placeholder:text-muted-foreground/40 focus:border-primary/70 focus:outline-none focus:ring-1 focus:ring-ring/70",
+        scrubable ? "cursor-ew-resize" : "",
+        className,
+      ].filter(Boolean).join(" ")}
     />
   );
 }
 
-/**
- * Compact textarea styled for inspector.
- */
 export function InspectorTextarea({
   value,
   onChange,
@@ -274,17 +212,13 @@ export function InspectorTextarea({
       placeholder={placeholder}
       rows={rows}
       className={[
-        "w-full border bg-muted text-foreground px-2 py-2 text-sm resize-y",
-        "focus:outline-none focus:ring-1 focus:ring-ring",
-        "placeholder:text-muted-foreground/40",
+        "w-full rounded-sm border border-border/70 bg-muted/80 px-2 py-2 text-xs leading-snug text-foreground resize-y",
+        "placeholder:text-muted-foreground/40 focus:border-primary/70 focus:outline-none focus:ring-1 focus:ring-ring/70",
       ].join(" ")}
     />
   );
 }
 
-/**
- * Compact select styled for inspector.
- */
 export function InspectorSelect({
   value,
   onChange,
@@ -298,7 +232,7 @@ export function InspectorSelect({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full h-8 border bg-muted text-foreground px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+      className="h-7 w-full rounded-sm border border-border/70 bg-muted/80 px-2 text-xs text-foreground focus:border-primary/70 focus:outline-none focus:ring-1 focus:ring-ring/70"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
@@ -309,10 +243,6 @@ export function InspectorSelect({
   );
 }
 
-/**
- * Number input with scrubbing (drag up/down) + keyboard entry.
- * Shift key = 10× step sensitivity.
- */
 export function InspectorNumber({
   value,
   onChange,
@@ -330,11 +260,7 @@ export function InspectorNumber({
 }) {
   const ref = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
-  const scrub = useRef<{
-    startY: number;
-    startVal: number;
-    moved: boolean;
-  } | null>(null);
+  const scrub = useRef<{ startX: number; startVal: number; moved: boolean } | null>(null);
 
   const clamp = (v: number) => {
     let r = v;
@@ -343,24 +269,24 @@ export function InspectorNumber({
     return r;
   };
 
-  const onPD = (e: React.PointerEvent<HTMLInputElement>) => {
+  const onPointerDown = (e: React.PointerEvent<HTMLInputElement>) => {
     if (focused) return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
-    scrub.current = { startY: e.clientY, startVal: value ?? 0, moved: false };
+    scrub.current = { startX: e.clientX, startVal: value ?? 0, moved: false };
   };
 
-  const onPM = (e: React.PointerEvent<HTMLInputElement>) => {
+  const onPointerMove = (e: React.PointerEvent<HTMLInputElement>) => {
     const d = scrub.current;
     if (!d) return;
-    const dy = d.startY - e.clientY;
-    if (Math.abs(dy) > 3) d.moved = true;
+    const dx = e.clientX - d.startX;
+    if (Math.abs(dx) > 3) d.moved = true;
     if (!d.moved) return;
-    const mult = e.shiftKey ? 10 : 1;
-    onChange(clamp(Math.round((d.startVal + dy * step * mult) / step) * step));
+    const next = d.startVal + dx * step * scrubMultiplier(e);
+    onChange(clamp(Math.round(next / step) * step));
   };
 
-  const onPU = () => {
+  const onPointerUp = () => {
     const d = scrub.current;
     scrub.current = null;
     if (!d?.moved) ref.current?.focus();
@@ -377,27 +303,25 @@ export function InspectorNumber({
       }}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
-      onPointerDown={onPD}
-      onPointerMove={onPM}
-      onPointerUp={onPU}
-      onPointerCancel={() => { scrub.current = null; }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={() => {
+        scrub.current = null;
+      }}
       min={min}
       max={max}
       step={step}
       placeholder={placeholder}
       className={[
-        "w-full h-8 border bg-muted text-foreground px-2 text-sm tabular-nums",
-        "focus:outline-none focus:ring-1 focus:ring-ring",
-        "placeholder:text-muted-foreground/40",
-        !focused ? "cursor-ns-resize" : "",
-      ].filter(Boolean).join(" ")}
+        "h-7 w-full rounded-sm border border-border/70 bg-muted/80 px-2 text-xs tabular-nums text-foreground",
+        "placeholder:text-muted-foreground/40 focus:border-primary/70 focus:outline-none focus:ring-1 focus:ring-ring/70",
+        !focused ? "cursor-ew-resize" : "",
+      ].join(" ")}
     />
   );
 }
 
-/**
- * Toggle switch for boolean values.
- */
 export function InspectorToggle({
   checked,
   onChange,
@@ -408,11 +332,7 @@ export function InspectorToggle({
   label?: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className="flex items-center gap-2"
-    >
+    <button type="button" onClick={() => onChange(!checked)} className="flex items-center gap-2 text-left">
       <div
         className={[
           "relative h-4 w-7 rounded-full transition-colors",
@@ -426,16 +346,11 @@ export function InspectorToggle({
           ].join(" ")}
         />
       </div>
-      {label && (
-        <span className="text-[11px] text-muted-foreground">{label}</span>
-      )}
+      {label ? <span className="text-[11px] text-muted-foreground">{label}</span> : null}
     </button>
   );
 }
 
-/**
- * Segmented control (like Figma's alignment buttons).
- */
 export function InspectorSegment<T extends string>({
   value,
   onChange,
@@ -446,7 +361,7 @@ export function InspectorSegment<T extends string>({
   options: { value: T; label: ReactNode; title?: string }[];
 }) {
   return (
-    <div className="flex rounded-md border bg-muted/30 p-0.5">
+    <div className="flex h-7 rounded-sm border border-border/70 bg-muted/45 p-0.5">
       {options.map((o) => (
         <button
           key={o.value}
@@ -454,10 +369,8 @@ export function InspectorSegment<T extends string>({
           title={o.title}
           onClick={() => onChange(o.value)}
           className={[
-            "flex-1 flex items-center justify-center rounded px-2 py-1 text-[10px] font-medium transition-all",
-            o.value === value
-              ? "bg-muted text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
+            "flex flex-1 items-center justify-center rounded-[3px] px-2 text-[10px] font-medium transition-all",
+            o.value === value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
           ].join(" ")}
         >
           {o.label}
@@ -467,19 +380,6 @@ export function InspectorSegment<T extends string>({
   );
 }
 
-/**
- * Responsive visibility toggle — shows 📱 and 🖥️ icons.
- * The icon matching the current viewMode is highlighted (active viewport).
- * Clicking either icon toggles that breakpoint's visibility.
- *
- * Usage:
- *   <InspectorResponsiveToggle
- *     label="Tagline"
- *     hide={subtitleHide}
- *     onChange={(next) => onChange({ ...value, subtitleHide: next })}
- *     viewMode={viewMode}
- *   />
- */
 export function InspectorResponsiveToggle({
   label,
   hide,
@@ -491,7 +391,7 @@ export function InspectorResponsiveToggle({
   onChange: (next: ResponsiveHide) => void;
   viewMode: ViewMode;
 }) {
-  const mobileHidden  = hide.base === true;
+  const mobileHidden = hide.base === true;
   const desktopHidden = hide.md === true && hide.lg === true;
 
   function toggleMobile() {
@@ -505,39 +405,27 @@ export function InspectorResponsiveToggle({
 
   return (
     <div className="flex items-center gap-2 py-0.5">
-      <span className="text-xs text-muted-foreground flex-1 truncate">{label}</span>
-
-      {/* Mobile toggle */}
+      <span className="flex-1 truncate text-[11px] text-muted-foreground">{label}</span>
       <button
         type="button"
         onClick={toggleMobile}
-        title={mobileHidden ? "Hidden on mobile — click to show" : "Visible on mobile — click to hide"}
+        title={mobileHidden ? "Hidden on mobile - click to show" : "Visible on mobile - click to hide"}
         className={[
-          "flex items-center justify-center rounded-md px-1.5 py-1 transition-all",
-          viewMode === "mobile"
-            ? "bg-muted ring-1 ring-border"          // active viewport — highlighted
-            : "opacity-60 hover:opacity-100",
-          mobileHidden
-            ? "text-muted-foreground/40"
-            : "text-emerald-500",
+          "flex h-6 w-6 items-center justify-center rounded-sm transition-all",
+          viewMode === "mobile" ? "bg-muted ring-1 ring-border" : "opacity-60 hover:opacity-100",
+          mobileHidden ? "text-muted-foreground/40" : "text-emerald-500",
         ].join(" ")}
       >
         <Smartphone className="h-3 w-3" />
       </button>
-
-      {/* Desktop toggle */}
       <button
         type="button"
         onClick={toggleDesktop}
-        title={desktopHidden ? "Hidden on desktop — click to show" : "Visible on desktop — click to hide"}
+        title={desktopHidden ? "Hidden on desktop - click to show" : "Visible on desktop - click to hide"}
         className={[
-          "flex items-center justify-center rounded-md px-1.5 py-1 transition-all",
-          viewMode !== "mobile"
-            ? "bg-muted ring-1 ring-border"          // active viewport — highlighted
-            : "opacity-60 hover:opacity-100",
-          desktopHidden
-            ? "text-muted-foreground/40"
-            : "text-blue-400",
+          "flex h-6 w-6 items-center justify-center rounded-sm transition-all",
+          viewMode !== "mobile" ? "bg-muted ring-1 ring-border" : "opacity-60 hover:opacity-100",
+          desktopHidden ? "text-muted-foreground/40" : "text-blue-400",
         ].join(" ")}
       >
         <Monitor className="h-3 w-3" />
@@ -546,12 +434,6 @@ export function InspectorResponsiveToggle({
   );
 }
 
-/**
- * Color swatch + native picker + text input.
- * - Click the swatch → opens native color picker
- * - Text input accepts any CSS color (hex, rgb, hsl, var(...))
- * - Swatch previews the current value visually
- */
 export function InspectorColorInput({
   value,
   onChange,
@@ -562,43 +444,37 @@ export function InspectorColorInput({
   placeholder?: string;
 }) {
   const pickerRef = useRef<HTMLInputElement>(null);
-
-  // Determine if value is a plain hex/rgb color (previewable) or a CSS variable
   const isPreviewable = value && !value.startsWith("var(") && !value.startsWith("--");
 
   return (
     <div className="flex items-center gap-1.5">
-      {/* Swatch — click to open native picker */}
       <button
         type="button"
         title="Pick color"
         onClick={() => pickerRef.current?.click()}
-        className="h-7 w-7 shrink-0 rounded border border-border/60 overflow-hidden relative"
+        className="relative h-7 w-7 shrink-0 overflow-hidden rounded-sm border border-border/70"
         style={{ background: isPreviewable ? value : "transparent" }}
       >
-        {!isPreviewable && (
+        {!isPreviewable ? (
           <div className="absolute inset-0 bg-gradient-to-br from-red-400 via-green-400 to-blue-400 opacity-60" />
-        )}
+        ) : null}
         <input
           ref={pickerRef}
           type="color"
-          value={isPreviewable ? (value.startsWith("#") ? value : "#000000") : "#000000"}
+          value={isPreviewable && value.startsWith("#") ? value : "#000000"}
           onChange={(e) => onChange(e.target.value)}
-          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           tabIndex={-1}
         />
       </button>
-
-      {/* Text input — manual entry for any CSS value */}
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? "#000 or var(--...)"}
         className={[
-          "flex-1 h-7 border bg-muted text-foreground px-2 text-xs font-mono",
-          "focus:outline-none focus:ring-1 focus:ring-ring",
-          "placeholder:text-muted-foreground/50",
+          "h-7 min-w-0 flex-1 rounded-sm border border-border/70 bg-muted/80 px-2 font-mono text-xs text-foreground",
+          "placeholder:text-muted-foreground/50 focus:border-primary/70 focus:outline-none focus:ring-1 focus:ring-ring/70",
         ].join(" ")}
       />
     </div>

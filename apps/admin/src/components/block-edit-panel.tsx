@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Badge } from "@acme/ui";
 import { BlockJsonPanel } from "@/components/block-json-panel";
@@ -25,6 +25,7 @@ export function BlockEditPanel({
   initial,
   viewMode,
   externalSelectedElementId,
+  externalDraftUpdate,
   onElementSelect,
   onDraftChange,
 }: {
@@ -35,6 +36,7 @@ export function BlockEditPanel({
   initial: any;
   viewMode: "desktop" | "ipadPro" | "mobile";
   externalSelectedElementId?: string | null;
+  externalDraftUpdate?: { blockId: string; data: any; version: number } | null;
   onElementSelect?: (elementId: string | null) => void;
   onDraftChange?: (blockId: string, data: any) => void;
 }) {
@@ -67,21 +69,18 @@ export function BlockEditPanel({
     setMode(hasVisual ? "visual" : Form ? "form" : "json");
   }, [blockId, Form, hasVisual, initial]);
 
-  const dirty = JSON.stringify(draft ?? {}) !== JSON.stringify(initial ?? {});
+  useEffect(() => {
+    if (!externalDraftUpdate || externalDraftUpdate.blockId !== blockId) return;
+    setDraft(externalDraftUpdate.data ?? {});
+  }, [blockId, externalDraftUpdate]);
+
+  const dirty = useMemo(
+    () => JSON.stringify(draft ?? {}) !== JSON.stringify(initial ?? {}),
+    [draft, initial],
+  );
 
   // Ctrl+S / Cmd+S to save
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        if (dirty && !saving) save();
-      }
-    }
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  });
-
-  async function save() {
+  const save = useCallback(async () => {
     setError(null);
     setSaving(true);
     try {
@@ -99,7 +98,18 @@ export function BlockEditPanel({
     } finally {
       setSaving(false);
     }
-  }
+  }, [blockId, draft, router]);
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (dirty && !saving) save();
+      }
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [dirty, save, saving]);
 
   /* ---------- JSON mode ---------- */
   if (mode === "json" || (!Form && !hasVisual)) {
@@ -148,7 +158,7 @@ export function BlockEditPanel({
             onElementSelect={onElementSelect}
           />
         ) : Form ? (
-          <div className="p-4">
+          <div className="p-3">
             <Form value={draft} onChange={setDraft} viewMode={viewMode} />
           </div>
         ) : null}
@@ -163,7 +173,7 @@ export function BlockEditPanel({
       )}
 
       {/* Save bar */}
-      <div className="border-t bg-card px-3 py-2.5 shrink-0">
+      <div className="border-t border-border/60 bg-card/95 px-3 py-2.5 shrink-0">
         <div className="flex items-center gap-2">
           <Button
             type="button"
@@ -171,7 +181,7 @@ export function BlockEditPanel({
             size="sm"
             disabled={!dirty || saving}
             onClick={() => setDraft(initial ?? {})}
-            className="text-xs"
+            className="h-8 text-xs"
           >
             <RotateCcw className="h-3 w-3 mr-1" />
             Reset
@@ -191,7 +201,7 @@ export function BlockEditPanel({
             size="sm"
             disabled={!dirty || saving}
             onClick={save}
-            className="text-xs"
+            className="h-8 text-xs"
           >
             <Save className="h-3 w-3 mr-1" />
             {saving ? "Saving..." : "Save"}
@@ -232,7 +242,7 @@ function InspectorHeader({
   const visibleTabs = tabs.filter((t) => t.show);
 
   return (
-    <div className="border-b px-4 py-3 shrink-0">
+    <div className="border-b border-border/60 px-3 py-2.5 shrink-0">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -244,14 +254,14 @@ function InspectorHeader({
         </div>
 
         {visibleTabs.length > 1 && (
-          <div className="flex rounded-md border bg-muted/30 p-0.5 shrink-0">
+          <div className="flex h-7 rounded-md border border-border/70 bg-muted/35 p-0.5 shrink-0">
             {visibleTabs.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => onModeChange(tab.key)}
                 className={[
-                  "flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium transition-all",
+                  "flex items-center gap-1 rounded px-2 text-[10px] font-medium transition-all",
                   mode === tab.key
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",

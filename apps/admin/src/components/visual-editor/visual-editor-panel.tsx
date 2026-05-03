@@ -80,12 +80,12 @@ export function VisualEditorPanel({
   // Show element inspector for selected element
   if (selected) {
     return (
-      <div>
+      <div className="min-h-full">
         {/* Back to elements list */}
         <button
           type="button"
           onClick={() => handleSelect(null)}
-          className="w-full flex items-center gap-1.5 px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 border-b transition-colors"
+          className="flex h-9 w-full items-center gap-1.5 border-b border-border/60 px-3 text-xs text-muted-foreground transition-colors hover:bg-muted/35 hover:text-foreground"
         >
           <ChevronLeft className="h-3 w-3" />
           All Elements
@@ -101,32 +101,37 @@ export function VisualEditorPanel({
 
   // Elements list
   return (
-    <div className="p-2">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 py-1.5 mb-1">
-        Elements ({elements.length})
+    <div className="p-2.5">
+      <div className="mb-2 flex items-center justify-between px-1">
+        <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+          Elements
+        </span>
+        <span className="text-[10px] tabular-nums text-muted-foreground/70">
+          {elements.length}
+        </span>
       </div>
-      <div className="space-y-px">
+      <div className="space-y-1">
         {elements.map((el) => (
           <button
             key={el.id}
             type="button"
             onClick={() => handleSelect(el.id)}
-            className="w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-muted/50 transition-colors group"
+            className="group flex h-8 w-full items-center gap-2 rounded-md border border-transparent px-2 text-left transition-colors hover:border-border/60 hover:bg-muted/45"
           >
             <span className="text-muted-foreground shrink-0">
               {TYPE_ICONS[el.type] ?? <Type className="h-3 w-3" />}
             </span>
-            <span className="flex-1 text-xs truncate text-foreground/80 group-hover:text-foreground">
+            <span className="flex-1 truncate text-xs text-foreground/85 group-hover:text-foreground">
               {el.label ?? el.id}
             </span>
-            <span className="text-[10px] text-muted-foreground/50 shrink-0 uppercase">
+            <span className="shrink-0 rounded bg-muted/55 px-1.5 py-0.5 text-[9px] uppercase text-muted-foreground/70">
               {el.type}
             </span>
           </button>
         ))}
 
         {elements.length === 0 && (
-          <div className="text-xs text-muted-foreground text-center py-6">
+          <div className="py-6 text-center text-xs text-muted-foreground">
             No editable elements
           </div>
         )}

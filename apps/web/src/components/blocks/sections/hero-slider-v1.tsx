@@ -274,10 +274,22 @@ function slideStyle(slide: Slide, profile?: HeroViewportProfileKey | null): Reac
   return style as React.CSSProperties;
 }
 
-export function HeroSliderV1({ data }: { data: any }) {
+export function HeroSliderV1({
+  data,
+  editMode = false,
+  onChange,
+}: {
+  data: any;
+  editMode?: boolean;
+  onChange?: (next: any) => void;
+}) {
   const rawSlides: Slide[] = Array.isArray(data?.slides) ? data.slides : [];
   // Hidden slides are skipped entirely — they affect neither count nor autoplay.
-  const slides: Slide[] = useMemo(() => rawSlides.filter((s) => !s?.hidden), [rawSlides]);
+  const visibleSlides = useMemo(
+    () => rawSlides.map((slide, index) => ({ slide, index })).filter((item) => !item.slide?.hidden),
+    [rawSlides],
+  );
+  const slides: Slide[] = useMemo(() => visibleSlides.map((item) => item.slide), [visibleSlides]);
   const options = data?.options ?? {};
   const count = slides.length;
 
@@ -339,6 +351,11 @@ export function HeroSliderV1({ data }: { data: any }) {
     const real = ((target % count) + count) % count;
     setNoTransition(false);
     setTrackIndex(hasLoop ? real + 1 : real);
+  };
+
+  const updateSlide = (rawSlideIndex: number, nextSlide: Slide) => {
+    const nextSlides = rawSlides.map((slide, index) => index === rawSlideIndex ? nextSlide : slide);
+    onChange?.({ ...(data ?? {}), slides: nextSlides });
   };
 
   // Per-slide autoplay timer, re-armed on every active change so user
@@ -534,6 +551,7 @@ export function HeroSliderV1({ data }: { data: any }) {
                     : i - 1
                 : i;
               const isClone = hasLoop && (i === 0 || i === count + 1);
+              const rawSlideIndex = visibleSlides[realIndex]?.index ?? realIndex;
               return (
                 <div
                   key={isClone ? `clone-${realIndex}-${i}` : (s.id ?? `real-${realIndex}`)}
@@ -548,6 +566,8 @@ export function HeroSliderV1({ data }: { data: any }) {
                     slide={s}
                     isDragging={!!drag.current?.moved}
                     slideIndex={realIndex}
+                    editMode={editMode && !isClone && realIndex === active}
+                    onSlideChange={(nextSlide) => updateSlide(rawSlideIndex, nextSlide)}
                     showGuides={showGuides}
                     showElementGuides={showElementGuides}
                     showCompositionGuides={showCompositionGuides}
@@ -607,6 +627,8 @@ function HeroSlide({
   slide,
   isDragging,
   slideIndex: i,
+  editMode = false,
+  onSlideChange,
   showGuides = false,
   showElementGuides = false,
   showCompositionGuides = false,
@@ -616,6 +638,8 @@ function HeroSlide({
   slide: Slide;
   isDragging: boolean;
   slideIndex: number;
+  editMode?: boolean;
+  onSlideChange?: (next: Slide) => void;
   showGuides?: boolean;
   showElementGuides?: boolean;
   showCompositionGuides?: boolean;
@@ -880,9 +904,16 @@ function HeroSlide({
   const mediaPrimary = (
     <MediaFrame media={slide.media} className="hero-slide__media-box" slotId={`slide-${i}-media`} priority={i === 0} />
   );
+  const editableProps = useSlideElementEditor(slide, editMode, onSlideChange);
 
   const standardCopy = (
-    <CopyStack slide={slide} slideIndex={i} spread={false} viewportProfile={viewportProfile} />
+    <CopyStack
+      slide={slide}
+      slideIndex={i}
+      spread={false}
+      viewportProfile={viewportProfile}
+      editableProps={editableProps}
+    />
   );
 
   const cta = slide?.cta;
@@ -919,7 +950,7 @@ function HeroSlide({
       {cta?.href ? (
         <a
           href={cta.href}
-          className={cn("hero-slide__cta", `hero-slide__cta--${ctaSide}`)}
+          {...editableProps("cta", cn("hero-slide__cta", `hero-slide__cta--${ctaSide}`))}
           data-el={`slide-${i}-cta`}
           style={elStyle(ctaStyle)}
           onClick={(e) => {
@@ -933,16 +964,190 @@ function HeroSlide({
   );
 }
 
+function getSlideElementStyle(slide: Slide, key: string): ElementStyle | undefined {
+  if (key === "title") return slide.titleStyle;
+  if (key === "subtitle") return slide.subtitleStyle;
+  if (key === "kicker") return slide.kickerStyle;
+  if (key === "body") return slide.bodyStyle;
+  if (key === "quote") return slide.quoteStyle;
+  if (key === "cta") return slide.ctaStyle;
+  return slide.extras?.find((extra) => extra.id === key)?.style;
+}
+
+function setSlideElementStyle(slide: Slide, key: string, style: ElementStyle): Slide {
+  if (key === "title") return { ...slide, titleStyle: style };
+  if (key === "subtitle") return { ...slide, subtitleStyle: style };
+  if (key === "kicker") return { ...slide, kickerStyle: style };
+  if (key === "body") return { ...slide, bodyStyle: style };
+  if (key === "quote") return { ...slide, quoteStyle: style };
+  if (key === "cta") return { ...slide, ctaStyle: style };
+  const extras = Array.isArray(slide.extras) ? slide.extras : [];
+  return {
+    ...slide,
+    extras: extras.map((extra) => extra.id === key ? { ...extra, style } : extra),
+  };
+}
+
+function useSlideElementEditor(
+  slide: Slide,
+  editMode: boolean,
+  onSlideChange?: (next: Slide) => void,
+) {
+  const dragRef = useRef<{
+    key: string;
+    mode: "move" | "resize";
+    startX: number;
+    startY: number;
+    startMl: number;
+    startMt: number;
+    startSize: number;
+    scale: number;
+    moved: boolean;
+  } | null>(null);
+
+  function editableProps(key: string, className?: string): React.HTMLAttributes<HTMLElement> {
+    if (!editMode || !onSlideChange) return { className };
+
+    return {
+      className: cn(className, "hero-slide__editable"),
+      tabIndex: 0,
+      role: "button",
+      "aria-label": "Drag to position slide element. Drag the bottom-right handle to resize.",
+      onPointerDown: (e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const el = e.currentTarget as HTMLElement;
+        const rect = el.getBoundingClientRect();
+        const isResize = e.clientX >= rect.right - 16 && e.clientY >= rect.bottom - 16;
+        const slideEl = el.closest(".hero-slide") as HTMLElement | null;
+        const blockEl = el.closest<HTMLElement>("[data-block-id]");
+        const blockId = blockEl?.dataset.blockId;
+        const elementId = el.dataset.el;
+        const scale = slideEl ? slideEl.getBoundingClientRect().width / slideEl.offsetWidth || 1 : 1;
+        const computed = getComputedStyle(el);
+
+        el.setPointerCapture(e.pointerId);
+        el.classList.add(isResize ? "hero-slide__editable--resizing" : "hero-slide__editable--dragging");
+        if (blockId && elementId && window !== window.parent) {
+          window.parent.postMessage({ type: "element-clicked", blockId, elementId }, "*");
+        }
+
+        dragRef.current = {
+          key,
+          mode: isResize ? "resize" : "move",
+          startX: e.clientX,
+          startY: e.clientY,
+          startMl: parseFloat(computed.marginLeft || "0") || 0,
+          startMt: parseFloat(computed.marginTop || "0") || 0,
+          startSize: parseFloat(computed.fontSize || "0") || 16,
+          scale,
+          moved: false,
+        };
+      },
+      onPointerMove: (e) => {
+        const d = dragRef.current;
+        if (!d || d.key !== key) return;
+        e.stopPropagation();
+
+        const dx = (e.clientX - d.startX) / d.scale;
+        const dy = (e.clientY - d.startY) / d.scale;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) d.moved = true;
+        if (!d.moved) return;
+
+        const el = e.currentTarget as HTMLElement;
+        if (d.mode === "resize") {
+          const nextSize = Math.max(6, Math.round(d.startSize + (dx + dy) / 2));
+          el.style.fontSize = `${nextSize}px`;
+          return;
+        }
+
+        el.style.marginLeft = `${Math.round(d.startMl + dx)}px`;
+        el.style.marginTop = `${Math.round(d.startMt + dy)}px`;
+      },
+      onPointerUp: (e) => {
+        const d = dragRef.current;
+        dragRef.current = null;
+        const el = e.currentTarget as HTMLElement;
+        el.classList.remove("hero-slide__editable--dragging", "hero-slide__editable--resizing");
+        if (!d || d.key !== key || !d.moved) return;
+        e.stopPropagation();
+
+        const dx = (e.clientX - d.startX) / d.scale;
+        const dy = (e.clientY - d.startY) / d.scale;
+        const currentStyle = getSlideElementStyle(slide, key) ?? {};
+
+        if (d.mode === "resize") {
+          const nextSize = Math.max(6, Math.round(d.startSize + (dx + dy) / 2));
+          onSlideChange(setSlideElementStyle(slide, key, {
+            ...currentStyle,
+            size: `${nextSize}px`,
+          }));
+          return;
+        }
+
+        const nextMl = Math.round(d.startMl + dx);
+        const nextMt = Math.round(d.startMt + dy);
+        onSlideChange(setSlideElementStyle(slide, key, {
+          ...currentStyle,
+          ml: nextMl ? `${nextMl}px` : undefined,
+          mt: nextMt ? `${nextMt}px` : undefined,
+        }));
+      },
+      onPointerCancel: (e) => {
+        const d = dragRef.current;
+        dragRef.current = null;
+        if (!d || d.key !== key) return;
+        const el = e.currentTarget as HTMLElement;
+        el.classList.remove("hero-slide__editable--dragging", "hero-slide__editable--resizing");
+        el.style.marginLeft = `${d.startMl}px`;
+        el.style.marginTop = `${d.startMt}px`;
+        el.style.fontSize = `${d.startSize}px`;
+      },
+      onKeyDown: (e) => {
+        const deltaByKey: Record<string, [number, number]> = {
+          ArrowLeft: [-1, 0],
+          ArrowRight: [1, 0],
+          ArrowUp: [0, -1],
+          ArrowDown: [0, 1],
+        };
+        const delta = deltaByKey[e.key];
+        if (!delta) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const step = e.shiftKey ? 10 : 1;
+        const el = e.currentTarget as HTMLElement;
+        const computed = getComputedStyle(el);
+        const currentMl = parseFloat(computed.marginLeft || "0") || 0;
+        const currentMt = parseFloat(computed.marginTop || "0") || 0;
+        const nextMl = Math.round(currentMl + delta[0] * step);
+        const nextMt = Math.round(currentMt + delta[1] * step);
+        const currentStyle = getSlideElementStyle(slide, key) ?? {};
+        onSlideChange(setSlideElementStyle(slide, key, {
+          ...currentStyle,
+          ml: nextMl ? `${nextMl}px` : undefined,
+          mt: nextMt ? `${nextMt}px` : undefined,
+        }));
+      },
+    };
+  }
+
+  return editableProps;
+}
+
 function CopyStack({
   slide,
   slideIndex,
   spread,
   viewportProfile,
+  editableProps,
 }: {
   slide: Slide;
   slideIndex: number;
   spread?: boolean;
   viewportProfile?: HeroViewportProfileKey | null;
+  editableProps: (key: string, className?: string) => React.HTMLAttributes<HTMLElement>;
 }) {
   const kicker = slide?.kicker;
   const quote = slide?.quote;
@@ -981,7 +1186,7 @@ function CopyStack({
       return (
         <div
           key="kicker"
-          className={mergeElementStyle(slide.kickerStyle, viewportProfile)?.typo || undefined}
+          {...editableProps("kicker", mergeElementStyle(slide.kickerStyle, viewportProfile)?.typo || undefined)}
           style={elStyle(mergeElementStyle(slide.kickerStyle, viewportProfile))}
           data-el={`slide-${slideIndex}-kicker`}
         >
@@ -1000,7 +1205,7 @@ function CopyStack({
         return (
           <OutlineStampText
             key="title"
-            className={titleClass}
+            {...editableProps("title", titleClass)}
             data-el={`slide-${slideIndex}-title`}
             stamp={stampForTypo(titleTypo)}
             style={titleStyle}
@@ -1012,7 +1217,7 @@ function CopyStack({
       return (
         <p
           key="title"
-          className={titleClass}
+          {...editableProps("title", titleClass)}
           data-el={`slide-${slideIndex}-title`}
           style={titleStyle}
         >
@@ -1024,8 +1229,9 @@ function CopyStack({
       return (
         <div
           key="subtitle"
-          className={mergeElementStyle(slide.subtitleStyle, viewportProfile)?.typo || undefined}
+          {...editableProps("subtitle", mergeElementStyle(slide.subtitleStyle, viewportProfile)?.typo || undefined)}
           style={elStyle(mergeElementStyle(slide.subtitleStyle, viewportProfile))}
+          data-el={`slide-${slideIndex}-subtitle`}
         >
           <SlideSubtitle
             text={subtitle}
@@ -1039,7 +1245,7 @@ function CopyStack({
       return (
         <div
           key="body"
-          className={mergeElementStyle(slide.bodyStyle, viewportProfile)?.typo || undefined}
+          {...editableProps("body", mergeElementStyle(slide.bodyStyle, viewportProfile)?.typo || undefined)}
           style={elStyle(mergeElementStyle(slide.bodyStyle, viewportProfile))}
           data-el={`slide-${slideIndex}-body`}
         >
@@ -1051,7 +1257,7 @@ function CopyStack({
       return (
         <p
           key="quote"
-          className={cn("hero-slide__quote", mergeElementStyle(slide.quoteStyle, viewportProfile)?.typo)}
+          {...editableProps("quote", cn("hero-slide__quote", mergeElementStyle(slide.quoteStyle, viewportProfile)?.typo))}
           style={elStyle(mergeElementStyle(slide.quoteStyle, viewportProfile))}
           data-el={`slide-${slideIndex}-quote`}
         >
@@ -1069,6 +1275,7 @@ function CopyStack({
           slideIndex={slideIndex}
           extraIndex={exIdx}
           viewportProfile={viewportProfile}
+          editableProps={editableProps}
         />
       );
     }
@@ -1089,11 +1296,13 @@ function ExtraElement({
   slideIndex,
   extraIndex,
   viewportProfile,
+  editableProps,
 }: {
   extra: SlideExtra;
   slideIndex: number;
   extraIndex: number;
   viewportProfile?: HeroViewportProfileKey | null;
+  editableProps?: (key: string, className?: string) => React.HTMLAttributes<HTMLElement>;
 }) {
   const resolvedStyle = mergeElementStyle(extra.style, viewportProfile);
   const style = elStyle(resolvedStyle);
@@ -1103,7 +1312,7 @@ function ExtraElement({
   if (extra.kind === "stamp") {
     return (
       <OutlineStampText
-        className={cn("hero-slide__title", typo)}
+        {...(editableProps?.(extra.id ?? "", cn("hero-slide__title", typo)) ?? { className: cn("hero-slide__title", typo) })}
         data-el={slotId}
         stamp={stampForTypo(typo)}
         style={style}
@@ -1115,14 +1324,22 @@ function ExtraElement({
 
   if (extra.kind === "kicker") {
     return (
-      <div className={typo || undefined} style={style} data-el={slotId}>
+      <div
+        {...(editableProps?.(extra.id ?? "", typo || undefined) ?? { className: typo || undefined })}
+        style={style}
+        data-el={slotId}
+      >
         <Kicker><InlineText text={extra.text} /></Kicker>
       </div>
     );
   }
 
   return (
-    <p className={cn("hero-slide__quote", typo)} style={style} data-el={slotId}>
+    <p
+      {...(editableProps?.(extra.id ?? "", cn("hero-slide__quote", typo)) ?? { className: cn("hero-slide__quote", typo) })}
+      style={style}
+      data-el={slotId}
+    >
       <InlineText text={extra.text} />
     </p>
   );

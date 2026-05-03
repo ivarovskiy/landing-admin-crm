@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button, Badge } from "@acme/ui";
@@ -172,6 +172,11 @@ export function BlocksWorkspace({
 
   // Element selection (for visual editor ↔ preview sync)
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const [externalDraftUpdate, setExternalDraftUpdate] = useState<{
+    blockId: string;
+    data: any;
+    version: number;
+  } | null>(null);
 
   // Preview mode — hides all panels, toolbar; canvas only
   const [previewMode, setPreviewMode] = useState(false);
@@ -334,6 +339,14 @@ export function BlocksWorkspace({
         setSelectedElementId(elementId);
       }
 
+      if (type === "live-block-change" && blockId && e.data?.data && sorted.some((b) => b.id === blockId)) {
+        setExternalDraftUpdate({
+          blockId,
+          data: e.data.data,
+          version: Date.now(),
+        });
+      }
+
       // Navigate canvas to show the block: move artboard so block sits near top
       if (type === "block-offset" && typeof offsetTop === "number") {
         // artboardY + offsetTop * scale = 80  →  panY = 80 - CANVAS_PADDING - offsetTop * scale
@@ -343,7 +356,7 @@ export function BlocksWorkspace({
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [sorted, scale]);
+  }, [previewMode, sorted]);
 
   // H / V / Space tool shortcuts
   useEffect(() => {
@@ -506,6 +519,21 @@ export function BlocksWorkspace({
     });
     return `/api/preview/${pageId}?${qs.toString()}`;
   }, [pageId, refreshKey, viewMode]);
+
+  const liveEditEnabled = !!active && active.type === "hero" && active.variant === "slider-v1" && showInspector && !previewMode;
+
+  const postLiveEditMode = useCallback(() => {
+    try {
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: "set-live-edit-mode", enabled: liveEditEnabled },
+        "*",
+      );
+    } catch { /* cross-origin */ }
+  }, [liveEditEnabled]);
+
+  useEffect(() => {
+    postLiveEditMode();
+  }, [postLiveEditMode, previewSrc]);
 
   // Reset iframe height when preview source changes so stale size doesn't flash
   useEffect(() => { setIframeHeight(1200); }, [previewSrc]);
@@ -931,6 +959,7 @@ export function BlocksWorkspace({
               title="Page preview"
               src={previewSrc}
               className="border-0 bg-white"
+              onLoad={postLiveEditMode}
               style={{
                 width: iframeWidth,
                 height: iframeHeight,
@@ -970,7 +999,7 @@ export function BlocksWorkspace({
             -------------------------------------------------------- */}
         {/* Inspector panel — Block only */}
         {showInspector && !previewMode && (
-          <div className="absolute top-3 right-3 bottom-3 z-20 w-[280px] flex flex-col bg-card/95 backdrop-blur-md rounded-xl border border-border/50 shadow-2xl overflow-hidden">
+          <div className="absolute top-3 right-3 bottom-3 z-20 w-[350px] max-w-[calc(100vw-32px)] flex flex-col bg-card/95 backdrop-blur-md rounded-xl border border-border/50 shadow-2xl overflow-hidden">
             <div className="px-3 py-2.5 border-b border-border/50 shrink-0">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {active ? `${active.type}:${active.variant}` : "Inspector"}
@@ -985,6 +1014,7 @@ export function BlocksWorkspace({
                 initial={active.data}
                 viewMode={viewMode}
                 externalSelectedElementId={selectedElementId}
+                externalDraftUpdate={externalDraftUpdate}
                 onElementSelect={handleElementSelect}
                 onDraftChange={(blockId, data) => {
                   try {

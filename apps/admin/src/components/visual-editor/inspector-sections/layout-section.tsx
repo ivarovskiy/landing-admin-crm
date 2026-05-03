@@ -102,43 +102,41 @@ export function LayoutSection({
       </InspectorField>
 
       {/* Offset — simplified: base breakpoint only for now */}
-      <div className="pt-1">
-        <div className="text-[11px] font-medium text-muted-foreground mb-1.5">
-          Offset
-        </div>
-        <div className="grid grid-cols-2 gap-1.5">
-          <InspectorNumber
-            value={layout.offset?.base?.x}
-            onChange={(v) =>
-              updateLayout({
-                offset: {
-                  ...layout.offset,
-                  base: { ...(layout.offset?.base ?? {}), x: v },
-                },
-              })
-            }
-            min={-200}
-            max={200}
-            step={1}
-            placeholder="X"
-          />
-          <InspectorNumber
-            value={layout.offset?.base?.y}
-            onChange={(v) =>
-              updateLayout({
-                offset: {
-                  ...layout.offset,
-                  base: { ...(layout.offset?.base ?? {}), y: v },
-                },
-              })
-            }
-            min={-200}
-            max={200}
-            step={1}
-            placeholder="Y"
-          />
-        </div>
-      </div>
+      <InspectorField label="X">
+        <InspectorNumber
+          value={layout.offset?.base?.x}
+          onChange={(v) =>
+            updateLayout({
+              offset: {
+                ...layout.offset,
+                base: { ...(layout.offset?.base ?? {}), x: v },
+              },
+            })
+          }
+          min={-200}
+          max={200}
+          step={1}
+          placeholder="0"
+        />
+      </InspectorField>
+
+      <InspectorField label="Y">
+        <InspectorNumber
+          value={layout.offset?.base?.y}
+          onChange={(v) =>
+            updateLayout({
+              offset: {
+                ...layout.offset,
+                base: { ...(layout.offset?.base ?? {}), y: v },
+              },
+            })
+          }
+          min={-200}
+          max={200}
+          step={1}
+          placeholder="0"
+        />
+      </InspectorField>
     </InspectorSection>
   );
 }

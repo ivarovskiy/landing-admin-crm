@@ -8,4 +8,8 @@ export type BlockModel = {
   data: any;
 };
 
-export type BlockComponent = (props: { data: any }) => ReactElement | null;
+export type BlockComponent = (props: {
+  data: any;
+  editMode?: boolean;
+  onChange?: (next: any) => void;
+}) => ReactElement | null;

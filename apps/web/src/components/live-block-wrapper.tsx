@@ -1,7 +1,7 @@
 "use client";
 
 import { blockRegistry } from "./blocks/registry";
-import { useLiveBlock } from "./live-preview-provider";
+import { useLiveBlock, useLivePreviewEdit } from "./live-preview-provider";
 
 export function LiveBlockWrapper({
   blockId,
@@ -13,7 +13,14 @@ export function LiveBlockWrapper({
   serverData: any;
 }) {
   const data = useLiveBlock(blockId, serverData);
+  const { editMode, updateBlock } = useLivePreviewEdit();
   const Comp = blockRegistry[blockKey];
   if (!Comp) return null;
-  return <Comp data={data} />;
+  return (
+    <Comp
+      data={data}
+      editMode={editMode && blockKey === "hero:slider-v1"}
+      onChange={(next: any) => updateBlock(blockId, next)}
+    />
+  );
 }

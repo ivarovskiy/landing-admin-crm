@@ -2,23 +2,40 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
 
 type Overrides = Record<string, any>;
+type LivePreviewValue = {
+  overrides: Overrides;
+  editMode: boolean;
+  updateBlock: (blockId: string, data: any) => void;
+};
 
-const LivePreviewContext = createContext<Overrides>({});
+const LivePreviewContext = createContext<LivePreviewValue>({
+  overrides: {},
+  editMode: false,
+  updateBlock: () => {},
+});
 
 export function useLiveBlock(blockId: string, serverData: any): any {
-  const overrides = useContext(LivePreviewContext);
+  const { overrides } = useContext(LivePreviewContext);
   return overrides[blockId] ?? serverData;
+}
+
+export function useLivePreviewEdit() {
+  const { editMode, updateBlock } = useContext(LivePreviewContext);
+  return { editMode, updateBlock };
 }
 
 export function LivePreviewProvider({ children }: { children: ReactNode }) {
   const [overrides, setOverrides] = useState<Overrides>({});
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     const isPreview = window !== window.parent;
@@ -28,6 +45,9 @@ export function LivePreviewProvider({ children }: { children: ReactNode }) {
       const { type, blockId, data } = e.data ?? {};
       if (type === "update-block" && blockId && data) {
         setOverrides((prev) => ({ ...prev, [blockId]: data }));
+      }
+      if (type === "set-live-edit-mode") {
+        setEditMode(e.data?.enabled === true);
       }
     }
 
@@ -52,8 +72,20 @@ export function LivePreviewProvider({ children }: { children: ReactNode }) {
     return () => ro.disconnect();
   }, []);
 
+  const updateBlock = useCallback((blockId: string, data: any) => {
+    setOverrides((prev) => ({ ...prev, [blockId]: data }));
+    if (typeof window !== "undefined" && window !== window.parent) {
+      window.parent.postMessage({ type: "live-block-change", blockId, data }, "*");
+    }
+  }, []);
+
+  const value = useMemo(
+    () => ({ overrides, editMode, updateBlock }),
+    [editMode, overrides, updateBlock],
+  );
+
   return (
-    <LivePreviewContext.Provider value={overrides}>
+    <LivePreviewContext.Provider value={value}>
       {children}
     </LivePreviewContext.Provider>
   );

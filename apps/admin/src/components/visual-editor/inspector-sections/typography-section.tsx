@@ -61,44 +61,40 @@ export function TypographySection({
         />
       </InspectorField>
 
-      <div className="grid grid-cols-2 gap-1.5">
-        <InspectorField label="Size">
-          <InspectorInput
-            value={typo.fontSize ?? ""}
-            onChange={(v) => updateTypography({ fontSize: v || undefined })}
-            placeholder="16px"
-          />
-        </InspectorField>
+      <InspectorField label="Size">
+        <InspectorInput
+          value={typo.fontSize ?? ""}
+          onChange={(v) => updateTypography({ fontSize: v || undefined })}
+          placeholder="16px"
+        />
+      </InspectorField>
 
-        <InspectorField label="Weight">
-          <InspectorNumber
-            value={typo.fontWeight}
-            onChange={(v) => updateTypography({ fontWeight: v })}
-            min={100}
-            max={900}
-            step={100}
-            placeholder="400"
-          />
-        </InspectorField>
-      </div>
+      <InspectorField label="Weight">
+        <InspectorNumber
+          value={typo.fontWeight}
+          onChange={(v) => updateTypography({ fontWeight: v })}
+          min={100}
+          max={900}
+          step={100}
+          placeholder="400"
+        />
+      </InspectorField>
 
-      <div className="grid grid-cols-2 gap-1.5">
-        <InspectorField label="Line H.">
-          <InspectorInput
-            value={typo.lineHeight ?? ""}
-            onChange={(v) => updateTypography({ lineHeight: v || undefined })}
-            placeholder="1.5"
-          />
-        </InspectorField>
+      <InspectorField label="Line H.">
+        <InspectorInput
+          value={typo.lineHeight ?? ""}
+          onChange={(v) => updateTypography({ lineHeight: v || undefined })}
+          placeholder="1.5"
+        />
+      </InspectorField>
 
-        <InspectorField label="Spacing">
-          <InspectorInput
-            value={typo.letterSpacing ?? ""}
-            onChange={(v) => updateTypography({ letterSpacing: v || undefined })}
-            placeholder="0.02em"
-          />
-        </InspectorField>
-      </div>
+      <InspectorField label="Spacing">
+        <InspectorInput
+          value={typo.letterSpacing ?? ""}
+          onChange={(v) => updateTypography({ letterSpacing: v || undefined })}
+          placeholder="0.02em"
+        />
+      </InspectorField>
 
       <InspectorField label="Transform">
         <InspectorSelect
