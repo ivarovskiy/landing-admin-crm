@@ -13,7 +13,7 @@
  */
 
 import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
-import { GripVertical, Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, Plus } from "lucide-react";
 import type {
   Slide,
   ElementStyle,
@@ -102,11 +102,17 @@ function CanvasItem({
   itemKey,
   slide,
   scaleRef,
+  canMoveUp,
+  canMoveDown,
+  onMove,
   onChange,
 }: {
   itemKey: string;
   slide: Slide;
   scaleRef: React.RefObject<number>;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMove: (key: string, dir: "up" | "down") => void;
   onChange: (s: Slide) => void;
 }) {
   const elRef = useRef<HTMLDivElement>(null);
@@ -192,6 +198,37 @@ function CanvasItem({
       onPointerUp={onPU}
       onPointerCancel={onPC}
     >
+      <div
+        className="flex shrink-0 flex-col gap-0.5"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="rounded border border-border/70 bg-background/80 p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-25"
+          disabled={!canMoveUp}
+          title="Move forward"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onMove(itemKey, "up");
+          }}
+        >
+          <ArrowUp className="h-2.5 w-2.5" />
+        </button>
+        <button
+          type="button"
+          className="rounded border border-border/70 bg-background/80 p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-25"
+          disabled={!canMoveDown}
+          title="Move backward"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onMove(itemKey, "down");
+          }}
+        >
+          <ArrowDown className="h-2.5 w-2.5" />
+        </button>
+      </div>
       <GripVertical
         className="shrink-0 text-muted-foreground/50 mt-px"
         style={{ width: fontSize, height: fontSize }}
@@ -239,6 +276,16 @@ export function SlideCanvas({
   }, []);
 
   const keys = useMemo(() => orderedKeys(slide), [slide]);
+
+  const moveKey = useCallback((key: string, dir: "up" | "down") => {
+    const current = orderedKeys(slide);
+    const idx = current.indexOf(key);
+    const target = dir === "up" ? idx - 1 : idx + 1;
+    if (idx < 0 || target < 0 || target >= current.length) return;
+    const nextOrder = [...current];
+    [nextOrder[idx], nextOrder[target]] = [nextOrder[target], nextOrder[idx]];
+    onChange({ ...slide, elementOrder: nextOrder });
+  }, [slide, onChange]);
 
   // Click on empty canvas → add new extra at the clicked Y position
   const onCanvasClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -298,7 +345,7 @@ export function SlideCanvas({
               <span className="text-[11px] text-muted-foreground/40">Full-image template — no text elements</span>
             </div>
           ) : (
-            keys.map((key) => {
+            keys.map((key, index) => {
               const t = getText(slide, key);
               const isExtra = Array.isArray(slide.extras) && slide.extras.some((e) => e.id === key);
               // Skip empty fixed elements except title
@@ -309,6 +356,9 @@ export function SlideCanvas({
                   itemKey={key}
                   slide={slide}
                   scaleRef={scaleRef}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < keys.length - 1}
+                  onMove={moveKey}
                   onChange={onChange}
                 />
               );

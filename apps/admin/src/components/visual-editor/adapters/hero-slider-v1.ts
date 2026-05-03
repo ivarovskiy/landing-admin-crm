@@ -36,12 +36,21 @@ function styleWithOffset(style: any, el: EditableElement) {
     ml: x ? `${Math.round(x)}px` : undefined,
     mt: y ? `${Math.round(y)}px` : undefined,
     size: el.style?.typography?.fontSize || style?.size,
+    strokeW: el.style?.decoration?.borderWidth || style?.strokeW,
   };
 }
 
 function textElement(slide: any, slideIndex: number, field: TextField, label: string, styleKey: string, uppercase?: boolean): EditableElement | null {
   if (slide?.[field] == null && field !== "title") return null;
   const style = slide?.[styleKey] ?? {};
+  const decoration =
+    field === "title" || style?.strokeW
+      ? {
+          ...(field === "title" ? { titleVariant: slide?.layout?.titleVariant ?? "outline" } : {}),
+          ...(style?.strokeW ? { borderWidth: style.strokeW } : {}),
+        }
+      : undefined;
+
   return {
     id: `slide-${slideIndex}-${field}`,
     type: "text",
@@ -53,7 +62,7 @@ function textElement(slide: any, slideIndex: number, field: TextField, label: st
         ...(uppercase ? { textTransform: "uppercase" as const } : {}),
         ...(style?.size ? { fontSize: style.size } : {}),
       },
-      decoration: field === "title" ? { titleVariant: slide?.layout?.titleVariant ?? "outline" } : undefined,
+      decoration,
     },
     layout: {
       justify: field === "title" ? slide?.layout?.contentJustify : undefined,
@@ -109,6 +118,14 @@ export const heroSliderV1Adapter: BlockEditorAdapter = {
 
       const extras = Array.isArray(slide?.extras) ? slide.extras : [];
       extras.forEach((extra: any, extraIndex: number) => {
+        const decoration =
+          extra?.kind === "stamp" || extra?.style?.strokeW
+            ? {
+                ...(extra?.kind === "stamp" ? { titleVariant: "outline" } : {}),
+                ...(extra?.style?.strokeW ? { borderWidth: extra.style.strokeW } : {}),
+              }
+            : undefined;
+
         elements.push({
           id: `slide-${i}-extra-${extraIndex}`,
           type: "text",
@@ -117,7 +134,7 @@ export const heroSliderV1Adapter: BlockEditorAdapter = {
           content: { text: extra?.text ?? "" },
           style: {
             typography: extra?.style?.size ? { fontSize: extra.style.size } : undefined,
-            decoration: extra?.kind === "stamp" ? { titleVariant: "outline" } : undefined,
+            decoration,
           },
           layout: { offset: offsetFromStyle(extra?.style) },
           visibility: {},

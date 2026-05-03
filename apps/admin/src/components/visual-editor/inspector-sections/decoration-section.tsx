@@ -68,6 +68,16 @@ export function DecorationSection({
         </InspectorField>
       )}
 
+      {hasTitleVariant && (
+        <InspectorField label="Stroke W">
+          <InspectorInput
+            value={dec.borderWidth ?? ""}
+            onChange={(v) => updateDecoration({ borderWidth: v || undefined })}
+            placeholder="3.6px"
+          />
+        </InspectorField>
+      )}
+
       <InspectorField label="Radius">
         <InspectorInput
           value={dec.radius ?? ""}

@@ -313,7 +313,7 @@
 [data-section-stroke="on"] .studio-address__title,
 [data-section-stroke="on"] .doc-header__title,
 [data-section-stroke="on"] .scrapbook__title {
-  -webkit-text-stroke-width: var(--section-title-stroke-w);
+  -webkit-text-stroke-width: var(--text-stroke-w, var(--section-title-stroke-w));
 }
 [data-section-shadow="on"] .typo-homepage-header,
 [data-section-shadow="on"] .features-title,
@@ -328,7 +328,7 @@
 [data-hero-stroke="on"] .typo-hero-title,
 [data-hero-stroke="on"] .cp__title,
 [data-hero-stroke="on"] .hero-slide__title {
-  -webkit-text-stroke-width: var(--hero-title-stroke-w);
+  -webkit-text-stroke-width: var(--text-stroke-w, var(--hero-title-stroke-w));
 }
 [data-hero-shadow="on"] .typo-content-header,
 [data-hero-shadow="on"] .typo-hero-title,
@@ -470,10 +470,10 @@
 
 /* typo-homepage-header on a hero slide title → section-title (104px) tier */
 [data-section-stroke="on"] .hero-slide__title.typo-homepage-header {
-  -webkit-text-stroke-width: var(--section-title-stroke-w);
+  -webkit-text-stroke-width: var(--text-stroke-w, var(--section-title-stroke-w));
 }
 [data-hero-stroke="on"] .hero-slide__title.typo-homepage-header {
-  -webkit-text-stroke-width: var(--stamp-stroke-w);
+  -webkit-text-stroke-width: var(--text-stroke-w, var(--section-title-stroke-w, var(--stamp-stroke-w)));
 }
 [data-section-shadow="on"] .hero-slide__title.typo-homepage-header {
   filter: drop-shadow(var(--section-title-shadow-offset) var(--section-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary)));
@@ -484,10 +484,10 @@
 
 /* typo-subtitle on a hero slide title → subtitle (47px) tier */
 [data-subtitle-stroke="on"] .hero-slide__title.typo-subtitle {
-  -webkit-text-stroke-width: var(--subtitle-stroke-w);
+  -webkit-text-stroke-width: var(--text-stroke-w, var(--subtitle-stroke-w));
 }
 [data-hero-stroke="on"] .hero-slide__title.typo-subtitle {
-  -webkit-text-stroke-width: var(--stamp-stroke-w);
+  -webkit-text-stroke-width: var(--text-stroke-w, var(--subtitle-stroke-w, var(--stamp-stroke-w)));
 }
 [data-subtitle-shadow="on"] .hero-slide__title.typo-subtitle {
   filter: drop-shadow(var(--subtitle-shadow-offset) var(--subtitle-shadow-offset) 0 var(--stamp-stroke, var(--color-primary)));

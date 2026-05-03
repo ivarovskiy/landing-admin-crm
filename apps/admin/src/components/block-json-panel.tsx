@@ -118,7 +118,8 @@ export function BlockJsonPanel({
   }, [saving, parsed.ok, value]);
 
   return (
-    <div className="rounded-xl border p-4 space-y-3">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border p-4 pb-3">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm text-muted-foreground">Editing</div>
@@ -152,7 +153,9 @@ export function BlockJsonPanel({
         <div className="text-sm text-red-600 break-all">{parsed.ok ? "" : parsed.error}</div>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
+      </div>
+
+      <div className="z-10 mt-2 flex shrink-0 flex-wrap gap-2 border-t border-border/60 bg-card/95 px-3 py-2.5">
         <Button type="button" variant="secondary" onClick={format} disabled={saving}>
           Format
         </Button>

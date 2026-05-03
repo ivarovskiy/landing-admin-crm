@@ -76,6 +76,7 @@ export type HeroDesktopLayout = {
   mediaHeight?: string;
   mediaAlign?: "start" | "center" | "end" | "stretch";
   textAlignFullWidth?: boolean;
+  dragIgnoreGap?: boolean;
   imageSide?: "left" | "right";
 };
 

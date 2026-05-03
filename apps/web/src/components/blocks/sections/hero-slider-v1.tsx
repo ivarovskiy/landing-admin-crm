@@ -65,6 +65,7 @@ type HeroDesktopLayout = {
   mediaHeight?: string;
   mediaAlign?: "start" | "center" | "end" | "stretch";
   textAlignFullWidth?: boolean;
+  dragIgnoreGap?: boolean;
 };
 
 type Slide = {
@@ -842,7 +843,7 @@ function HeroSlide({
     "hero-slide",
     `hero-slide--${template}`,
     mobileImageFirst && "hero-slide--mobile-image-first",
-    desktopLayout.textAlignFullWidth && "hs-text-wide",
+    (desktopLayout.textAlignFullWidth || (editMode && desktopLayout.dragIgnoreGap)) && "hs-text-wide",
     slide?.stretchTextToMedia && "hero-slide--copy-stretch",
     (showGuides || showElementGuides || showCompositionGuides) && "hero-slide--with-guides"
   );

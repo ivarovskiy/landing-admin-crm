@@ -674,6 +674,12 @@ function SlideEditor({
           />
 
           <InspectorToggle
+            label="Ignore gap while dragging"
+            checked={!!desktop?.dragIgnoreGap}
+            onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { dragIgnoreGap: v || undefined }))}
+          />
+
+          <InspectorToggle
             label="Mobile: image first"
             checked={!!mobile?.imageFirst}
             onChange={(v) => onChange(updateMobileLayout(s, { imageFirst: v }))}
