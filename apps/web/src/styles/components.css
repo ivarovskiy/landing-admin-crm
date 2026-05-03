@@ -514,7 +514,15 @@
   text-shadow: var(--stamp-shadow-x) var(--stamp-shadow-y) 0 var(--stamp-shadow-color);
 }
 
-/* Layered variants */
+/* Layered variants — the 0-3-0 drop-shadow rules above would override the
+   base layered filter:none (0-2-0). Cancel them with 0-4-0 filter:none rules,
+   then let the __shadow element handle the shadow via transform. */
+[data-stamp-shadow-style="layered"][data-section-shadow="on"] .hero-slide__title.typo-homepage-header,
+[data-stamp-shadow-style="layered"][data-hero-shadow="on"] .hero-slide__title.typo-homepage-header,
+[data-stamp-shadow-style="layered"][data-subtitle-shadow="on"] .hero-slide__title.typo-subtitle,
+[data-stamp-shadow-style="layered"][data-hero-shadow="on"] .hero-slide__title.typo-subtitle {
+  filter: none;
+}
 [data-stamp-shadow-style="layered"][data-section-shadow="on"] .hero-slide__title.typo-homepage-header .ds-outline-stamp__shadow {
   transform: translate(var(--section-title-shadow-offset), var(--section-title-shadow-offset));
 }

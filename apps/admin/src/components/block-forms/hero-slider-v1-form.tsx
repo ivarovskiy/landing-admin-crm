@@ -416,6 +416,13 @@ function SlideEditor({
         </div>
       </div>
 
+      {/* Canvas editor — shown independently of collapsed state */}
+      {showCanvas && (
+        <div className="border-t px-2 py-2">
+          <SlideCanvas slide={s} tuningScope={tuningScope} onChange={onChange} />
+        </div>
+      )}
+
       {!collapsed && <div className="p-2 space-y-2">
         {/* Preset — applies full clean slide from Figma design */}
         <InspectorField label="Preset" stacked>
@@ -473,11 +480,6 @@ function SlideEditor({
             />
           </div>
         </InspectorSection>
-
-        {/* Canvas editor — optional visual positioning tool */}
-        {showCanvas && (
-          <SlideCanvas slide={s} tuningScope={tuningScope} onChange={onChange} />
-        )}
 
         {/* Text content — collapsible + reorderable cards */}
         <InspectorSection
