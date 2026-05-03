@@ -12,6 +12,7 @@ export type TextVariant = "plain" | "stamp";
 export type BodyVariant = "plain" | "list";
 export type ObjectFit = "cover" | "contain";
 export type HeroViewportProfileKey = "ipadPro";
+export type HeroTuningScope = "default" | HeroViewportProfileKey;
 
 export type SlideMedia = {
   kind?: "image";

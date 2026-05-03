@@ -3,6 +3,27 @@
 import { useRef, useState, type ReactNode } from "react";
 import { ChevronRight, Smartphone, Monitor } from "lucide-react";
 
+// ─── Scrub helpers ────────────────────────────────────────────────────────────
+
+/** Parse a CSS value like "120px", "3.6em", "100%", "1.5vw" into num + unit. */
+function parseNum(v: string): { num: number; unit: string } | null {
+  const m = v.trim().match(/^(-?(?:\d+\.?\d*|\.\d+))(px|em|rem|vw|vh|%|)$/i);
+  if (!m) return null;
+  const num = parseFloat(m[1]);
+  if (!isFinite(num)) return null;
+  return { num, unit: m[2] };
+}
+
+function fmtNum(num: number, unit: string): string {
+  if (unit === "px" || unit === "") return `${Math.round(num)}${unit}`;
+  return `${Math.round(num * 100) / 100}${unit}`;
+}
+
+/** 1px drag = this many units. Small-range units (em/vw) use 0.1 sensitivity. */
+function scrubStep(unit: string): number {
+  return unit === "em" || unit === "rem" || unit === "vw" || unit === "vh" ? 0.1 : 1;
+}
+
 type ResponsiveHide = { base?: boolean; md?: boolean; lg?: boolean };
 type ViewMode = "desktop" | "ipadPro" | "mobile";
 
@@ -93,13 +114,13 @@ export function InspectorField({
   if (!stacked) {
     return (
       <div className="flex items-start gap-3">
-        <label className="text-[11px] font-medium text-muted-foreground w-20 shrink-0 pt-1.5 text-right">
+        <label className="text-xs font-medium text-muted-foreground w-20 shrink-0 pt-2 text-right">
           {label}
         </label>
         <div className="flex-1 min-w-0">
           {children}
           {hint && (
-            <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+            <p className="text-[11px] text-muted-foreground/70 mt-0.5">
               {hint}
             </p>
           )}
@@ -111,20 +132,24 @@ export function InspectorField({
   return (
     <div className="space-y-1">
       {label && (
-        <label className="text-[11px] font-medium text-muted-foreground">
+        <label className="text-xs font-medium text-muted-foreground">
           {label}
         </label>
       )}
       {children}
       {hint && (
-        <p className="text-[10px] text-muted-foreground/70">{hint}</p>
+        <p className="text-[11px] text-muted-foreground/70">{hint}</p>
       )}
     </div>
   );
 }
 
 /**
- * Compact text input styled for inspector.
+ * Inspector text input with Figma-like scrubbing for numeric CSS values.
+ *
+ * When the value looks like a CSS number ("120px", "3.6em", "100%"…) and the
+ * field is not focused, dragging vertically increments/decrements the number.
+ * Shift key = 10× sensitivity. A short click (no drag) focuses for text entry.
  */
 export function InspectorInput({
   value,
@@ -139,10 +164,53 @@ export function InspectorInput({
   type?: string;
   className?: string;
 }) {
+  const ref = useRef<HTMLTextAreaElement & HTMLInputElement>(null);
+  const [focused, setFocused] = useState(false);
+  const scrub = useRef<{
+    startY: number;
+    startNum: number;
+    unit: string;
+    step: number;
+    moved: boolean;
+  } | null>(null);
+
+  const parsed = parseNum(value);
+  const scrubable = !!parsed && !focused;
+
+  const onPD = (e: React.PointerEvent<HTMLElement>) => {
+    if (!scrubable || !parsed) return;
+    e.preventDefault(); // block focus until we know it's a click, not a drag
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    scrub.current = {
+      startY: e.clientY,
+      startNum: parsed.num,
+      unit: parsed.unit,
+      step: scrubStep(parsed.unit),
+      moved: false,
+    };
+  };
+
+  const onPM = (e: React.PointerEvent<HTMLElement>) => {
+    const d = scrub.current;
+    if (!d) return;
+    const dy = d.startY - e.clientY; // drag up → positive → increase
+    if (Math.abs(dy) > 3) d.moved = true;
+    if (!d.moved) return;
+    const mult = e.shiftKey ? 10 : 1;
+    onChange(fmtNum(d.startNum + dy * d.step * mult, d.unit));
+  };
+
+  const onPU = () => {
+    const d = scrub.current;
+    scrub.current = null;
+    if (!d?.moved) ref.current?.focus(); // short click → focus for typing
+  };
+
   const baseClass = [
-    "w-full border bg-muted text-foreground px-2 text-xs",
+    "w-full border bg-muted text-foreground px-2 text-sm",
     "focus:outline-none focus:ring-1 focus:ring-ring",
-    "placeholder:text-muted-foreground/50",
+    "placeholder:text-muted-foreground/40",
+    scrubable ? "cursor-ns-resize" : "",
     className,
   ]
     .filter(Boolean)
@@ -151,22 +219,36 @@ export function InspectorInput({
   if (type === "text") {
     return (
       <textarea
+        ref={ref as React.RefObject<HTMLTextAreaElement>}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onPointerDown={onPD}
+        onPointerMove={onPM}
+        onPointerUp={onPU}
+        onPointerCancel={() => { scrub.current = null; }}
         placeholder={placeholder}
         rows={1}
-        className={[baseClass, "py-1.5 resize-y leading-tight"].join(" ")}
+        className={[baseClass, "py-2 resize-y leading-tight"].join(" ")}
       />
     );
   }
 
   return (
     <input
+      ref={ref as React.RefObject<HTMLInputElement>}
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      onPointerDown={onPD}
+      onPointerMove={onPM}
+      onPointerUp={onPU}
+      onPointerCancel={() => { scrub.current = null; }}
       placeholder={placeholder}
-      className={[baseClass, "h-7"].join(" ")}
+      className={[baseClass, "h-8"].join(" ")}
     />
   );
 }
@@ -192,9 +274,9 @@ export function InspectorTextarea({
       placeholder={placeholder}
       rows={rows}
       className={[
-        "w-full border bg-muted text-foreground px-2 py-1.5 text-xs resize-y",
+        "w-full border bg-muted text-foreground px-2 py-2 text-sm resize-y",
         "focus:outline-none focus:ring-1 focus:ring-ring",
-        "placeholder:text-muted-foreground/50",
+        "placeholder:text-muted-foreground/40",
       ].join(" ")}
     />
   );
@@ -216,7 +298,7 @@ export function InspectorSelect({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full h-7 border bg-muted text-foreground px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+      className="w-full h-8 border bg-muted text-foreground px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
@@ -228,7 +310,8 @@ export function InspectorSelect({
 }
 
 /**
- * Number input with optional stepper.
+ * Number input with scrubbing (drag up/down) + keyboard entry.
+ * Shift key = 10× step sensitivity.
  */
 export function InspectorNumber({
   value,
@@ -245,23 +328,69 @@ export function InspectorNumber({
   step?: number;
   placeholder?: string;
 }) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [focused, setFocused] = useState(false);
+  const scrub = useRef<{
+    startY: number;
+    startVal: number;
+    moved: boolean;
+  } | null>(null);
+
+  const clamp = (v: number) => {
+    let r = v;
+    if (min !== undefined) r = Math.max(min, r);
+    if (max !== undefined) r = Math.min(max, r);
+    return r;
+  };
+
+  const onPD = (e: React.PointerEvent<HTMLInputElement>) => {
+    if (focused) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    scrub.current = { startY: e.clientY, startVal: value ?? 0, moved: false };
+  };
+
+  const onPM = (e: React.PointerEvent<HTMLInputElement>) => {
+    const d = scrub.current;
+    if (!d) return;
+    const dy = d.startY - e.clientY;
+    if (Math.abs(dy) > 3) d.moved = true;
+    if (!d.moved) return;
+    const mult = e.shiftKey ? 10 : 1;
+    onChange(clamp(Math.round((d.startVal + dy * step * mult) / step) * step));
+  };
+
+  const onPU = () => {
+    const d = scrub.current;
+    scrub.current = null;
+    if (!d?.moved) ref.current?.focus();
+  };
+
   return (
     <input
+      ref={ref}
       type="number"
       value={value ?? ""}
       onChange={(e) => {
         const v = e.target.value;
-        onChange(v === "" ? undefined : Number(v));
+        onChange(v === "" ? undefined : clamp(Number(v)));
       }}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      onPointerDown={onPD}
+      onPointerMove={onPM}
+      onPointerUp={onPU}
+      onPointerCancel={() => { scrub.current = null; }}
       min={min}
       max={max}
       step={step}
       placeholder={placeholder}
       className={[
-        "w-full h-7 border bg-muted text-foreground px-2 text-xs tabular-nums",
+        "w-full h-8 border bg-muted text-foreground px-2 text-sm tabular-nums",
         "focus:outline-none focus:ring-1 focus:ring-ring",
-        "placeholder:text-muted-foreground/50",
-      ].join(" ")}
+        "placeholder:text-muted-foreground/40",
+        !focused ? "cursor-ns-resize" : "",
+      ].filter(Boolean).join(" ")}
     />
   );
 }

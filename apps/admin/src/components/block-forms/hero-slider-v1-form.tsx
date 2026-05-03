@@ -23,11 +23,13 @@ import {
   EyeOff,
   Image,
   LayoutTemplate,
+  Layers,
   Plus,
   SlidersHorizontal,
   Trash2,
   Type,
 } from "lucide-react";
+import { SlideCanvas } from "./slide-canvas";
 import {
   type Slide,
   type SlideTemplate,
@@ -36,6 +38,7 @@ import {
   type ElementStyleProfile,
   type HeroDesktopLayout,
   type HeroViewportProfileKey,
+  type HeroTuningScope,
   type SlideExtra,
   type TypoClass,
   type BodyVariant,
@@ -73,7 +76,6 @@ const STAR_VARIANTS: { marker: string; label: string }[] = [
   { marker: "{{icon:star-v3}}", label: "v3" },
 ];
 
-type HeroTuningScope = "default" | HeroViewportProfileKey;
 type ElementStyleField = Exclude<keyof ElementStyle, "viewportProfiles">;
 
 function IconInsertBar({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -335,6 +337,7 @@ function SlideEditor({
   tuningScope: HeroTuningScope;
 }) {
   const [collapsed, setCollapsed] = useState(true);
+  const [showCanvas, setShowCanvas] = useState(false);
   const desktop = getScopedDesktopLayout(s, tuningScope);
   const desktopFallback = getScopeFallbackLayout(s, tuningScope);
   const mobile = s?.layout?.mobile ?? {};
@@ -358,6 +361,19 @@ function SlideEditor({
           {collapsed ? "▸" : "▾"} {idx + 1}. {s?.title?.split("\n")[0] || template}
         </span>
         <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => setShowCanvas((v) => !v)}
+            className={[
+              "p-0.5",
+              showCanvas
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground",
+            ].join(" ")}
+            title="Toggle canvas editor"
+          >
+            <Layers className="h-3 w-3" />
+          </button>
           <button
             type="button"
             onClick={() => onChange({ ...s, hidden: !s?.hidden })}
@@ -458,6 +474,11 @@ function SlideEditor({
           </div>
         </InspectorSection>
 
+        {/* Canvas editor — optional visual positioning tool */}
+        {showCanvas && (
+          <SlideCanvas slide={s} tuningScope={tuningScope} onChange={onChange} />
+        )}
+
         {/* Text content — collapsible + reorderable cards */}
         <InspectorSection
           title="Text"
@@ -549,7 +570,7 @@ function SlideEditor({
             </p>
           ) : null}
           <div className="mb-1.5">
-            <div className="mb-1 text-[10px] text-muted-foreground">Padding</div>
+            <div className="mb-1 text-xs text-muted-foreground">Padding</div>
             <InspectorInput
               value={desktop?.padding ?? ""}
               onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { padding: v }))}
@@ -559,7 +580,7 @@ function SlideEditor({
 
           <div className="grid grid-cols-2 gap-1.5">
             <div>
-              <div className="mb-1 text-[10px] text-muted-foreground">Media width</div>
+              <div className="mb-1 text-xs text-muted-foreground">Media width</div>
               <InspectorInput
                 value={desktop?.mediaWidth ?? ""}
                 onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaWidth: v }))}
@@ -567,7 +588,7 @@ function SlideEditor({
               />
             </div>
             <div>
-              <div className="mb-1 text-[10px] text-muted-foreground">Text width</div>
+              <div className="mb-1 text-xs text-muted-foreground">Text width</div>
               <InspectorInput
                 value={desktop?.textWidth ?? ""}
                 onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { textWidth: v }))}
@@ -575,7 +596,7 @@ function SlideEditor({
               />
             </div>
             <div>
-              <div className="mb-1 text-[10px] text-muted-foreground">Offset X</div>
+              <div className="mb-1 text-xs text-muted-foreground">Offset X</div>
               <InspectorInput
                 value={desktop?.contentOffsetX ?? ""}
                 onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { contentOffsetX: v }))}
@@ -583,7 +604,7 @@ function SlideEditor({
               />
             </div>
             <div>
-              <div className="mb-1 text-[10px] text-muted-foreground">Offset Y</div>
+              <div className="mb-1 text-xs text-muted-foreground">Offset Y</div>
               <InspectorInput
                 value={desktop?.contentOffsetY ?? ""}
                 onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { contentOffsetY: v }))}
@@ -594,7 +615,7 @@ function SlideEditor({
 
           <div className="grid grid-cols-2 gap-1.5 mt-2">
             <div>
-              <div className="mb-1 text-[10px] text-muted-foreground">Title size</div>
+              <div className="mb-1 text-xs text-muted-foreground">Title size</div>
               <InspectorInput
                 value={desktop?.titleSize ?? ""}
                 onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { titleSize: v }))}
@@ -602,7 +623,7 @@ function SlideEditor({
               />
             </div>
             <div>
-              <div className="mb-1 text-[10px] text-muted-foreground">Tagline size</div>
+              <div className="mb-1 text-xs text-muted-foreground">Tagline size</div>
               <InspectorInput
                 value={desktop?.subtitleSize ?? ""}
                 onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { subtitleSize: v }))}
@@ -610,7 +631,7 @@ function SlideEditor({
               />
             </div>
             <div>
-              <div className="mb-1 text-[10px] text-muted-foreground">Kicker size</div>
+              <div className="mb-1 text-xs text-muted-foreground">Kicker size</div>
               <InspectorInput
                 value={desktop?.kickerSize ?? ""}
                 onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { kickerSize: v }))}
@@ -618,7 +639,7 @@ function SlideEditor({
               />
             </div>
             <div>
-              <div className="mb-1 text-[10px] text-muted-foreground">Body size</div>
+              <div className="mb-1 text-xs text-muted-foreground">Body size</div>
               <InspectorInput
                 value={desktop?.bodySize ?? ""}
                 onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { bodySize: v }))}
@@ -687,13 +708,13 @@ function ElementStyleEditor({
   return (
     <div className="space-y-1">
       {label ? (
-        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           {label}{tuningScope === "ipadPro" ? " - iPad" : ""}
         </span>
       ) : null}
       {showTypo && (
         <div>
-          <div className="text-[9px] text-muted-foreground mb-0.5">Typography</div>
+          <div className="text-[11px] text-muted-foreground mb-0.5">Typography</div>
           <InspectorSelect
             value={s.typo ?? ""}
             onChange={(v) => patch("typo", v)}
@@ -703,7 +724,7 @@ function ElementStyleEditor({
       )}
       <div className="grid grid-cols-4 gap-1">
         <div>
-          <div className="text-[9px] text-muted-foreground mb-0.5">Top</div>
+          <div className="text-[11px] text-muted-foreground mb-0.5">Top</div>
           <InspectorInput
             value={s.mt ?? ""}
             onChange={(v) => patch("mt", v)}
@@ -711,7 +732,7 @@ function ElementStyleEditor({
           />
         </div>
         <div>
-          <div className="text-[9px] text-muted-foreground mb-0.5">Bottom</div>
+          <div className="text-[11px] text-muted-foreground mb-0.5">Bottom</div>
           <InspectorInput
             value={s.mb ?? ""}
             onChange={(v) => patch("mb", v)}
@@ -719,7 +740,7 @@ function ElementStyleEditor({
           />
         </div>
         <div>
-          <div className="text-[9px] text-muted-foreground mb-0.5">Left</div>
+          <div className="text-[11px] text-muted-foreground mb-0.5">Left</div>
           <InspectorInput
             value={s.ml ?? ""}
             onChange={(v) => patch("ml", v)}
@@ -727,7 +748,7 @@ function ElementStyleEditor({
           />
         </div>
         <div>
-          <div className="text-[9px] text-muted-foreground mb-0.5">Right</div>
+          <div className="text-[11px] text-muted-foreground mb-0.5">Right</div>
           <InspectorInput
             value={s.mr ?? ""}
             onChange={(v) => patch("mr", v)}
@@ -737,7 +758,7 @@ function ElementStyleEditor({
       </div>
       <div className="grid grid-cols-3 gap-1">
         <div>
-          <div className="text-[9px] text-muted-foreground mb-0.5">Align</div>
+          <div className="text-[11px] text-muted-foreground mb-0.5">Align</div>
           <InspectorSelect
             value={s.align ?? ""}
             onChange={(v) => patch("align", v)}
@@ -745,7 +766,7 @@ function ElementStyleEditor({
           />
         </div>
         <div>
-          <div className="text-[9px] text-muted-foreground mb-0.5">Size</div>
+          <div className="text-[11px] text-muted-foreground mb-0.5">Size</div>
           <InspectorInput
             value={s.size ?? ""}
             onChange={(v) => patch("size", v)}
@@ -753,7 +774,7 @@ function ElementStyleEditor({
           />
         </div>
         <div>
-          <div className="text-[9px] text-muted-foreground mb-0.5">Stroke</div>
+          <div className="text-[11px] text-muted-foreground mb-0.5">Stroke</div>
           <InspectorInput
             value={s.strokeW ?? ""}
             onChange={(v) => patch("strokeW", v)}
@@ -1014,7 +1035,7 @@ function MediaFields({
 
   return (
     <div className="space-y-1.5">
-      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
         {label}
       </span>
       <ImageUpload
