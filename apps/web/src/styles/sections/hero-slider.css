@@ -32,6 +32,14 @@
   cursor: grabbing;
 }
 
+.hero-slider__viewport--has-cta {
+  cursor: pointer;
+}
+
+.hero-slider__viewport--has-cta:active {
+  cursor: pointer;
+}
+
 .hero-slider__track {
   display: flex;
   will-change: transform;
@@ -311,8 +319,11 @@
   aspect-ratio: var(--hs-media-aspect, auto);
   height: var(--hs-media-h, auto);
   max-height: var(--hs-media-h, none);
-  background: #d9d9d9;
   overflow: hidden;
+}
+
+.hero-slide__media-box--placeholder {
+  background: #d9d9d9;
 }
 
 .hero-slide__media-ratio {
@@ -333,6 +344,7 @@
   height: 100%;
   object-fit: var(--hs-media-fit, cover);
   display: block;
+  -webkit-user-drag: none;
 }
 
 /* ===== Desktop ===== */

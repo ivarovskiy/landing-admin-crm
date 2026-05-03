@@ -405,7 +405,6 @@ export function HeroSliderV1({ data }: { data: any }) {
   } | null>(null);
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (count <= 1) return;
     if (e.pointerType === "mouse" && (e as any).button !== 0) return;
     if ((e.target as HTMLElement).closest("a, button")) return;
 
@@ -445,8 +444,11 @@ export function HeroSliderV1({ data }: { data: any }) {
 
     drag.current = null;
 
-    if (moved && Math.abs(dx) >= 30) {
+    if (moved && Math.abs(dx) >= 30 && count > 1) {
       dx < 0 ? goNext() : goPrev();
+    } else if (!moved) {
+      const href = slides[active]?.cta?.href;
+      if (href) window.location.href = href;
     }
 
     window.setTimeout(() => setPaused(false), 1200);
@@ -485,6 +487,8 @@ export function HeroSliderV1({ data }: { data: any }) {
   if (options?.inlineIconMargin) (sectionStyle as any)["--hs-inline-icon-margin"] = options.inlineIconMargin;
   if (options?.inlineIconSize) (sectionStyle as any)["--hs-inline-icon-size"] = options.inlineIconSize;
 
+  const activeHasCta = !!slides[active]?.cta?.href;
+
   return (
     <section className="hero-slider" ref={sectionRef} style={sectionStyle}>
       <Container>
@@ -498,7 +502,7 @@ export function HeroSliderV1({ data }: { data: any }) {
         />
 
         <div
-          className="hero-slider__viewport"
+          className={cn("hero-slider__viewport", activeHasCta && "hero-slider__viewport--has-cta")}
           tabIndex={0}
           onKeyDown={onKeyDown}
           onMouseEnter={() => setPaused(true)}
@@ -1234,6 +1238,7 @@ function MediaFrame({
           loading="eager"
           decoding="async"
           fetchPriority={priority ? "high" : "low"}
+          draggable={false}
         />
       ) : ratioLabel ? (
         <span className="hero-slide__media-ratio" aria-hidden>{ratioLabel}</span>
