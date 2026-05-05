@@ -464,6 +464,13 @@ export function NewStudentMemoV1Form({ value, onChange, viewMode }: BlockFormPro
               placeholder="0 / 1.5px"
             />
           </InspectorField>
+          <InspectorField label="In color">
+            <InspectorInput
+              value={(contentBox.innerBorderColor as string) ?? ""}
+              onChange={(v) => patchGroup("contentBox", { innerBorderColor: v || undefined })}
+              placeholder="var(--color-primary)"
+            />
+          </InspectorField>
           <InspectorField label="Inset">
             <InspectorInput
               value={(contentBox.innerBorderInset as string) ?? ""}

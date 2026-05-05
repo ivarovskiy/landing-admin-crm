@@ -168,6 +168,7 @@
   border: var(--nsm-a-box-inner-border-w) solid var(--nsm-a-box-inner-border-color);
   border-radius: max(0px, calc(var(--nsm-a-box-radius) - var(--nsm-a-box-inner-inset)));
   pointer-events: none;
+  z-index: 1;
 }
 
 .nsm--unboxed .nsm__text-panel {
@@ -183,6 +184,7 @@
 
 .nsm__section {
   position: relative;
+  z-index: 2;
   margin: 0;
 }
 
@@ -297,7 +299,7 @@
   animation: nsm-slide-up 0.7s ease both;
 }
 
-@media (min-width: 768px) and (max-width: 1199px) {
+@media (min-width: 1200px) and (max-width: 1439px) {
   .nsm {
     --nsm-a-container-max-w: var(--nsm-ipad-container-max-w, var(--nsm-container-max-w, 1168px));
     --nsm-a-padding-top: var(--nsm-ipad-padding-top, var(--nsm-padding-top, clamp(34px, 4.3vw, 62px)));
