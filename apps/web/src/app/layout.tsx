@@ -308,6 +308,10 @@ export default async function RootLayout({ children }: {
       style={htmlStyle}
     >
       <head>
+        {/* Prevent browser scroll restoration flashing a mid-page section on
+            load/refresh. Must be the first script so it fires before the browser
+            applies its saved scroll offset. */}
+        <script dangerouslySetInnerHTML={{ __html: "if('scrollRestoration'in history)history.scrollRestoration='manual';" }} />
         {/* Disable iOS Safari "data detectors" that auto-convert phone numbers,
             addresses, dates and emails into underlined tappable links. The
             studio address and phone in the footer/header should look like
