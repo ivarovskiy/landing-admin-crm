@@ -470,6 +470,23 @@ export const BLOCK_LIBRARY: BlockDefinition[] = [
       ],
     },
   },
+  {
+    key: "new-student-memo:v1",
+    type: "new-student-memo",
+    variant: "v1",
+    label: "New Student Memo (v1)",
+    description: "Сторінка памʼятки нового студента: header + зображення з анімацією + іконка скріпки + текстові секції",
+    defaultData: {
+      kicker: "Parent Portal",
+      title: "New Student Memo",
+      subtitle: "Welcome to Simply Dance!",
+      image: { src: "", alt: "", animation: "none", aspectRatio: "3/4" },
+      clip: { src: "", width: "52px", height: "77px", alt: "" },
+      sections: [
+        { heading: "", body: "" },
+      ],
+    },
+  },
 ]
 
 export const DEFAULT_BLOCK_KEY = "hero:slider-v1"
