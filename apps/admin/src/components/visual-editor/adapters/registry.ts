@@ -6,6 +6,7 @@ import { headerV1Adapter } from "./header-v1";
 import { footerV1Adapter } from "./footer-v1";
 import { contentPageV1Adapter } from "./content-page-v1";
 import { scrapbookV1Adapter } from "./scrapbook-v1";
+import { newStudentMemoV1Adapter } from "./new-student-memo-v1";
 
 const VISUAL_EDITOR_REGISTRY: Record<string, BlockVisualEditorDefinition> = {
   "features:v1": { key: "features:v1", adapter: featuresV1Adapter },
@@ -15,6 +16,7 @@ const VISUAL_EDITOR_REGISTRY: Record<string, BlockVisualEditorDefinition> = {
   "footer:v1": { key: "footer:v1", adapter: footerV1Adapter },
   "content-page:v1": { key: "content-page:v1", adapter: contentPageV1Adapter },
   "scrapbook:v1": { key: "scrapbook:v1", adapter: scrapbookV1Adapter },
+  "new-student-memo:v1": { key: "new-student-memo:v1", adapter: newStudentMemoV1Adapter },
 };
 
 /** Get visual editor definition for a block type:variant key */
