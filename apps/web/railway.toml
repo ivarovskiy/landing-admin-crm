@@ -1,8 +1,10 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pnpm install --frozen-lockfile && pnpm -C apps/web build"
+buildCommand = "pnpm install --frozen-lockfile && pnpm -C apps/web build && cp -r apps/web/public apps/web/.next/standalone/apps/web/public && cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static"
 
 [deploy]
-startCommand = "pnpm -C apps/web start"
+startCommand = "node apps/web/.next/standalone/apps/web/server.js"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
+healthcheckPath = "/"
+healthcheckTimeout = 100

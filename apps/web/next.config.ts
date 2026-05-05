@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 // SVGR support for both Turbopack (dev) and Webpack (build / when turbopack is disabled)
 const nextConfig: NextConfig = {
+  output: "standalone",
+  outputFileTracingRoot: path.join(__dirname, "../../"),
   images: {
     remotePatterns: [
       // Local dev — API on localhost (any port)

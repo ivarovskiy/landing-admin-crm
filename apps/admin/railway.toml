@@ -1,8 +1,10 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pnpm install --frozen-lockfile && pnpm -C apps/admin build"
+buildCommand = "pnpm install --frozen-lockfile && pnpm -C apps/admin build && cp -r apps/admin/public apps/admin/.next/standalone/apps/admin/public && cp -r apps/admin/.next/static apps/admin/.next/standalone/apps/admin/.next/static"
 
 [deploy]
-startCommand = "pnpm -C apps/admin start"
+startCommand = "node apps/admin/.next/standalone/apps/admin/server.js"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
+healthcheckPath = "/admin/login"
+healthcheckTimeout = 100
