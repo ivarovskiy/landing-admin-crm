@@ -9,10 +9,11 @@ import {
   InspectorTextarea,
   InspectorSelect,
   InspectorToggle,
+  InspectorColorInput,
   BlockLayoutSection,
   ImageUpload,
 } from "@/components/inspector";
-import { Type, Image, Paperclip, Trash2, Plus } from "lucide-react";
+import { Type, Image, Paperclip, Trash2, Plus, ALargeSmall } from "lucide-react";
 
 const ANIMATION_OPTIONS = [
   { value: "none", label: "None" },
@@ -157,6 +158,40 @@ export function NewStudentMemoV1Form({ value, onChange }: BlockFormProps) {
             />
           </InspectorField>
         </div>
+
+        <p className="text-[10px] text-muted-foreground mt-2 mb-1">
+          Position (overrides defaults: top&nbsp;−24px, right&nbsp;−18px)
+        </p>
+        <div className="grid grid-cols-2 gap-1.5">
+          <InspectorField label="Top">
+            <InspectorInput
+              value={value?.clip?.top ?? ""}
+              onChange={(v) => onChange({ ...value, clip: { ...value?.clip, top: v || undefined } })}
+              placeholder="-24px"
+            />
+          </InspectorField>
+          <InspectorField label="Right">
+            <InspectorInput
+              value={value?.clip?.right ?? ""}
+              onChange={(v) => onChange({ ...value, clip: { ...value?.clip, right: v || undefined } })}
+              placeholder="-18px"
+            />
+          </InspectorField>
+          <InspectorField label="Bottom">
+            <InspectorInput
+              value={value?.clip?.bottom ?? ""}
+              onChange={(v) => onChange({ ...value, clip: { ...value?.clip, bottom: v || undefined } })}
+              placeholder=""
+            />
+          </InspectorField>
+          <InspectorField label="Left">
+            <InspectorInput
+              value={value?.clip?.left ?? ""}
+              onChange={(v) => onChange({ ...value, clip: { ...value?.clip, left: v || undefined } })}
+              placeholder=""
+            />
+          </InspectorField>
+        </div>
       </InspectorSection>
 
       {/* ── Text sections ───────────────────────────────── */}
@@ -209,7 +244,124 @@ export function NewStudentMemoV1Form({ value, onChange }: BlockFormProps) {
         </div>
       </InspectorSection>
 
+      {/* ── Typography ──────────────────────────────────── */}
+      <InspectorSection title="Typography" icon={<ALargeSmall className="h-3 w-3" />} defaultOpen={false}>
+        <TypoElementRow
+          label="Kicker"
+          value={value?.typo?.kicker}
+          onChange={(v) => onChange({ ...value, typo: { ...value?.typo, kicker: v } })}
+          defaults={{ size: "11–13px", letterSpacing: "0.18em" }}
+        />
+        <TypoElementRow
+          label="Title"
+          value={value?.typo?.title}
+          onChange={(v) => onChange({ ...value, typo: { ...value?.typo, title: v } })}
+          defaults={{ size: "clamp(48px,7.5vw,104px)", lineHeight: "0.92", letterSpacing: "0.02em" }}
+        />
+        <TypoElementRow
+          label="Subtitle"
+          value={value?.typo?.subtitle}
+          onChange={(v) => onChange({ ...value, typo: { ...value?.typo, subtitle: v } })}
+          defaults={{ size: "clamp(16px,1.8vw,24px)", fontStyle: "italic" }}
+        />
+        <TypoElementRow
+          label="Section title"
+          value={value?.typo?.sectionTitle}
+          onChange={(v) => onChange({ ...value, typo: { ...value?.typo, sectionTitle: v } })}
+          defaults={{ size: "13–15px", letterSpacing: "0.12em" }}
+        />
+        <TypoElementRow
+          label="Body text"
+          value={value?.typo?.bodyText}
+          onChange={(v) => onChange({ ...value, typo: { ...value?.typo, bodyText: v } })}
+          defaults={{ size: "13–15px", lineHeight: "1.65" }}
+        />
+      </InspectorSection>
+
       <BlockLayoutSection value={value} onChange={onChange} />
+    </div>
+  );
+}
+
+type TypoElementValue = {
+  size?: string;
+  lineHeight?: string;
+  letterSpacing?: string;
+  color?: string;
+  fontStyle?: string;
+  fontWeight?: string;
+};
+
+function TypoElementRow({
+  label,
+  value,
+  onChange,
+  defaults,
+}: {
+  label: string;
+  value: TypoElementValue | undefined;
+  onChange: (v: TypoElementValue | undefined) => void;
+  defaults: { size?: string; lineHeight?: string; letterSpacing?: string; fontStyle?: string };
+}) {
+  const v = value ?? {};
+  const set = (key: keyof TypoElementValue, val: string) =>
+    onChange({ ...v, [key]: val || undefined });
+
+  return (
+    <div className="rounded-md border bg-muted/10 p-2 space-y-1.5">
+      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{label}</span>
+
+      <div className="grid grid-cols-2 gap-1.5">
+        <InspectorField label="Size">
+          <InspectorInput
+            value={v.size ?? ""}
+            onChange={(val) => set("size", val)}
+            placeholder={defaults.size ?? ""}
+          />
+        </InspectorField>
+        <InspectorField label="Weight">
+          <InspectorInput
+            value={v.fontWeight ?? ""}
+            onChange={(val) => set("fontWeight", val)}
+            placeholder="400"
+          />
+        </InspectorField>
+        <InspectorField label="Line-h">
+          <InspectorInput
+            value={v.lineHeight ?? ""}
+            onChange={(val) => set("lineHeight", val)}
+            placeholder={defaults.lineHeight ?? ""}
+          />
+        </InspectorField>
+        <InspectorField label="Spacing">
+          <InspectorInput
+            value={v.letterSpacing ?? ""}
+            onChange={(val) => set("letterSpacing", val)}
+            placeholder={defaults.letterSpacing ?? ""}
+          />
+        </InspectorField>
+      </div>
+
+      <div className="grid grid-cols-2 gap-1.5">
+        <InspectorField label="Style">
+          <InspectorSelect
+            value={v.fontStyle ?? ""}
+            onChange={(val) => set("fontStyle", val)}
+            options={[
+              { value: "", label: "Normal" },
+              { value: "italic", label: "Italic" },
+              { value: "oblique", label: "Oblique" },
+            ]}
+          />
+        </InspectorField>
+        <InspectorField label="Color">
+          <InspectorColorInput
+            value={v.color ?? ""}
+            onChange={(val) => set("color", val)}
+            placeholder="var(--color-primary)"
+          />
+        </InspectorField>
+      </div>
     </div>
   );
 }

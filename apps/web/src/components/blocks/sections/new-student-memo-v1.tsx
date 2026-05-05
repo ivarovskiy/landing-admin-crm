@@ -21,7 +21,40 @@ type NsmClip = {
   width?: string;
   height?: string;
   alt?: string;
+  top?: string;
+  right?: string;
+  bottom?: string;
+  left?: string;
 };
+
+type NsmTypoElement = {
+  size?: string;
+  lineHeight?: string;
+  letterSpacing?: string;
+  color?: string;
+  fontStyle?: string;
+  fontWeight?: string;
+};
+
+type NsmTypo = {
+  kicker?: NsmTypoElement;
+  title?: NsmTypoElement;
+  subtitle?: NsmTypoElement;
+  sectionTitle?: NsmTypoElement;
+  bodyText?: NsmTypoElement;
+};
+
+function typoStyle(t?: NsmTypoElement): React.CSSProperties {
+  if (!t) return {};
+  const s: React.CSSProperties = {};
+  if (t.size) s.fontSize = t.size;
+  if (t.lineHeight) s.lineHeight = t.lineHeight;
+  if (t.letterSpacing) s.letterSpacing = t.letterSpacing;
+  if (t.color) s.color = t.color;
+  if (t.fontStyle) s.fontStyle = t.fontStyle;
+  if (t.fontWeight) s.fontWeight = t.fontWeight;
+  return s;
+}
 
 export function NewStudentMemoV1({ data }: { data: any }) {
   const kicker = data?.kicker ?? "";
@@ -29,6 +62,7 @@ export function NewStudentMemoV1({ data }: { data: any }) {
   const subtitle = data?.subtitle ?? "";
   const image = data?.image as NsmImage | undefined;
   const clip = data?.clip as NsmClip | undefined;
+  const typo = data?.typo as NsmTypo | undefined;
   const sections: NsmSection[] = Array.isArray(data?.sections) ? data.sections : [];
 
   const imageFrameClass = [
@@ -48,18 +82,22 @@ export function NewStudentMemoV1({ data }: { data: any }) {
   const clipStyle: React.CSSProperties = {};
   if (clip?.width) clipStyle.width = clip.width;
   if (clip?.height) clipStyle.height = clip.height;
+  if (clip?.top !== undefined) clipStyle.top = clip.top;
+  if (clip?.right !== undefined) clipStyle.right = clip.right;
+  if (clip?.bottom !== undefined) clipStyle.bottom = clip.bottom;
+  if (clip?.left !== undefined) clipStyle.left = clip.left;
 
   return (
     <div className="nsm">
       <div className="ds-container">
         <header className="nsm__header">
-          {kicker ? <p className="nsm__kicker">{kicker}</p> : null}
+          {kicker ? <p className="nsm__kicker" style={typoStyle(typo?.kicker)}>{kicker}</p> : null}
           {title ? (
-            <OutlineStampText as="h1" stamp={STAMP_HERO_TITLE} className="nsm__title">
+            <OutlineStampText as="h1" stamp={STAMP_HERO_TITLE} className="nsm__title" style={typoStyle(typo?.title)}>
               {title}
             </OutlineStampText>
           ) : null}
-          {subtitle ? <p className="nsm__subtitle">{subtitle}</p> : null}
+          {subtitle ? <p className="nsm__subtitle" style={typoStyle(typo?.subtitle)}>{subtitle}</p> : null}
         </header>
 
         <div className="nsm__body">
@@ -67,11 +105,11 @@ export function NewStudentMemoV1({ data }: { data: any }) {
             {sections.map((section, i) => (
               <div key={i} className="nsm__section">
                 {section.heading ? (
-                  <h2 className="nsm__section-title">{section.heading}</h2>
+                  <h2 className="nsm__section-title" style={typoStyle(typo?.sectionTitle)}>{section.heading}</h2>
                 ) : null}
                 {section.body
                   ? section.body.split("\n\n").map((para, j) => (
-                      <p key={j} className="nsm__body-text">
+                      <p key={j} className="nsm__body-text" style={typoStyle(typo?.bodyText)}>
                         {para}
                       </p>
                     ))

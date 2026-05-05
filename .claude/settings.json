@@ -17,7 +17,8 @@
       "Bash(pnpm exec:*)",
       "Bash(findstr /n \"textarea\\\\|InspectorInput\\\\|type.*text\")",
       "Bash(grep -v \"//\")",
-      "Bash(dir \"c:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\" /b)"
+      "Bash(dir \"c:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\" /b)",
+      "Bash(pnpm --filter @acme/admin tsc --noEmit)"
     ],
     "additionalDirectories": [
       "c:\\Users\\ThinkPad\\.claude\\projects\\c--Users-ThinkPad-Desktop-Work-landing-admin-crm\\memory"
