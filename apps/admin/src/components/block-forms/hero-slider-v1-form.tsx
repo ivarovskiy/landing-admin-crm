@@ -492,27 +492,51 @@ function SlideEditor({
 
         {/* CTA */}
         <InspectorSection title="CTA" icon={<Type className="h-3 w-3" />} defaultOpen={false}>
-          <InspectorField label="Label">
-            <InspectorInput
-              value={s?.cta?.label ?? ""}
-              onChange={(v) => onChange({ ...s, cta: { ...s?.cta, label: v } })}
-            />
-          </InspectorField>
-          <div className="grid grid-cols-2 gap-1.5">
-            <InspectorField label="Href">
-              <InspectorInput
-                value={s?.cta?.href ?? ""}
-                onChange={(v) => onChange({ ...s, cta: { ...s?.cta, href: v } })}
-              />
-            </InspectorField>
-            <InspectorField label="Align">
-              <InspectorSelect
-                value={s.ctaStyle?.align ?? ""}
-                onChange={(v) => onChange({ ...s, ctaStyle: { ...s.ctaStyle, align: v || undefined } as any })}
-                options={[{ value: "", label: "Auto" }, ...ALIGN_OPTIONS]}
-              />
-            </InspectorField>
-          </div>
+          <InspectorToggle
+            label="Enable link"
+            checked={s?.cta?.enabled === true || (s?.cta?.enabled == null && !!s?.cta?.href)}
+            onChange={(v) => onChange({ ...s, cta: { ...s?.cta, enabled: v ? true : false } })}
+          />
+          {(s?.cta?.enabled === true || (s?.cta?.enabled == null && !!s?.cta?.href)) && (
+            <>
+              <InspectorField label="Label">
+                <InspectorInput
+                  value={s?.cta?.label ?? ""}
+                  onChange={(v) => onChange({ ...s, cta: { ...s?.cta, label: v } })}
+                />
+              </InspectorField>
+              <div className="grid grid-cols-2 gap-1.5">
+                <InspectorField label="Href">
+                  <InspectorInput
+                    value={s?.cta?.href ?? ""}
+                    onChange={(v) => onChange({ ...s, cta: { ...s?.cta, href: v } })}
+                  />
+                </InspectorField>
+                <InspectorField label="Open in">
+                  <InspectorSelect
+                    value={s?.cta?.target ?? "_self"}
+                    onChange={(v) => onChange({ ...s, cta: { ...s?.cta, target: (v as "_self" | "_blank") || undefined } })}
+                    options={[
+                      { value: "_self", label: "Same tab" },
+                      { value: "_blank", label: "New tab" },
+                    ]}
+                  />
+                </InspectorField>
+              </div>
+              <InspectorField label="Align">
+                <InspectorSelect
+                  value={s.ctaStyle?.align ?? ""}
+                  onChange={(v) => onChange({ ...s, ctaStyle: { ...s.ctaStyle, align: v || undefined } as any })}
+                  options={[{ value: "", label: "Auto" }, ...ALIGN_OPTIONS]}
+                />
+              </InspectorField>
+            </>
+          )}
+          {s?.cta?.enabled === false && s?.cta?.href && (
+            <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+              Saved: {s.cta.href}
+            </p>
+          )}
         </InspectorSection>
 
         {/* Media */}

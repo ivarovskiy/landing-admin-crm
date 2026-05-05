@@ -101,7 +101,14 @@ export type Slide = {
   subtitleVariant?: TextVariant;
   body?: string;
   bodyVariant?: BodyVariant;
-  cta?: { label?: string; href?: string };
+  cta?: {
+    label?: string;
+    href?: string;
+    /** false = slide is static (no cursor change, no click navigation). Defaults to true when href is set. */
+    enabled?: boolean;
+    /** "_blank" opens in a new tab. Defaults to "_self". */
+    target?: "_self" | "_blank";
+  };
   media?: SlideMedia;
   extras?: SlideExtra[];
   /** Per-element style overrides */

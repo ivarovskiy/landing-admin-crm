@@ -83,7 +83,7 @@ type Slide = {
   subtitleVariant?: TextVariant;
   body?: string;
   bodyVariant?: BodyVariant;
-  cta?: { label?: string; href?: string };
+  cta?: { label?: string; href?: string; enabled?: boolean; target?: "_self" | "_blank" };
   media?: SlideMedia;
   extras?: SlideExtra[];
   elementOrder?: string[];
@@ -465,8 +465,15 @@ export function HeroSliderV1({
     if (moved && Math.abs(dx) >= 30 && count > 1) {
       dx < 0 ? goNext() : goPrev();
     } else if (!moved) {
-      const href = slides[active]?.cta?.href;
-      if (href) window.location.href = href;
+      const cta = slides[active]?.cta;
+      const ctaActive = cta?.enabled !== false && !!cta?.href;
+      if (ctaActive) {
+        if (cta!.target === "_blank") {
+          window.open(cta!.href, "_blank", "noopener,noreferrer");
+        } else {
+          window.location.href = cta!.href!;
+        }
+      }
     }
 
     window.setTimeout(() => setPaused(false), 1200);
@@ -505,7 +512,8 @@ export function HeroSliderV1({
   if (options?.inlineIconMargin) (sectionStyle as any)["--hs-inline-icon-margin"] = options.inlineIconMargin;
   if (options?.inlineIconSize) (sectionStyle as any)["--hs-inline-icon-size"] = options.inlineIconSize;
 
-  const activeHasCta = !!slides[active]?.cta?.href;
+  const activeCta = slides[active]?.cta;
+  const activeHasCta = activeCta?.enabled !== false && !!activeCta?.href;
 
   return (
     <section className="hero-slider" ref={sectionRef} style={sectionStyle}>
@@ -948,9 +956,11 @@ function HeroSlide({
 
       {guides}
 
-      {cta?.href ? (
+      {cta?.href && cta?.enabled !== false ? (
         <a
           href={cta.href}
+          target={cta.target === "_blank" ? "_blank" : undefined}
+          rel={cta.target === "_blank" ? "noopener noreferrer" : undefined}
           {...editableProps("cta", cn("hero-slide__cta", `hero-slide__cta--${ctaSide}`))}
           data-el={`slide-${i}-cta`}
           style={elStyle(ctaStyle)}
