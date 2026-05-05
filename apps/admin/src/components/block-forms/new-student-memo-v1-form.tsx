@@ -50,6 +50,7 @@ type MemoSection = {
   heading?: string;
   body?: string;
   hidden?: boolean;
+  sectionStyle?: MemoElementStyle;
   headingStyle?: MemoElementStyle;
   bodyStyle?: MemoElementStyle;
 };
@@ -88,6 +89,8 @@ const REFERENCE_PRESET = {
     borderWidth: "1.5px",
     borderColor: "var(--color-primary)",
     borderRadius: "4px",
+    innerBorderWidth: "0",
+    innerBorderInset: "6px",
     padding: "clamp(52px, 6vw, 84px) clamp(28px, 6vw, 78px)",
     minHeight: "clamp(760px, 110vw, 1540px)",
     viewportProfiles: {
@@ -279,24 +282,27 @@ export function NewStudentMemoV1Form({ value, onChange, viewMode }: BlockFormPro
 
       <InspectorSection title="Header" icon={<Type className="h-3 w-3" />}>
         <InspectorField label="Kicker">
-          <InspectorInput
+          <InspectorTextarea
             value={value?.kicker ?? ""}
             onChange={(v) => onChange({ ...value, kicker: v })}
             placeholder="Parent Portal"
+            rows={2}
           />
         </InspectorField>
         <InspectorField label="Title">
-          <InspectorInput
+          <InspectorTextarea
             value={value?.title ?? ""}
             onChange={(v) => onChange({ ...value, title: v })}
             placeholder="New Student Memo"
+            rows={2}
           />
         </InspectorField>
         <InspectorField label="Subtitle">
-          <InspectorInput
+          <InspectorTextarea
             value={value?.subtitle ?? ""}
             onChange={(v) => onChange({ ...value, subtitle: v })}
             placeholder="Welcome to Simply Dance!"
+            rows={2}
           />
         </InspectorField>
 
@@ -340,6 +346,25 @@ export function NewStudentMemoV1Form({ value, onChange, viewMode }: BlockFormPro
             placeholder="Studio Director"
           />
         </InspectorField>
+        <InspectorField label="CTA image">
+          <ImageUpload
+            value={value?.cta?.src ?? ""}
+            onChange={(v) => onChange({ ...value, cta: { ...(value?.cta ?? {}), src: v } })}
+            onAssetUploaded={(asset) =>
+              onChange({
+                ...value,
+                cta: {
+                  ...(value?.cta ?? {}),
+                  src: asset.url,
+                  width: value?.cta?.width || (asset.width ? `${asset.width}px` : undefined),
+                  height: value?.cta?.height || (asset.height ? `${asset.height}px` : undefined),
+                },
+              })
+            }
+            placeholder="Upload button image"
+            apiBase={API_BASE}
+          />
+        </InspectorField>
         <CompactGrid>
           <InspectorField label="Href">
             <InspectorInput
@@ -353,6 +378,20 @@ export function NewStudentMemoV1Form({ value, onChange, viewMode }: BlockFormPro
               value={value?.cta?.width ?? ""}
               onChange={(v) => onChange({ ...value, cta: { ...(value?.cta ?? {}), width: v || undefined } })}
               placeholder="164px"
+            />
+          </InspectorField>
+          <InspectorField label="Height">
+            <InspectorInput
+              value={value?.cta?.height ?? ""}
+              onChange={(v) => onChange({ ...value, cta: { ...(value?.cta ?? {}), height: v || undefined } })}
+              placeholder="auto"
+            />
+          </InspectorField>
+          <InspectorField label="Alt">
+            <InspectorInput
+              value={value?.cta?.alt ?? ""}
+              onChange={(v) => onChange({ ...value, cta: { ...(value?.cta ?? {}), alt: v || undefined } })}
+              placeholder="Studio Director"
             />
           </InspectorField>
         </CompactGrid>
@@ -416,6 +455,20 @@ export function NewStudentMemoV1Form({ value, onChange, viewMode }: BlockFormPro
               value={(contentBox.borderRadius as string) ?? ""}
               onChange={(v) => patchGroup("contentBox", { borderRadius: v || undefined })}
               placeholder="4px"
+            />
+          </InspectorField>
+          <InspectorField label="Inner">
+            <InspectorInput
+              value={(contentBox.innerBorderWidth as string) ?? ""}
+              onChange={(v) => patchGroup("contentBox", { innerBorderWidth: v || undefined })}
+              placeholder="0 / 1.5px"
+            />
+          </InspectorField>
+          <InspectorField label="Inset">
+            <InspectorInput
+              value={(contentBox.innerBorderInset as string) ?? ""}
+              onChange={(v) => patchGroup("contentBox", { innerBorderInset: v || undefined })}
+              placeholder="6px"
             />
           </InspectorField>
           <InspectorField label="Min H">
@@ -508,7 +561,17 @@ export function NewStudentMemoV1Form({ value, onChange, viewMode }: BlockFormPro
           <InspectorField label="Width">
             <InspectorInput
               value={(imageFrame.width as string) ?? value?.image?.width ?? ""}
-              onChange={(v) => patchGroup("imageFrame", { width: v || undefined })}
+              onChange={(v) => {
+                if (v && v !== "100%" && !v.includes("%")) {
+                  onChange({
+                    ...value,
+                    imageFrame: patchScopedGroup(value?.imageFrame, scope, { width: v }),
+                    layout: patchScopedGroup(value?.layout, scope, { imageWidth: v }),
+                  });
+                } else {
+                  patchGroup("imageFrame", { width: v || undefined });
+                }
+              }}
               placeholder="100%"
             />
           </InspectorField>
@@ -713,10 +776,11 @@ function SectionCard({
       </div>
 
       <div className="space-y-2 p-2">
-        <InspectorInput
+        <InspectorTextarea
           value={section.heading ?? ""}
           onChange={(v) => onChange({ ...section, heading: v || undefined })}
           placeholder="Section heading"
+          rows={2}
         />
         <InspectorTextarea
           value={section.body ?? ""}
@@ -725,16 +789,20 @@ function SectionCard({
           rows={5}
         />
         <StyleEditor
+          label="Section box"
+          style={section.sectionStyle}
+          onChange={(next) => onChange({ ...section, sectionStyle: next })}
+          showTypography={false}
+        />
+        <StyleEditor
           label="Heading override"
           style={section.headingStyle}
           onChange={(next) => onChange({ ...section, headingStyle: next })}
-          showBox={false}
         />
         <StyleEditor
           label="Body override"
           style={section.bodyStyle}
           onChange={(next) => onChange({ ...section, bodyStyle: next })}
-          showBox={false}
         />
       </div>
     </div>

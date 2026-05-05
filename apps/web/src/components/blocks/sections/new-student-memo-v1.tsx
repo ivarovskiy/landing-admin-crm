@@ -17,12 +17,15 @@ type MemoElementStyle = {
   mb?: string;
   ml?: string;
   mr?: string;
+  width?: string;
   size?: string;
   lineHeight?: string;
   letterSpacing?: string;
   weight?: string;
   align?: "left" | "center" | "right";
   maxWidth?: string;
+  minHeight?: string;
+  padding?: string;
   strokeW?: string;
 };
 
@@ -34,6 +37,7 @@ type NsmSection = {
   heading?: string;
   body?: string;
   hidden?: boolean;
+  sectionStyle?: MemoElementStyle;
   headingStyle?: MemoElementStyle;
   bodyStyle?: MemoElementStyle;
 };
@@ -96,6 +100,9 @@ const VAR_MAP = {
     borderWidth: "box-border-w",
     borderColor: "box-border-color",
     borderRadius: "box-radius",
+    innerBorderWidth: "box-inner-border-w",
+    innerBorderColor: "box-inner-border-color",
+    innerBorderInset: "box-inner-inset",
   },
   textFlow: {
     sectionGap: "section-gap",
@@ -187,6 +194,7 @@ function elementStyle(style?: MemoElementStyle): React.CSSProperties | undefined
   if (style.mb) out.marginBottom = style.mb;
   if (style.ml) out.marginLeft = style.ml;
   if (style.mr) out.marginRight = style.mr;
+  if (style.width) out.width = style.width;
   if (style.size) out.fontSize = style.size;
   if (style.lineHeight) out.lineHeight = style.lineHeight;
   if (style.letterSpacing) out.letterSpacing = style.letterSpacing;
@@ -196,6 +204,8 @@ function elementStyle(style?: MemoElementStyle): React.CSSProperties | undefined
   }
   if (style.align) out.textAlign = style.align;
   if (style.maxWidth) out.maxWidth = style.maxWidth;
+  if (style.minHeight) out.minHeight = style.minHeight;
+  if (style.padding) out.padding = style.padding;
   if (style.strokeW) out["--text-stroke-w"] = style.strokeW;
 
   return Object.keys(out).length ? (out as React.CSSProperties) : undefined;
@@ -248,7 +258,14 @@ export function NewStudentMemoV1({ data }: { data: any }) {
   const typo = data?.typo as NsmTypo | undefined;
   const sections: NsmSection[] = Array.isArray(data?.sections) ? data.sections : [];
   const contentBox = isRecord(data?.contentBox) ? data.contentBox : {};
-  const cta = data?.cta as { label?: string; href?: string; width?: string } | undefined;
+  const cta = data?.cta as {
+    label?: string;
+    href?: string;
+    src?: string;
+    alt?: string;
+    width?: string;
+    height?: string;
+  } | undefined;
   const clipTarget = clip?.target ?? "image";
   const titleTypo = data?.titleStyle?.typo ?? typo?.title;
   const isTitleStamp = !titleTypo || STAMP_TYPO_CLASSES.has(titleTypo);
@@ -307,13 +324,23 @@ export function NewStudentMemoV1({ data }: { data: any }) {
               ) : null}
             </div>
 
-            {cta?.label ? (
+            {cta?.label || cta?.src ? (
               <a
                 href={cta.href ?? "#"}
-                className="nsm__cta"
-                style={cta.width ? ({ "--nsm-cta-w": cta.width } as React.CSSProperties) : undefined}
+                className={cn("nsm__cta", cta.src && "nsm__cta--image")}
+                aria-label={cta.alt || cta.label || "Open link"}
+                style={
+                  {
+                    ...(cta.width ? { "--nsm-cta-w": cta.width } : {}),
+                    ...(cta.height ? { "--nsm-cta-h": cta.height } : {}),
+                  } as React.CSSProperties
+                }
               >
-                {cta.label}
+                {cta.src ? (
+                  <img src={cta.src} alt={cta.alt ?? cta.label ?? ""} className="nsm__cta-image" />
+                ) : (
+                  cta.label
+                )}
               </a>
             ) : null}
           </div>
@@ -331,7 +358,7 @@ export function NewStudentMemoV1({ data }: { data: any }) {
                   const bodyStyle = mergeStyle(data?.bodyStyle, section.bodyStyle);
 
                   return (
-                    <section key={i} className="nsm__section">
+                    <section key={i} className="nsm__section" style={elementStyle(section.sectionStyle)}>
                       {section.heading ? (
                         <h2
                           className={classFromStyle("nsm__section-title", typo?.sectionTitle, headingStyle)}
@@ -367,6 +394,7 @@ export function NewStudentMemoV1({ data }: { data: any }) {
                   alt={image.alt ?? ""}
                   className="nsm__image"
                   sizes="(max-width: 767px) 100vw, 380px"
+                  objectFit={data?.imageFrame?.objectFit === "contain" ? "contain" : "cover"}
                 />
               ) : (
                 <div className="nsm__image-placeholder">Image</div>

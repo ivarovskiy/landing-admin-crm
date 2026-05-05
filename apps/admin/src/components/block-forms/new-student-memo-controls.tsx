@@ -17,12 +17,15 @@ export type MemoElementStyle = {
   mb?: string;
   ml?: string;
   mr?: string;
+  width?: string;
   size?: string;
   lineHeight?: string;
   letterSpacing?: string;
   weight?: string;
   align?: "left" | "center" | "right";
   maxWidth?: string;
+  minHeight?: string;
+  padding?: string;
   strokeW?: string;
 };
 
@@ -200,12 +203,33 @@ export function StyleEditor({
             <InspectorField label="Right">
               <InspectorInput value={style?.mr ?? ""} onChange={(v) => patch("mr", v)} placeholder="0" />
             </InspectorField>
+            <InspectorField label="Width">
+              <InspectorInput
+                value={style?.width ?? ""}
+                onChange={(v) => patch("width", v)}
+                placeholder="auto / 680px"
+              />
+            </InspectorField>
+            <InspectorField label="Min H">
+              <InspectorInput
+                value={style?.minHeight ?? ""}
+                onChange={(v) => patch("minHeight", v)}
+                placeholder="0 / 320px"
+              />
+            </InspectorField>
           </CompactGrid>
           <InspectorField label="Max W">
             <InspectorInput
               value={style?.maxWidth ?? ""}
               onChange={(v) => patch("maxWidth", v)}
               placeholder="none / 680px"
+            />
+          </InspectorField>
+          <InspectorField label="Padding">
+            <InspectorInput
+              value={style?.padding ?? ""}
+              onChange={(v) => patch("padding", v)}
+              placeholder="0 / 24px 32px"
             />
           </InspectorField>
         </>
