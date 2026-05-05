@@ -91,11 +91,12 @@
   position: relative;
   width: 100%;
   border: 3px solid var(--color-primary);
-  overflow: hidden;
+  overflow: visible;
   aspect-ratio: 3 / 4;
 }
 
-.nsm__image-frame img {
+.nsm__image-frame img,
+.nsm__image {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -112,6 +113,44 @@
   font-size: 13px;
   color: #999;
   letter-spacing: 0.05em;
+}
+
+/* ---- Clip / paperclip icon ---- */
+
+.nsm__clip {
+  position: absolute;
+  top: -24px;
+  right: -18px;
+  width: 52px;
+  height: 77px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.nsm__clip svg,
+.nsm__clip img {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- Image animations ---- */
+
+@keyframes nsm-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes nsm-slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.nsm__image-frame--anim-fade-in {
+  animation: nsm-fade-in 0.7s ease both;
+}
+
+.nsm__image-frame--anim-slide-up {
+  animation: nsm-slide-up 0.7s ease both;
 }
 
 /* ---- Mobile ---- */

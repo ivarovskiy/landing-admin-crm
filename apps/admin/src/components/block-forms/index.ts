@@ -9,6 +9,7 @@ import { ScrapbookV1Form } from "./scrapbook-v1-form";
 import { TextBlockV1Form } from "./text-block-v1-form";
 import { DocHeaderV1Form } from "./doc-header-v1-form";
 import { DocBodyV1Form } from "./doc-body-v1-form";
+import { NewStudentMemoV1Form } from "./new-student-memo-v1-form";
 
 export type BlockFormProps = {
   value: any;
@@ -27,6 +28,7 @@ const REGISTRY: Record<string, ComponentType<BlockFormProps>> = {
   "text-block:v1": TextBlockV1Form,
   "doc-header:v1": DocHeaderV1Form,
   "doc-body:v1": DocBodyV1Form,
+  "new-student-memo:v1": NewStudentMemoV1Form,
 };
 
 export function getBlockForm(type: string, variant: string) {

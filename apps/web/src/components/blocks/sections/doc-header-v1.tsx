@@ -1,6 +1,7 @@
 import type React from "react";
 import { Container, OutlineStampText, STAMP_HERO_TITLE } from "@/components/landing/ui";
 import ParentPortalBtn from "@/assets/buttons/parent-portal.svg";
+import StudioDirectorBtn from "@/assets/buttons/studio-director.svg";
 
 type ElementStyle = {
   mt?: string;
@@ -93,7 +94,8 @@ export function DocHeaderV1({ data }: { data: any }) {
               className="doc-header__cta"
               style={d.cta!.size ? ({ "--doc-cta-h": d.cta!.size } as React.CSSProperties) : undefined}
             >
-              <ParentPortalBtn />
+              {/* <ParentPortalBtn /> */}
+              <StudioDirectorBtn />
             </a>
           ) : null}
         </div>
