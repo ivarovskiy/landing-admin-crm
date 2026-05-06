@@ -579,3 +579,37 @@
     display: none;
   }
 }
+
+/* ── TipTap inline editor (edit mode) ─────────────────────────────────────── */
+
+[data-tiptap] {
+  display: contents; /* transparent wrapper */
+}
+
+[data-tiptap-content="true"] {
+  outline: none;
+  caret-color: currentColor;
+  min-width: 4px;
+}
+
+/* keep paragraph margins consistent with surrounding text */
+[data-tiptap-content="true"] p {
+  margin: 0;
+}
+[data-tiptap-content="true"] p + p {
+  margin-top: 1em;
+}
+
+/* edit-mode focus ring — subtle blue glow */
+[data-tiptap-content="true"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
+  border-radius: 2px;
+}
+
+/* link style inside TipTap */
+[data-tiptap-content="true"] .tt-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: text;
+}

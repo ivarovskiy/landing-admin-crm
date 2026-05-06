@@ -1,11 +1,14 @@
 "use client";
 
 import type React from "react";
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, type DragEndEvent } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { Container, Kicker, OutlineStampText, STAMP_TITLE } from "@/components/landing/ui";
 import { MediaImage } from "@/components/media-image";
 import ClipIcon from "@/assets/icons/clip.svg";
 import { ScrollProgressDot } from "./scroll-progress-dot";
+import { TipTapInline, renderRichText } from "@/components/tiptap-inline";
 
 type ResponsiveItemLayout = {
   width?: string;
@@ -128,11 +131,144 @@ function itemStyle(item: ContentItem): React.CSSProperties {
   return s as React.CSSProperties;
 }
 
+// ── dnd-kit primitives ────────────────────────────────────────────────────────
+
+function DroppableCell({ id, col, row }: { id: string; col: number; row: number }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        gridColumn: String(col),
+        gridRow: String(row),
+        border: "1px dashed rgba(99,102,241,0.35)",
+        borderRadius: 3,
+        backgroundColor: isOver ? "rgba(99,102,241,0.18)" : "transparent",
+        transition: "background-color 0.08s",
+        zIndex: 0,
+      }}
+    />
+  );
+}
+
+function DraggableGridItem({
+  id,
+  item,
+  idx,
+  col,
+  isDraggingThis,
+  onItemChange,
+}: {
+  id: string;
+  item: ContentItem;
+  idx: number;
+  col: "left" | "right";
+  isDraggingThis: boolean;
+  onItemChange?: (changes: Partial<ContentItem>) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id });
+  return renderItem(
+    item,
+    idx,
+    col,
+    {
+      ref: setNodeRef as React.Ref<HTMLDivElement>,
+      style: {
+        transform: CSS.Translate.toString(transform),
+        cursor: isDraggingThis ? "grabbing" : "grab",
+        opacity: isDraggingThis ? 0 : 1,
+        touchAction: "none",
+        position: "relative",
+        zIndex: 1,
+      },
+      ...attributes,
+      ...listeners,
+    },
+    onItemChange,
+  );
+}
+
+function DndGrid({
+  items,
+  grid,
+  style,
+  className,
+  onMoveItem,
+  onUpdateItem,
+}: {
+  items: { item: ContentItem; col: "left" | "right" }[];
+  grid?: ContentGridConfig;
+  style?: React.CSSProperties;
+  className: string;
+  onMoveItem: (idx: number, toCol: number, toRow: number) => void;
+  onUpdateItem: (idx: number, changes: Partial<ContentItem>) => void;
+}) {
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const cols = Number(grid?.columns) || 12;
+  const rows = Number(grid?.rows) || 6;
+
+  const activeIdx = activeDragId !== null ? parseInt(activeDragId.replace("gi-", "")) : -1;
+  const activeItem = activeIdx >= 0 ? items[activeIdx] : null;
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragId(null);
+    if (!over) return;
+    const idx = parseInt(String(active.id).replace("gi-", ""));
+    const [, cStr, rStr] = String(over.id).split("-");
+    const toCol = parseInt(cStr);
+    const toRow = parseInt(rStr);
+    if (!isNaN(idx) && !isNaN(toCol) && !isNaN(toRow)) {
+      onMoveItem(idx, toCol, toRow);
+    }
+  };
+
+  return (
+    <DndContext
+      collisionDetection={pointerWithin}
+      onDragStart={({ active }) => setActiveDragId(String(active.id))}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setActiveDragId(null)}
+    >
+      <div className={className} style={{ ...(style ?? {}), position: "relative" }}>
+        {Array.from({ length: rows * cols }, (_, n) => {
+          const c = (n % cols) + 1;
+          const r = Math.floor(n / cols) + 1;
+          return (
+            <DroppableCell key={`gc-${c}-${r}`} id={`gc-${c}-${r}`} col={c} row={r} />
+          );
+        })}
+        {items.map(({ item, col }, idx) => (
+          <DraggableGridItem
+            key={`item-${idx}`}
+            id={`gi-${idx}`}
+            item={item}
+            idx={idx}
+            col={col}
+            isDraggingThis={activeDragId === `gi-${idx}`}
+            onItemChange={(changes) => onUpdateItem(idx, changes)}
+          />
+        ))}
+      </div>
+      <DragOverlay dropAnimation={null}>
+        {activeItem ? (
+          <div style={{ opacity: 0.75, pointerEvents: "none", cursor: "grabbing" }}>
+            {renderItem(activeItem.item, activeIdx, activeItem.col)}
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
+// ── item renderer ─────────────────────────────────────────────────────────────
+
 function renderItem(
   item: ContentItem,
   idx: number,
   col: "left" | "right",
-  editProps?: React.HTMLAttributes<HTMLDivElement>,
+  editProps?: React.ComponentProps<"div">,
+  onItemChange?: (changes: Partial<ContentItem>) => void,
 ) {
   const baseStyle = itemStyle(item);
   const mergedStyle: React.CSSProperties = editProps?.style
@@ -175,20 +311,29 @@ function renderItem(
       style={mergedStyle}
       {...restEdit}
     >
-      {item.heading ? (
+      {(item.heading || onItemChange) ? (
         <Kicker
           className={headingClass}
           data-el={`${col}-${idx}-heading`}
           style={headingStroke}
         >
-          {item.heading}
+          {onItemChange ? (
+            <TipTapInline
+              value={item.heading ?? ""}
+              onChange={(html) => onItemChange({ heading: html })}
+              multiline={false}
+            />
+          ) : item.heading}
         </Kicker>
       ) : null}
-      {item.body ? (
+      {(item.body || onItemChange) ? (
         <div className={bodyClass} data-el={`${col}-${idx}-body`} style={bodyStroke}>
-          {item.body.split("\n\n").map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
+          {onItemChange ? (
+            <TipTapInline
+              value={item.body ?? ""}
+              onChange={(html) => onItemChange({ body: html })}
+            />
+          ) : renderRichText(item.body ?? "")}
         </div>
       ) : null}
     </div>
@@ -242,11 +387,6 @@ export function ContentPageV1({
   editMode?: boolean;
   onChange?: (next: any) => void;
 }) {
-  const gridRef = useRef<HTMLDivElement>(null);
-  const entryGridRefs = useRef<(HTMLDivElement | null)[]>([]);
-  // dragState: which item is being dragged; entry===null → flat grid, entry===N → scroll-story entry N
-  const [dragState, setDragState] = useState<{ entry: number | null; idx: number } | null>(null);
-  const [dropCell, setDropCell] = useState<{ col: number; row: number } | null>(null);
 
   const kicker = data?.kicker;
   const title =
@@ -304,73 +444,7 @@ export function ContentPageV1({
     .filter(Boolean)
     .join(" ");
 
-  // Scroll-story entries layout (each entry has its own sticky context)
-  const entriesContent =
-    scrollStory && entries.length > 0 ? (
-      <div
-        className="cp__entries"
-        style={{ "--ss-top": stickyTop, ...(entryGap ? { "--cp-entry-gap": entryGap } : {}) } as React.CSSProperties}
-      >
-        {entries.map((entry, eIdx) => {
-          if (gridEnabled) {
-            const entryItems = [
-              ...entry.left.map((item) => ({ item, col: "left" as const })),
-              ...entry.right.map((item) => ({ item, col: "right" as const })),
-            ];
-            const isActiveEntry = dragState?.entry === eIdx;
-            return (
-              <div key={eIdx} className="cp__entry">
-                <div
-                  ref={(el) => { entryGridRefs.current[eIdx] = el; }}
-                  className="cp__grid"
-                  style={{
-                    ...gridStyle(grid),
-                    ...(editMode ? { position: "relative" } : {}),
-                  }}
-                  onDragOver={
-                    editMode
-                      ? (e) => {
-                          e.preventDefault();
-                          setDropCell(getCellFromEvent(e, entryGridRefs.current[eIdx]));
-                        }
-                      : undefined
-                  }
-                  onDragLeave={editMode ? () => setDropCell(null) : undefined}
-                  onDrop={
-                    editMode
-                      ? (e) => {
-                          e.preventDefault();
-                          const cell = getCellFromEvent(e, entryGridRefs.current[eIdx]);
-                          if (cell !== null && dragState !== null && dragState.entry === eIdx) {
-                            moveEntryItem(eIdx, dragState.idx, cell.col, cell.row);
-                          }
-                          setDragState(null);
-                          setDropCell(null);
-                        }
-                      : undefined
-                  }
-                >
-                  {editMode && isActiveEntry && makeGridOverlay(dropCell)}
-                  {entryItems.map(({ item, col }, i) =>
-                    renderItem(item, i, col, makeDragProps(eIdx, i)),
-                  )}
-                </div>
-              </div>
-            );
-          }
-          return (
-            <div key={eIdx} className="cp__entry">
-              <div className="cp__col cp__col--left">
-                {entry.left.map((item, i) => renderItem(item, i, "left"))}
-              </div>
-              <div className="cp__col cp__col--right">
-                {entry.right.map((item, i) => renderItem(item, i, "right"))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    ) : null;
+  // ── grid helpers (must be before entriesContent / gridContent) ──────────
 
   const gridItems = columnsMode === "one"
     ? left.map((item) => ({ item, col: "left" as const }))
@@ -379,25 +453,7 @@ export function ContentPageV1({
         ...right.map((item) => ({ item, col: "right" as const })),
       ];
 
-  const getCellFromEvent = useCallback(
-    (e: React.DragEvent, el: HTMLElement | null) => {
-      if (!el || !grid) return null;
-      const rect = el.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const cols = Number(grid.columns) || 12;
-      const rows = Number(grid.rows) || 6;
-      const gapPx = parseFloat(grid.gap || "8") || 8;
-      const rowHPx = parseFloat(grid.rowHeight || "44") || 44;
-      const cellW = (rect.width - gapPx * (cols - 1)) / cols;
-      const col = Math.max(1, Math.min(cols, Math.floor(x / (cellW + gapPx)) + 1));
-      const row = Math.max(1, Math.min(rows, Math.floor(y / (rowHPx + gapPx)) + 1));
-      return { col, row };
-    },
-    [grid],
-  );
 
-  // Move item in flat grid (non-scroll-story)
   const moveFlatItem = useCallback(
     (idx: number, toCol: number, toRow: number) => {
       if (!onChange) return;
@@ -415,7 +471,6 @@ export function ContentPageV1({
     [onChange, data, gridItems],
   );
 
-  // Move item within a specific scroll-story entry
   const moveEntryItem = useCallback(
     (entryIdx: number, itemIdx: number, toCol: number, toRow: number) => {
       if (!onChange) return;
@@ -444,105 +499,115 @@ export function ContentPageV1({
     [onChange, data, entries],
   );
 
-  const makeGridOverlay = (activeCell: { col: number; row: number } | null) => {
-    if (!grid) return null;
-    const cols = Number(grid.columns) || 12;
-    const rows = Number(grid.rows) || 6;
-    const cells: React.ReactNode[] = [];
-    for (let r = 1; r <= rows; r++) {
-      for (let c = 1; c <= cols; c++) {
-        const isTarget = activeCell?.col === c && activeCell?.row === r;
-        cells.push(
-          <div
-            key={`${c}-${r}`}
-            style={{
-              gridColumn: String(c),
-              gridRow: String(r),
-              border: "1px dashed rgba(99,102,241,0.35)",
-              borderRadius: "3px",
-              backgroundColor: isTarget ? "rgba(99,102,241,0.18)" : "transparent",
-              transition: "background-color 0.08s",
-              pointerEvents: "none",
-            }}
-          />,
-        );
-      }
-    }
-    return (
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "grid",
-          gridTemplateColumns: `repeat(${cols}, 1fr)`,
-          gridTemplateRows: `repeat(${rows}, var(--cp-grid-row-h, 44px))`,
-          gap: "var(--cp-grid-gap, 8px)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      >
-        {cells}
-      </div>
-    );
-  };
 
-  const makeDragProps = (entry: number | null, idx: number) =>
-    editMode
-      ? {
-          draggable: true as const,
-          style: {
-            cursor: dragState?.entry === entry && dragState?.idx === idx ? "grabbing" : "grab",
-            opacity: dragState?.entry === entry && dragState?.idx === idx ? 0.45 : 1,
-            position: "relative" as const,
-            zIndex: 1,
-          },
-          onDragStart: () => setDragState({ entry, idx }),
-          onDragEnd: () => {
-            setDragState(null);
-            setDropCell(null);
-          },
-        }
-      : undefined;
+  // Update content of a flat-grid item (text/heading)
+  const updateFlatItem = useCallback(
+    (idx: number, changes: Partial<ContentItem>) => {
+      if (!onChange) return;
+      const updated = gridItems.map((gi, i) =>
+        i === idx ? { ...gi, item: { ...gi.item, ...changes } } : gi,
+      );
+      onChange({
+        ...data,
+        left: updated.filter((gi) => gi.col === "left").map((gi) => gi.item),
+        right: updated.filter((gi) => gi.col === "right").map((gi) => gi.item),
+      });
+    },
+    [onChange, data, gridItems],
+  );
+
+  // Update content of an item inside a scroll-story entry
+  const updateEntryItem = useCallback(
+    (entryIdx: number, itemIdx: number, changes: Partial<ContentItem>) => {
+      if (!onChange) return;
+      const entry = entries[entryIdx];
+      if (!entry) return;
+      const all = [
+        ...entry.left.map((item) => ({ item, col: "left" as const })),
+        ...entry.right.map((item) => ({ item, col: "right" as const })),
+      ];
+      const updated = all.map((gi, i) =>
+        i === itemIdx ? { ...gi, item: { ...gi.item, ...changes } } : gi,
+      );
+      const newEntries = (data.entries as any[]).map((e: any, i: number) =>
+        i === entryIdx
+          ? {
+              ...e,
+              left: updated.filter((gi) => gi.col === "left").map((gi) => gi.item),
+              right: updated.filter((gi) => gi.col === "right").map((gi) => gi.item),
+            }
+          : e,
+      );
+      onChange({ ...data, entries: newEntries });
+    },
+    [onChange, data, entries],
+  );
+
+  // ── scroll-story entries layout ──────────────────────────────────────────
+
+  const entriesContent =
+    scrollStory && entries.length > 0 ? (
+      <div
+        className="cp__entries"
+        style={{ "--ss-top": stickyTop, ...(entryGap ? { "--cp-entry-gap": entryGap } : {}) } as React.CSSProperties}
+      >
+        {entries.map((entry, eIdx) => {
+          if (gridEnabled) {
+            const entryItems = [
+              ...entry.left.map((item) => ({ item, col: "left" as const })),
+              ...entry.right.map((item) => ({ item, col: "right" as const })),
+            ];
+            return (
+              <div key={eIdx} className="cp__entry">
+                {editMode ? (
+                  <DndGrid
+                    items={entryItems}
+                    grid={grid}
+                    className="cp__grid"
+                    style={gridStyle(grid)}
+                    onMoveItem={(itemIdx, toCol, toRow) => moveEntryItem(eIdx, itemIdx, toCol, toRow)}
+                    onUpdateItem={(itemIdx, changes) => updateEntryItem(eIdx, itemIdx, changes)}
+                  />
+                ) : (
+                  <div className="cp__grid" style={gridStyle(grid)}>
+                    {entryItems.map(({ item, col }, i) => renderItem(item, i, col))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+          return (
+            <div key={eIdx} className="cp__entry">
+              <div className="cp__col cp__col--left">
+                {entry.left.map((item, i) => renderItem(item, i, "left"))}
+              </div>
+              <div className="cp__col cp__col--right">
+                {entry.right.map((item, i) => renderItem(item, i, "right"))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    ) : null;
+
+  // ── flat grid (non-scroll-story) ─────────────────────────────────────────
 
   const gridContent =
     gridEnabled && !scrollStory && gridItems.length > 0 ? (
-      <div
-        ref={gridRef}
-        className="cp__grid"
-        style={{
-          ...columnsStyle,
-          ...gridStyle(grid),
-          ...(editMode ? { position: "relative" } : {}),
-        }}
-        onDragOver={
-          editMode
-            ? (e) => {
-                e.preventDefault();
-                setDropCell(getCellFromEvent(e, gridRef.current));
-              }
-            : undefined
-        }
-        onDragLeave={editMode ? () => setDropCell(null) : undefined}
-        onDrop={
-          editMode
-            ? (e) => {
-                e.preventDefault();
-                const cell = getCellFromEvent(e, gridRef.current);
-                if (cell !== null && dragState !== null && dragState.entry === null) {
-                  moveFlatItem(dragState.idx, cell.col, cell.row);
-                }
-                setDragState(null);
-                setDropCell(null);
-              }
-            : undefined
-        }
-      >
-        {editMode && makeGridOverlay(dropCell)}
-        {gridItems.map(({ item, col }, idx) =>
-          renderItem(item, idx, col, makeDragProps(null, idx)),
-        )}
-      </div>
+      editMode ? (
+        <DndGrid
+          items={gridItems}
+          grid={grid}
+          className="cp__grid"
+          style={{ ...columnsStyle, ...gridStyle(grid) }}
+          onMoveItem={moveFlatItem}
+          onUpdateItem={updateFlatItem}
+        />
+      ) : (
+        <div className="cp__grid" style={{ ...columnsStyle, ...gridStyle(grid) }}>
+          {gridItems.map(({ item, col }, idx) => renderItem(item, idx, col))}
+        </div>
+      )
     ) : null;
 
   // Normal flat columns layout
@@ -566,6 +631,10 @@ export function ContentPageV1({
       </div>
     ) : null);
 
+  const updateHero = editMode && onChange
+    ? (field: string, value: unknown) => onChange({ ...data, [field]: value })
+    : null;
+
   const bodyContent = entriesContent ?? (boxed ? (
     <div className="cp__box">
       <div className="cp__box-clip" aria-hidden="true">
@@ -585,14 +654,20 @@ export function ContentPageV1({
         {kicker || title || subtitle || cta?.label ? (
           <div className={heroClass}>
             <div className="cp__hero-text">
-              {kicker ? (
+              {(kicker || updateHero) ? (
                 <div className="cp__hero-row" style={rowStyle(kickerAlign, kickerGap)}>
                   <div
                     data-el="kicker"
                     className={kickerTypo}
                     style={elementStyle(kickerStrokeW, kickerMaxW)}
                   >
-                    {kicker}
+                    {updateHero ? (
+                      <TipTapInline
+                        value={kicker ?? ""}
+                        onChange={(html) => updateHero("kicker", html)}
+                        multiline={false}
+                      />
+                    ) : kicker}
                   </div>
                 </div>
               ) : null}
@@ -609,27 +684,39 @@ export function ContentPageV1({
                   </OutlineStampText>
                 </div>
               ) : null}
-              {subtitle ? (
+              {(subtitle || updateHero) ? (
                 <div className="cp__hero-row" style={rowStyle(subtitleAlign, subtitleGap)}>
                   <p
                     className={subtitleTypo}
                     data-el="subtitle"
                     style={elementStyle(subtitleStrokeW, subtitleMaxW)}
                   >
-                    {subtitle}
+                    {updateHero ? (
+                      <TipTapInline
+                        value={subtitle ?? ""}
+                        onChange={(html) => updateHero("subtitle", html)}
+                        multiline={false}
+                      />
+                    ) : subtitle}
                   </p>
                 </div>
               ) : null}
             </div>
-            {cta?.label ? (
+            {(cta?.label || updateHero) ? (
               <div className="cp__hero-cta" style={rowStyle(ctaAlign, ctaGap)}>
                 <a
-                  href={cta.href ?? "#"}
+                  href={cta?.href ?? "#"}
                   className="cp__cta-btn"
                   data-el="cta"
                   style={ctaMaxW ? { maxWidth: ctaMaxW } : undefined}
                 >
-                  {cta.label}
+                  {updateHero ? (
+                    <TipTapInline
+                      value={cta?.label ?? ""}
+                      onChange={(html) => updateHero("cta", { ...cta, label: html })}
+                      multiline={false}
+                    />
+                  ) : cta?.label}
                 </a>
               </div>
             ) : null}

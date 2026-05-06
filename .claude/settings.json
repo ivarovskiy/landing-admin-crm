@@ -19,7 +19,10 @@
       "Bash(grep -v \"//\")",
       "Bash(dir \"c:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\" /b)",
       "Bash(pnpm --filter @acme/admin tsc --noEmit)",
-      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(pnpm add *)",
+      "Bash(node -e \"const r = require\\('./apps/web/node_modules/@tiptap/react'\\); console.log\\(Object.keys\\(r\\).filter\\(k => k.includes\\('Bubble'\\) || k.includes\\('Menu'\\) || k.includes\\('Float'\\)\\)\\)\")",
+      "Bash(node -e \"const r = require\\('./apps/web/node_modules/@tiptap/react'\\); console.log\\(Object.keys\\(r\\)\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\ThinkPad\\.claude\\projects\\c--Users-ThinkPad-Desktop-Work-landing-admin-crm\\memory"
