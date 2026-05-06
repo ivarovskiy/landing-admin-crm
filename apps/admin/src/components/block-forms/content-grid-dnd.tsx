@@ -1,10 +1,13 @@
 "use client";
 
-import type React from "react";
-import { useMemo } from "react";
-import { Grid3X3, Image as ImageIcon, Type } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Grid3X3, Image as ImageIcon, Layers, Type } from "lucide-react";
 import { InspectorField, InspectorInput, InspectorNumber } from "@/components/inspector";
-import { AdvancedPanel, FieldGrid, SectionNote } from "./admin-control-kit";
+
+function cn(...args: (string | false | null | undefined)[]) {
+  return args.filter(Boolean).join(" ");
+}
+import { FieldGrid } from "./admin-control-kit";
 
 type ContentItem = {
   id?: string;
@@ -133,97 +136,41 @@ function overlaps(a: Required<GridPlacement>, b: Required<GridPlacement>) {
   );
 }
 
-function normalizeTarget(
-  placement: Required<GridPlacement>,
-  grid: Required<ContentGridConfig>,
-): Required<GridPlacement> {
-  const colSpan = clamp(placement.colSpan, 1, grid.columns);
-  const rowSpan = clamp(placement.rowSpan, 1, grid.rows);
-  return {
-    colSpan,
-    rowSpan,
-    col: clamp(placement.col, 1, Math.max(1, grid.columns - colSpan + 1)),
-    row: Math.max(1, placement.row),
-  };
-}
-
-function pushDownPlacement(
-  items: BoardItem[],
-  movingId: string,
-  target: Required<GridPlacement>,
-  grid: Required<ContentGridConfig>,
-) {
-  const placements = new Map(items.map((item) => [item.id, { ...item.grid }] as const));
-  const moving = placements.get(movingId);
-  if (!moving) return null;
-
-  placements.set(movingId, normalizeTarget(target, grid));
-
-  let changed = true;
-  let guard = 0;
-  let rows = grid.rows;
-
-  while (changed && guard < items.length * items.length * 4) {
-    changed = false;
-    guard += 1;
-
-    const ordered = items
-      .map((item) => ({ item, grid: placements.get(item.id)! }))
-      .sort((a, b) => {
-        if (a.item.id === movingId) return -1;
-        if (b.item.id === movingId) return 1;
-        return a.grid.row - b.grid.row || a.grid.col - b.grid.col;
-      });
-
-    for (const anchor of ordered) {
-      const anchorGrid = placements.get(anchor.item.id)!;
-      const blockers = ordered
-        .filter((candidate) => candidate.item.id !== anchor.item.id)
-        .filter((candidate) => overlaps(anchorGrid, placements.get(candidate.item.id)!))
-        .sort((a, b) => placements.get(a.item.id)!.row - placements.get(b.item.id)!.row);
-
-      for (const blocker of blockers) {
-        const blockerGrid = placements.get(blocker.item.id)!;
-        const next = {
-          ...blockerGrid,
-          row: anchorGrid.row + anchorGrid.rowSpan,
-        };
-
-        if (next.row !== blockerGrid.row) {
-          placements.set(blocker.item.id, next);
-          rows = Math.max(rows, next.row + next.rowSpan - 1);
-          changed = true;
-        }
+function findOverlapIds(items: BoardItem[]): Set<string> {
+  const ids = new Set<string>();
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      if (overlaps(items[i].grid, items[j].grid)) {
+        ids.add(items[i].id);
+        ids.add(items[j].id);
       }
     }
   }
-
-  rows = Math.max(
-    rows,
-    ...Array.from(placements.values()).map((placement) => placement.row + placement.rowSpan - 1),
-  );
-
-  return { placements, rows };
+  return ids;
 }
 
-function updateBoardItems(
+function applyPlacement(
   left: ContentItem[],
   right: ContentItem[],
   items: BoardItem[],
-  placements: Map<string, Required<GridPlacement>>,
-) {
+  id: string,
+  pos: Required<GridPlacement>,
+  config: Required<ContentGridConfig>,
+): { left: ContentItem[]; right: ContentItem[] } | null {
+  const entry = items.find((i) => i.id === id);
+  if (!entry) return null;
+  const colSpan = clamp(pos.colSpan, 1, config.columns);
+  const rowSpan = clamp(pos.rowSpan, 1, config.rows);
+  const newGrid: Required<GridPlacement> = {
+    colSpan,
+    rowSpan,
+    col: clamp(pos.col, 1, Math.max(1, config.columns - colSpan + 1)),
+    row: Math.max(1, pos.row),
+  };
   const nextLeft = left.slice();
   const nextRight = right.slice();
-
-  for (const boardItem of items) {
-    const placement = placements.get(boardItem.id);
-    if (!placement) continue;
-
-    const nextItem = { ...boardItem.item, id: boardItem.item.id ?? boardItem.id, grid: placement };
-    if (boardItem.list === "left") nextLeft[boardItem.index] = nextItem;
-    else nextRight[boardItem.index] = nextItem;
-  }
-
+  if (entry.list === "left") nextLeft[entry.index] = { ...entry.item, grid: newGrid };
+  else nextRight[entry.index] = { ...entry.item, grid: newGrid };
   return { left: nextLeft, right: nextRight };
 }
 
@@ -268,37 +215,66 @@ export function ContentGridDnd({
 }) {
   const config = normalizeConfig(grid);
   const items = useMemo(() => flattenItems(left, right, config), [left, right, config]);
+  const overlapIds = useMemo(() => findOverlapIds(items), [items]);
 
-  const setItemGrid = (id: string, placement: Required<GridPlacement>) => {
-    const pushed = pushDownPlacement(items, id, placement, config);
-    if (!pushed) return;
-    if (pushed.rows !== config.rows) {
-      onGridChange({ ...grid, rows: pushed.rows });
-    }
-    onItemsChange(updateBoardItems(left, right, items, pushed.placements));
-  };
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [dropCell, setDropCell] = useState<{ col: number; row: number } | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const id = event.dataTransfer.getData("application/x-content-item-id");
+  const activeItem = items.find((i) => i.id === activeId) ?? null;
+
+  const getCellFromEvent = useCallback(
+    (e: React.DragEvent | React.MouseEvent) => {
+      const el = gridRef.current;
+      if (!el) return null;
+      const rect = el.getBoundingClientRect();
+      const rx = clamp((e.clientX - rect.left) / rect.width, 0, 0.9999);
+      const ry = clamp((e.clientY - rect.top) / rect.height, 0, 0.9999);
+      return {
+        col: Math.floor(rx * config.columns) + 1,
+        row: Math.floor(ry * config.rows) + 1,
+      };
+    },
+    [config.columns, config.rows],
+  );
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDropCell(null);
+    const id = e.dataTransfer.getData("application/x-content-item-id");
     if (!id) return;
-
-    const item = items.find((entry) => entry.id === id);
-    if (!item) return;
-
-    const rect = event.currentTarget.getBoundingClientRect();
-    const relX = clamp(event.clientX - rect.left, 0, rect.width);
-    const relY = clamp(event.clientY - rect.top, 0, rect.height);
-    const col = clamp(Math.floor((relX / rect.width) * config.columns) + 1, 1, config.columns);
-    const row = clamp(Math.floor((relY / rect.height) * config.rows) + 1, 1, config.rows);
-    const target = {
-      ...item.grid,
-      col: clamp(col, 1, Math.max(1, config.columns - item.grid.colSpan + 1)),
-      row: clamp(row, 1, Math.max(1, config.rows - item.grid.rowSpan + 1)),
+    const cell = getCellFromEvent(e);
+    if (!cell) return;
+    const entry = items.find((i) => i.id === id);
+    if (!entry) return;
+    const target: Required<GridPlacement> = {
+      ...entry.grid,
+      col: clamp(cell.col, 1, Math.max(1, config.columns - entry.grid.colSpan + 1)),
+      row: clamp(cell.row, 1, Math.max(1, config.rows - entry.grid.rowSpan + 1)),
     };
-
-    setItemGrid(id, target);
+    const next = applyPlacement(left, right, items, id, target, config);
+    if (next) onItemsChange(next);
   };
+
+  const updateActive = (patch: Partial<Required<GridPlacement>>) => {
+    if (!activeItem) return;
+    const next = applyPlacement(left, right, items, activeItem.id, { ...activeItem.grid, ...patch }, config);
+    if (next) onItemsChange(next);
+  };
+
+  // Highlight which cells the dragged item will occupy when dropped
+  const previewCells = useMemo(() => {
+    if (!dropCell || !activeItem) return null;
+    const col = clamp(dropCell.col, 1, Math.max(1, config.columns - activeItem.grid.colSpan + 1));
+    const row = clamp(dropCell.row, 1, Math.max(1, config.rows - activeItem.grid.rowSpan + 1));
+    const cells = new Set<string>();
+    for (let c = col; c < col + activeItem.grid.colSpan; c++) {
+      for (let r = row; r < row + activeItem.grid.rowSpan; r++) {
+        cells.add(`${c}-${r}`);
+      }
+    }
+    return cells;
+  }, [dropCell, activeItem, config.columns, config.rows]);
 
   return (
     <div className="space-y-2 rounded-md border border-border/70 bg-muted/10 p-2">
@@ -307,17 +283,13 @@ export function ContentGridDnd({
         Grid layout
       </div>
 
-      <SectionNote>
-        Drag blocks inside the grid. If the target area is occupied, the block already there moves down without changing the rest of the layout.
-      </SectionNote>
-
       <FieldGrid>
         <InspectorField label="Cols">
           <InspectorNumber
             value={config.columns}
             min={1}
             max={24}
-            onChange={(value) => onGridChange({ ...grid, columns: value ?? DEFAULT_GRID.columns })}
+            onChange={(v) => onGridChange({ ...grid, columns: v ?? DEFAULT_GRID.columns })}
           />
         </InspectorField>
         <InspectorField label="Rows">
@@ -325,123 +297,207 @@ export function ContentGridDnd({
             value={config.rows}
             min={1}
             max={60}
-            onChange={(value) => onGridChange({ ...grid, rows: value ?? DEFAULT_GRID.rows })}
+            onChange={(v) => onGridChange({ ...grid, rows: v ?? DEFAULT_GRID.rows })}
           />
         </InspectorField>
         <InspectorField label="Row H">
           <InspectorInput
             value={config.rowHeight}
-            onChange={(value) => onGridChange({ ...grid, rowHeight: value || DEFAULT_GRID.rowHeight })}
+            onChange={(v) => onGridChange({ ...grid, rowHeight: v || DEFAULT_GRID.rowHeight })}
             placeholder="44px"
           />
         </InspectorField>
         <InspectorField label="Gap">
           <InspectorInput
             value={config.gap}
-            onChange={(value) => onGridChange({ ...grid, gap: value || DEFAULT_GRID.gap })}
+            onChange={(v) => onGridChange({ ...grid, gap: v || DEFAULT_GRID.gap })}
             placeholder="8px"
           />
         </InspectorField>
       </FieldGrid>
 
+      {/* Grid canvas */}
       <div
-        className="relative overflow-hidden rounded-md border border-primary/40 bg-background/70"
+        ref={gridRef}
+        className="relative overflow-hidden rounded-md border border-primary/30"
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${config.columns}, minmax(0, 1fr))`,
           gridTemplateRows: `repeat(${config.rows}, ${config.rowHeight})`,
           gap: config.gap,
-          backgroundImage:
-            "linear-gradient(to right, color-mix(in srgb, var(--color-primary) 18%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 18%, transparent) 1px, transparent 1px)",
-          backgroundSize: `calc((100% - (${config.columns - 1} * ${config.gap})) / ${config.columns} + ${config.gap}) calc(${config.rowHeight} + ${config.gap})`,
         }}
-        onDragOver={(event) => event.preventDefault()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          const cell = getCellFromEvent(e);
+          if (cell) setDropCell(cell);
+        }}
+        onDragLeave={() => setDropCell(null)}
         onDrop={handleDrop}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setActiveId(null);
+        }}
       >
-        {items.map((entry) => (
-          <div
-            key={entry.id}
-            draggable
-            onDragStart={(event) => {
-              event.dataTransfer.setData("application/x-content-item-id", entry.id);
-              event.dataTransfer.effectAllowed = "move";
-            }}
-            className="group z-10 min-w-0 cursor-grab overflow-hidden rounded border border-primary/60 bg-card/95 p-1.5 shadow-sm active:cursor-grabbing"
-            style={{
-              gridColumn: `${entry.grid.col} / span ${entry.grid.colSpan}`,
-              gridRow: `${entry.grid.row} / span ${entry.grid.rowSpan}`,
-            }}
-            title="Drag to a free grid area"
-          >
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <span className="flex min-w-0 items-center gap-1 text-[10px] font-semibold text-primary">
-                {entry.item.kind === "image" ? <ImageIcon className="h-3 w-3 shrink-0" /> : <Type className="h-3 w-3 shrink-0" />}
-                <span className="truncate">{entry.item.kind === "image" ? "Image" : entry.item.heading || "Text"}</span>
-              </span>
-              <span className="text-[9px] text-muted-foreground">
-                {entry.grid.col}:{entry.grid.row}
-              </span>
-            </div>
-            {entry.item.kind === "image" ? (
-              entry.item.src ? (
-                <img src={entry.item.src} alt="" className="h-full max-h-20 w-full rounded-sm object-cover opacity-80" />
+        {/* Background cells */}
+        {Array.from({ length: config.rows }, (_, ri) =>
+          Array.from({ length: config.columns }, (_, ci) => {
+            const col = ci + 1;
+            const row = ri + 1;
+            const isPreview = previewCells?.has(`${col}-${row}`) ?? false;
+            return (
+              <div
+                key={`${col}-${row}`}
+                className={cn(
+                  "transition-colors",
+                  isPreview ? "bg-primary/20 border border-primary/50" : "border border-primary/10",
+                )}
+              />
+            );
+          }),
+        )}
+
+        {/* Items */}
+        {items.map((entry) => {
+          const isActive = activeId === entry.id;
+          const hasOverlap = overlapIds.has(entry.id);
+          return (
+            <div
+              key={entry.id}
+              draggable={isActive}
+              onDragStart={(e) => {
+                e.dataTransfer.setData("application/x-content-item-id", entry.id);
+                e.dataTransfer.effectAllowed = "move";
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveId(isActive ? null : entry.id);
+              }}
+              className={cn(
+                "z-10 min-w-0 overflow-hidden rounded border-2 bg-card/95 p-1.5 shadow-sm transition-all select-none",
+                isActive
+                  ? "cursor-grab border-primary shadow-md ring-1 ring-primary/30 active:cursor-grabbing"
+                  : "cursor-pointer border-primary/35 hover:border-primary/65",
+                hasOverlap && !isActive && "border-amber-400/60",
+              )}
+              style={{
+                gridColumn: `${entry.grid.col} / span ${entry.grid.colSpan}`,
+                gridRow: `${entry.grid.row} / span ${entry.grid.rowSpan}`,
+                zIndex: isActive ? 20 : 10,
+              }}
+              title={isActive ? "Drag to move" : "Click to select"}
+            >
+              <div className="mb-1 flex items-center justify-between gap-1">
+                <span className="flex min-w-0 items-center gap-1 text-[10px] font-semibold text-primary">
+                  {entry.item.kind === "image"
+                    ? <ImageIcon className="h-3 w-3 shrink-0" />
+                    : <Type className="h-3 w-3 shrink-0" />}
+                  <span className="truncate">
+                    {entry.item.kind === "image" ? "Image" : (entry.item.heading || "Text")}
+                  </span>
+                </span>
+                <span className={cn(
+                  "shrink-0 text-[9px] font-bold",
+                  entry.list === "left" ? "text-blue-400" : "text-emerald-400",
+                )}>
+                  {entry.list === "left" ? "L" : "R"}
+                </span>
+              </div>
+              {entry.item.kind === "image" ? (
+                entry.item.src ? (
+                  <img
+                    src={entry.item.src}
+                    alt=""
+                    className="h-full max-h-16 w-full rounded-sm object-cover opacity-75"
+                  />
+                ) : (
+                  <div className="flex h-8 items-center justify-center rounded-sm border border-dashed border-border text-[10px] text-muted-foreground">
+                    No image
+                  </div>
+                )
               ) : (
-                <div className="flex h-12 items-center justify-center rounded-sm border border-dashed border-border text-[10px] text-muted-foreground">
-                  Image
-                </div>
-              )
-            ) : (
-              <p className="line-clamp-3 text-[10px] leading-snug text-muted-foreground">
-                {entry.item.body || "Text block"}
-              </p>
-            )}
-          </div>
-        ))}
+                <p className="line-clamp-2 text-[10px] leading-snug text-muted-foreground">
+                  {entry.item.body || "—"}
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      <AdvancedPanel title="Manual cell controls">
-        <div className="space-y-1.5">
-          {items.map((entry) => (
-            <div key={`controls-${entry.id}`} className="rounded border border-border/60 p-1.5">
-              <div className="mb-1 text-[10px] font-semibold text-muted-foreground">
-                {entry.item.kind === "image" ? "Image" : entry.item.heading || "Text block"}
-              </div>
-              <div className="grid grid-cols-4 gap-1">
-                <InspectorNumber
-                  value={entry.grid.col}
-                  min={1}
-                  max={config.columns}
-                  onChange={(value) => setItemGrid(entry.id, { ...entry.grid, col: value ?? entry.grid.col })}
-                />
-                <InspectorNumber
-                  value={entry.grid.row}
-                  min={1}
-                  max={config.rows}
-                  onChange={(value) => setItemGrid(entry.id, { ...entry.grid, row: value ?? entry.grid.row })}
-                />
-                <InspectorNumber
-                  value={entry.grid.colSpan}
-                  min={1}
-                  max={config.columns}
-                  onChange={(value) => setItemGrid(entry.id, { ...entry.grid, colSpan: value ?? entry.grid.colSpan })}
-                />
-                <InspectorNumber
-                  value={entry.grid.rowSpan}
-                  min={1}
-                  max={config.rows}
-                  onChange={(value) => setItemGrid(entry.id, { ...entry.grid, rowSpan: value ?? entry.grid.rowSpan })}
-                />
-              </div>
-              <div className="mt-0.5 grid grid-cols-4 gap-1 text-center text-[9px] text-muted-foreground">
-                <span>Col</span>
-                <span>Row</span>
-                <span>W</span>
-                <span>H</span>
-              </div>
-            </div>
-          ))}
+      {/* Instruction */}
+      <p className="text-[10px] text-muted-foreground/70">
+        {activeId
+          ? "Selected — drag to move freely. Click elsewhere to deselect."
+          : "Click an item to select it, then drag to reposition."}
+      </p>
+
+      {/* Overlap warning */}
+      {overlapIds.size > 0 && (
+        <div className="rounded-md border border-amber-400/30 bg-amber-400/8 px-2 py-1.5 space-y-1">
+          <div className="flex items-center gap-1 text-[10px] font-medium text-amber-600">
+            <Layers className="h-3 w-3 shrink-0" />
+            {overlapIds.size} items overlap — click to select and reposition:
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {[...overlapIds].map((id) => {
+              const it = items.find((i) => i.id === id);
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setActiveId(id)}
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-[10px] border transition-colors",
+                    activeId === id
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-amber-400/40 text-amber-600 hover:bg-amber-400/10",
+                  )}
+                >
+                  {it?.item.kind === "image" ? "Image" : (it?.item.heading || "Text")}
+                  <span className="ml-1 text-[9px] opacity-50">[{it?.list}]</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </AdvancedPanel>
+      )}
+
+      {/* Active item controls */}
+      {activeItem && (
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-2 space-y-1.5">
+          <div className="text-[10px] font-semibold text-primary">
+            {activeItem.item.kind === "image" ? "Image" : (activeItem.item.heading || "Text")} — position & size
+          </div>
+          <div className="grid grid-cols-4 gap-1">
+            <InspectorNumber
+              value={activeItem.grid.col}
+              min={1}
+              max={config.columns}
+              onChange={(v) => updateActive({ col: v ?? activeItem.grid.col })}
+            />
+            <InspectorNumber
+              value={activeItem.grid.row}
+              min={1}
+              max={config.rows}
+              onChange={(v) => updateActive({ row: v ?? activeItem.grid.row })}
+            />
+            <InspectorNumber
+              value={activeItem.grid.colSpan}
+              min={1}
+              max={config.columns}
+              onChange={(v) => updateActive({ colSpan: v ?? activeItem.grid.colSpan })}
+            />
+            <InspectorNumber
+              value={activeItem.grid.rowSpan}
+              min={1}
+              max={config.rows}
+              onChange={(v) => updateActive({ rowSpan: v ?? activeItem.grid.rowSpan })}
+            />
+          </div>
+          <div className="grid grid-cols-4 gap-1 text-center text-[9px] text-muted-foreground">
+            <span>Col</span><span>Row</span><span>W</span><span>H</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

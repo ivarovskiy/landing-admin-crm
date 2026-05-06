@@ -16,7 +16,8 @@ import {
 } from "@/components/inspector";
 import { AlignLeft, Columns2, Image, Trash2, Type } from "lucide-react";
 import { TYPO_OPTIONS } from "./hero-slider-presets";
-import { ContentGridDnd, prepareGridItems } from "./content-grid-dnd";
+import { ContentGridDnd, prepareGridItems, type ContentGridConfig } from "./content-grid-dnd";
+import { ItemOrderList } from "./content-items-order";
 import {
   AdvancedPanel,
   ControlCard,
@@ -462,14 +463,20 @@ function ColumnEditor({
 function EntryEditor({
   entry,
   idx,
+  grid,
   onChange,
   onRemove,
+  onGridChange,
 }: {
   entry: { left: any[]; right: any[] };
   idx: number;
+  grid?: ContentGridConfig;
   onChange: (next: { left: any[]; right: any[] }) => void;
   onRemove: () => void;
+  onGridChange?: (next: ContentGridConfig) => void;
 }) {
+  const gridEnabled = grid?.enabled === true;
+
   return (
     <div className="rounded-lg border border-border bg-card p-3 space-y-3">
       <div className="flex items-center justify-between">
@@ -484,6 +491,22 @@ function EntryEditor({
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      <ItemOrderList
+        left={arr(entry.left)}
+        right={arr(entry.right)}
+        onChange={(next) => onChange({ ...entry, ...next })}
+      />
+
+      {gridEnabled && onGridChange ? (
+        <ContentGridDnd
+          left={arr(entry.left)}
+          right={arr(entry.right)}
+          grid={grid}
+          onGridChange={onGridChange}
+          onItemsChange={(next) => onChange({ ...entry, ...next })}
+        />
+      ) : null}
 
       <div className="space-y-1 pl-2 border-l-2 border-blue-400/60">
         <ColumnEditor
@@ -508,10 +531,14 @@ function EntryEditor({
 
 function EntriesEditor({
   entries,
+  grid,
   onChange,
+  onGridChange,
 }: {
   entries: { left: any[]; right: any[] }[];
+  grid?: ContentGridConfig;
   onChange: (next: { left: any[]; right: any[] }[]) => void;
+  onGridChange?: (next: ContentGridConfig) => void;
 }) {
   const addEntry = () => {
     onChange([...entries, { left: [], right: [] }]);
@@ -524,8 +551,10 @@ function EntriesEditor({
           key={idx}
           entry={entry}
           idx={idx}
+          grid={grid}
           onChange={(next) => onChange(setAt(entries, idx, next))}
           onRemove={() => onChange(removeAt(entries, idx))}
+          onGridChange={onGridChange}
         />
       ))}
       <button
@@ -753,10 +782,47 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
           />
         </InspectorField>
 
+        {/* Grid DnD toggle — available in both modes */}
+        <InspectorField label="Grid DnD">
+          <InspectorToggle
+            checked={gridEnabled}
+            label={gridEnabled ? "On" : "Off"}
+            onChange={(enabled) => {
+              if (!enabled) {
+                onChange({ ...value, grid: { ...(value?.grid ?? {}), enabled: false } });
+                return;
+              }
+              const leftItems: any[] = scrollStory ? [] : arr(value?.left);
+              const rightItems: any[] = scrollStory || value?.columns === "one" ? [] : arr(value?.right);
+              const prepared = prepareGridItems({
+                left: leftItems,
+                right: rightItems,
+                columns: value?.grid?.columns,
+                rows: value?.grid?.rows,
+              });
+              onChange({
+                ...value,
+                grid: {
+                  columns: 12,
+                  rows: 8,
+                  rowHeight: "44px",
+                  gap: "8px",
+                  ...(value?.grid ?? {}),
+                  enabled: true,
+                },
+                ...(scrollStory ? {} : {
+                  left: prepared.left,
+                  right: value?.columns === "one" ? value?.right : prepared.right,
+                }),
+              });
+            }}
+          />
+        </InspectorField>
+
         {scrollStory ? (
           <>
             <div className="grid grid-cols-2 gap-1.5">
-              <InspectorField label="Sticky top offset">
+              <InspectorField label="Sticky top">
                 <InspectorInput
                   value={value?.stickyTop ?? ""}
                   onChange={(v) => onChange({ ...value, stickyTop: v || undefined })}
@@ -782,7 +848,11 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             <div className="mt-1">
               <EntriesEditor
                 entries={arr(value?.entries)}
+                grid={gridEnabled ? value?.grid : undefined}
                 onChange={(next) => onChange({ ...value, entries: next })}
+                onGridChange={gridEnabled
+                  ? (g) => onChange({ ...value, grid: { ...(value?.grid ?? {}), ...g, enabled: true } })
+                  : undefined}
               />
             </div>
           </>
@@ -796,46 +866,20 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
               />
             </InspectorField>
 
-            <InspectorField label="Grid DnD">
-              <InspectorToggle
-                checked={gridEnabled}
-                label={gridEnabled ? "On" : "Off"}
-                onChange={(enabled) => {
-                  if (!enabled) {
-                    onChange({ ...value, grid: { ...(value?.grid ?? {}), enabled: false } });
-                    return;
-                  }
-
-                  const prepared = prepareGridItems({
-                    left: arr(value?.left),
-                    right: value?.columns === "one" ? [] : arr(value?.right),
-                    columns: value?.grid?.columns,
-                    rows: value?.grid?.rows,
-                  });
-
-                  onChange({
-                    ...value,
-                    grid: {
-                      columns: 12,
-                      rows: 8,
-                      rowHeight: "44px",
-                      gap: "8px",
-                      ...(value?.grid ?? {}),
-                      enabled: true,
-                    },
-                    left: prepared.left,
-                    right: value?.columns === "one" ? value?.right : prepared.right,
-                  });
-                }}
+            {value?.columns !== "one" && (
+              <ItemOrderList
+                left={arr(value?.left)}
+                right={arr(value?.right)}
+                onChange={(next) => onChange({ ...value, ...next })}
               />
-            </InspectorField>
+            )}
 
             {gridEnabled ? (
               <ContentGridDnd
                 left={arr(value?.left)}
                 right={value?.columns === "one" ? [] : arr(value?.right)}
                 grid={value?.grid}
-                onGridChange={(grid) => onChange({ ...value, grid: { ...(value?.grid ?? {}), ...grid, enabled: true } })}
+                onGridChange={(g) => onChange({ ...value, grid: { ...(value?.grid ?? {}), ...g, enabled: true } })}
                 onItemsChange={(next) =>
                   onChange({
                     ...value,
@@ -845,9 +889,9 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
                 }
               />
             ) : (
-              <div className="mb-2 text-[10px] text-muted-foreground">
-                Desktop width / offset / top gap keep the legacy free-flow layout. Enable Grid DnD for collision-safe placement.
-              </div>
+              <p className="text-[10px] text-muted-foreground/70">
+                Use width / offset / gap fields on each item for precise free-flow layout. Enable Grid DnD for visual positioning.
+              </p>
             )}
 
             <div className="space-y-4">
@@ -860,7 +904,6 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
               {value?.columns === "one" ? null : (
                 <>
                   <div className="h-px bg-border" />
-
                   <ColumnEditor
                     label="Right column"
                     items={arr(value?.right)}
