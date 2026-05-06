@@ -243,7 +243,9 @@ export function ContentPageV1({
   onChange?: (next: any) => void;
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
-  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const entryGridRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // dragState: which item is being dragged; entry===null → flat grid, entry===N → scroll-story entry N
+  const [dragState, setDragState] = useState<{ entry: number | null; idx: number } | null>(null);
   const [dropCell, setDropCell] = useState<{ col: number; row: number } | null>(null);
 
   const kicker = data?.kicker;
@@ -278,7 +280,7 @@ export function ContentPageV1({
   const columnsMode: "one" | "two" = data?.columns === "one" ? "one" : "two";
   const scrollStory = !!data?.scrollStory;
   const grid = data?.grid as ContentGridConfig | undefined;
-  const gridEnabled = grid?.enabled === true && !scrollStory;
+  const gridEnabled = grid?.enabled === true;
   const stickyTop = (data?.stickyTop as string | undefined) ?? "0px";
   const entryGap = data?.entryGap as string | undefined;
   const showProgress = !!data?.showProgress;
@@ -309,16 +311,64 @@ export function ContentPageV1({
         className="cp__entries"
         style={{ "--ss-top": stickyTop, ...(entryGap ? { "--cp-entry-gap": entryGap } : {}) } as React.CSSProperties}
       >
-        {entries.map((entry, idx) => (
-          <div key={idx} className="cp__entry">
-            <div className="cp__col cp__col--left">
-              {entry.left.map((item, i) => renderItem(item, i, "left"))}
+        {entries.map((entry, eIdx) => {
+          if (gridEnabled) {
+            const entryItems = [
+              ...entry.left.map((item) => ({ item, col: "left" as const })),
+              ...entry.right.map((item) => ({ item, col: "right" as const })),
+            ];
+            const isActiveEntry = dragState?.entry === eIdx;
+            return (
+              <div key={eIdx} className="cp__entry">
+                <div
+                  ref={(el) => { entryGridRefs.current[eIdx] = el; }}
+                  className="cp__grid"
+                  style={{
+                    ...gridStyle(grid),
+                    ...(editMode ? { position: "relative" } : {}),
+                  }}
+                  onDragOver={
+                    editMode
+                      ? (e) => {
+                          e.preventDefault();
+                          setDropCell(getCellFromEvent(e, entryGridRefs.current[eIdx]));
+                        }
+                      : undefined
+                  }
+                  onDragLeave={editMode ? () => setDropCell(null) : undefined}
+                  onDrop={
+                    editMode
+                      ? (e) => {
+                          e.preventDefault();
+                          const cell = getCellFromEvent(e, entryGridRefs.current[eIdx]);
+                          if (cell !== null && dragState !== null && dragState.entry === eIdx) {
+                            moveEntryItem(eIdx, dragState.idx, cell.col, cell.row);
+                          }
+                          setDragState(null);
+                          setDropCell(null);
+                        }
+                      : undefined
+                  }
+                >
+                  {editMode && isActiveEntry && makeGridOverlay(dropCell)}
+                  {entryItems.map(({ item, col }, i) =>
+                    renderItem(item, i, col, makeDragProps(eIdx, i)),
+                  )}
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div key={eIdx} className="cp__entry">
+              <div className="cp__col cp__col--left">
+                {entry.left.map((item, i) => renderItem(item, i, "left"))}
+              </div>
+              <div className="cp__col cp__col--right">
+                {entry.right.map((item, i) => renderItem(item, i, "right"))}
+              </div>
             </div>
-            <div className="cp__col cp__col--right">
-              {entry.right.map((item, i) => renderItem(item, i, "right"))}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     ) : null;
 
@@ -330,9 +380,9 @@ export function ContentPageV1({
       ];
 
   const getCellFromEvent = useCallback(
-    (e: React.DragEvent) => {
-      if (!gridRef.current || !grid) return null;
-      const rect = gridRef.current.getBoundingClientRect();
+    (e: React.DragEvent, el: HTMLElement | null) => {
+      if (!el || !grid) return null;
+      const rect = el.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       const cols = Number(grid.columns) || 12;
@@ -347,7 +397,8 @@ export function ContentPageV1({
     [grid],
   );
 
-  const moveGridItem = useCallback(
+  // Move item in flat grid (non-scroll-story)
+  const moveFlatItem = useCallback(
     (idx: number, toCol: number, toRow: number) => {
       if (!onChange) return;
       const updated = gridItems.map((gi, i) =>
@@ -364,55 +415,100 @@ export function ContentPageV1({
     [onChange, data, gridItems],
   );
 
-  const gridOverlay =
-    editMode && gridEnabled && grid
-      ? (() => {
-          const cols = Number(grid.columns) || 12;
-          const rows = Number(grid.rows) || 6;
-          const cells: React.ReactNode[] = [];
-          for (let r = 1; r <= rows; r++) {
-            for (let c = 1; c <= cols; c++) {
-              const isTarget = dropCell?.col === c && dropCell?.row === r;
-              cells.push(
-                <div
-                  key={`${c}-${r}`}
-                  style={{
-                    gridColumn: String(c),
-                    gridRow: String(r),
-                    border: "1px dashed rgba(99,102,241,0.35)",
-                    borderRadius: "3px",
-                    backgroundColor: isTarget ? "rgba(99,102,241,0.18)" : "transparent",
-                    transition: "background-color 0.08s",
-                    pointerEvents: "none",
-                  }}
-                />,
-              );
+  // Move item within a specific scroll-story entry
+  const moveEntryItem = useCallback(
+    (entryIdx: number, itemIdx: number, toCol: number, toRow: number) => {
+      if (!onChange) return;
+      const entry = entries[entryIdx];
+      if (!entry) return;
+      const all = [
+        ...entry.left.map((item) => ({ item, col: "left" as const })),
+        ...entry.right.map((item) => ({ item, col: "right" as const })),
+      ];
+      const updated = all.map((gi, i) =>
+        i === itemIdx
+          ? { ...gi, item: { ...gi.item, grid: { ...(gi.item.grid ?? {}), col: toCol, row: toRow } } }
+          : gi,
+      );
+      const newEntries = (data.entries as any[]).map((e: any, i: number) =>
+        i === entryIdx
+          ? {
+              ...e,
+              left: updated.filter((gi) => gi.col === "left").map((gi) => gi.item),
+              right: updated.filter((gi) => gi.col === "right").map((gi) => gi.item),
             }
-          }
-          return (
-            <div
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "grid",
-                gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                gridTemplateRows: `repeat(${rows}, var(--cp-grid-row-h, 44px))`,
-                gap: "var(--cp-grid-gap, 8px)",
-                pointerEvents: "none",
-                zIndex: 0,
-              }}
-            >
-              {cells}
-            </div>
-          );
-        })()
-      : null;
+          : e,
+      );
+      onChange({ ...data, entries: newEntries });
+    },
+    [onChange, data, entries],
+  );
+
+  const makeGridOverlay = (activeCell: { col: number; row: number } | null) => {
+    if (!grid) return null;
+    const cols = Number(grid.columns) || 12;
+    const rows = Number(grid.rows) || 6;
+    const cells: React.ReactNode[] = [];
+    for (let r = 1; r <= rows; r++) {
+      for (let c = 1; c <= cols; c++) {
+        const isTarget = activeCell?.col === c && activeCell?.row === r;
+        cells.push(
+          <div
+            key={`${c}-${r}`}
+            style={{
+              gridColumn: String(c),
+              gridRow: String(r),
+              border: "1px dashed rgba(99,102,241,0.35)",
+              borderRadius: "3px",
+              backgroundColor: isTarget ? "rgba(99,102,241,0.18)" : "transparent",
+              transition: "background-color 0.08s",
+              pointerEvents: "none",
+            }}
+          />,
+        );
+      }
+    }
+    return (
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "grid",
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
+          gridTemplateRows: `repeat(${rows}, var(--cp-grid-row-h, 44px))`,
+          gap: "var(--cp-grid-gap, 8px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      >
+        {cells}
+      </div>
+    );
+  };
+
+  const makeDragProps = (entry: number | null, idx: number) =>
+    editMode
+      ? {
+          draggable: true as const,
+          style: {
+            cursor: dragState?.entry === entry && dragState?.idx === idx ? "grabbing" : "grab",
+            opacity: dragState?.entry === entry && dragState?.idx === idx ? 0.45 : 1,
+            position: "relative" as const,
+            zIndex: 1,
+          },
+          onDragStart: () => setDragState({ entry, idx }),
+          onDragEnd: () => {
+            setDragState(null);
+            setDropCell(null);
+          },
+        }
+      : undefined;
 
   const gridContent =
-    gridEnabled && gridItems.length > 0 ? (
+    gridEnabled && !scrollStory && gridItems.length > 0 ? (
       <div
-        ref={editMode ? gridRef : undefined}
+        ref={gridRef}
         className="cp__grid"
         style={{
           ...columnsStyle,
@@ -423,7 +519,7 @@ export function ContentPageV1({
           editMode
             ? (e) => {
                 e.preventDefault();
-                setDropCell(getCellFromEvent(e));
+                setDropCell(getCellFromEvent(e, gridRef.current));
               }
             : undefined
         }
@@ -432,39 +528,19 @@ export function ContentPageV1({
           editMode
             ? (e) => {
                 e.preventDefault();
-                const cell = getCellFromEvent(e);
-                if (cell !== null && dragIdx !== null) {
-                  moveGridItem(dragIdx, cell.col, cell.row);
+                const cell = getCellFromEvent(e, gridRef.current);
+                if (cell !== null && dragState !== null && dragState.entry === null) {
+                  moveFlatItem(dragState.idx, cell.col, cell.row);
                 }
-                setDragIdx(null);
+                setDragState(null);
                 setDropCell(null);
               }
             : undefined
         }
       >
-        {gridOverlay}
+        {editMode && makeGridOverlay(dropCell)}
         {gridItems.map(({ item, col }, idx) =>
-          renderItem(
-            item,
-            idx,
-            col,
-            editMode
-              ? {
-                  draggable: true,
-                  style: {
-                    cursor: dragIdx === idx ? "grabbing" : "grab",
-                    opacity: dragIdx === idx ? 0.45 : 1,
-                    position: "relative",
-                    zIndex: 1,
-                  },
-                  onDragStart: () => setDragIdx(idx),
-                  onDragEnd: () => {
-                    setDragIdx(null);
-                    setDropCell(null);
-                  },
-                }
-              : undefined,
-          ),
+          renderItem(item, idx, col, makeDragProps(null, idx)),
         )}
       </div>
     ) : null;
