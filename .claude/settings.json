@@ -18,7 +18,8 @@
       "Bash(findstr /n \"textarea\\\\|InspectorInput\\\\|type.*text\")",
       "Bash(grep -v \"//\")",
       "Bash(dir \"c:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\" /b)",
-      "Bash(pnpm --filter @acme/admin tsc --noEmit)"
+      "Bash(pnpm --filter @acme/admin tsc --noEmit)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\ThinkPad\\.claude\\projects\\c--Users-ThinkPad-Desktop-Work-landing-admin-crm\\memory"

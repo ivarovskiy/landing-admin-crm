@@ -1,4 +1,7 @@
+"use client";
+
 import type React from "react";
+import { useState, useRef, useCallback } from "react";
 import { Container, Kicker, OutlineStampText, STAMP_TITLE } from "@/components/landing/ui";
 import { MediaImage } from "@/components/media-image";
 import ClipIcon from "@/assets/icons/clip.svg";
@@ -125,14 +128,26 @@ function itemStyle(item: ContentItem): React.CSSProperties {
   return s as React.CSSProperties;
 }
 
-function renderItem(item: ContentItem, idx: number, col: "left" | "right") {
+function renderItem(
+  item: ContentItem,
+  idx: number,
+  col: "left" | "right",
+  editProps?: React.HTMLAttributes<HTMLDivElement>,
+) {
+  const baseStyle = itemStyle(item);
+  const mergedStyle: React.CSSProperties = editProps?.style
+    ? { ...baseStyle, ...(editProps.style as React.CSSProperties) }
+    : baseStyle;
+  const { style: _s, ...restEdit } = editProps ?? {};
+
   if (item.kind === "image") {
     return (
       <div
         key={`img-${idx}`}
         className="cp__item cp__item--image"
-        style={itemStyle(item)}
+        style={mergedStyle}
         data-el={`${col}-${idx}-image`}
+        {...restEdit}
       >
         {item.src ? (
           <MediaImage
@@ -157,7 +172,8 @@ function renderItem(item: ContentItem, idx: number, col: "left" | "right") {
     <div
       key={`txt-${idx}`}
       className="cp__item cp__item--text"
-      style={itemStyle(item)}
+      style={mergedStyle}
+      {...restEdit}
     >
       {item.heading ? (
         <Kicker
@@ -217,7 +233,19 @@ function gridStyle(grid?: ContentGridConfig): React.CSSProperties {
   } as React.CSSProperties;
 }
 
-export function ContentPageV1({ data }: { data: any }) {
+export function ContentPageV1({
+  data,
+  editMode,
+  onChange,
+}: {
+  data: any;
+  editMode?: boolean;
+  onChange?: (next: any) => void;
+}) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dropCell, setDropCell] = useState<{ col: number; row: number } | null>(null);
+
   const kicker = data?.kicker;
   const title =
     typeof data?.title === "string" ? data.title.replace(/\s*\n\s*/g, " ") : data?.title;
@@ -301,10 +329,143 @@ export function ContentPageV1({ data }: { data: any }) {
         ...right.map((item) => ({ item, col: "right" as const })),
       ];
 
+  const getCellFromEvent = useCallback(
+    (e: React.DragEvent) => {
+      if (!gridRef.current || !grid) return null;
+      const rect = gridRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const cols = Number(grid.columns) || 12;
+      const rows = Number(grid.rows) || 6;
+      const gapPx = parseFloat(grid.gap || "8") || 8;
+      const rowHPx = parseFloat(grid.rowHeight || "44") || 44;
+      const cellW = (rect.width - gapPx * (cols - 1)) / cols;
+      const col = Math.max(1, Math.min(cols, Math.floor(x / (cellW + gapPx)) + 1));
+      const row = Math.max(1, Math.min(rows, Math.floor(y / (rowHPx + gapPx)) + 1));
+      return { col, row };
+    },
+    [grid],
+  );
+
+  const moveGridItem = useCallback(
+    (idx: number, toCol: number, toRow: number) => {
+      if (!onChange) return;
+      const updated = gridItems.map((gi, i) =>
+        i === idx
+          ? { ...gi, item: { ...gi.item, grid: { ...(gi.item.grid ?? {}), col: toCol, row: toRow } } }
+          : gi,
+      );
+      onChange({
+        ...data,
+        left: updated.filter((gi) => gi.col === "left").map((gi) => gi.item),
+        right: updated.filter((gi) => gi.col === "right").map((gi) => gi.item),
+      });
+    },
+    [onChange, data, gridItems],
+  );
+
+  const gridOverlay =
+    editMode && gridEnabled && grid
+      ? (() => {
+          const cols = Number(grid.columns) || 12;
+          const rows = Number(grid.rows) || 6;
+          const cells: React.ReactNode[] = [];
+          for (let r = 1; r <= rows; r++) {
+            for (let c = 1; c <= cols; c++) {
+              const isTarget = dropCell?.col === c && dropCell?.row === r;
+              cells.push(
+                <div
+                  key={`${c}-${r}`}
+                  style={{
+                    gridColumn: String(c),
+                    gridRow: String(r),
+                    border: "1px dashed rgba(99,102,241,0.35)",
+                    borderRadius: "3px",
+                    backgroundColor: isTarget ? "rgba(99,102,241,0.18)" : "transparent",
+                    transition: "background-color 0.08s",
+                    pointerEvents: "none",
+                  }}
+                />,
+              );
+            }
+          }
+          return (
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "grid",
+                gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                gridTemplateRows: `repeat(${rows}, var(--cp-grid-row-h, 44px))`,
+                gap: "var(--cp-grid-gap, 8px)",
+                pointerEvents: "none",
+                zIndex: 0,
+              }}
+            >
+              {cells}
+            </div>
+          );
+        })()
+      : null;
+
   const gridContent =
     gridEnabled && gridItems.length > 0 ? (
-      <div className="cp__grid" style={{ ...columnsStyle, ...gridStyle(grid) }}>
-        {gridItems.map(({ item, col }, idx) => renderItem(item, idx, col))}
+      <div
+        ref={editMode ? gridRef : undefined}
+        className="cp__grid"
+        style={{
+          ...columnsStyle,
+          ...gridStyle(grid),
+          ...(editMode ? { position: "relative" } : {}),
+        }}
+        onDragOver={
+          editMode
+            ? (e) => {
+                e.preventDefault();
+                setDropCell(getCellFromEvent(e));
+              }
+            : undefined
+        }
+        onDragLeave={editMode ? () => setDropCell(null) : undefined}
+        onDrop={
+          editMode
+            ? (e) => {
+                e.preventDefault();
+                const cell = getCellFromEvent(e);
+                if (cell !== null && dragIdx !== null) {
+                  moveGridItem(dragIdx, cell.col, cell.row);
+                }
+                setDragIdx(null);
+                setDropCell(null);
+              }
+            : undefined
+        }
+      >
+        {gridOverlay}
+        {gridItems.map(({ item, col }, idx) =>
+          renderItem(
+            item,
+            idx,
+            col,
+            editMode
+              ? {
+                  draggable: true,
+                  style: {
+                    cursor: dragIdx === idx ? "grabbing" : "grab",
+                    opacity: dragIdx === idx ? 0.45 : 1,
+                    position: "relative",
+                    zIndex: 1,
+                  },
+                  onDragStart: () => setDragIdx(idx),
+                  onDragEnd: () => {
+                    setDragIdx(null);
+                    setDropCell(null);
+                  },
+                }
+              : undefined,
+          ),
+        )}
       </div>
     ) : null;
 

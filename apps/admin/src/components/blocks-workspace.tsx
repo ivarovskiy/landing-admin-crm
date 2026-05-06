@@ -520,7 +520,12 @@ export function BlocksWorkspace({
     return `/api/preview/${pageId}?${qs.toString()}`;
   }, [pageId, refreshKey, viewMode]);
 
-  const liveEditEnabled = !!active && active.type === "hero" && active.variant === "slider-v1" && showInspector && !previewMode;
+  const liveEditEnabled =
+    !!active &&
+    showInspector &&
+    !previewMode &&
+    ((active.type === "hero" && active.variant === "slider-v1") ||
+      (active.type === "content-page" && active.variant === "v1" && active.data?.grid?.enabled === true));
 
   const postLiveEditMode = useCallback(() => {
     try {

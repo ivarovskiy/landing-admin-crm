@@ -19,7 +19,11 @@ export function LiveBlockWrapper({
   return (
     <Comp
       data={data}
-      editMode={editMode && blockKey === "hero:slider-v1"}
+      editMode={
+        editMode &&
+        (blockKey === "hero:slider-v1" ||
+          (blockKey === "content-page:v1" && data?.grid?.enabled === true))
+      }
       onChange={(next: any) => updateBlock(blockId, next)}
     />
   );
