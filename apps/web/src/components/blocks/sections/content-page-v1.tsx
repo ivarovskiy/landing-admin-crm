@@ -11,6 +11,21 @@ type ResponsiveItemLayout = {
   align?: "start" | "center" | "end";
 };
 
+type GridPlacement = {
+  col?: number;
+  row?: number;
+  colSpan?: number;
+  rowSpan?: number;
+};
+
+type ContentGridConfig = {
+  enabled?: boolean;
+  columns?: number;
+  rows?: number;
+  rowHeight?: string;
+  gap?: string;
+};
+
 type TextAlign = "left" | "center" | "right";
 
 type ContentItem = {
@@ -38,6 +53,7 @@ type ContentItem = {
     md?: ResponsiveItemLayout;
     lg?: ResponsiveItemLayout;
   };
+  grid?: GridPlacement;
 };
 
 function normalize(raw: unknown): ContentItem[] {
@@ -98,6 +114,13 @@ function itemStyle(item: ContentItem): React.CSSProperties {
 
   applyLayoutVars(s, "md", item.layout?.md);
   applyLayoutVars(s, "lg", item.layout?.lg);
+
+  if (item.grid) {
+    if (item.grid.col) s["--cp-grid-col"] = String(item.grid.col);
+    if (item.grid.row) s["--cp-grid-row"] = String(item.grid.row);
+    if (item.grid.colSpan) s["--cp-grid-col-span"] = String(item.grid.colSpan);
+    if (item.grid.rowSpan) s["--cp-grid-row-span"] = String(item.grid.rowSpan);
+  }
 
   return s as React.CSSProperties;
 }
@@ -183,6 +206,17 @@ function elementStyle(strokeW?: string, maxWidth?: string): React.CSSProperties 
   return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
 }
 
+function gridStyle(grid?: ContentGridConfig): React.CSSProperties {
+  const columns = Number.isFinite(Number(grid?.columns)) ? Number(grid?.columns) : 12;
+  const rows = Number.isFinite(Number(grid?.rows)) ? Number(grid?.rows) : undefined;
+  return {
+    "--cp-grid-cols": String(columns),
+    ...(rows ? { "--cp-grid-rows": String(rows) } : {}),
+    "--cp-grid-row-h": grid?.rowHeight || "44px",
+    "--cp-grid-gap": grid?.gap || "8px",
+  } as React.CSSProperties;
+}
+
 export function ContentPageV1({ data }: { data: any }) {
   const kicker = data?.kicker;
   const title =
@@ -215,6 +249,8 @@ export function ContentPageV1({ data }: { data: any }) {
 
   const columnsMode: "one" | "two" = data?.columns === "one" ? "one" : "two";
   const scrollStory = !!data?.scrollStory;
+  const grid = data?.grid as ContentGridConfig | undefined;
+  const gridEnabled = grid?.enabled === true && !scrollStory;
   const stickyTop = (data?.stickyTop as string | undefined) ?? "0px";
   const entryGap = data?.entryGap as string | undefined;
   const showProgress = !!data?.showProgress;
@@ -258,9 +294,23 @@ export function ContentPageV1({ data }: { data: any }) {
       </div>
     ) : null;
 
+  const gridItems = columnsMode === "one"
+    ? left.map((item) => ({ item, col: "left" as const }))
+    : [
+        ...left.map((item) => ({ item, col: "left" as const })),
+        ...right.map((item) => ({ item, col: "right" as const })),
+      ];
+
+  const gridContent =
+    gridEnabled && gridItems.length > 0 ? (
+      <div className="cp__grid" style={{ ...columnsStyle, ...gridStyle(grid) }}>
+        {gridItems.map(({ item, col }, idx) => renderItem(item, idx, col))}
+      </div>
+    ) : null;
+
   // Normal flat columns layout
   const columns =
-    columnsMode === "one" ? (
+    gridContent ?? (columnsMode === "one" ? (
       left.length > 0 ? (
         <div className={columnsClass} style={columnsStyle}>
           <div className="cp__col cp__col--left">
@@ -277,7 +327,7 @@ export function ContentPageV1({ data }: { data: any }) {
           {right.map((item, idx) => renderItem(item, idx, "right"))}
         </div>
       </div>
-    ) : null;
+    ) : null);
 
   const bodyContent = entriesContent ?? (boxed ? (
     <div className="cp__box">

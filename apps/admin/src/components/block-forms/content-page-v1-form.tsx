@@ -10,10 +10,23 @@ import {
   InspectorSelect,
   InspectorNumber,
   InspectorToggle,
+  InspectorSegment,
   BlockLayoutSection,
+  ImageUpload,
 } from "@/components/inspector";
-import { Type, Columns2, Image, Trash2 } from "lucide-react";
+import { AlignLeft, Columns2, Image, Trash2, Type } from "lucide-react";
 import { TYPO_OPTIONS } from "./hero-slider-presets";
+import { ContentGridDnd, prepareGridItems } from "./content-grid-dnd";
+import {
+  AdvancedPanel,
+  ControlCard,
+  FieldGrid,
+  PresetButton,
+  PresetRow,
+  SectionNote,
+} from "./admin-control-kit";
+
+const API_BASE = typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "") : "";
 
 const ASPECT_RATIOS = [
   { value: "4/3", label: "4:3" },
@@ -42,6 +55,32 @@ const COLUMNS_MODE_OPTIONS = [
   { value: "one", label: "One column (full-width)" },
 ];
 
+const TEXT_WIDTH_PRESETS = [
+  { label: "Narrow", value: "420px" },
+  { label: "Memo", value: "533px" },
+  { label: "Wide", value: "680px" },
+  { label: "Full", value: "100%" },
+];
+
+const IMAGE_WIDTH_PRESETS = [
+  { label: "Small", value: "260px" },
+  { label: "Medium", value: "420px" },
+  { label: "Large", value: "560px" },
+  { label: "Full", value: "100%" },
+];
+
+const GAP_PRESETS = [
+  { label: "None", value: "0px" },
+  { label: "Soft", value: "24px" },
+  { label: "Roomy", value: "56px" },
+];
+
+const TEXT_ALIGN_SEGMENTS = [
+  { value: "" as const, label: "Auto" },
+  { value: "left" as const, label: "Left" },
+  { value: "center" as const, label: "Center" },
+  { value: "right" as const, label: "Right" },
+];
 
 function updateDesktopLayout(item: any, patch: Record<string, string | undefined>) {
   return {
@@ -54,6 +93,289 @@ function updateDesktopLayout(item: any, patch: Record<string, string | undefined
       },
     },
   };
+}
+
+function itemTitle(item: any, idx: number) {
+  if (item?.kind === "image") return item?.alt || `Image ${idx + 1}`;
+  return item?.heading || `Text ${idx + 1}`;
+}
+
+function itemSummary(item: any) {
+  if (item?.kind === "image") return item?.src ? "Uploaded image" : "Image block";
+  if (item?.body) return String(item.body).replace(/\s+/g, " ").slice(0, 54);
+  return "Text block";
+}
+
+function patchDesktopLayout(item: any, patch: Record<string, string | undefined>) {
+  return updateDesktopLayout(item, patch);
+}
+
+function applyWidthPreset(item: any, width: string) {
+  if (item?.kind === "text") {
+    return {
+      ...patchDesktopLayout(item, { width }),
+      textMaxWidth: width,
+    };
+  }
+
+  return {
+    ...patchDesktopLayout(item, { width }),
+    imageWidth: width,
+  };
+}
+
+function PresetButtons({
+  value,
+  presets,
+  onChange,
+}: {
+  value?: string;
+  presets: { label: string; value: string }[];
+  onChange: (next: string) => void;
+}) {
+  return (
+    <>
+      {presets.map((preset) => (
+        <PresetButton
+          key={preset.value}
+          active={value === preset.value}
+          onClick={() => onChange(preset.value)}
+        >
+          {preset.label}
+        </PresetButton>
+      ))}
+    </>
+  );
+}
+
+function ItemLayoutAdvanced({
+  item,
+  onChange,
+}: {
+  item: any;
+  onChange: (next: any) => void;
+}) {
+  return (
+    <AdvancedPanel title="Precise layout">
+      <FieldGrid>
+        <InspectorField label="Mobile">
+          <InspectorNumber
+            value={item.mobileOrder}
+            onChange={(v) => onChange({ ...item, mobileOrder: v ?? 0 })}
+          />
+        </InspectorField>
+
+        <InspectorField label="Align">
+          <InspectorSelect
+            value={item?.layout?.lg?.align ?? "start"}
+            onChange={(v) => onChange(updateDesktopLayout(item, { align: v || undefined }))}
+            options={ALIGN_OPTIONS}
+          />
+        </InspectorField>
+
+        <InspectorField label="Max W">
+          <InspectorInput
+            value={item?.layout?.lg?.width ?? ""}
+            onChange={(v) => onChange(updateDesktopLayout(item, { width: v || undefined }))}
+            placeholder="533px / 78%"
+          />
+        </InspectorField>
+
+        <InspectorField label="Top gap">
+          <InspectorInput
+            value={item?.layout?.lg?.gapBefore ?? ""}
+            onChange={(v) => onChange(updateDesktopLayout(item, { gapBefore: v || undefined }))}
+            placeholder="32px"
+          />
+        </InspectorField>
+      </FieldGrid>
+
+      <PresetRow label="Top gap presets">
+        <PresetButtons
+          value={item?.layout?.lg?.gapBefore}
+          presets={GAP_PRESETS}
+          onChange={(value) => onChange(updateDesktopLayout(item, { gapBefore: value }))}
+        />
+      </PresetRow>
+
+      <InspectorField label="X offset">
+        <InspectorInput
+          value={item?.layout?.lg?.offsetX ?? ""}
+          onChange={(v) => onChange(updateDesktopLayout(item, { offsetX: v || undefined }))}
+          placeholder="72px"
+        />
+      </InspectorField>
+    </AdvancedPanel>
+  );
+}
+
+function TextItemEditor({
+  item,
+  onChange,
+}: {
+  item: any;
+  onChange: (next: any) => void;
+}) {
+  const widthValue = item?.layout?.lg?.width ?? item.textMaxWidth ?? "";
+
+  return (
+    <>
+      <InspectorInput
+        value={item.heading ?? ""}
+        onChange={(v) => onChange({ ...item, heading: v })}
+        placeholder="Heading"
+      />
+      <InspectorTextarea
+        value={item.body ?? ""}
+        onChange={(v) => onChange({ ...item, body: v })}
+        placeholder="Body text. Use Enter for a new line, empty line for a new paragraph."
+        rows={5}
+      />
+
+      <InspectorField label="Align">
+        <InspectorSegment
+          value={(item.textAlign ?? "") as "" | "left" | "center" | "right"}
+          onChange={(v) => onChange({ ...item, textAlign: v || undefined })}
+          options={TEXT_ALIGN_SEGMENTS}
+        />
+      </InspectorField>
+
+      <PresetRow label="Text width">
+        <PresetButtons
+          value={widthValue}
+          presets={TEXT_WIDTH_PRESETS}
+          onChange={(value) => onChange(applyWidthPreset(item, value))}
+        />
+      </PresetRow>
+
+      <InspectorField label="Width">
+        <InspectorInput
+          value={widthValue}
+          onChange={(v) =>
+            onChange({
+              ...updateDesktopLayout(item, { width: v || undefined }),
+              textMaxWidth: v || undefined,
+            })
+          }
+          placeholder="533px / 78% / 100%"
+        />
+      </InspectorField>
+
+      <AdvancedPanel title="Typography">
+        <FieldGrid>
+          <InspectorField label="Head typo">
+            <InspectorSelect
+              value={item.headingTypo ?? ""}
+              onChange={(v) => onChange({ ...item, headingTypo: v || undefined })}
+              options={TYPO_OPTIONS}
+            />
+          </InspectorField>
+          <InspectorField label="Head line">
+            <InspectorInput
+              value={item.headingStrokeW ?? ""}
+              onChange={(v) => onChange({ ...item, headingStrokeW: v || undefined })}
+              placeholder="2.6px"
+            />
+          </InspectorField>
+          <InspectorField label="Body typo">
+            <InspectorSelect
+              value={item.bodyTypo ?? ""}
+              onChange={(v) => onChange({ ...item, bodyTypo: v || undefined })}
+              options={TYPO_OPTIONS}
+            />
+          </InspectorField>
+          <InspectorField label="Body line">
+            <InspectorInput
+              value={item.bodyStrokeW ?? ""}
+              onChange={(v) => onChange({ ...item, bodyStrokeW: v || undefined })}
+              placeholder="3.6px"
+            />
+          </InspectorField>
+        </FieldGrid>
+      </AdvancedPanel>
+
+      <ItemLayoutAdvanced item={item} onChange={onChange} />
+    </>
+  );
+}
+
+function ImageItemEditor({
+  item,
+  onChange,
+}: {
+  item: any;
+  onChange: (next: any) => void;
+}) {
+  const widthValue = item.imageWidth ?? item?.layout?.lg?.width ?? "";
+
+  return (
+    <>
+      <ImageUpload
+        value={item.src ?? ""}
+        onChange={(url) => onChange({ ...item, src: url })}
+        apiBase={API_BASE}
+      />
+
+      <InspectorField label="Alt">
+        <InspectorInput
+          value={item.alt ?? ""}
+          onChange={(v) => onChange({ ...item, alt: v })}
+          placeholder="Describe the image"
+        />
+      </InspectorField>
+
+      <PresetRow label="Image width">
+        <PresetButtons
+          value={widthValue}
+          presets={IMAGE_WIDTH_PRESETS}
+          onChange={(value) => onChange(applyWidthPreset(item, value))}
+        />
+      </PresetRow>
+
+      <FieldGrid>
+        <InspectorField label="Aspect">
+          <InspectorSelect
+            value={item.aspectRatio ?? ""}
+            onChange={(v) => onChange({ ...item, aspectRatio: v })}
+            options={[{ value: "", label: "Auto" }, ...ASPECT_RATIOS]}
+          />
+        </InspectorField>
+        <InspectorField label="Width">
+          <InspectorInput
+            value={widthValue}
+            onChange={(v) =>
+              onChange({
+                ...updateDesktopLayout(item, { width: v || undefined }),
+                imageWidth: v || undefined,
+              })
+            }
+            placeholder="420px / 100%"
+          />
+        </InspectorField>
+      </FieldGrid>
+
+      <AdvancedPanel title="Image frame">
+        <FieldGrid>
+          <InspectorField label="Height">
+            <InspectorInput
+              value={item.imageHeight ?? ""}
+              onChange={(v) => onChange({ ...item, imageHeight: v || undefined })}
+              placeholder="253px / auto"
+            />
+          </InspectorField>
+          <InspectorField label="Padding">
+            <InspectorInput
+              value={item.imagePadding ?? ""}
+              onChange={(v) => onChange({ ...item, imagePadding: v || undefined })}
+              placeholder="0 113px 33px 0"
+            />
+          </InspectorField>
+        </FieldGrid>
+      </AdvancedPanel>
+
+      <ItemLayoutAdvanced item={item} onChange={onChange} />
+    </>
+  );
 }
 
 function ColumnEditor({
@@ -70,7 +392,7 @@ function ColumnEditor({
     const item =
       kind === "image"
         ? { kind: "image", src: "", alt: "", aspectRatio: "4/3", mobileOrder: maxOrder + 1 }
-        : { kind: "text", heading: "", body: "", mobileOrder: maxOrder + 1 };
+        : { kind: "text", heading: "", body: "", textMaxWidth: "533px", mobileOrder: maxOrder + 1 };
 
     onChange([...items, item]);
   };
@@ -85,199 +407,52 @@ function ColumnEditor({
           <button
             type="button"
             onClick={() => addItem("image")}
-            className="flex items-center gap-0.5 text-[10px] font-medium text-primary hover:text-primary/80"
+            className="flex items-center gap-0.5 rounded-sm px-1.5 py-1 text-[10px] font-medium text-primary hover:bg-primary/10"
           >
             <Image className="h-3 w-3" />
-            Img
+            Image
           </button>
           <button
             type="button"
             onClick={() => addItem("text")}
-            className="ml-2 flex items-center gap-0.5 text-[10px] font-medium text-primary hover:text-primary/80"
+            className="flex items-center gap-0.5 rounded-sm px-1.5 py-1 text-[10px] font-medium text-primary hover:bg-primary/10"
           >
             <Type className="h-3 w-3" />
-            Txt
+            Text
           </button>
         </div>
       </div>
 
       <div className="space-y-1.5">
         {items.map((item: any, idx: number) => (
-          <div key={idx} className="space-y-2 rounded-md border bg-muted/10 p-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-muted text-[9px] font-bold">
-                  {idx + 1}
-                </span>
-                <span className="text-[10px] font-medium text-muted-foreground">
-                  {item.kind === "image" ? "Image" : "Text"}
-                </span>
-              </div>
+          <ControlCard
+            key={idx}
+            title={itemTitle(item, idx)}
+            subtitle={itemSummary(item)}
+            icon={item.kind === "image" ? <Image className="h-3.5 w-3.5" /> : <AlignLeft className="h-3.5 w-3.5" />}
+            action={
               <button
                 type="button"
                 onClick={() => onChange(removeAt(items, idx))}
-                className="text-muted-foreground hover:text-red-500"
+                className="rounded-sm p-1 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
+                title="Delete block"
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
-            </div>
-
+            }
+          >
             {item.kind === "image" ? (
-              <>
-                <InspectorInput
-                  value={item.src ?? ""}
-                  onChange={(v) => onChange(setAt(items, idx, { ...item, src: v }))}
-                  placeholder="Image URL"
-                />
-                <InspectorInput
-                  value={item.alt ?? ""}
-                  onChange={(v) => onChange(setAt(items, idx, { ...item, alt: v }))}
-                  placeholder="Alt text"
-                />
-                <InspectorSelect
-                  value={item.aspectRatio ?? ""}
-                  onChange={(v) => onChange(setAt(items, idx, { ...item, aspectRatio: v }))}
-                  options={[{ value: "", label: "Auto (use w/h)" }, ...ASPECT_RATIOS]}
-                />
-                <div className="grid grid-cols-2 gap-1.5">
-                  <div>
-                    <div className="mb-1 text-[10px] text-muted-foreground">Image width</div>
-                    <InspectorInput
-                      value={item.imageWidth ?? ""}
-                      onChange={(v) => onChange(setAt(items, idx, { ...item, imageWidth: v }))}
-                      placeholder="420px"
-                    />
-                  </div>
-                  <div>
-                    <div className="mb-1 text-[10px] text-muted-foreground">Image height</div>
-                    <InspectorInput
-                      value={item.imageHeight ?? ""}
-                      onChange={(v) => onChange(setAt(items, idx, { ...item, imageHeight: v }))}
-                      placeholder="253px"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div className="mb-1 text-[10px] text-muted-foreground">Image padding</div>
-                  <InspectorInput
-                    value={item.imagePadding ?? ""}
-                    onChange={(v) => onChange(setAt(items, idx, { ...item, imagePadding: v }))}
-                    placeholder="0 113px 33px 0"
-                  />
-                </div>
-              </>
+              <ImageItemEditor
+                item={item}
+                onChange={(next) => onChange(setAt(items, idx, next))}
+              />
             ) : (
-              <>
-                <InspectorInput
-                  value={item.heading ?? ""}
-                  onChange={(v) => onChange(setAt(items, idx, { ...item, heading: v }))}
-                  placeholder="Heading"
-                />
-                <InspectorTextarea
-                  value={item.body ?? ""}
-                  onChange={(v) => onChange(setAt(items, idx, { ...item, body: v }))}
-                  placeholder="Body text..."
-                  rows={3}
-                />
-                <div>
-                  <div className="mb-1 text-[10px] text-muted-foreground">Text align</div>
-                  <InspectorSelect
-                    value={item.textAlign ?? ""}
-                    onChange={(v) => onChange(setAt(items, idx, { ...item, textAlign: v || undefined }))}
-                    options={TEXT_ALIGN_OPTIONS}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <div>
-                    <div className="mb-1 text-[10px] text-muted-foreground">Heading typography</div>
-                    <InspectorSelect
-                      value={item.headingTypo ?? ""}
-                      onChange={(v) => onChange(setAt(items, idx, { ...item, headingTypo: v || undefined }))}
-                      options={TYPO_OPTIONS}
-                    />
-                  </div>
-                  <div>
-                    <div className="mb-1 text-[10px] text-muted-foreground">Heading stroke</div>
-                    <InspectorInput
-                      value={item.headingStrokeW ?? ""}
-                      onChange={(v) => onChange(setAt(items, idx, { ...item, headingStrokeW: v || undefined }))}
-                      placeholder="2.6px"
-                    />
-                  </div>
-                  <div>
-                    <div className="mb-1 text-[10px] text-muted-foreground">Body typography</div>
-                    <InspectorSelect
-                      value={item.bodyTypo ?? ""}
-                      onChange={(v) => onChange(setAt(items, idx, { ...item, bodyTypo: v || undefined }))}
-                      options={TYPO_OPTIONS}
-                    />
-                  </div>
-                  <div>
-                    <div className="mb-1 text-[10px] text-muted-foreground">Body stroke</div>
-                    <InspectorInput
-                      value={item.bodyStrokeW ?? ""}
-                      onChange={(v) => onChange(setAt(items, idx, { ...item, bodyStrokeW: v || undefined }))}
-                      placeholder="3.6px"
-                    />
-                  </div>
-                </div>
-              </>
+              <TextItemEditor
+                item={item}
+                onChange={(next) => onChange(setAt(items, idx, next))}
+              />
             )}
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <div className="mb-1 text-[10px] text-muted-foreground">Mobile order</div>
-                <InspectorNumber
-                  value={item.mobileOrder}
-                  onChange={(v) => onChange(setAt(items, idx, { ...item, mobileOrder: v ?? 0 }))}
-                />
-              </div>
-
-              <div>
-                <div className="mb-1 text-[10px] text-muted-foreground">Desktop align</div>
-                <InspectorSelect
-                  value={item?.layout?.lg?.align ?? "start"}
-                  onChange={(v) =>
-                    onChange(setAt(items, idx, updateDesktopLayout(item, { align: v || undefined })))
-                  }
-                  options={ALIGN_OPTIONS}
-                />
-              </div>
-
-              <div>
-                <div className="mb-1 text-[10px] text-muted-foreground">Max width</div>
-                <InspectorInput
-                  value={item?.layout?.lg?.width ?? ""}
-                  onChange={(v) =>
-                    onChange(setAt(items, idx, updateDesktopLayout(item, { width: v || undefined })))
-                  }
-                  placeholder="533px / 78%"
-                />
-              </div>
-
-              <div>
-                <div className="mb-1 text-[10px] text-muted-foreground">Gap (top)</div>
-                <InspectorInput
-                  value={item?.layout?.lg?.gapBefore ?? ""}
-                  onChange={(v) =>
-                    onChange(setAt(items, idx, updateDesktopLayout(item, { gapBefore: v || undefined })))
-                  }
-                  placeholder="32px"
-                />
-              </div>
-
-              <div className="col-span-2">
-                <div className="mb-1 text-[10px] text-muted-foreground">Left offset</div>
-                <InspectorInput
-                  value={item?.layout?.lg?.offsetX ?? ""}
-                  onChange={(v) =>
-                    onChange(setAt(items, idx, updateDesktopLayout(item, { offsetX: v || undefined })))
-                  }
-                  placeholder="72px"
-                />
-              </div>
-            </div>
-          </div>
+          </ControlCard>
         ))}
       </div>
     </div>
@@ -366,10 +541,15 @@ function EntriesEditor({
 
 export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
   const scrollStory = !!value?.scrollStory;
+  const gridEnabled = value?.grid?.enabled === true;
 
   return (
     <div>
       <InspectorSection title="Hero" icon={<Type className="h-3 w-3" />}>
+        <SectionNote>
+          Basic fields change the copy immediately. Typography, strokes, gaps and exact widths live in advanced groups below.
+        </SectionNote>
+
         <InspectorField label="Hero align" hint="Default text-align for kicker / title / tagline">
           <InspectorSelect
             value={value?.heroAlign ?? ""}
@@ -385,45 +565,6 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             placeholder="SUMMER PROGRAM"
           />
         </InspectorField>
-        <div className="grid grid-cols-3 gap-1.5">
-          <InspectorField label="Kicker typography">
-            <InspectorSelect
-              value={value?.kickerTypo ?? ""}
-              onChange={(v) => onChange({ ...value, kickerTypo: v || undefined })}
-              options={TYPO_OPTIONS}
-            />
-          </InspectorField>
-          <InspectorField label="Kicker align">
-            <InspectorSelect
-              value={value?.kickerAlign ?? ""}
-              onChange={(v) => onChange({ ...value, kickerAlign: v || undefined })}
-              options={TEXT_ALIGN_OPTIONS}
-            />
-          </InspectorField>
-          <InspectorField label="Stroke">
-            <InspectorInput
-              value={value?.kickerStrokeW ?? ""}
-              onChange={(v) => onChange({ ...value, kickerStrokeW: v || undefined })}
-              placeholder="2.6px"
-            />
-          </InspectorField>
-        </div>
-        <div className="grid grid-cols-2 gap-1.5">
-          <InspectorField label="Kicker gap (top)">
-            <InspectorInput
-              value={value?.kickerGap ?? ""}
-              onChange={(v) => onChange({ ...value, kickerGap: v || undefined })}
-              placeholder="0"
-            />
-          </InspectorField>
-          <InspectorField label="Kicker max width">
-            <InspectorInput
-              value={value?.kickerMaxW ?? ""}
-              onChange={(v) => onChange({ ...value, kickerMaxW: v || undefined })}
-              placeholder="none"
-            />
-          </InspectorField>
-        </div>
 
         <InspectorField label="Title">
           <InspectorInput
@@ -432,38 +573,6 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             placeholder="NEW GUEST TEACHERS"
           />
         </InspectorField>
-        <div className="grid grid-cols-2 gap-1.5">
-          <InspectorField label="Title align">
-            <InspectorSelect
-              value={value?.titleAlign ?? ""}
-              onChange={(v) => onChange({ ...value, titleAlign: v || undefined })}
-              options={TEXT_ALIGN_OPTIONS}
-            />
-          </InspectorField>
-          <InspectorField label="Title stroke">
-            <InspectorInput
-              value={value?.titleStrokeW ?? ""}
-              onChange={(v) => onChange({ ...value, titleStrokeW: v || undefined })}
-              placeholder="2.6px"
-            />
-          </InspectorField>
-        </div>
-        <div className="grid grid-cols-2 gap-1.5">
-          <InspectorField label="Title gap (top)">
-            <InspectorInput
-              value={value?.titleGap ?? ""}
-              onChange={(v) => onChange({ ...value, titleGap: v || undefined })}
-              placeholder="24px"
-            />
-          </InspectorField>
-          <InspectorField label="Title max width">
-            <InspectorInput
-              value={value?.titleMaxW ?? ""}
-              onChange={(v) => onChange({ ...value, titleMaxW: v || undefined })}
-              placeholder="none"
-            />
-          </InspectorField>
-        </div>
 
         <InspectorField label="Tagline">
           <InspectorInput
@@ -472,45 +581,6 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             placeholder="Sign up by June 15"
           />
         </InspectorField>
-        <div className="grid grid-cols-3 gap-1.5">
-          <InspectorField label="Tagline typography">
-            <InspectorSelect
-              value={value?.subtitleTypo ?? ""}
-              onChange={(v) => onChange({ ...value, subtitleTypo: v || undefined })}
-              options={TYPO_OPTIONS}
-            />
-          </InspectorField>
-          <InspectorField label="Tagline align">
-            <InspectorSelect
-              value={value?.subtitleAlign ?? ""}
-              onChange={(v) => onChange({ ...value, subtitleAlign: v || undefined })}
-              options={TEXT_ALIGN_OPTIONS}
-            />
-          </InspectorField>
-          <InspectorField label="Stroke">
-            <InspectorInput
-              value={value?.subtitleStrokeW ?? ""}
-              onChange={(v) => onChange({ ...value, subtitleStrokeW: v || undefined })}
-              placeholder="3.6px"
-            />
-          </InspectorField>
-        </div>
-        <div className="grid grid-cols-2 gap-1.5">
-          <InspectorField label="Tagline gap (top)">
-            <InspectorInput
-              value={value?.subtitleGap ?? ""}
-              onChange={(v) => onChange({ ...value, subtitleGap: v || undefined })}
-              placeholder="0"
-            />
-          </InspectorField>
-          <InspectorField label="Tagline max width">
-            <InspectorInput
-              value={value?.subtitleMaxW ?? ""}
-              onChange={(v) => onChange({ ...value, subtitleMaxW: v || undefined })}
-              placeholder="none"
-            />
-          </InspectorField>
-        </div>
 
         <InspectorField label="CTA label">
           <InspectorInput
@@ -520,38 +590,13 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
           />
         </InspectorField>
 
-        <div className="grid grid-cols-2 gap-1.5">
-          <InspectorField label="CTA href">
-            <InspectorInput
-              value={value?.cta?.href ?? ""}
-              onChange={(v) => onChange({ ...value, cta: { ...value?.cta, href: v } })}
-              placeholder="#"
-            />
-          </InspectorField>
-          <InspectorField label="CTA align">
-            <InspectorSelect
-              value={value?.ctaAlign ?? ""}
-              onChange={(v) => onChange({ ...value, ctaAlign: v || undefined })}
-              options={TEXT_ALIGN_OPTIONS}
-            />
-          </InspectorField>
-        </div>
-        <div className="grid grid-cols-2 gap-1.5">
-          <InspectorField label="CTA gap (top)">
-            <InspectorInput
-              value={value?.ctaGap ?? ""}
-              onChange={(v) => onChange({ ...value, ctaGap: v || undefined })}
-              placeholder="12px"
-            />
-          </InspectorField>
-          <InspectorField label="CTA max width">
-            <InspectorInput
-              value={value?.ctaMaxW ?? ""}
-              onChange={(v) => onChange({ ...value, ctaMaxW: v || undefined })}
-              placeholder="none"
-            />
-          </InspectorField>
-        </div>
+        <InspectorField label="CTA href">
+          <InspectorInput
+            value={value?.cta?.href ?? ""}
+            onChange={(v) => onChange({ ...value, cta: { ...value?.cta, href: v } })}
+            placeholder="#"
+          />
+        </InspectorField>
 
         <InspectorField label="Document box">
           <InspectorToggle
@@ -561,13 +606,142 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
           />
         </InspectorField>
 
-        <InspectorField label="Max width">
-          <InspectorInput
-            value={value?.maxWidth ?? ""}
-            onChange={(v) => onChange({ ...value, maxWidth: v })}
-            placeholder="1360px (default)"
-          />
-        </InspectorField>
+        <AdvancedPanel title="Hero typography">
+          <FieldGrid>
+            <InspectorField label="Kick typo">
+              <InspectorSelect
+                value={value?.kickerTypo ?? ""}
+                onChange={(v) => onChange({ ...value, kickerTypo: v || undefined })}
+                options={TYPO_OPTIONS}
+              />
+            </InspectorField>
+            <InspectorField label="Kick line">
+              <InspectorInput
+                value={value?.kickerStrokeW ?? ""}
+                onChange={(v) => onChange({ ...value, kickerStrokeW: v || undefined })}
+                placeholder="2.6px"
+              />
+            </InspectorField>
+            <InspectorField label="Title line">
+              <InspectorInput
+                value={value?.titleStrokeW ?? ""}
+                onChange={(v) => onChange({ ...value, titleStrokeW: v || undefined })}
+                placeholder="2.6px"
+              />
+            </InspectorField>
+            <InspectorField label="Sub typo">
+              <InspectorSelect
+                value={value?.subtitleTypo ?? ""}
+                onChange={(v) => onChange({ ...value, subtitleTypo: v || undefined })}
+                options={TYPO_OPTIONS}
+              />
+            </InspectorField>
+            <InspectorField label="Sub line">
+              <InspectorInput
+                value={value?.subtitleStrokeW ?? ""}
+                onChange={(v) => onChange({ ...value, subtitleStrokeW: v || undefined })}
+                placeholder="3.6px"
+              />
+            </InspectorField>
+          </FieldGrid>
+        </AdvancedPanel>
+
+        <AdvancedPanel title="Hero spacing and widths">
+          <FieldGrid>
+            <InspectorField label="Kick align">
+              <InspectorSelect
+                value={value?.kickerAlign ?? ""}
+                onChange={(v) => onChange({ ...value, kickerAlign: v || undefined })}
+                options={TEXT_ALIGN_OPTIONS}
+              />
+            </InspectorField>
+            <InspectorField label="Kick gap">
+              <InspectorInput
+                value={value?.kickerGap ?? ""}
+                onChange={(v) => onChange({ ...value, kickerGap: v || undefined })}
+                placeholder="0"
+              />
+            </InspectorField>
+            <InspectorField label="Kick W">
+              <InspectorInput
+                value={value?.kickerMaxW ?? ""}
+                onChange={(v) => onChange({ ...value, kickerMaxW: v || undefined })}
+                placeholder="none"
+              />
+            </InspectorField>
+            <InspectorField label="Title align">
+              <InspectorSelect
+                value={value?.titleAlign ?? ""}
+                onChange={(v) => onChange({ ...value, titleAlign: v || undefined })}
+                options={TEXT_ALIGN_OPTIONS}
+              />
+            </InspectorField>
+            <InspectorField label="Title gap">
+              <InspectorInput
+                value={value?.titleGap ?? ""}
+                onChange={(v) => onChange({ ...value, titleGap: v || undefined })}
+                placeholder="24px"
+              />
+            </InspectorField>
+            <InspectorField label="Title W">
+              <InspectorInput
+                value={value?.titleMaxW ?? ""}
+                onChange={(v) => onChange({ ...value, titleMaxW: v || undefined })}
+                placeholder="none"
+              />
+            </InspectorField>
+            <InspectorField label="Sub align">
+              <InspectorSelect
+                value={value?.subtitleAlign ?? ""}
+                onChange={(v) => onChange({ ...value, subtitleAlign: v || undefined })}
+                options={TEXT_ALIGN_OPTIONS}
+              />
+            </InspectorField>
+            <InspectorField label="Sub gap">
+              <InspectorInput
+                value={value?.subtitleGap ?? ""}
+                onChange={(v) => onChange({ ...value, subtitleGap: v || undefined })}
+                placeholder="0"
+              />
+            </InspectorField>
+            <InspectorField label="Sub W">
+              <InspectorInput
+                value={value?.subtitleMaxW ?? ""}
+                onChange={(v) => onChange({ ...value, subtitleMaxW: v || undefined })}
+                placeholder="none"
+              />
+            </InspectorField>
+            <InspectorField label="CTA align">
+              <InspectorSelect
+                value={value?.ctaAlign ?? ""}
+                onChange={(v) => onChange({ ...value, ctaAlign: v || undefined })}
+                options={TEXT_ALIGN_OPTIONS}
+              />
+            </InspectorField>
+            <InspectorField label="CTA gap">
+              <InspectorInput
+                value={value?.ctaGap ?? ""}
+                onChange={(v) => onChange({ ...value, ctaGap: v || undefined })}
+                placeholder="12px"
+              />
+            </InspectorField>
+            <InspectorField label="CTA W">
+              <InspectorInput
+                value={value?.ctaMaxW ?? ""}
+                onChange={(v) => onChange({ ...value, ctaMaxW: v || undefined })}
+                placeholder="none"
+              />
+            </InspectorField>
+          </FieldGrid>
+
+          <InspectorField label="Content W">
+            <InspectorInput
+              value={value?.maxWidth ?? ""}
+              onChange={(v) => onChange({ ...value, maxWidth: v })}
+              placeholder="1360px (default)"
+            />
+          </InspectorField>
+        </AdvancedPanel>
       </InspectorSection>
 
       <InspectorSection title="Content" icon={<Columns2 className="h-3 w-3" />}>
@@ -622,9 +796,59 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
               />
             </InspectorField>
 
-            <div className="mb-2 text-[10px] text-muted-foreground">
-              Mobile order = цифри з макета. Desktop width / offset / top gap = вільна композиція без grid.
-            </div>
+            <InspectorField label="Grid DnD">
+              <InspectorToggle
+                checked={gridEnabled}
+                label={gridEnabled ? "On" : "Off"}
+                onChange={(enabled) => {
+                  if (!enabled) {
+                    onChange({ ...value, grid: { ...(value?.grid ?? {}), enabled: false } });
+                    return;
+                  }
+
+                  const prepared = prepareGridItems({
+                    left: arr(value?.left),
+                    right: value?.columns === "one" ? [] : arr(value?.right),
+                    columns: value?.grid?.columns,
+                    rows: value?.grid?.rows,
+                  });
+
+                  onChange({
+                    ...value,
+                    grid: {
+                      columns: 12,
+                      rows: 8,
+                      rowHeight: "44px",
+                      gap: "8px",
+                      ...(value?.grid ?? {}),
+                      enabled: true,
+                    },
+                    left: prepared.left,
+                    right: value?.columns === "one" ? value?.right : prepared.right,
+                  });
+                }}
+              />
+            </InspectorField>
+
+            {gridEnabled ? (
+              <ContentGridDnd
+                left={arr(value?.left)}
+                right={value?.columns === "one" ? [] : arr(value?.right)}
+                grid={value?.grid}
+                onGridChange={(grid) => onChange({ ...value, grid: { ...(value?.grid ?? {}), ...grid, enabled: true } })}
+                onItemsChange={(next) =>
+                  onChange({
+                    ...value,
+                    left: value?.columns === "one" ? [...next.left, ...next.right] : next.left,
+                    right: value?.columns === "one" ? value?.right : next.right,
+                  })
+                }
+              />
+            ) : (
+              <div className="mb-2 text-[10px] text-muted-foreground">
+                Desktop width / offset / top gap keep the legacy free-flow layout. Enable Grid DnD for collision-safe placement.
+              </div>
+            )}
 
             <div className="space-y-4">
               <ColumnEditor
