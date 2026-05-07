@@ -23,6 +23,8 @@ type ElementStyle = {
   mr?: string;
   pt?: string;
   pb?: string;
+  x?: string;
+  y?: string;
   align?: "left" | "center" | "right";
   size?: string;
   typo?: string; // typography class from design system
@@ -184,6 +186,11 @@ function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
   if (es.mr) s.marginRight = resolveDesignViewportUnits(es.mr)!;
   if (es.pt) s.paddingTop = resolveDesignViewportUnits(es.pt)!;
   if (es.pb) s.paddingBottom = resolveDesignViewportUnits(es.pb)!;
+  if (es.x != null || es.y != null) {
+    const tx = resolveDesignViewportUnits(es.x) ?? "0px";
+    const ty = resolveDesignViewportUnits(es.y) ?? "0px";
+    s.transform = `translate(${tx}, ${ty})`;
+  }
   if (es.align) {
     s.textAlign = es.align;
     s.alignSelf = es.align === "center" ? "center" : es.align === "right" ? "flex-end" : "flex-start";
@@ -1009,8 +1016,8 @@ function useSlideElementEditor(
     mode: "move" | "resize";
     startX: number;
     startY: number;
-    startMl: number;
-    startMt: number;
+    startTx: number;
+    startTy: number;
     startSize: number;
     scale: number;
     moved: boolean;
@@ -1038,6 +1045,7 @@ function useSlideElementEditor(
         const elementId = el.dataset.el;
         const scale = slideEl ? slideEl.getBoundingClientRect().width / slideEl.offsetWidth || 1 : 1;
         const computed = getComputedStyle(el);
+        const matrix = new DOMMatrix(computed.transform === "none" ? "" : computed.transform);
 
         el.setPointerCapture(e.pointerId);
         el.classList.add(isResize ? "hero-slide__editable--resizing" : "hero-slide__editable--dragging");
@@ -1050,8 +1058,8 @@ function useSlideElementEditor(
           mode: isResize ? "resize" : "move",
           startX: e.clientX,
           startY: e.clientY,
-          startMl: parseFloat(computed.marginLeft || "0") || 0,
-          startMt: parseFloat(computed.marginTop || "0") || 0,
+          startTx: matrix.m41 || 0,
+          startTy: matrix.m42 || 0,
           startSize: parseFloat(computed.fontSize || "0") || 16,
           scale,
           moved: false,
@@ -1074,8 +1082,9 @@ function useSlideElementEditor(
           return;
         }
 
-        el.style.marginLeft = `${Math.round(d.startMl + dx)}px`;
-        el.style.marginTop = `${Math.round(d.startMt + dy)}px`;
+        const newTx = Math.round(d.startTx + dx);
+        const newTy = Math.round(d.startTy + dy);
+        el.style.transform = `translate(${newTx}px, ${newTy}px)`;
       },
       onPointerUp: (e) => {
         const d = dragRef.current;
@@ -1098,12 +1107,12 @@ function useSlideElementEditor(
           return;
         }
 
-        const nextMl = Math.round(d.startMl + dx);
-        const nextMt = Math.round(d.startMt + dy);
+        const newTx = Math.round(d.startTx + dx);
+        const newTy = Math.round(d.startTy + dy);
         onSlideChange(setSlideElementStyle(slide, key, {
           ...currentStyle,
-          ml: nextMl ? `${nextMl}px` : undefined,
-          mt: nextMt ? `${nextMt}px` : undefined,
+          x: newTx ? `${newTx}px` : undefined,
+          y: newTy ? `${newTy}px` : undefined,
         }));
       },
       onPointerCancel: (e) => {
@@ -1112,8 +1121,9 @@ function useSlideElementEditor(
         if (!d || d.key !== key) return;
         const el = e.currentTarget as HTMLElement;
         el.classList.remove("hero-slide__editable--dragging", "hero-slide__editable--resizing");
-        el.style.marginLeft = `${d.startMl}px`;
-        el.style.marginTop = `${d.startMt}px`;
+        el.style.transform = (d.startTx || d.startTy)
+          ? `translate(${d.startTx}px, ${d.startTy}px)`
+          : "";
         el.style.fontSize = `${d.startSize}px`;
       },
       onKeyDown: (e) => {
@@ -1128,17 +1138,15 @@ function useSlideElementEditor(
         e.preventDefault();
         e.stopPropagation();
         const step = e.shiftKey ? 10 : 1;
-        const el = e.currentTarget as HTMLElement;
-        const computed = getComputedStyle(el);
-        const currentMl = parseFloat(computed.marginLeft || "0") || 0;
-        const currentMt = parseFloat(computed.marginTop || "0") || 0;
-        const nextMl = Math.round(currentMl + delta[0] * step);
-        const nextMt = Math.round(currentMt + delta[1] * step);
         const currentStyle = getSlideElementStyle(slide, key) ?? {};
+        const currentTx = parseFloat(currentStyle.x ?? "0") || 0;
+        const currentTy = parseFloat(currentStyle.y ?? "0") || 0;
+        const nextTx = Math.round(currentTx + delta[0] * step);
+        const nextTy = Math.round(currentTy + delta[1] * step);
         onSlideChange(setSlideElementStyle(slide, key, {
           ...currentStyle,
-          ml: nextMl ? `${nextMl}px` : undefined,
-          mt: nextMt ? `${nextMt}px` : undefined,
+          x: nextTx ? `${nextTx}px` : undefined,
+          y: nextTy ? `${nextTy}px` : undefined,
         }));
       },
     };
