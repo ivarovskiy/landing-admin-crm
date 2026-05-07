@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, type DragEndEvent } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Container, Kicker, OutlineStampText, STAMP_TITLE } from "@/components/landing/ui";
@@ -145,8 +145,61 @@ function DroppableCell({ id, col, row }: { id: string; col: number; row: number 
         borderRadius: 3,
         backgroundColor: isOver ? "rgba(99,102,241,0.18)" : "transparent",
         transition: "background-color 0.08s",
-        zIndex: 0,
       }}
+    />
+  );
+}
+
+// Resize handle — bottom-right corner, drags to change colSpan / rowSpan
+function ResizeHandle({
+  colSpan,
+  rowSpan,
+  grid,
+  containerRef,
+  onResize,
+}: {
+  colSpan: number;
+  rowSpan: number;
+  grid?: ContentGridConfig;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  onResize: (colSpan: number, rowSpan: number) => void;
+}) {
+  const startRef = useRef<{ x: number; y: number; cs: number; rs: number } | null>(null);
+  return (
+    <div
+      title="Drag to resize"
+      style={{
+        position: "absolute",
+        bottom: 3,
+        right: 3,
+        width: 14,
+        height: 14,
+        background: "rgba(99,102,241,0.75)",
+        borderRadius: 3,
+        cursor: "se-resize",
+        zIndex: 20,
+        touchAction: "none",
+      }}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        startRef.current = { x: e.clientX, y: e.clientY, cs: colSpan, rs: rowSpan };
+      }}
+      onPointerMove={(e) => {
+        if (!startRef.current || !containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const cols = Number(grid?.columns) || 12;
+        const gap = parseFloat(grid?.gap ?? "8") || 8;
+        const rowH = parseFloat(grid?.rowHeight ?? "44") || 44;
+        const colW = (rect.width - gap * (cols - 1)) / cols;
+        const dx = e.clientX - startRef.current.x;
+        const dy = e.clientY - startRef.current.y;
+        const newCs = Math.max(1, Math.round(startRef.current.cs + dx / (colW + gap)));
+        const newRs = Math.max(1, Math.round(startRef.current.rs + dy / (rowH + gap)));
+        onResize(newCs, newRs);
+      }}
+      onPointerUp={() => { startRef.current = null; }}
+      onPointerCancel={() => { startRef.current = null; }}
     />
   );
 }
@@ -156,6 +209,8 @@ function DraggableGridItem({
   item,
   idx,
   col,
+  grid,
+  containerRef,
   isDraggingThis,
   onItemChange,
 }: {
@@ -163,10 +218,54 @@ function DraggableGridItem({
   item: ContentItem;
   idx: number;
   col: "left" | "right";
+  grid?: ContentGridConfig;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   isDraggingThis: boolean;
   onItemChange?: (changes: Partial<ContentItem>) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id });
+
+  const editOverlay = (
+    <>
+      {/* Drag handle — only this element activates drag, text stays clickable */}
+      <div
+        {...attributes}
+        {...listeners}
+        title="Drag to move"
+        style={{
+          position: "absolute",
+          top: 3,
+          left: "50%",
+          transform: "translateX(-50%)",
+          padding: "2px 8px",
+          background: "rgba(99,102,241,0.45)",
+          borderRadius: 4,
+          cursor: isDraggingThis ? "grabbing" : "grab",
+          zIndex: 10,
+          touchAction: "none",
+          fontSize: 10,
+          color: "rgba(255,255,255,0.9)",
+          userSelect: "none",
+          lineHeight: 1.2,
+        }}
+      >
+        ⠿⠿
+      </div>
+      {/* Resize handle — bottom-right corner */}
+      {onItemChange && (
+        <ResizeHandle
+          colSpan={item.grid?.colSpan ?? 1}
+          rowSpan={item.grid?.rowSpan ?? 1}
+          grid={grid}
+          containerRef={containerRef}
+          onResize={(cs, rs) =>
+            onItemChange({ grid: { ...(item.grid ?? {}), colSpan: cs, rowSpan: rs } })
+          }
+        />
+      )}
+    </>
+  );
+
   return renderItem(
     item,
     idx,
@@ -175,16 +274,13 @@ function DraggableGridItem({
       ref: setNodeRef as React.Ref<HTMLDivElement>,
       style: {
         transform: CSS.Translate.toString(transform),
-        cursor: isDraggingThis ? "grabbing" : "grab",
         opacity: isDraggingThis ? 0 : 1,
-        touchAction: "none",
         position: "relative",
         zIndex: 1,
       },
-      ...attributes,
-      ...listeners,
     },
     onItemChange,
+    editOverlay,
   );
 }
 
@@ -204,6 +300,7 @@ function DndGrid({
   onUpdateItem: (idx: number, changes: Partial<ContentItem>) => void;
 }) {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const cols = Number(grid?.columns) || 12;
   const rows = Number(grid?.rows) || 6;
 
@@ -230,8 +327,8 @@ function DndGrid({
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveDragId(null)}
     >
-      <div className={className} style={{ ...(style ?? {}), position: "relative" }}>
-        {/* Drop-target overlay — absolutely positioned so it never enters grid flow */}
+      <div ref={containerRef} className={className} style={{ ...(style ?? {}), position: "relative" }}>
+        {/* Drop-target overlay — absolutely positioned, never enters cp__grid flow */}
         <div
           aria-hidden="true"
           style={{
@@ -259,6 +356,8 @@ function DndGrid({
             item={item}
             idx={idx}
             col={col}
+            grid={grid}
+            containerRef={containerRef}
             isDraggingThis={activeDragId === `gi-${idx}`}
             onItemChange={(changes) => onUpdateItem(idx, changes)}
           />
@@ -283,6 +382,7 @@ function renderItem(
   col: "left" | "right",
   editProps?: React.ComponentProps<"div">,
   onItemChange?: (changes: Partial<ContentItem>) => void,
+  editOverlay?: React.ReactNode,
 ) {
   const baseStyle = itemStyle(item);
   const mergedStyle: React.CSSProperties = editProps?.style
@@ -299,6 +399,7 @@ function renderItem(
         data-el={`${col}-${idx}-image`}
         {...restEdit}
       >
+        {editOverlay}
         {item.src ? (
           <MediaImage
             src={item.src}
@@ -325,6 +426,7 @@ function renderItem(
       style={mergedStyle}
       {...restEdit}
     >
+      {editOverlay}
       {(item.heading || onItemChange) ? (
         <Kicker
           className={headingClass}
@@ -566,11 +668,11 @@ export function ContentPageV1({
         style={{ "--ss-top": stickyTop, ...(entryGap ? { "--cp-entry-gap": entryGap } : {}) } as React.CSSProperties}
       >
         {entries.map((entry, eIdx) => {
+          const entryItems = [
+            ...entry.left.map((item) => ({ item, col: "left" as const })),
+            ...entry.right.map((item) => ({ item, col: "right" as const })),
+          ];
           if (gridEnabled) {
-            const entryItems = [
-              ...entry.left.map((item) => ({ item, col: "left" as const })),
-              ...entry.right.map((item) => ({ item, col: "right" as const })),
-            ];
             return (
               <div key={eIdx} className="cp__entry">
                 {editMode ? (
@@ -593,10 +695,20 @@ export function ContentPageV1({
           return (
             <div key={eIdx} className="cp__entry">
               <div className="cp__col cp__col--left">
-                {entry.left.map((item, i) => renderItem(item, i, "left"))}
+                {entry.left.map((item, i) =>
+                  renderItem(
+                    item, i, "left", undefined,
+                    editMode ? (changes) => updateEntryItem(eIdx, i, changes) : undefined,
+                  )
+                )}
               </div>
               <div className="cp__col cp__col--right">
-                {entry.right.map((item, i) => renderItem(item, i, "right"))}
+                {entry.right.map((item, i) =>
+                  renderItem(
+                    item, i, "right", undefined,
+                    editMode ? (changes) => updateEntryItem(eIdx, i, changes) : undefined,
+                  )
+                )}
               </div>
             </div>
           );
