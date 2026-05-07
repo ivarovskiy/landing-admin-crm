@@ -525,7 +525,7 @@ export function BlocksWorkspace({
     showInspector &&
     !previewMode &&
     ((active.type === "hero" && active.variant === "slider-v1") ||
-      (active.type === "content-page" && active.variant === "v1" && active.data?.grid?.enabled === true));
+      (active.type === "content-page" && active.variant === "v1"));
 
   const postLiveEditMode = useCallback(() => {
     try {

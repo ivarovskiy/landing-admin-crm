@@ -231,13 +231,27 @@ function DndGrid({
       onDragCancel={() => setActiveDragId(null)}
     >
       <div className={className} style={{ ...(style ?? {}), position: "relative" }}>
-        {Array.from({ length: rows * cols }, (_, n) => {
-          const c = (n % cols) + 1;
-          const r = Math.floor(n / cols) + 1;
-          return (
-            <DroppableCell key={`gc-${c}-${r}`} id={`gc-${c}-${r}`} col={c} row={r} />
-          );
-        })}
+        {/* Drop-target overlay — absolutely positioned so it never enters grid flow */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "grid",
+            gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+            gridTemplateRows: `repeat(${rows}, ${grid?.rowHeight ?? "44px"})`,
+            gap: grid?.gap ?? "8px",
+            zIndex: 0,
+            pointerEvents: "none",
+          }}
+        >
+          {Array.from({ length: rows * cols }, (_, n) => {
+            const c = (n % cols) + 1;
+            const r = Math.floor(n / cols) + 1;
+            return <DroppableCell key={`gc-${c}-${r}`} id={`gc-${c}-${r}`} col={c} row={r} />;
+          })}
+        </div>
+        {/* Items as normal cp__grid children — CSS variables handle placement */}
         {items.map(({ item, col }, idx) => (
           <DraggableGridItem
             key={`item-${idx}`}
