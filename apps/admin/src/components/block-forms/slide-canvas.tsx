@@ -249,10 +249,12 @@ function CanvasItem({
 
 export function SlideCanvas({
   slide,
+  enableDrag = true,
   onChange,
 }: {
   slide: Slide;
   tuningScope: HeroTuningScope; // reserved for future scope-aware editing
+  enableDrag?: boolean;
   onChange: (s: Slide) => void;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
@@ -326,9 +328,9 @@ export function SlideCanvas({
         {/* Inner canvas at REF_W × REF_H, scaled via transform */}
         <div
           ref={innerRef}
-          className="absolute top-0 left-0 cursor-crosshair"
+          className={`absolute top-0 left-0 ${enableDrag ? "cursor-crosshair" : "cursor-default"}`}
           style={{ width: REF_W, height: REF_H, transformOrigin: "top left" }}
-          onClick={onCanvasClick}
+          onClick={enableDrag ? onCanvasClick : undefined}
         >
           {/* Grid background */}
           <div
@@ -343,6 +345,10 @@ export function SlideCanvas({
           {!hasText ? (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span className="text-[11px] text-muted-foreground/40">Full-image template — no text elements</span>
+            </div>
+          ) : !enableDrag ? (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span className="text-[11px] text-muted-foreground/40">Canvas drag editing disabled</span>
             </div>
           ) : (
             keys.map((key, index) => {
@@ -365,12 +371,14 @@ export function SlideCanvas({
             })
           )}
 
-          {/* Click-to-add hint */}
-          <div className="absolute bottom-1.5 left-0 right-0 flex justify-center pointer-events-none">
-            <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground/35">
-              <Plus className="w-2 h-2" /> click empty area to add text
-            </span>
-          </div>
+          {/* Click-to-add hint — only when drag is enabled */}
+          {enableDrag && hasText && (
+            <div className="absolute bottom-1.5 left-0 right-0 flex justify-center pointer-events-none">
+              <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground/35">
+                <Plus className="w-2 h-2" /> click empty area to add text
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

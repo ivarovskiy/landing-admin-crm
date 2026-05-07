@@ -191,6 +191,7 @@ export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) 
   const fillViewport = options?.fillViewport === true;
   const showGuides = options?.showGuides === true;
   const showElementGuides = options?.showElementGuides === true;
+  const enableCanvasDrag = options?.enableCanvasDrag !== false;
   const autoPlayMs = Number(options?.autoPlayMs ?? 0);
   const inlineIconMargin = options?.inlineIconMargin ?? "";
   const inlineIconSize = options?.inlineIconSize ?? "";
@@ -237,6 +238,11 @@ export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) 
           label="Show element guidelines"
           checked={showElementGuides}
           onChange={(v) => set(["options", "showElementGuides"], v || undefined)}
+        />
+        <InspectorToggle
+          label="Canvas drag editing"
+          checked={enableCanvasDrag}
+          onChange={(v) => set(["options", "enableCanvasDrag"], v === false ? false : undefined)}
         />
         <InspectorToggle
           label="Composition guides"
@@ -302,6 +308,7 @@ export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) 
                 const next = [...slides.slice(0, idx + 1), clone, ...slides.slice(idx + 1)];
                 set(["slides"], next);
               }}
+              enableCanvasDrag={enableCanvasDrag}
               tuningScope={viewMode === "ipadPro" ? "ipadPro" : "default"}
             />
           ))}
@@ -325,6 +332,7 @@ function SlideEditor({
   onRemove,
   onMove,
   onDuplicate,
+  enableCanvasDrag,
   tuningScope,
 }: {
   slide: Slide;
@@ -334,6 +342,7 @@ function SlideEditor({
   onRemove: () => void;
   onMove: (dir: "up" | "down") => void;
   onDuplicate: () => void;
+  enableCanvasDrag: boolean;
   tuningScope: HeroTuningScope;
 }) {
   const [collapsed, setCollapsed] = useState(true);
@@ -419,7 +428,7 @@ function SlideEditor({
       {/* Canvas editor — shown independently of collapsed state */}
       {showCanvas && (
         <div className="border-t px-2 py-2">
-          <SlideCanvas slide={s} tuningScope={tuningScope} onChange={onChange} />
+          <SlideCanvas slide={s} tuningScope={tuningScope} enableDrag={enableCanvasDrag} onChange={onChange} />
         </div>
       )}
 
