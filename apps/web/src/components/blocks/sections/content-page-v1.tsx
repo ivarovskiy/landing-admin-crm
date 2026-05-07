@@ -549,6 +549,10 @@ export function ContentPageV1({
       }))
     : [];
 
+  // When scroll story is on but no entries defined yet, use flat left/right as a single entry
+  const usingFlatAsEntries = scrollStory && entries.length === 0 && (left.length > 0 || right.length > 0);
+  const effectiveEntries = usingFlatAsEntries ? [{ left, right }] : entries;
+
   const columnsStyle: React.CSSProperties = {
     ...(contentMaxWidth ? { "--cp-content-max-w": contentMaxWidth } : {}),
   } as React.CSSProperties;
@@ -662,16 +666,24 @@ export function ContentPageV1({
   // ── scroll-story entries layout ──────────────────────────────────────────
 
   const entriesContent =
-    scrollStory && entries.length > 0 ? (
+    scrollStory && effectiveEntries.length > 0 ? (
       <div
         className="cp__entries"
         style={{ "--ss-top": stickyTop, ...(entryGap ? { "--cp-entry-gap": entryGap } : {}) } as React.CSSProperties}
       >
-        {entries.map((entry, eIdx) => {
+        {effectiveEntries.map((entry, eIdx) => {
           const entryItems = [
             ...entry.left.map((item) => ({ item, col: "left" as const })),
             ...entry.right.map((item) => ({ item, col: "right" as const })),
           ];
+          // Callbacks: if using flat data as entries, write to left[]/right[]; otherwise to entries[]
+          const onMoveItem = usingFlatAsEntries
+            ? (itemIdx: number, toCol: number, toRow: number) => moveFlatItem(itemIdx, toCol, toRow)
+            : (itemIdx: number, toCol: number, toRow: number) => moveEntryItem(eIdx, itemIdx, toCol, toRow);
+          const onUpdateItem = usingFlatAsEntries
+            ? (itemIdx: number, changes: Partial<ContentItem>) => updateFlatItem(itemIdx, changes)
+            : (itemIdx: number, changes: Partial<ContentItem>) => updateEntryItem(eIdx, itemIdx, changes);
+
           if (gridEnabled) {
             return (
               <div key={eIdx} className="cp__entry">
@@ -681,8 +693,8 @@ export function ContentPageV1({
                     grid={grid}
                     className="cp__grid"
                     style={gridStyle(grid)}
-                    onMoveItem={(itemIdx, toCol, toRow) => moveEntryItem(eIdx, itemIdx, toCol, toRow)}
-                    onUpdateItem={(itemIdx, changes) => updateEntryItem(eIdx, itemIdx, changes)}
+                    onMoveItem={onMoveItem}
+                    onUpdateItem={onUpdateItem}
                   />
                 ) : (
                   <div className="cp__grid" style={gridStyle(grid)}>
@@ -698,7 +710,7 @@ export function ContentPageV1({
                 {entry.left.map((item, i) =>
                   renderItem(
                     item, i, "left", undefined,
-                    editMode ? (changes) => updateEntryItem(eIdx, i, changes) : undefined,
+                    editMode ? (changes) => onUpdateItem(i, changes) : undefined,
                   )
                 )}
               </div>
@@ -706,7 +718,7 @@ export function ContentPageV1({
                 {entry.right.map((item, i) =>
                   renderItem(
                     item, i, "right", undefined,
-                    editMode ? (changes) => updateEntryItem(eIdx, i, changes) : undefined,
+                    editMode ? (changes) => onUpdateItem(entry.left.length + i, changes) : undefined,
                   )
                 )}
               </div>
@@ -780,7 +792,7 @@ export function ContentPageV1({
         {kicker || title || subtitle || cta?.label ? (
           <div className={heroClass}>
             <div className="cp__hero-text">
-              {(kicker || updateHero) ? (
+              {kicker ? (
                 <div className="cp__hero-row" style={rowStyle(kickerAlign, kickerGap)}>
                   <div
                     data-el="kicker"
@@ -789,7 +801,7 @@ export function ContentPageV1({
                   >
                     {updateHero ? (
                       <TipTapInline
-                        value={kicker ?? ""}
+                        value={kicker}
                         onChange={(html) => updateHero("kicker", html)}
                         multiline={false}
                       />
@@ -810,7 +822,7 @@ export function ContentPageV1({
                   </OutlineStampText>
                 </div>
               ) : null}
-              {(subtitle || updateHero) ? (
+              {subtitle ? (
                 <div className="cp__hero-row" style={rowStyle(subtitleAlign, subtitleGap)}>
                   <p
                     className={subtitleTypo}
@@ -819,7 +831,7 @@ export function ContentPageV1({
                   >
                     {updateHero ? (
                       <TipTapInline
-                        value={subtitle ?? ""}
+                        value={subtitle}
                         onChange={(html) => updateHero("subtitle", html)}
                         multiline={false}
                       />
@@ -828,21 +840,22 @@ export function ContentPageV1({
                 </div>
               ) : null}
             </div>
-            {(cta?.label || updateHero) ? (
+            {cta?.label ? (
               <div className="cp__hero-cta" style={rowStyle(ctaAlign, ctaGap)}>
                 <a
                   href={cta?.href ?? "#"}
                   className="cp__cta-btn"
                   data-el="cta"
                   style={ctaMaxW ? { maxWidth: ctaMaxW } : undefined}
+                  onClick={updateHero ? (e) => e.preventDefault() : undefined}
                 >
                   {updateHero ? (
                     <TipTapInline
-                      value={cta?.label ?? ""}
+                      value={cta.label}
                       onChange={(html) => updateHero("cta", { ...cta, label: html })}
                       multiline={false}
                     />
-                  ) : cta?.label}
+                  ) : cta.label}
                 </a>
               </div>
             ) : null}
