@@ -99,7 +99,7 @@ function applyLayoutVars(
   }
 }
 
-function itemStyle(item: ContentItem): React.CSSProperties {
+function itemStyle(item: ContentItem, col?: "left" | "right"): React.CSSProperties {
   const s: Record<string, string> = {};
 
   if (typeof item.mobileOrder === "number") {
@@ -121,12 +121,17 @@ function itemStyle(item: ContentItem): React.CSSProperties {
   applyLayoutVars(s, "md", item.layout?.md);
   applyLayoutVars(s, "lg", item.layout?.lg);
 
-  if (item.grid) {
-    if (item.grid.col) s["--cp-grid-col"] = String(item.grid.col);
-    if (item.grid.row) s["--cp-grid-row"] = String(item.grid.row);
-    if (item.grid.colSpan) s["--cp-grid-col-span"] = String(item.grid.colSpan);
-    if (item.grid.rowSpan) s["--cp-grid-row-span"] = String(item.grid.rowSpan);
+  // Grid placement — explicit values take priority; when col is known, smart defaults apply
+  if (item.grid?.col) {
+    s["--cp-grid-col"] = String(item.grid.col);
+  } else if (col !== undefined) {
+    s["--cp-grid-col"] = col === "right" ? "7" : "1";
   }
+  s["--cp-grid-col-span"] = item.grid?.colSpan
+    ? String(item.grid.colSpan)
+    : col !== undefined ? "6" : "1";
+  if (item.grid?.row) s["--cp-grid-row"] = String(item.grid.row);
+  if (item.grid?.rowSpan) s["--cp-grid-row-span"] = String(item.grid.rowSpan);
 
   return s as React.CSSProperties;
 }
@@ -384,7 +389,7 @@ function renderItem(
   onItemChange?: (changes: Partial<ContentItem>) => void,
   editOverlay?: React.ReactNode,
 ) {
-  const baseStyle = itemStyle(item);
+  const baseStyle = itemStyle(item, col);
   const mergedStyle: React.CSSProperties = editProps?.style
     ? { ...baseStyle, ...(editProps.style as React.CSSProperties) }
     : baseStyle;
@@ -754,17 +759,26 @@ export function ContentPageV1({
       left.length > 0 ? (
         <div className={columnsClass} style={columnsStyle}>
           <div className="cp__col cp__col--left">
-            {left.map((item, idx) => renderItem(item, idx, "left"))}
+            {left.map((item, idx) => renderItem(
+              item, idx, "left", undefined,
+              editMode ? (changes) => updateFlatItem(idx, changes) : undefined,
+            ))}
           </div>
         </div>
       ) : null
     ) : left.length > 0 || right.length > 0 ? (
       <div className={columnsClass} style={columnsStyle}>
         <div className="cp__col cp__col--left">
-          {left.map((item, idx) => renderItem(item, idx, "left"))}
+          {left.map((item, idx) => renderItem(
+            item, idx, "left", undefined,
+            editMode ? (changes) => updateFlatItem(idx, changes) : undefined,
+          ))}
         </div>
         <div className="cp__col cp__col--right">
-          {right.map((item, idx) => renderItem(item, idx, "right"))}
+          {right.map((item, idx) => renderItem(
+            item, idx, "right", undefined,
+            editMode ? (changes) => updateFlatItem(left.length + idx, changes) : undefined,
+          ))}
         </div>
       </div>
     ) : null);
