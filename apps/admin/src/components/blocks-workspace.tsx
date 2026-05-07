@@ -164,6 +164,7 @@ export function BlocksWorkspace({
   const [moving, setMoving] = useState<string | null>(null);
   const [showLayers, setShowLayers] = useState(true);
   const [showInspector, setShowInspector] = useState(true);
+  const [activeDraftOptions, setActiveDraftOptions] = useState<any>(null);
   const [showAddBlock, setShowAddBlock] = useState(false);
 
   // Drag state
@@ -301,6 +302,9 @@ export function BlocksWorkspace({
       setActiveId(sorted[0]?.id ?? "");
     }
   }, [sorted, activeId]);
+
+  // Reset draft options when active block changes
+  useEffect(() => { setActiveDraftOptions(null); }, [activeId]);
 
   // Scroll to active block in preview
   useEffect(() => {
@@ -520,10 +524,12 @@ export function BlocksWorkspace({
     return `/api/preview/${pageId}?${qs.toString()}`;
   }, [pageId, refreshKey, viewMode]);
 
+  const effectiveOptions = activeDraftOptions ?? active?.data?.options ?? {};
   const liveEditEnabled =
     !!active &&
     showInspector &&
     !previewMode &&
+    effectiveOptions?.enableCanvasDrag !== false &&
     ((active.type === "hero" && active.variant === "slider-v1") ||
       (active.type === "content-page" && active.variant === "v1"));
 
@@ -1022,6 +1028,7 @@ export function BlocksWorkspace({
                 externalDraftUpdate={externalDraftUpdate}
                 onElementSelect={handleElementSelect}
                 onDraftChange={(blockId, data) => {
+                  if (blockId === activeId) setActiveDraftOptions(data?.options ?? {});
                   try {
                     iframeRef.current?.contentWindow?.postMessage(
                       { type: "update-block", blockId, data },
