@@ -181,11 +181,23 @@ export function LandingZoom({
         }
       }
 
-      const current = stack.style.zoom || null;
-      if (target == null) {
-        if (current != null) stack.style.removeProperty("zoom");
-      } else {
-        if (current !== target) stack.style.zoom = target;
+      const current = stack.style.transform || null;
+      const currentTarget = target ? `scale(${target}) translateZ(0)` : null;
+      if (currentTarget == null) {
+        if (current != null) {
+          stack.style.removeProperty("transform");
+          stack.style.removeProperty("transform-origin");
+          stack.style.removeProperty("margin-bottom");
+        }
+      } else if (current !== currentTarget) {
+        // Reset transform first so offsetHeight is measured at natural size
+        stack.style.removeProperty("transform");
+        stack.style.removeProperty("margin-bottom");
+        const naturalH = stack.offsetHeight;
+        const f = parseFloat(target!);
+        stack.style.transform = currentTarget;
+        stack.style.transformOrigin = "top left";
+        stack.style.marginBottom = `-${Math.round(naturalH * (1 - f))}px`;
       }
 
       // After we have applied (or explicitly cleared) zoom via inline style,
@@ -227,7 +239,9 @@ export function LandingZoom({
       window.clearTimeout(t1);
       window.clearTimeout(t2);
       window.clearTimeout(t3);
-      stack.style.removeProperty("zoom");
+      stack.style.removeProperty("transform");
+      stack.style.removeProperty("transform-origin");
+      stack.style.removeProperty("margin-bottom");
     };
   }, [enableZoom, designWidth, zoomBreakpoint, fitViewport, scale]);
 

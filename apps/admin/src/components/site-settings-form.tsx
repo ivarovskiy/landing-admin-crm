@@ -640,7 +640,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
           <ToggleRow
             icon={<ZoomIn className="h-3.5 w-3.5" />}
             label="Enable CSS zoom"
-            description="Scales landing-stack to fit the viewport width (desktop only)"
+            description="Scales landing-stack to fit the viewport width on any screen narrower than design width."
             value={zoom.enableZoom !== false}
             onChange={(v) => update({ enableZoom: v })}
           />
