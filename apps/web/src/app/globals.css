@@ -22,3 +22,7 @@
 @import "../styles/sections/doc.css";
 @import "../styles/sections/scroll-story.css";
 @import "../styles/pages/new-student-memo.css";
+
+/* Page-load overlay — hides body until first hero image is ready */
+html.page-loading body { opacity: 0; }
+html.page-loading-out body { opacity: 0; transition: opacity 0.4s ease; }
