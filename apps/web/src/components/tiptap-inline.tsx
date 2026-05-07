@@ -282,7 +282,7 @@ export function TipTapInline({
   return (
     <div ref={containerRef} data-tiptap style={style}>
       <FloatingToolbar
-        state={activeMarks ? { ...activeMarks, rect: toolbarState?.rect ?? new DOMRect() } : null}
+        state={activeMarks && toolbarState?.rect && toolbarState.rect.width > 0 ? { ...activeMarks, rect: toolbarState.rect } : null}
         onBold={() => editor?.chain().focus().toggleBold().run()}
         onItalic={() => editor?.chain().focus().toggleItalic().run()}
         onUnderline={() => editor?.chain().focus().toggleUnderline().run()}

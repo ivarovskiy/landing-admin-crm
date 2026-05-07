@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState, useCallback, useRef } from "react";
-import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, type DragEndEvent } from "@dnd-kit/core";
+import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Container, Kicker, OutlineStampText, STAMP_TITLE } from "@/components/landing/ui";
 import { MediaImage } from "@/components/media-image";
@@ -308,6 +308,10 @@ function DndGrid({
   const containerRef = useRef<HTMLDivElement>(null);
   const cols = Number(grid?.columns) || 12;
   const rows = Number(grid?.rows) || 6;
+  const rowH = parseFloat(grid?.rowHeight ?? "44");
+  const gapPx = parseFloat(grid?.gap ?? "8");
+  const containerMinHeight = rows * rowH + (rows - 1) * gapPx;
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const activeIdx = activeDragId !== null ? parseInt(activeDragId.replace("gi-", "")) : -1;
   const activeItem = activeIdx >= 0 ? items[activeIdx] : null;
@@ -327,12 +331,13 @@ function DndGrid({
 
   return (
     <DndContext
+      sensors={sensors}
       collisionDetection={pointerWithin}
       onDragStart={({ active }) => setActiveDragId(String(active.id))}
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveDragId(null)}
     >
-      <div ref={containerRef} className={className} style={{ ...(style ?? {}), position: "relative" }}>
+      <div ref={containerRef} className={className} style={{ ...(style ?? {}), position: "relative", minHeight: containerMinHeight }}>
         {/* Drop-target overlay — absolutely positioned, never enters cp__grid flow */}
         <div
           aria-hidden="true"
