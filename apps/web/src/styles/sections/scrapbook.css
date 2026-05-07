@@ -91,22 +91,18 @@
   background: #d9d9d9;
 }
 
-@media (min-width: 768px) {
-  .scrapbook__grid {
-    --sb-gap: clamp(8px, 1.2vw, 28px);
-    --sb-row: clamp(76px, 17vw, 270px);
+.scrapbook__grid {
+  --sb-gap: clamp(8px, 1.2vw, 28px);
+  --sb-row: clamp(76px, 17vw, 270px);
 
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-areas:
-      "slot1 slot2 slot3 slot4"
-      "slot1 slot5 slot6 slot6"
-      "slot7 slot8 slot6 slot6";
-  }
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-areas:
+    "slot1 slot2 slot3 slot4"
+    "slot1 slot5 slot6 slot6"
+    "slot7 slot8 slot6 slot6";
 }
 
-@media (min-width: 1024px) {
-  .scrapbook__grid {
-    --sb-gap: clamp(14px, 1.35vw, 28px);
-    --sb-row: clamp(120px, 18vw, 270px);
-  }
+.scrapbook__grid {
+  --sb-gap: clamp(14px, 1.35vw, 28px);
+  --sb-row: clamp(120px, 18vw, 270px);
 }

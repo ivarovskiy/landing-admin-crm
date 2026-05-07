@@ -204,119 +204,117 @@
 
 /* ---- DESKTOP ---- */
 
-@media (min-width: 768px) {
-  .footer-mobile {
-    display: none;
-  }
+.footer-mobile {
+  display: none;
+}
 
-  .footer-desktop {
-    display: block;
-    width: 100%;
-  }
+.footer-desktop {
+  display: block;
+  width: 100%;
+}
 
-  .footer-desktop__grid {
-    padding-left: 32px;
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    align-items: start;
-  }
+.footer-desktop__grid {
+  padding-left: 32px;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  align-items: start;
+}
 
-  .footer-desktop__brand {}
+.footer-desktop__brand {}
 
-  .footer-desktop__brand-link,
-  .footer-desktop__promo-link {
-    text-decoration: none;
-  }
+.footer-desktop__brand-link,
+.footer-desktop__promo-link {
+  text-decoration: none;
+}
 
-  .footer-desktop__promo-link {
-    padding-top: 8.23px;
-  }
+.footer-desktop__promo-link {
+  padding-top: 8.23px;
+}
 
-  .footer-desktop__logo {
-    width: clamp(240px, 24vw, 333px);
-    height: 99px;
-    display: block;
-  }
+.footer-desktop__logo {
+  width: clamp(240px, 24vw, 333px);
+  height: 99px;
+  display: block;
+}
 
-  .footer-desktop__columns {
-    padding-top: clamp(6px, 0.7vw, 8px);
-    /* margin-left: 71px;
-    margin-right: 64px; */
-    /* display: grid;
-    grid-template-columns: repeat(3, max-content); */
-    gap: 68px;
-    display: flex;
-    align-items: start;
-    justify-content: start;
-  }
+.footer-desktop__columns {
+  padding-top: clamp(6px, 0.7vw, 8px);
+  /* margin-left: 71px;
+  margin-right: 64px; */
+  /* display: grid;
+  grid-template-columns: repeat(3, max-content); */
+  gap: 68px;
+  display: flex;
+  align-items: start;
+  justify-content: start;
+}
 
-  .footer-desktop__column {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(8px, 1vw, 12px);
-  }
+.footer-desktop__column {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1vw, 12px);
+}
 
-  .footer-desktop__right {
-    max-width: fit-content;
-    padding-top: clamp(6px, 0.7vw, 8px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
+.footer-desktop__right {
+  max-width: fit-content;
+  padding-top: clamp(6px, 0.7vw, 8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
 
-  .footer-desktop__portal-link {
-    width: 100%;
-    margin-right: 35px;
-    /* display: inline-flex; */
-    /* padding-left: 81px; */
-    /* height: clamp(20px, 2vw, 24px); */
-    /* align-items: center; */
-    text-decoration: none;
-    position: relative;
-  }
+.footer-desktop__portal-link {
+  width: 100%;
+  margin-right: 35px;
+  /* display: inline-flex; */
+  /* padding-left: 81px; */
+  /* height: clamp(20px, 2vw, 24px); */
+  /* align-items: center; */
+  text-decoration: none;
+  position: relative;
+}
 
-  .footer-desktop__portal-icon {
-    position: absolute;
-    right: -55px;
-    top: 50%;
-    transform: translateY(-52%);
-    width: 57px;
-    height: 57px;
-    flex: none;
-  }
+.footer-desktop__portal-icon {
+  position: absolute;
+  right: -55px;
+  top: 50%;
+  transform: translateY(-52%);
+  width: 57px;
+  height: 57px;
+  flex: none;
+}
 
-  .footer-desktop__promo {
-    margin-top: 48px;
-    text-align: right;
-  }
+.footer-desktop__promo {
+  margin-top: 48px;
+  text-align: right;
+}
 
-  .footer-desktop__promo-logo-wrap {
-    margin-top: clamp(6px, 0.7vw, 8px);
-  }
+.footer-desktop__promo-logo-wrap {
+  margin-top: clamp(6px, 0.7vw, 8px);
+}
 
-  .footer-desktop__promo-logo {
-    width: min(100%, 300px);
-    height: clamp(46px, 4.9vw, 60px);
-    display: block;
-  }
+.footer-desktop__promo-logo {
+  width: min(100%, 300px);
+  height: clamp(46px, 4.9vw, 60px);
+  display: block;
+}
 
-  .footer-desktop__rule-wrap {
-    margin-top: 43px;
-    padding-left: 191px;
-    width: 100%;
-  }
+.footer-desktop__rule-wrap {
+  margin-top: 43px;
+  padding-left: 191px;
+  width: 100%;
+}
 
-  .footer-desktop__rule {
-    display: block;
-    width: 100%;
-    height: 8px;
-  }
+.footer-desktop__rule {
+  display: block;
+  width: 100%;
+  height: 8px;
+}
 
-  .footer-desktop__bottom {
-    margin-top: 15px;
-    display: flex;
-    justify-content: flex-end;
-  }
+.footer-desktop__bottom {
+  margin-top: 15px;
+  display: flex;
+  justify-content: flex-end;
 }

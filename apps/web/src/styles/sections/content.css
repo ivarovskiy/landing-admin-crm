@@ -36,12 +36,10 @@
 
 }
 
-@media (min-width: 768px) {
-  .features-grid {
-    /* padding: clamp(20px, 2.5vw, 30px) 20px 0 20px; */
-    grid-template-columns: repeat(3, 1fr);
-    gap: clamp(20px, 2.5vw, 30px);
-  }
+.features-grid {
+  /* padding: clamp(20px, 2.5vw, 30px) 20px 0 20px; */
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(20px, 2.5vw, 30px);
 }
 
 .feature-card {
@@ -83,10 +81,8 @@
   max-width: 520px;
 }
 
-@media (min-width: 768px) {
-  .studio-address__map-container {
-    max-width: 830px;
-  }
+.studio-address__map-container {
+  max-width: 830px;
 }
 
 .studio-address__map-frame {
@@ -96,10 +92,8 @@
   border-radius: var(--radius-md);
 }
 
-@media (min-width: 768px) {
-  .studio-address__map-frame {
-    aspect-ratio: 16 / 9;
-  }
+.studio-address__map-frame {
+  aspect-ratio: 16 / 9;
 }
 
 .studio-address__map-iframe {
@@ -123,21 +117,17 @@
 
 
 
-@media (min-width: 768px) {
-  .studio-address__row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    text-align: left;
-  }
+.studio-address__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
 }
 
 
 
-@media (min-width: 768px) {
-  .studio-address__address {
-    align-items: flex-end;
-  }
+.studio-address__address {
+  align-items: flex-end;
 }
 
 
@@ -153,25 +143,21 @@
   display: none;
 }
 
-@media (min-width: 768px) {
-  .studio-address__notes {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-self: end;
-    gap: clamp(6px, 0.6vw, 8px);
-  }
+.studio-address__notes {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-self: end;
+  gap: clamp(6px, 0.6vw, 8px);
 }
 
 .studio-address__notes-placeholder {
   display: none;
 }
 
-@media (min-width: 768px) {
-  .studio-address__notes-placeholder {
-    display: block;
+.studio-address__notes-placeholder {
+  display: block;
 
-  }
 }
 
 /* Phone / Email */
@@ -557,14 +543,12 @@
   max-width: var(--cp-width-lg, var(--cp-width-md, 1100px));
 }
 
-@media (min-width: 768px) {
-  .cp__columns--single {
-    display: flex;
-  }
+.cp__columns--single {
+  display: flex;
+}
 
-  .cp__columns--single .cp__col {
-    align-items: center;
-  }
+.cp__columns--single .cp__col {
+  align-items: center;
 }
 
 /* ==================================================================

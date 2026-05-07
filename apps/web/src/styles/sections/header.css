@@ -19,10 +19,8 @@
   padding: 10px 20px 10px 26px;
 }
 
-@media (min-width: 768px) {
-  .header__bar--mobile {
-    display: none;
-  }
+.header__bar--mobile {
+  display: none;
 }
 
 .header__mobile-icons {
@@ -39,14 +37,8 @@
 /* ===== DESKTOP BAR ===== */
 
 .header__bar--desktop {
-  display: none;
+  display: block;
   background: var(--color-bg);
-}
-
-@media (min-width: 768px) {
-  .header__bar--desktop {
-    display: block;
-  }
 }
 
 .header-desktop {
@@ -440,10 +432,8 @@
   background: var(--color-bg);
 }
 
-@media (min-width: 768px) {
-  .header-masthead {
-    display: none;
-  }
+.header-masthead {
+  display: none;
 }
 
 .header-masthead__inner {
@@ -497,10 +487,8 @@
   pointer-events: auto;
 }
 
-@media (min-width: 768px) {
-  .header-menu {
-    display: none;
-  }
+.header-menu {
+  display: none;
 }
 
 .header-menu__backdrop {
