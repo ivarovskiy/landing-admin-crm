@@ -46,6 +46,12 @@ function h(value: string | undefined): string {
     .trim();
 }
 
+function plainToHtml(text: string): string {
+  if (!text.trim()) return "";
+  const paragraphs = text.split(/\n\n+/);
+  return paragraphs.map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
+}
+
 const ASPECT_RATIOS = [
   { value: "4/3", label: "4:3" },
   { value: "3/2", label: "3:2" },
@@ -238,10 +244,11 @@ function TextItemEditor({
 
   return (
     <>
-      <InspectorInput
+      <InspectorTextarea
         value={h(item.heading)}
-        onChange={(v) => onChange({ ...item, heading: v })}
+        onChange={(v) => onChange({ ...item, heading: plainToHtml(v) })}
         placeholder="Heading"
+        rows={2}
       />
       <InspectorTextarea
         value={h(item.body)}
