@@ -6,6 +6,8 @@ import Link from "next/link"
 import { PAGE_TEMPLATES } from "@acme/block-library"
 import { ArrowLeft, Check } from "lucide-react"
 
+const GROUP_ORDER = ["IBC Ballet", "Simply Dance Studio", "Generic"]
+
 export default function NewPage() {
   const router = useRouter()
   const [slug, setSlug] = useState("")
@@ -23,7 +25,6 @@ export default function NewPage() {
     setSaving(true)
 
     try {
-      /* 1. Create page */
       const r = await fetch("/api/admin/pages", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -32,7 +33,6 @@ export default function NewPage() {
       if (!r.ok) throw new Error(`Create failed (HTTP ${r.status})`)
       const { page } = (await r.json()) as { page: { id: string } }
 
-      /* 2. Create template blocks sequentially */
       const template = PAGE_TEMPLATES.find((t) => t.key === templateKey)
       if (template) {
         for (const block of template.blocks) {
@@ -54,11 +54,26 @@ export default function NewPage() {
 
   const selectedTemplate = PAGE_TEMPLATES.find((t) => t.key === templateKey)
 
+  // Group templates preserving GROUP_ORDER, ungrouped at the end
+  const allGroups = [...new Set(PAGE_TEMPLATES.map((t) => t.group ?? "Generic"))]
+  const ordered = [
+    ...GROUP_ORDER.filter((g) => allGroups.includes(g)),
+    ...allGroups.filter((g) => !GROUP_ORDER.includes(g)),
+  ]
+  const groups = ordered
+    .map((name) => ({ name, tpls: PAGE_TEMPLATES.filter((t) => (t.group ?? "Generic") === name) }))
+    .filter((g) => g.tpls.length > 0)
+
+  const GROUP_COLORS: Record<string, string> = {
+    "IBC Ballet": "oklch(0.58_0.22_25)",
+    "Simply Dance Studio": "oklch(0.6_0.18_270)",
+    "Generic": "oklch(0.5_0_0)",
+  }
+
   return (
     <div className="min-h-screen bg-[oklch(0.13_0_0)] text-[oklch(0.93_0_0)] p-6">
       <div className="max-w-2xl mx-auto space-y-6">
 
-        {/* Breadcrumb */}
         <Link
           href="/admin"
           className="inline-flex items-center gap-1.5 text-xs text-[oklch(0.6_0_0)] hover:text-[oklch(0.93_0_0)] transition-colors"
@@ -74,52 +89,65 @@ export default function NewPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
 
-          {/* Template selection */}
-          <div className="space-y-2">
+          {/* Template selection — grouped */}
+          <div className="space-y-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[oklch(0.5_0_0)]">Template</p>
-            <div className="grid grid-cols-2 gap-2">
-              {PAGE_TEMPLATES.map((t) => {
-                const active = templateKey === t.key
-                return (
-                  <button
-                    key={t.key}
-                    type="button"
-                    onClick={() => setTemplateKey(t.key)}
-                    className={[
-                      "relative text-left rounded-xl border px-4 py-3.5 transition-all",
-                      active
-                        ? "border-[oklch(0.58_0.22_25)] bg-[oklch(0.58_0.22_25/10%)]"
-                        : "border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] hover:bg-[oklch(1_0_0/6%)] hover:border-[oklch(1_0_0/16%)]",
-                    ].join(" ")}
-                  >
-                    {active && (
-                      <span className="absolute top-2.5 right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-[oklch(0.58_0.22_25)]">
-                        <Check className="h-2.5 w-2.5 text-white" />
-                      </span>
-                    )}
-                    <p className={["text-xs font-semibold", active ? "text-[oklch(0.58_0.22_25)]" : "text-[oklch(0.88_0_0)]"].join(" ")}>
-                      {t.label}
-                    </p>
-                    {t.description && (
-                      <p className="text-[10px] text-[oklch(0.5_0_0)] mt-0.5 leading-snug">{t.description}</p>
-                    )}
-                    {t.blocks.length > 0 && (
-                      <p className="text-[10px] text-[oklch(0.45_0_0)] mt-1.5">
-                        {t.blocks.length} block{t.blocks.length !== 1 ? "s" : ""}
-                      </p>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+
+            {(groups as { name: string; tpls: typeof PAGE_TEMPLATES }[]).map(({ name, tpls }) => {
+              const color = GROUP_COLORS[name] ?? "oklch(0.5_0_0)"
+              return (
+                <div key={name} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ background: `oklch(${color.replace("oklch(", "").replace(")", "")})` }}
+                    />
+                    <p className="text-[11px] font-semibold text-[oklch(0.55_0_0)]">{name}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {tpls.map((t) => {
+                      const active = templateKey === t.key
+                      return (
+                        <button
+                          key={t.key}
+                          type="button"
+                          onClick={() => setTemplateKey(t.key)}
+                          className={[
+                            "relative text-left rounded-xl border px-4 py-3.5 transition-all",
+                            active
+                              ? "border-[oklch(0.58_0.22_25)] bg-[oklch(0.58_0.22_25/10%)]"
+                              : "border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] hover:bg-[oklch(1_0_0/6%)] hover:border-[oklch(1_0_0/16%)]",
+                          ].join(" ")}
+                        >
+                          {active && (
+                            <span className="absolute top-2.5 right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-[oklch(0.58_0.22_25)]">
+                              <Check className="h-2.5 w-2.5 text-white" />
+                            </span>
+                          )}
+                          <p className={["text-xs font-semibold", active ? "text-[oklch(0.58_0.22_25)]" : "text-[oklch(0.88_0_0)]"].join(" ")}>
+                            {t.label}
+                          </p>
+                          {t.description && (
+                            <p className="text-[10px] text-[oklch(0.5_0_0)] mt-0.5 leading-snug">{t.description}</p>
+                          )}
+                          {t.blocks.length > 0 && (
+                            <p className="text-[10px] text-[oklch(0.45_0_0)] mt-1.5">
+                              {t.blocks.length} block{t.blocks.length !== 1 ? "s" : ""}
+                            </p>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
           {/* Page details */}
           <div className="space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[oklch(0.5_0_0)]">Page details</p>
             <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)]">
-
-              {/* Slug */}
               <div className="flex items-center gap-3 px-4 py-3">
                 <label className="w-16 text-xs text-[oklch(0.55_0_0)] shrink-0">Slug</label>
                 <input
@@ -130,8 +158,6 @@ export default function NewPage() {
                   className="flex-1 bg-transparent text-xs text-[oklch(0.93_0_0)] placeholder-[oklch(0.4_0_0)] outline-none"
                 />
               </div>
-
-              {/* Locale */}
               <div className="flex items-center gap-3 px-4 py-3">
                 <label className="w-16 text-xs text-[oklch(0.55_0_0)] shrink-0">Locale</label>
                 <select
@@ -143,17 +169,14 @@ export default function NewPage() {
                   <option value="en" style={{ background: "#1a1a1a" }}>en — English</option>
                 </select>
               </div>
-
             </div>
             <p className="text-[10px] text-[oklch(0.4_0_0)]">Slug: lowercase letters, numbers and hyphens (e.g. <span className="text-[oklch(0.55_0_0)]">about-us</span>)</p>
           </div>
 
-          {/* Error */}
           {error && (
             <div className="text-[11px] text-red-400 bg-red-400/10 rounded-lg px-3 py-2">{error}</div>
           )}
 
-          {/* Actions */}
           <div className="flex items-center gap-2">
             <button
               type="submit"

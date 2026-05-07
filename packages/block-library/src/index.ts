@@ -19,6 +19,7 @@ export type PageTemplate = {
   key: string
   label: string
   description?: string
+  group?: string
   blocks: Array<{ type: string; variant: string; data: Record<string, any> }>
 }
 
@@ -744,17 +745,61 @@ export function findBlockPreset(key: string) {
    Page Templates — full page block sets
    ============================================================ */
 
+const SDS_HEADER_DATA = {
+  brand: { label: "Simply Dance Studio", href: "#top" },
+  mobile: {
+    top: { phoneHref: "tel:+16108830878", emailHref: "mailto:simplydancepa@gmail.com" },
+    masthead: { logo: { kind: "asset", name: "simply-dance" }, tagline: "SIMPLY DANCE STUDIO" },
+    portal: { label: "Parent Portal", href: "#" },
+    menu: [],
+  },
+  desktop: {
+    phone: "(610) 883-0878",
+    phoneHref: "tel:+16108830878",
+    logo: { kind: "asset", name: "simply-dance" },
+    portal: { label: "Parent Portal", href: "#" },
+    navigation: { left: [], right: [] },
+  },
+  _layout: { anchor: "top", container: "full" },
+}
+
+const SDS_FOOTER_DATA = {
+  left: {
+    href: "#top",
+    logo: { kind: "asset", name: "sds-logo-large" },
+    subText: "SIMPLY DANCE STUDIO",
+  },
+  columns: [
+    { links: [{ label: "About Us", href: "#about" }, { label: "Programs", href: "#programs" }] },
+    { links: [{ label: "Contact Us", href: "#address" }] },
+  ],
+  bottomText: "Copyright © 2026 Simply Dance Studio • All Rights Reserved",
+  _layout: { anchor: "footer", container: "full" },
+}
+
 export const PAGE_TEMPLATES: PageTemplate[] = [
   {
     key: "blank",
     label: "Blank page",
     description: "Start from scratch — no blocks",
+    group: "Generic",
     blocks: [],
   },
   {
+    key: "header-footer",
+    label: "Header + Footer only",
+    description: "Empty middle, configure header/footer after",
+    group: "Generic",
+    blocks: [
+      { type: "header", variant: "v1", data: IBC_HEADER_DATA },
+      { type: "footer", variant: "v1", data: IBC_FOOTER_DATA },
+    ],
+  },
+  {
     key: "ibc-home",
-    label: "IBC Ballet — Home",
+    label: "Home",
     description: "Header + Hero slider + Our School + Studio Address + Footer",
+    group: "IBC Ballet",
     blocks: [
       { type: "header", variant: "v1", data: IBC_HEADER_DATA },
       { type: "hero", variant: "slider-v1", data: IBC_HERO_DATA },
@@ -765,8 +810,9 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
   },
   {
     key: "ibc-content",
-    label: "IBC Ballet — Content page",
+    label: "Content page",
     description: "Header + Content Page + Footer",
+    group: "IBC Ballet",
     blocks: [
       { type: "header", variant: "v1", data: IBC_HEADER_DATA },
       { type: "content-page", variant: "v1", data: { kicker: "PROGRAM", title: "PAGE TITLE", subtitle: "", left: [], right: [] } },
@@ -775,8 +821,9 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
   },
   {
     key: "ibc-doc-page",
-    label: "IBC Ballet — Document page",
+    label: "Document page",
     description: "Header + Doc Header + Doc Body + Footer",
+    group: "IBC Ballet",
     blocks: [
       { type: "header", variant: "v1", data: IBC_HEADER_DATA },
       { type: "doc-header", variant: "v1", data: { kicker: "Parent Portal", title: "New Student Memo", subtitle: "Welcome to Simply Dance!" } },
@@ -785,12 +832,38 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
     ],
   },
   {
-    key: "header-footer",
-    label: "Header + Footer only",
-    description: "IBC header and footer, empty middle",
+    key: "sds-content",
+    label: "Content page",
+    description: "Header + Content Page + Footer",
+    group: "Simply Dance Studio",
     blocks: [
-      { type: "header", variant: "v1", data: IBC_HEADER_DATA },
-      { type: "footer", variant: "v1", data: IBC_FOOTER_DATA },
+      { type: "header", variant: "v1", data: SDS_HEADER_DATA },
+      { type: "content-page", variant: "v1", data: { kicker: "PROGRAM", title: "PAGE TITLE", subtitle: "", left: [], right: [] } },
+      { type: "footer", variant: "v1", data: SDS_FOOTER_DATA },
+    ],
+  },
+  {
+    key: "sds-contact",
+    label: "Contact page",
+    description: "Header + Content + Studio Address + Footer",
+    group: "Simply Dance Studio",
+    blocks: [
+      { type: "header", variant: "v1", data: SDS_HEADER_DATA },
+      { type: "content-page", variant: "v1", data: { kicker: "CONTACT US", title: "CALL AND COME VISIT", subtitle: "", left: [], right: [] } },
+      { type: "studio-address", variant: "v1", data: { title: "STUDIO ADDRESS", map: {}, addressLines: [], socials: [], contacts: {} } },
+      { type: "footer", variant: "v1", data: SDS_FOOTER_DATA },
+    ],
+  },
+  {
+    key: "sds-doc-page",
+    label: "Document page",
+    description: "Header + Doc Header + Doc Body + Footer",
+    group: "Simply Dance Studio",
+    blocks: [
+      { type: "header", variant: "v1", data: SDS_HEADER_DATA },
+      { type: "doc-header", variant: "v1", data: { kicker: "Parent Portal", title: "New Student Memo", subtitle: "Welcome to Simply Dance!" } },
+      { type: "doc-body", variant: "v1", data: { sections: [{ id: "s1", heading: "", body: "" }], image: { src: "", alt: "" } } },
+      { type: "footer", variant: "v1", data: SDS_FOOTER_DATA },
     ],
   },
 ]
