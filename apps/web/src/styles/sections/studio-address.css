@@ -95,18 +95,7 @@
 }
 
 /* ---- Address / contact text ---- */
-
-@media (max-width: 767px) {
-  .studio-address__address .ds-kicker,
-  .studio-address__notes .ds-kicker,
-  .studio-address__contact-link .ds-kicker,
-  .studio-address__contact-link .ds-kicker-sm {
-    font-size: 14.85px;
-    line-height: 24px;
-    letter-spacing: 0.2em;
-    font-weight: 500;
-  }
-}
+/* mobile override — disabled (desktop-only layout) */
 
 @media (min-width: 768px) {
   .studio-address__address .ds-kicker,
@@ -241,22 +230,7 @@
   max-width: 921px;
 }
 
-/* ---- Mobile ---- */
-
-@media (max-width: 767px) {
-  .studio-address__social-icon {
-    width: 50px;
-    height: 50px;
-  }
-
-  .studio-address__notes {
-    display: none;
-  }
-
-  .studio-address__contacts {
-    padding-top: 26px;
-  }
-}
+/* mobile studio-address override — disabled (desktop-only layout) */
 
 /* ---- Desktop ---- */
 

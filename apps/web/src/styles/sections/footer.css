@@ -37,15 +37,7 @@
   margin-bottom: clamp(28px, 3vw, 40px);
 }
 
-@media (max-width: 767px) {
-  .footer__double-hairline {
-    margin-bottom: 56px;
-  }
-
-  .footer-mobile__rule {
-    margin-top: 56px;
-  }
-}
+/* mobile footer override — disabled (desktop-only layout) */
 
 .footer-rule {
   display: block;

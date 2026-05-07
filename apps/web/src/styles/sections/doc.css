@@ -166,16 +166,4 @@
   letter-spacing: 0.05em;
 }
 
-/* ---- Mobile ---- */
-
-@media (max-width: 767px) {
-  .doc-body__layout {
-    flex-direction: column;
-  }
-
-  .doc-body__image-col {
-    flex: none;
-    width: 100%;
-    max-width: 320px;
-  }
-}
+/* mobile doc override — disabled (desktop-only layout) */

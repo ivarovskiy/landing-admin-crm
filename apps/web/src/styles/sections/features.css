@@ -123,32 +123,7 @@
   letter-spacing: 0.01em; */
 }
 
-/* ---- Mobile: title above icon ---- */
-
-@media (max-width: 767px) {
-  .features-section {
-    padding-top: 54px;
-    padding-bottom: 44px;
-  }
-
-  .feature-card__title {
-    order: -1;
-    margin-top: 0;
-    padding-top: 0;
-  }
-
-  .feature-card__icon-wrap {
-    width: auto;
-    height: 130px;
-    margin-top: 44px;
-    margin-bottom: 44px;
-  }
-
-  .features-v1-icon {
-    height: 100%;
-    width: auto;
-  }
-}
+/* mobile features override — disabled (desktop-only layout) */
 
 /* ---- Desktop: 3-column grid ---- */
 

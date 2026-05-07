@@ -105,19 +105,4 @@
   outline: 1px dashed green;
 }
 
-/* ---- Mobile: disable sticky, stack vertically ---- */
-
-@media (max-width: 767px) {
-  .ss__cols {
-    display: block;
-    padding-block: clamp(28px, 6vw, 48px);
-  }
-
-  .ss__col {
-    position: static;
-  }
-
-  .ss__col + .ss__col {
-    margin-top: clamp(20px, 5vw, 32px);
-  }
-}
+/* mobile scroll-story override — disabled (desktop-only layout) */

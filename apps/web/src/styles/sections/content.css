@@ -462,17 +462,7 @@
   }
 }
 
-@media (max-width: 767px) {
-  .cp__grid {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(20px, 2.5vw, 32px);
-  }
-
-  .cp__grid .cp__item {
-    order: var(--mobile-order, 0);
-  }
-}
+/* mobile cp__grid override — disabled (desktop-only layout) */
 
 @media (min-width: 1024px) {
   .cp__item {

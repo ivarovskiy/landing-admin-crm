@@ -574,11 +574,7 @@
   color: var(--color-bg); */
 }
 
-@media (max-width: 767px) {
-  .scroll-to-top {
-    display: none;
-  }
-}
+/* mobile scroll-to-top hide — disabled (desktop-only layout) */
 
 /* ── TipTap inline editor (edit mode) ─────────────────────────────────────── */
 
