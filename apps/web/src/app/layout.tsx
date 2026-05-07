@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { fontMaru, fontMaruOblique, fontDisplay } from "./fonts";
 import { ScrollToTop } from "@/components/landing/ui/scroll-to-top";
-import { PageLoader } from "@/components/landing/page-loader";
 import {
   getSiteSettings,
   type TextMetricsSettings,
@@ -319,8 +318,6 @@ export default async function RootLayout({ children }: {
             plain styled text unless explicitly wrapped in an <a>. */}
         <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
         <meta name="x-apple-disable-message-reformatting" content="" />
-        {/* Hide body until first hero image is ready — prevents layout/text flash before image pops in */}
-        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('page-loading');" }} />
         {prepaintScript ? (
           <script dangerouslySetInnerHTML={{ __html: prepaintScript }} />
         ) : null}
@@ -332,7 +329,6 @@ export default async function RootLayout({ children }: {
         ) : null}
       </head>
       <body>
-        <PageLoader />
         {children}
         <ScrollToTop
           enabled={scrollToTop?.enabled !== false}

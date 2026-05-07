@@ -326,30 +326,6 @@ export function HeroSliderV1({
   const [noTransition, setNoTransition] = useState(false);
   const [paused, setPaused] = useState(false);
 
-  // Signal the layout-level PageLoader when the first slide image is ready.
-  // Skipped in editMode — admin sees the page as it builds.
-  const firstSlideSrc = !editMode ? (slides[0]?.media?.src ?? null) : null;
-
-  useLayoutEffect(() => {
-    if (!firstSlideSrc) return;
-    // Hold the page-loading screen — we own dismissal.
-    (window as any).__pageLoaderHeld = true;
-    const img = new window.Image();
-    img.src = firstSlideSrc;
-    const done = () => {
-      (window as any).__pageReady = true;
-      window.dispatchEvent(new CustomEvent("page-ready"));
-    };
-    if (img.complete) { done(); return; }
-    img.addEventListener("load", done);
-    img.addEventListener("error", done);
-    const t = window.setTimeout(done, 4000);
-    return () => {
-      img.removeEventListener("load", done);
-      img.removeEventListener("error", done);
-      window.clearTimeout(t);
-    };
-  }, [firstSlideSrc]);
 
   const showDots = options?.showDots !== false;
   const showArrows = options?.showArrows === true;

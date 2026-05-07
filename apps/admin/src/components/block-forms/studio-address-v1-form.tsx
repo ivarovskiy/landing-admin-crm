@@ -11,12 +11,14 @@ import {
   InspectorSelect,
   InspectorToggle,
   BlockLayoutSection,
+  ImageUpload,
 } from "@/components/inspector";
 import { MapPin, Phone, Share2, Plus, Trash2, Type } from "lucide-react";
 
 type Social = { icon?: "instagram" | "facebook"; href?: string; label?: string };
 
 export function StudioAddressV1Form({ value, onChange }: BlockFormProps) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "";
   const addressLines: string[] = arr(value?.addressLines) as string[];
   const notes: string[] = arr(value?.notes) as string[];
   const socials: Social[] = arr(value?.socials) as Social[];
@@ -66,10 +68,10 @@ export function StudioAddressV1Form({ value, onChange }: BlockFormProps) {
         </InspectorField>
 
         <InspectorField label="Image" stacked>
-          <InspectorInput
+          <ImageUpload
             value={map?.imageSrc ?? ""}
-            onChange={(v) => set(["map", "imageSrc"], v)}
-            placeholder="Fallback image URL"
+            onChange={(url) => set(["map", "imageSrc"], url)}
+            apiBase={apiBase}
           />
         </InspectorField>
 
