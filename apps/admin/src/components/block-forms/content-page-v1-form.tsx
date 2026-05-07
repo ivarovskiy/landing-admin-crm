@@ -532,20 +532,42 @@ function EntryEditor({
 function EntriesEditor({
   entries,
   grid,
+  flatLeft,
+  flatRight,
   onChange,
   onGridChange,
+  onImportFlat,
 }: {
   entries: { left: any[]; right: any[] }[];
   grid?: ContentGridConfig;
+  flatLeft?: any[];
+  flatRight?: any[];
   onChange: (next: { left: any[]; right: any[] }[]) => void;
   onGridChange?: (next: ContentGridConfig) => void;
+  onImportFlat?: () => void;
 }) {
   const addEntry = () => {
     onChange([...entries, { left: [], right: [] }]);
   };
 
+  const hasFlatItems = (flatLeft?.length ?? 0) > 0 || (flatRight?.length ?? 0) > 0;
+
   return (
     <div className="space-y-3">
+      {entries.length === 0 && hasFlatItems && onImportFlat && (
+        <div className="rounded-md border border-amber-400/40 bg-amber-400/5 p-3 space-y-2">
+          <p className="text-[11px] text-amber-600 leading-relaxed">
+            You have items in the flat columns. Import them as Entry 1 to use Scroll Story.
+          </p>
+          <button
+            type="button"
+            onClick={onImportFlat}
+            className="w-full rounded-md bg-amber-500/10 border border-amber-400/50 py-1.5 text-[11px] font-medium text-amber-600 hover:bg-amber-500/20 transition-colors"
+          >
+            Import flat columns → Entry 1
+          </button>
+        </div>
+      )}
       {entries.map((entry, idx) => (
         <EntryEditor
           key={idx}
@@ -777,7 +799,18 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
         <InspectorField label="Scroll Story">
           <InspectorToggle
             checked={scrollStory}
-            onChange={(v) => onChange({ ...value, scrollStory: v })}
+            onChange={(v) => {
+              if (v) {
+                const flatLeft = arr(value?.left);
+                const flatRight = arr(value?.right);
+                const existingEntries = arr(value?.entries);
+                if (existingEntries.length === 0 && (flatLeft.length > 0 || flatRight.length > 0)) {
+                  onChange({ ...value, scrollStory: true, entries: [{ left: flatLeft, right: flatRight }], left: [], right: [] });
+                  return;
+                }
+              }
+              onChange({ ...value, scrollStory: v });
+            }}
             label="Enable per-entry sticky scroll"
           />
         </InspectorField>
@@ -849,10 +882,17 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
               <EntriesEditor
                 entries={arr(value?.entries)}
                 grid={gridEnabled ? value?.grid : undefined}
+                flatLeft={arr(value?.left)}
+                flatRight={arr(value?.right)}
                 onChange={(next) => onChange({ ...value, entries: next })}
                 onGridChange={gridEnabled
                   ? (g) => onChange({ ...value, grid: { ...(value?.grid ?? {}), ...g, enabled: true } })
                   : undefined}
+                onImportFlat={() => {
+                  const flatLeft = arr(value?.left);
+                  const flatRight = arr(value?.right);
+                  onChange({ ...value, entries: [{ left: flatLeft, right: flatRight }], left: [], right: [] });
+                }}
               />
             </div>
           </>
