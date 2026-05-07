@@ -449,7 +449,7 @@ function renderItem(
               onChange={(html) => onItemChange({ heading: html })}
               multiline={false}
             />
-          ) : item.heading}
+          ) : renderRichText(item.heading ?? "")}
         </Kicker>
       ) : null}
       {(item.body || onItemChange) ? (

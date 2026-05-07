@@ -29,6 +29,23 @@ import {
 
 const API_BASE = typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "") : "";
 
+// TipTap stores HTML; strip it back to plain text for inspector fields.
+// Mirror of tiptap-inline.tsx toHtml(): paragraph breaks ↔ double newline, <br> ↔ newline.
+function h(value: string | undefined): string {
+  if (!value) return "";
+  if (!value.trimStart().startsWith("<")) return value;
+  return value
+    .replace(/<\/p>\s*<p>/gi, "\n\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&[a-z0-9]+;/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .trim();
+}
+
 const ASPECT_RATIOS = [
   { value: "4/3", label: "4:3" },
   { value: "3/2", label: "3:2" },
@@ -98,12 +115,12 @@ function updateDesktopLayout(item: any, patch: Record<string, string | undefined
 
 function itemTitle(item: any, idx: number) {
   if (item?.kind === "image") return item?.alt || `Image ${idx + 1}`;
-  return item?.heading || `Text ${idx + 1}`;
+  return h(item?.heading) || `Text ${idx + 1}`;
 }
 
 function itemSummary(item: any) {
   if (item?.kind === "image") return item?.src ? "Uploaded image" : "Image block";
-  if (item?.body) return String(item.body).replace(/\s+/g, " ").slice(0, 54);
+  if (item?.body) return h(item.body).replace(/\s+/g, " ").slice(0, 54);
   return "Text block";
 }
 
@@ -222,14 +239,14 @@ function TextItemEditor({
   return (
     <>
       <InspectorInput
-        value={item.heading ?? ""}
+        value={h(item.heading)}
         onChange={(v) => onChange({ ...item, heading: v })}
         placeholder="Heading"
       />
       <InspectorTextarea
-        value={item.body ?? ""}
+        value={h(item.body)}
         onChange={(v) => onChange({ ...item, body: v })}
-        placeholder="Body text. Use Enter for a new line, empty line for a new paragraph."
+        placeholder="Body text. Enter = new line, empty line = new paragraph."
         rows={5}
       />
 
@@ -611,7 +628,7 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
 
         <InspectorField label="Kicker">
           <InspectorInput
-            value={value?.kicker ?? ""}
+            value={h(value?.kicker)}
             onChange={(v) => onChange({ ...value, kicker: v })}
             placeholder="SUMMER PROGRAM"
           />
@@ -619,7 +636,7 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
 
         <InspectorField label="Title">
           <InspectorInput
-            value={value?.title ?? ""}
+            value={h(value?.title)}
             onChange={(v) => onChange({ ...value, title: v })}
             placeholder="NEW GUEST TEACHERS"
           />
@@ -627,7 +644,7 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
 
         <InspectorField label="Tagline">
           <InspectorInput
-            value={value?.subtitle ?? ""}
+            value={h(value?.subtitle)}
             onChange={(v) => onChange({ ...value, subtitle: v })}
             placeholder="Sign up by June 15"
           />
@@ -635,7 +652,7 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
 
         <InspectorField label="CTA label">
           <InspectorInput
-            value={value?.cta?.label ?? ""}
+            value={h(value?.cta?.label)}
             onChange={(v) => onChange({ ...value, cta: { ...value?.cta, label: v } })}
             placeholder="Studio Director"
           />

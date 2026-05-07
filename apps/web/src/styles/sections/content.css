@@ -421,61 +421,44 @@
   width: 100%;
 }
 
-@media (min-width: 768px) {
-  .cp__columns {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: clamp(56px, 10vw, 142px);
-    align-items: start;
-  }
+.cp__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(56px, 10vw, 142px);
+  align-items: start;
+}
 
-  .cp__col {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    min-width: 0;
-    max-width: 533px;
-  }
+.cp__col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: 533px;
+}
 
-  /* md values take priority; lg used as fallback when md is not set —
-     prevents a layout jump between 768-1023px for items that only have lg defined */
-  .cp__item {
-    order: unset;
-    margin-top: var(--cp-gap-md, var(--cp-gap-lg, 0px));
-    margin-left: var(--cp-offset-md, var(--cp-offset-lg, 0px));
-    align-self: var(--cp-align-md, var(--cp-align-lg, flex-start));
-    max-width: var(--cp-width-md, var(--cp-width-lg, none));
-  }
+.cp__item {
+  order: unset;
+  margin-top: var(--cp-gap-lg, var(--cp-gap-md, 0px));
+  margin-left: var(--cp-offset-lg, var(--cp-offset-md, 0px));
+  align-self: var(--cp-align-lg, var(--cp-align-md, flex-start));
+  max-width: var(--cp-width-lg, var(--cp-width-md, none));
+}
 
-  .cp__item--text {
-    width: 100%;
-    max-width: var(--cp-width-md, var(--cp-width-lg, var(--cp-text-max-w, 533px)));
-  }
+.cp__item--text {
+  width: 100%;
+  max-width: var(--cp-width-lg, var(--cp-width-md, var(--cp-text-max-w, 533px)));
+}
 
-  .cp__col>.cp__item:first-child {
-    margin-top: 0;
-  }
+.cp__col > .cp__item:first-child {
+  margin-top: 0;
+}
 
-  .cp__prose,
-  .cp__image {
-    width: 100%;
-  }
+.cp__prose,
+.cp__image {
+  width: 100%;
 }
 
 /* mobile cp__grid override — disabled (desktop-only layout) */
-
-@media (min-width: 1024px) {
-  .cp__item {
-    margin-top: var(--cp-gap-lg, var(--cp-gap-md, 0px));
-    margin-left: var(--cp-offset-lg, var(--cp-offset-md, 0px));
-    align-self: var(--cp-align-lg, var(--cp-align-md, flex-start));
-    max-width: var(--cp-width-lg, var(--cp-width-md, none));
-  }
-
-  .cp__item--text {
-    max-width: var(--cp-width-lg, var(--cp-width-md, var(--cp-text-max-w, 533px)));
-  }
-}
 
 /* ---- Scroll-story mode (scrollStory: true) ----
  *
@@ -484,11 +467,9 @@
  * (row height = max of both), so it sticks automatically.
  * The taller column fills the row entirely — scrolls.
  */
-@media (min-width: 768px) {
-  .cp__columns--sticky .cp__col {
-    position: sticky;
-    top: var(--ss-top, 0px);
-  }
+.cp__columns--sticky .cp__col {
+  position: sticky;
+  top: var(--ss-top, 0px);
 }
 
 /* ---- Per-entry sticky context (.cp__entries / .cp__entry) ----
@@ -508,25 +489,20 @@
   /* border-top: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent); */
 }
 
-@media (min-width: 768px) {
-  .cp__entry {
-    display: flex;
-    gap: 142px;
-    /* display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-    column-gap: clamp(56px, 10vw, 142px); */
-  }
+.cp__entry {
+  display: flex;
+  gap: 142px;
+  align-items: start;
+}
 
-  .cp__entry .cp__col {
-    position: sticky;
-    top: var(--ss-top, 0px);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    min-width: 0;
-    max-width: 533px;
-  }
+.cp__entry .cp__col {
+  position: sticky;
+  top: var(--ss-top, 0px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: 533px;
 }
 
 /* Progress dot — rendered by ScrollProgressDot client component */
