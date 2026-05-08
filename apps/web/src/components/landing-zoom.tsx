@@ -182,7 +182,9 @@ export function LandingZoom({
       }
 
       const current = stack.style.transform || null;
-      const currentTarget = target ? `scale(${target}) translateZ(0)` : null;
+      // No translateZ(0) — GPU compositing causes iOS Safari to use layout
+      // bounds (pre-scale height) for scrollHeight, ignoring marginBottom.
+      const currentTarget = target ? `scale(${target})` : null;
       if (currentTarget == null) {
         if (current != null) {
           stack.style.removeProperty("transform");

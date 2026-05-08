@@ -85,7 +85,7 @@ function buildPrepaintScript(zoom: ZoomSettings): string | null {
       if(f>0&&f<0.999){
         var st=document.createElement('style');
         st.id='landing-zoom-pre';
-        st.textContent='.landing-stack{transform:scale('+f.toFixed(5)+') translateZ(0);transform-origin:top left;}';
+        st.textContent='.landing-stack{transform:scale('+f.toFixed(5)+');transform-origin:top left;}';
         document.head.appendChild(st);
       }
     }
