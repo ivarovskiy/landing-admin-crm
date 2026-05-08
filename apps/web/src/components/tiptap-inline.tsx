@@ -100,6 +100,7 @@ type FloatingToolbarProps = {
   onClearFormat: () => void;
   onIndent: () => void;
   onOutdent: () => void;
+  onThinSpace: () => void;
   typoOptions?: { value: string; label: string }[];
   onTypoChange?: (cls: string) => void;
 };
@@ -177,6 +178,7 @@ function FloatingToolbar({
   onClearFormat,
   onIndent,
   onOutdent,
+  onThinSpace,
   typoOptions,
   onTypoChange,
 }: FloatingToolbarProps) {
@@ -302,6 +304,11 @@ function FloatingToolbar({
 
       {/* Case cycle */}
       <Btn label="AA" title="Cycle case (UPPER / lower / Title)" active={false} handler={onCase} style={{ fontSize: 9, letterSpacing: "-0.5px", fontWeight: 600 }} />
+
+      <Sep />
+
+      {/* Thin space (U+2009) — narrow typographic space */}
+      <Btn label="½·" title="Insert thin space (½ пробілу, U+2009)" active={false} handler={onThinSpace} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
     </div>,
     document.body,
   );
@@ -551,6 +558,10 @@ export function TipTapInline({
     editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, next).run();
   }, [editor]);
 
+  const handleThinSpace = useCallback(() => {
+    editor?.chain().focus().insertContent(" ").run();
+  }, [editor]);
+
   const handleApplyTypo = useCallback((cls: string) => {
     if (!editor) return;
     const { from, to } = editor.state.selection;
@@ -599,6 +610,7 @@ export function TipTapInline({
         onTypoChange={typoOptions ? handleApplyTypo : undefined}
         onIndent={() => editor?.chain().focus().sinkListItem("listItem").run()}
         onOutdent={() => editor?.chain().focus().liftListItem("listItem").run()}
+        onThinSpace={handleThinSpace}
       />
       <EditorContent editor={editor} className={className} />
       {multiline && (
