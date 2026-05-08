@@ -329,7 +329,7 @@ export function SlideCanvas({
         <div
           ref={innerRef}
           className={`absolute top-0 left-0 ${enableDrag ? "cursor-crosshair" : "cursor-default"}`}
-          style={{ width: REF_W, height: REF_H, transformOrigin: "top left" }}
+          style={{ width: REF_W, height: REF_H, transformOrigin: "top left", touchAction: enableDrag ? "none" : undefined }}
           onClick={enableDrag ? onCanvasClick : undefined}
         >
           {/* Grid background */}

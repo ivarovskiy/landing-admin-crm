@@ -39,6 +39,7 @@ import {
   Hand,
   Settings,
   Keyboard,
+  Check,
 } from "lucide-react";
 
 /* ================================================================
@@ -162,8 +163,9 @@ export function BlocksWorkspace({
 
   const [banner, setBanner] = useState<Banner>(null);
   const [moving, setMoving] = useState<string | null>(null);
-  const [showLayers, setShowLayers] = useState(true);
+  const [showLayers, setShowLayers] = useState(false);
   const [showInspector, setShowInspector] = useState(true);
+  const [savedFlash, setSavedFlash] = useState(false);
   const [activeDraftOptions, setActiveDraftOptions] = useState<any>(null);
   const [showAddBlock, setShowAddBlock] = useState(false);
 
@@ -187,7 +189,7 @@ export function BlocksWorkspace({
 
   // Page-level canvas settings
   const [canvasSettings, setCanvasSettings] = useState<PageCanvasSettings>({
-    canvasScroll: false,
+    canvasScroll: true,
     showGrid: true,
   });
 
@@ -211,7 +213,7 @@ export function BlocksWorkspace({
   const scaleRef = useRef(1);
 
   // Canvas state
-  const [viewMode, setViewMode] = useState<ViewMode>("desktop");
+  const [viewMode, setViewMode] = useState<ViewMode>("ipadPro");
   const [zoomIdx, setZoomIdx] = useState(DEFAULT_ZOOM_IDX);
   const [refreshKey, setRefreshKey] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -384,10 +386,8 @@ export function BlocksWorkspace({
     };
   }, []);
 
-  // Canvas pan drag handler — moves artboard via transform (Figma style)
-  function handleCanvasMouseDown(e: React.MouseEvent) {
-    // Reclaim keyboard focus so V/H/Space shortcuts work after clicking canvas.
-    // preventScroll: true — prevent canvas from jumping to top when focused.
+  // Canvas pan drag handler — pointer events work for both mouse and touch (iPad)
+  function handleCanvasPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     canvasRef.current?.focus({ preventScroll: true });
     if (!isHandMode) return;
     e.preventDefault();
@@ -398,18 +398,20 @@ export function BlocksWorkspace({
     ref.panStartX = panX;
     ref.panStartY = panY;
 
-    const onMove = (ev: MouseEvent) => {
+    const onMove = (ev: PointerEvent) => {
       if (!ref.active) return;
       setPanX(ref.panStartX + (ev.clientX - ref.startX));
       setPanY(ref.panStartY + (ev.clientY - ref.startY));
     };
     const onUp = () => {
       ref.active = false;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
     };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   }
 
   // When element is selected in admin visual editor → highlight in preview
@@ -527,7 +529,6 @@ export function BlocksWorkspace({
   const effectiveOptions = activeDraftOptions ?? active?.data?.options ?? {};
   const liveEditEnabled =
     !!active &&
-    showInspector &&
     !previewMode &&
     effectiveOptions?.enableCanvasDrag !== false &&
     ((active.type === "hero" && active.variant === "slider-v1") ||
@@ -678,6 +679,13 @@ export function BlocksWorkspace({
 
         {/* Right: actions */}
         <div className="flex items-center gap-1.5 shrink-0 text-foreground">
+          {savedFlash && (
+            <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium select-none">
+              <Check className="h-3 w-3" />
+              Saved
+            </span>
+          )}
+
           <TBtn label="Refresh preview" shortcut="—" onClick={() => setRefreshKey((v) => v + 1)}>
             <RefreshCw className="h-3.5 w-3.5" />
           </TBtn>
@@ -947,8 +955,10 @@ export function BlocksWorkspace({
             backgroundSize: "24px 24px",
             backgroundColor: previewMode ? undefined : "oklch(0.09 0 0)",
             cursor: isHandMode && !previewMode ? "grab" : "default",
+            // Disable browser touch-scroll in hand mode so pointer events fire uninterrupted
+            touchAction: isHandMode && !previewMode ? "none" : undefined,
           }}
-          onMouseDown={handleCanvasMouseDown}
+          onPointerDown={handleCanvasPointerDown}
         >
           {/* Artboard — absolutely positioned, moved by panX/panY */}
           <div
@@ -1027,6 +1037,10 @@ export function BlocksWorkspace({
                 externalSelectedElementId={selectedElementId}
                 externalDraftUpdate={externalDraftUpdate}
                 onElementSelect={handleElementSelect}
+                onSaved={() => {
+                  setSavedFlash(true);
+                  setTimeout(() => setSavedFlash(false), 2000);
+                }}
                 onDraftChange={(blockId, data) => {
                   if (blockId === activeId) setActiveDraftOptions(data?.options ?? {});
                   try {

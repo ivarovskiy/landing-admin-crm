@@ -349,6 +349,7 @@ export function TipTapInline({
   style,
   typoClass,
   typoOptions,
+  showWordCount = false,
 }: {
   value: string;
   onChange: (html: string) => void;
@@ -360,6 +361,8 @@ export function TipTapInline({
   typoClass?: string;
   /** If provided, shows a typography preset select inside the floating toolbar. */
   typoOptions?: { value: string; label: string }[];
+  /** Show word count below the editor (opt-in, default false). */
+  showWordCount?: boolean;
 }) {
   const [toolbarState, setToolbarState] = useState<ToolbarState>(null);
   const isSettingContent = useRef(false);
@@ -613,7 +616,7 @@ export function TipTapInline({
         onThinSpace={handleThinSpace}
       />
       <EditorContent editor={editor} className={className} />
-      {multiline && (
+      {multiline && showWordCount && (
         <div
           style={{
             marginTop: 4,

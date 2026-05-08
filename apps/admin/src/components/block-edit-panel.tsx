@@ -28,6 +28,7 @@ export function BlockEditPanel({
   externalDraftUpdate,
   onElementSelect,
   onDraftChange,
+  onSaved,
 }: {
   blockId: string;
   title: string;
@@ -39,6 +40,7 @@ export function BlockEditPanel({
   externalDraftUpdate?: { blockId: string; data: any; version: number } | null;
   onElementSelect?: (elementId: string | null) => void;
   onDraftChange?: (blockId: string, data: any) => void;
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const Form = useMemo(() => getBlockForm(type, variant), [type, variant]);
@@ -92,6 +94,7 @@ export function BlockEditPanel({
       if (!r.ok) throw new Error(await r.text());
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+      onSaved?.();
       router.refresh();
     } catch (e: any) {
       setError(e?.message ?? "Save failed");
