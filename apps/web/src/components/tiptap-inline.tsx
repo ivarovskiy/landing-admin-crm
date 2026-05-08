@@ -216,6 +216,7 @@ function FloatingToolbar({
           <select
             value={state.typoClass}
             onChange={(e) => onTypoChange(e.target.value)}
+            onMouseDown={(e) => e.stopPropagation()}
             title="Typography preset (applies to selected text)"
             style={{
               font: "11px/1.4 system-ui, -apple-system, sans-serif",
