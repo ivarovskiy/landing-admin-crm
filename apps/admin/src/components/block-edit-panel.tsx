@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Button, Badge } from "@acme/ui";
@@ -201,11 +201,68 @@ function FloatingSaveBar({
 }) {
   const visible = dirty || saving || saved;
 
+  // Absolute fixed position (top/left). null = default bottom-center via CSS.
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const dragRef = useRef<{
+    startX: number; startY: number;
+    startTop: number; startLeft: number;
+  } | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+
+  function onDragHandlePointerDown(e: React.PointerEvent) {
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    isDragging.current = true;
+
+    // Snapshot the bar's current rendered position
+    const rect = barRef.current?.getBoundingClientRect();
+    const startTop = rect ? rect.top : window.innerHeight - 24 - 44;
+    const startLeft = rect ? rect.left : (window.innerWidth - 160) / 2;
+
+    dragRef.current = { startX: e.clientX, startY: e.clientY, startTop, startLeft };
+    setPos({ top: startTop, left: startLeft });
+  }
+
+  function onDragHandlePointerMove(e: React.PointerEvent) {
+    const d = dragRef.current;
+    if (!d) return;
+    setPos({
+      top: d.startTop + (e.clientY - d.startY),
+      left: d.startLeft + (e.clientX - d.startX),
+    });
+  }
+
+  function onDragHandlePointerUp() {
+    dragRef.current = null;
+    isDragging.current = false;
+  }
+
   if (typeof document === "undefined") return null;
 
-  return createPortal(
-    <div
-      style={{
+  const barStyle: CSSProperties = pos
+    ? {
+        position: "fixed",
+        top: pos.top,
+        left: pos.left,
+        zIndex: 99998,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "6px 8px",
+        borderRadius: 14,
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.2)",
+        pointerEvents: visible ? "all" : "none",
+        opacity: visible ? 1 : 0,
+        transition: "opacity 0.2s ease, background 0.35s ease, border-color 0.35s ease",
+        background: saved ? "rgba(16, 185, 129, 0.92)" : "rgba(15, 15, 26, 0.88)",
+        border: `1px solid ${saved ? "rgba(52, 211, 153, 0.5)" : "rgba(255,255,255,0.1)"}`,
+        whiteSpace: "nowrap",
+        userSelect: "none",
+      }
+    : {
         position: "fixed",
         bottom: 24,
         left: "50%",
@@ -222,13 +279,41 @@ function FloatingSaveBar({
         pointerEvents: visible ? "all" : "none",
         opacity: visible ? 1 : 0,
         transition: "opacity 0.2s ease, background 0.35s ease, border-color 0.35s ease",
-        background: saved
-          ? "rgba(16, 185, 129, 0.92)"
-          : "rgba(15, 15, 26, 0.88)",
+        background: saved ? "rgba(16, 185, 129, 0.92)" : "rgba(15, 15, 26, 0.88)",
         border: `1px solid ${saved ? "rgba(52, 211, 153, 0.5)" : "rgba(255,255,255,0.1)"}`,
         whiteSpace: "nowrap",
-      }}
-    >
+        userSelect: "none",
+      };
+
+  return createPortal(
+    <div ref={barRef} style={barStyle}>
+      {/* Drag handle */}
+      <div
+        onPointerDown={onDragHandlePointerDown}
+        onPointerMove={onDragHandlePointerMove}
+        onPointerUp={onDragHandlePointerUp}
+        onPointerCancel={onDragHandlePointerUp}
+        title="Drag to reposition"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 20,
+          height: 30,
+          cursor: "grab",
+          color: saved ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.3)",
+          flexShrink: 0,
+          touchAction: "none",
+        }}
+      >
+        {/* 6-dot grip */}
+        <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor">
+          <circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/>
+          <circle cx="2" cy="7" r="1.2"/><circle cx="6" cy="7" r="1.2"/>
+          <circle cx="2" cy="12" r="1.2"/><circle cx="6" cy="12" r="1.2"/>
+        </svg>
+      </div>
+
       {/* Reset */}
       <button
         type="button"
@@ -268,9 +353,7 @@ function FloatingSaveBar({
           padding: "0 14px",
           borderRadius: 8,
           border: "none",
-          background: saved
-            ? "rgba(255,255,255,0.22)"
-            : "rgba(99,102,241,0.9)",
+          background: saved ? "rgba(255,255,255,0.22)" : "rgba(99,102,241,0.9)",
           color: "#fff",
           fontSize: 12,
           fontWeight: 600,

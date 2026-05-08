@@ -23,7 +23,10 @@
       "Bash(pnpm add *)",
       "Bash(node -e \"const r = require\\('./apps/web/node_modules/@tiptap/react'\\); console.log\\(Object.keys\\(r\\).filter\\(k => k.includes\\('Bubble'\\) || k.includes\\('Menu'\\) || k.includes\\('Float'\\)\\)\\)\")",
       "Bash(node -e \"const r = require\\('./apps/web/node_modules/@tiptap/react'\\); console.log\\(Object.keys\\(r\\)\\)\")",
-      "Bash(pnpm --filter web exec tsc --noEmit)"
+      "Bash(pnpm --filter web exec tsc --noEmit)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\\\\apps\\\\admin\" -Recurse -File -Filter \"layout.tsx\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(pnpm -F admin exec tsc --noEmit)"
     ],
     "additionalDirectories": [
       "c:\\Users\\ThinkPad\\.claude\\projects\\c--Users-ThinkPad-Desktop-Work-landing-admin-crm\\memory"
