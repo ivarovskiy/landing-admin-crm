@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 export function FieldGrid({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-2 gap-2">{children}</div>;
+  return <div className="flex flex-col gap-3">{children}</div>;
 }
 
 export function MiniLabel({ children }: { children: ReactNode }) {

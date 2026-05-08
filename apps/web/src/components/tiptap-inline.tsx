@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditor, EditorContent, useEditorState } from "@tiptap/react";
+import { useEditor, EditorContent } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import { Link } from "@tiptap/extension-link";
 import { Underline } from "@tiptap/extension-underline";
@@ -129,13 +129,17 @@ function FloatingToolbar({
 }: FloatingToolbarProps) {
   if (!state) return null;
 
-  const top = state.rect.top + window.scrollY - 44;
-  const left = state.rect.left + window.scrollX + state.rect.width / 2;
+  // position: fixed — viewport-relative, no scrollY needed, never drifts on scroll
+  const toolbarH = 38;
+  const gap = 8;
+  const rawTop = state.rect.top - toolbarH - gap;
+  const top = Math.max(8, rawTop);
+  const left = Math.max(8, state.rect.left + state.rect.width / 2);
 
   return createPortal(
     <div
       style={{
-        position: "absolute",
+        position: "fixed",
         top,
         left,
         transform: "translateX(-50%)",
@@ -209,9 +213,9 @@ export function TipTapInline({
   style?: CSSProperties;
 }) {
   const [toolbarState, setToolbarState] = useState<ToolbarState>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  // Prevents onUpdate from firing during programmatic setContent calls
   const isSettingContent = useRef(false);
+  // Tracks whether user is mid-drag-selection — toolbar is hidden during drag
+  const isDragging = useRef(false);
 
   const editor = useEditor({
     extensions: [
@@ -253,76 +257,78 @@ export function TipTapInline({
     immediatelyRender: false,
   });
 
-  // Track selection for floating toolbar
-  const activeMarks = useEditorState({
-    editor,
-    selector: (ctx) => {
-      if (!ctx.editor) return null;
-      const { from, to } = ctx.editor.state.selection;
-      if (from === to) return null;
-      return {
-        bold: ctx.editor.isActive("bold"),
-        italic: ctx.editor.isActive("italic"),
-        underline: ctx.editor.isActive("underline"),
-        strike: ctx.editor.isActive("strike"),
-        link: ctx.editor.isActive("link"),
-        bulletList: ctx.editor.isActive("bulletList"),
-        orderedList: ctx.editor.isActive("orderedList"),
-        alignLeft: ctx.editor.isActive({ textAlign: "left" }),
-        alignCenter: ctx.editor.isActive({ textAlign: "center" }),
-        alignRight: ctx.editor.isActive({ textAlign: "right" }),
-        multiline,
-      };
-    },
-  });
+  // Computes and sets toolbar state from current editor selection.
+  // Only called after selection settles (keyboard nav or pointerup).
+  const computeToolbar = useCallback(() => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    if (from === to) {
+      setToolbarState(null);
+      return;
+    }
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) {
+      setToolbarState(null);
+      return;
+    }
+    const rect = sel.getRangeAt(0).getBoundingClientRect();
+    if (!rect.width) {
+      setToolbarState(null);
+      return;
+    }
+    setToolbarState({
+      rect,
+      bold: editor.isActive("bold"),
+      italic: editor.isActive("italic"),
+      underline: editor.isActive("underline"),
+      strike: editor.isActive("strike"),
+      link: editor.isActive("link"),
+      bulletList: editor.isActive("bulletList"),
+      orderedList: editor.isActive("orderedList"),
+      alignLeft: editor.isActive({ textAlign: "left" }),
+      alignCenter: editor.isActive({ textAlign: "center" }),
+      alignRight: editor.isActive({ textAlign: "right" }),
+      multiline,
+    });
+  }, [editor, multiline]);
 
   useEffect(() => {
     if (!editor) return;
 
-    const updateToolbar = () => {
-      const { from, to } = editor.state.selection;
-      if (from === to) {
-        setToolbarState(null);
-        return;
-      }
-      const sel = window.getSelection();
-      if (!sel || sel.rangeCount === 0) {
-        setToolbarState(null);
-        return;
-      }
-      const rect = sel.getRangeAt(0).getBoundingClientRect();
-      if (!rect.width) {
-        setToolbarState(null);
-        return;
-      }
-      setToolbarState({
-        rect,
-        bold: editor.isActive("bold"),
-        italic: editor.isActive("italic"),
-        underline: editor.isActive("underline"),
-        strike: editor.isActive("strike"),
-        link: editor.isActive("link"),
-        bulletList: editor.isActive("bulletList"),
-        orderedList: editor.isActive("orderedList"),
-        alignLeft: editor.isActive({ textAlign: "left" }),
-        alignCenter: editor.isActive({ textAlign: "center" }),
-        alignRight: editor.isActive({ textAlign: "right" }),
-        multiline,
-      });
-    };
-
     const hideToolbar = () => setToolbarState(null);
 
-    editor.on("selectionUpdate", updateToolbar);
-    editor.on("transaction", updateToolbar);
+    // Keyboard selection: selectionUpdate fires when not dragging
+    const handleSelectionUpdate = () => {
+      if (!isDragging.current) computeToolbar();
+    };
+
+    // Mouse drag: hide toolbar on pointerdown inside editor, show on pointerup
+    const handlePointerDown = (e: PointerEvent) => {
+      if ((e.target as HTMLElement).closest("[data-tiptap]")) {
+        isDragging.current = true;
+        setToolbarState(null);
+      }
+    };
+
+    const handlePointerUp = () => {
+      if (!isDragging.current) return;
+      isDragging.current = false;
+      // Defer so the browser has committed the final selection
+      requestAnimationFrame(computeToolbar);
+    };
+
+    editor.on("selectionUpdate", handleSelectionUpdate);
     editor.on("blur", hideToolbar);
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("pointerup", handlePointerUp);
 
     return () => {
-      editor.off("selectionUpdate", updateToolbar);
-      editor.off("transaction", updateToolbar);
+      editor.off("selectionUpdate", handleSelectionUpdate);
       editor.off("blur", hideToolbar);
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [editor, multiline]);
+  }, [editor, computeToolbar]);
 
   // Sync external value → editor (only when not focused, suppress onUpdate)
   useEffect(() => {
@@ -356,15 +362,10 @@ export function TipTapInline({
     editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, next).run();
   }, [editor]);
 
-  const toolbarVisible =
-    activeMarks && toolbarState?.rect && toolbarState.rect.width > 0
-      ? { ...activeMarks, rect: toolbarState.rect }
-      : null;
-
   return (
-    <div ref={containerRef} data-tiptap style={style}>
+    <div data-tiptap style={style}>
       <FloatingToolbar
-        state={toolbarVisible}
+        state={toolbarState}
         onBold={() => editor?.chain().focus().toggleBold().run()}
         onItalic={() => editor?.chain().focus().toggleItalic().run()}
         onUnderline={() => editor?.chain().focus().toggleUnderline().run()}
