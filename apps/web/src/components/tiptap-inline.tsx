@@ -5,12 +5,13 @@ import { StarterKit } from "@tiptap/starter-kit";
 import { Link } from "@tiptap/extension-link";
 import { Underline } from "@tiptap/extension-underline";
 import { TextStyle } from "@tiptap/extension-text-style";
+import { TextAlign } from "@tiptap/extension-text-align";
 import { useEffect, useCallback, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-function toHtml(value: string, multiline: boolean): string {
+export function toHtml(value: string, multiline: boolean): string {
   if (!value) return "<p></p>";
   if (value.trimStart().startsWith("<")) return value;
   if (!multiline) return `<p>${value}</p>`;
@@ -36,44 +37,51 @@ type ToolbarState = {
   bold: boolean;
   italic: boolean;
   underline: boolean;
+  strike: boolean;
   link: boolean;
+  bulletList: boolean;
+  orderedList: boolean;
+  alignLeft: boolean;
+  alignCenter: boolean;
+  alignRight: boolean;
+  multiline: boolean;
 } | null;
 
-function FloatingToolbar({
-  state,
-  onBold,
-  onItalic,
-  onUnderline,
-  onLink,
-  onCase,
-}: {
+type FloatingToolbarProps = {
   state: ToolbarState;
   onBold: () => void;
   onItalic: () => void;
   onUnderline: () => void;
+  onStrike: () => void;
   onLink: () => void;
   onCase: () => void;
+  onBulletList: () => void;
+  onOrderedList: () => void;
+  onAlignLeft: () => void;
+  onAlignCenter: () => void;
+  onAlignRight: () => void;
+};
+
+function Btn({
+  label,
+  active,
+  handler,
+  style: extraStyle,
+}: {
+  label: string;
+  active: boolean;
+  handler: () => void;
+  style?: CSSProperties;
 }) {
-  if (!state) return null;
-
-  const top = state.rect.top + window.scrollY - 44;
-  const left = state.rect.left + window.scrollX + state.rect.width / 2;
-
-  const btn = (
-    label: string,
-    active: boolean,
-    handler: () => void,
-    extraStyle?: CSSProperties,
-  ) => (
+  return (
     <button
-      key={label}
       type="button"
       onMouseDown={(e) => {
         e.preventDefault();
         handler();
       }}
       style={{
-        width: 28,
+        minWidth: 28,
         height: 28,
         display: "flex",
         alignItems: "center",
@@ -84,25 +92,45 @@ function FloatingToolbar({
         color: active ? "#a5b4fc" : "rgba(255,255,255,0.82)",
         cursor: "pointer",
         fontSize: 12,
-        padding: 0,
+        padding: "0 4px",
         ...extraStyle,
       }}
     >
       {label}
     </button>
   );
+}
 
-  const sep = (
-    <div
-      style={{
-        width: 1,
-        height: 18,
-        background: "rgba(255,255,255,0.1)",
-        margin: "0 2px",
-        flexShrink: 0,
-      }}
-    />
-  );
+const Sep = () => (
+  <div
+    style={{
+      width: 1,
+      height: 18,
+      background: "rgba(255,255,255,0.12)",
+      margin: "0 2px",
+      flexShrink: 0,
+    }}
+  />
+);
+
+function FloatingToolbar({
+  state,
+  onBold,
+  onItalic,
+  onUnderline,
+  onStrike,
+  onLink,
+  onCase,
+  onBulletList,
+  onOrderedList,
+  onAlignLeft,
+  onAlignCenter,
+  onAlignRight,
+}: FloatingToolbarProps) {
+  if (!state) return null;
+
+  const top = state.rect.top + window.scrollY - 44;
+  const left = state.rect.left + window.scrollX + state.rect.width / 2;
 
   return createPortal(
     <div
@@ -121,17 +149,45 @@ function FloatingToolbar({
         padding: 3,
         boxShadow: "0 6px 24px rgba(0,0,0,0.55)",
         pointerEvents: "all",
+        flexWrap: "wrap",
+        maxWidth: 340,
       }}
-      // prevent mousedown from blurring the editor
       onMouseDown={(e) => e.preventDefault()}
     >
-      {btn("B", state.bold, onBold, { fontWeight: 700 })}
-      {btn("I", state.italic, onItalic, { fontStyle: "italic" })}
-      {btn("U", state.underline, onUnderline, { textDecoration: "underline" })}
-      {sep}
-      {btn("🔗", state.link, onLink, { fontSize: 13 })}
-      {sep}
-      {btn("AA", false, onCase, { fontSize: 9, letterSpacing: "-0.5px", fontWeight: 600 })}
+      {/* Text marks */}
+      <Btn label="B" active={state.bold} handler={onBold} style={{ fontWeight: 700 }} />
+      <Btn label="I" active={state.italic} handler={onItalic} style={{ fontStyle: "italic" }} />
+      <Btn label="U" active={state.underline} handler={onUnderline} style={{ textDecoration: "underline" }} />
+      <Btn label="S" active={state.strike} handler={onStrike} style={{ textDecoration: "line-through" }} />
+
+      <Sep />
+
+      {/* Lists — only for multiline fields */}
+      {state.multiline && (
+        <>
+          <Btn label="•—" active={state.bulletList} handler={onBulletList} style={{ fontSize: 11 }} />
+          <Btn label="1." active={state.orderedList} handler={onOrderedList} style={{ fontSize: 11 }} />
+          <Sep />
+        </>
+      )}
+
+      {/* Link */}
+      <Btn label="🔗" active={state.link} handler={onLink} style={{ fontSize: 13 }} />
+
+      <Sep />
+
+      {/* Text alignment — only for multiline fields */}
+      {state.multiline && (
+        <>
+          <Btn label="≡L" active={state.alignLeft} handler={onAlignLeft} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+          <Btn label="≡C" active={state.alignCenter} handler={onAlignCenter} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+          <Btn label="≡R" active={state.alignRight} handler={onAlignRight} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+          <Sep />
+        </>
+      )}
+
+      {/* Case cycle */}
+      <Btn label="AA" active={false} handler={onCase} style={{ fontSize: 9, letterSpacing: "-0.5px", fontWeight: 600 }} />
     </div>,
     document.body,
   );
@@ -154,19 +210,23 @@ export function TipTapInline({
 }) {
   const [toolbarState, setToolbarState] = useState<ToolbarState>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Prevents onUpdate from firing during programmatic setContent calls
+  const isSettingContent = useRef(false);
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         blockquote: false,
-        bulletList: false,
-        orderedList: false,
         codeBlock: false,
         horizontalRule: false,
         code: false,
       }),
       Underline,
       TextStyle,
+      TextAlign.configure({
+        types: ["paragraph"],
+        defaultAlignment: "",
+      }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: { class: "tt-link" },
@@ -174,6 +234,7 @@ export function TipTapInline({
     ],
     content: toHtml(value, multiline),
     onUpdate: ({ editor: e }) => {
+      if (isSettingContent.current) return;
       onChange(e.getHTML());
     },
     editorProps: {
@@ -192,7 +253,7 @@ export function TipTapInline({
     immediatelyRender: false,
   });
 
-  // Track selection to show/hide floating toolbar
+  // Track selection for floating toolbar
   const activeMarks = useEditorState({
     editor,
     selector: (ctx) => {
@@ -203,7 +264,14 @@ export function TipTapInline({
         bold: ctx.editor.isActive("bold"),
         italic: ctx.editor.isActive("italic"),
         underline: ctx.editor.isActive("underline"),
+        strike: ctx.editor.isActive("strike"),
         link: ctx.editor.isActive("link"),
+        bulletList: ctx.editor.isActive("bulletList"),
+        orderedList: ctx.editor.isActive("orderedList"),
+        alignLeft: ctx.editor.isActive({ textAlign: "left" }),
+        alignCenter: ctx.editor.isActive({ textAlign: "center" }),
+        alignRight: ctx.editor.isActive({ textAlign: "right" }),
+        multiline,
       };
     },
   });
@@ -232,7 +300,14 @@ export function TipTapInline({
         bold: editor.isActive("bold"),
         italic: editor.isActive("italic"),
         underline: editor.isActive("underline"),
+        strike: editor.isActive("strike"),
         link: editor.isActive("link"),
+        bulletList: editor.isActive("bulletList"),
+        orderedList: editor.isActive("orderedList"),
+        alignLeft: editor.isActive({ textAlign: "left" }),
+        alignCenter: editor.isActive({ textAlign: "center" }),
+        alignRight: editor.isActive({ textAlign: "right" }),
+        multiline,
       });
     };
 
@@ -247,14 +322,16 @@ export function TipTapInline({
       editor.off("transaction", updateToolbar);
       editor.off("blur", hideToolbar);
     };
-  }, [editor]);
+  }, [editor, multiline]);
 
-  // Sync external value changes (only when not focused)
+  // Sync external value → editor (only when not focused, suppress onUpdate)
   useEffect(() => {
     if (!editor || editor.isFocused) return;
     const next = toHtml(value, multiline);
     if (editor.getHTML() !== next) {
+      isSettingContent.current = true;
       editor.commands.setContent(next);
+      isSettingContent.current = false;
     }
   }, [value, editor, multiline]);
 
@@ -279,22 +356,33 @@ export function TipTapInline({
     editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, next).run();
   }, [editor]);
 
+  const toolbarVisible =
+    activeMarks && toolbarState?.rect && toolbarState.rect.width > 0
+      ? { ...activeMarks, rect: toolbarState.rect }
+      : null;
+
   return (
     <div ref={containerRef} data-tiptap style={style}>
       <FloatingToolbar
-        state={activeMarks && toolbarState?.rect && toolbarState.rect.width > 0 ? { ...activeMarks, rect: toolbarState.rect } : null}
+        state={toolbarVisible}
         onBold={() => editor?.chain().focus().toggleBold().run()}
         onItalic={() => editor?.chain().focus().toggleItalic().run()}
         onUnderline={() => editor?.chain().focus().toggleUnderline().run()}
+        onStrike={() => editor?.chain().focus().toggleStrike().run()}
         onLink={handleLink}
         onCase={handleCycleCase}
+        onBulletList={() => editor?.chain().focus().toggleBulletList().run()}
+        onOrderedList={() => editor?.chain().focus().toggleOrderedList().run()}
+        onAlignLeft={() => editor?.chain().focus().setTextAlign("left").run()}
+        onAlignCenter={() => editor?.chain().focus().setTextAlign("center").run()}
+        onAlignRight={() => editor?.chain().focus().setTextAlign("right").run()}
       />
       <EditorContent editor={editor} className={className} />
     </div>
   );
 }
 
-// ── render helper (plain text → React nodes) ──────────────────────────────────
+// ── render helper (value → React nodes) ──────────────────────────────────────
 
 export function renderRichText(value: string): React.ReactNode {
   if (!value) return null;

@@ -447,7 +447,6 @@ function renderItem(
             <TipTapInline
               value={item.heading ?? ""}
               onChange={(html) => onItemChange({ heading: html })}
-              multiline={false}
             />
           ) : renderRichText(item.heading ?? "")}
         </Kicker>

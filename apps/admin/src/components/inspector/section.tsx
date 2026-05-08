@@ -28,6 +28,20 @@ function scrubMultiplier(e: React.PointerEvent<HTMLElement>): number {
 type ResponsiveHide = { base?: boolean; md?: boolean; lg?: boolean };
 type ViewMode = "desktop" | "ipadPro" | "mobile";
 
+// ── shared class fragments ────────────────────────────────────────────────────
+
+const inputBase = [
+  "h-11 w-full rounded-md border border-border/70 bg-muted/80 px-3 text-[13px] tabular-nums text-foreground",
+  "placeholder:text-muted-foreground/40 focus:border-primary/70 focus:outline-none focus:ring-1 focus:ring-ring/70",
+].join(" ");
+
+const selectBase = [
+  "h-11 w-full rounded-md border border-border/70 bg-muted/80 px-3 text-[13px] text-foreground",
+  "focus:border-primary/70 focus:outline-none focus:ring-1 focus:ring-ring/70",
+].join(" ");
+
+// ── InspectorSection ──────────────────────────────────────────────────────────
+
 export function InspectorSection({
   title,
   icon,
@@ -59,16 +73,16 @@ export function InspectorSection({
             setOpen((v) => !v);
           }
         }}
-        className="flex h-9 w-full cursor-pointer select-none items-center gap-2 px-3 transition-colors hover:bg-muted/45"
+        className="flex min-h-[44px] w-full cursor-pointer select-none items-center gap-2 px-3 py-2 transition-colors hover:bg-muted/45"
       >
         <ChevronRight
           className={[
-            "h-3 w-3 text-muted-foreground transition-transform duration-150",
+            "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-150",
             open ? "rotate-90" : "",
           ].join(" ")}
         />
         {icon ? <span className="shrink-0 text-muted-foreground">{icon}</span> : null}
-        <span className="flex-1 text-left text-[10px] font-semibold uppercase text-muted-foreground">
+        <span className="flex-1 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
         </span>
         {badge ? (
@@ -78,10 +92,12 @@ export function InspectorSection({
         ) : null}
       </div>
 
-      {open ? <div className="space-y-2 px-3 pb-3">{children}</div> : null}
+      {open ? <div className="space-y-3 px-3 pb-4">{children}</div> : null}
     </div>
   );
 }
+
+// ── InspectorField ────────────────────────────────────────────────────────────
 
 export function InspectorField({
   label,
@@ -96,24 +112,28 @@ export function InspectorField({
 }) {
   if (stacked) {
     return (
-      <div className="space-y-1">
-        {label ? <label className="text-[11px] font-medium text-muted-foreground">{label}</label> : null}
+      <div className="space-y-1.5">
+        {label ? (
+          <label className="text-[12px] font-medium text-muted-foreground">{label}</label>
+        ) : null}
         {children}
-        {hint ? <p className="text-[10px] leading-snug text-muted-foreground/70">{hint}</p> : null}
+        {hint ? <p className="text-[11px] leading-snug text-muted-foreground/70">{hint}</p> : null}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-2">
-      <label className="truncate text-[11px] font-medium text-muted-foreground">{label}</label>
+    <div className="grid grid-cols-[80px_minmax(0,1fr)] items-center gap-3">
+      <label className="truncate text-[12px] font-medium text-muted-foreground">{label}</label>
       <div className="min-w-0">
         {children}
-        {hint ? <p className="mt-1 text-[10px] leading-snug text-muted-foreground/70">{hint}</p> : null}
+        {hint ? <p className="mt-1 text-[11px] leading-snug text-muted-foreground/70">{hint}</p> : null}
       </div>
     </div>
   );
 }
+
+// ── InspectorInput ────────────────────────────────────────────────────────────
 
 export function InspectorInput({
   value,
@@ -180,19 +200,18 @@ export function InspectorInput({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={() => {
-        scrub.current = null;
-      }}
+      onPointerCancel={() => { scrub.current = null; }}
       placeholder={placeholder}
       className={[
-        "h-7 w-full rounded-sm border border-border/70 bg-muted/80 px-2 text-xs tabular-nums text-foreground",
-        "placeholder:text-muted-foreground/40 focus:border-primary/70 focus:outline-none focus:ring-1 focus:ring-ring/70",
+        inputBase,
         scrubable ? "cursor-ew-resize" : "",
         className,
       ].filter(Boolean).join(" ")}
     />
   );
 }
+
+// ── InspectorTextarea ─────────────────────────────────────────────────────────
 
 export function InspectorTextarea({
   value,
@@ -212,12 +231,14 @@ export function InspectorTextarea({
       placeholder={placeholder}
       rows={rows}
       className={[
-        "w-full rounded-sm border border-border/70 bg-muted/80 px-2 py-2 text-xs leading-snug text-foreground resize-y",
+        "w-full rounded-md border border-border/70 bg-muted/80 px-3 py-2.5 text-[13px] leading-snug text-foreground resize-y",
         "placeholder:text-muted-foreground/40 focus:border-primary/70 focus:outline-none focus:ring-1 focus:ring-ring/70",
       ].join(" ")}
     />
   );
 }
+
+// ── InspectorSelect ───────────────────────────────────────────────────────────
 
 export function InspectorSelect({
   value,
@@ -232,7 +253,7 @@ export function InspectorSelect({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="h-7 w-full rounded-sm border border-border/70 bg-muted/80 px-2 text-xs text-foreground focus:border-primary/70 focus:outline-none focus:ring-1 focus:ring-ring/70"
+      className={selectBase}
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
@@ -242,6 +263,8 @@ export function InspectorSelect({
     </select>
   );
 }
+
+// ── InspectorNumber ───────────────────────────────────────────────────────────
 
 export function InspectorNumber({
   value,
@@ -306,21 +329,20 @@ export function InspectorNumber({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={() => {
-        scrub.current = null;
-      }}
+      onPointerCancel={() => { scrub.current = null; }}
       min={min}
       max={max}
       step={step}
       placeholder={placeholder}
       className={[
-        "h-7 w-full rounded-sm border border-border/70 bg-muted/80 px-2 text-xs tabular-nums text-foreground",
-        "placeholder:text-muted-foreground/40 focus:border-primary/70 focus:outline-none focus:ring-1 focus:ring-ring/70",
+        inputBase,
         !focused ? "cursor-ew-resize" : "",
       ].join(" ")}
     />
   );
 }
+
+// ── InspectorToggle ───────────────────────────────────────────────────────────
 
 export function InspectorToggle({
   checked,
@@ -332,24 +354,32 @@ export function InspectorToggle({
   label?: string;
 }) {
   return (
-    <button type="button" onClick={() => onChange(!checked)} className="flex items-center gap-2 text-left">
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="flex min-h-[44px] items-center gap-3 text-left"
+    >
       <div
         className={[
-          "relative h-4 w-7 rounded-full transition-colors",
-          checked ? "bg-primary" : "bg-muted-foreground/20",
+          "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+          checked ? "bg-primary" : "bg-muted-foreground/25",
         ].join(" ")}
       >
         <div
           className={[
-            "absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform",
-            checked ? "translate-x-3.5" : "translate-x-0.5",
+            "absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform",
+            checked ? "translate-x-5" : "translate-x-1",
           ].join(" ")}
         />
       </div>
-      {label ? <span className="text-[11px] text-muted-foreground">{label}</span> : null}
+      {label ? (
+        <span className="text-[13px] text-muted-foreground">{label}</span>
+      ) : null}
     </button>
   );
 }
+
+// ── InspectorSegment ──────────────────────────────────────────────────────────
 
 export function InspectorSegment<T extends string>({
   value,
@@ -361,7 +391,7 @@ export function InspectorSegment<T extends string>({
   options: { value: T; label: ReactNode; title?: string }[];
 }) {
   return (
-    <div className="flex h-7 rounded-sm border border-border/70 bg-muted/45 p-0.5">
+    <div className="flex h-11 rounded-md border border-border/70 bg-muted/45 p-1">
       {options.map((o) => (
         <button
           key={o.value}
@@ -369,8 +399,10 @@ export function InspectorSegment<T extends string>({
           title={o.title}
           onClick={() => onChange(o.value)}
           className={[
-            "flex flex-1 items-center justify-center rounded-[3px] px-2 text-[10px] font-medium transition-all",
-            o.value === value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+            "flex flex-1 items-center justify-center rounded-[5px] px-2 text-[12px] font-medium transition-all",
+            o.value === value
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
           ].join(" ")}
         >
           {o.label}
@@ -379,6 +411,8 @@ export function InspectorSegment<T extends string>({
     </div>
   );
 }
+
+// ── InspectorResponsiveToggle ─────────────────────────────────────────────────
 
 export function InspectorResponsiveToggle({
   label,
@@ -404,35 +438,37 @@ export function InspectorResponsiveToggle({
   }
 
   return (
-    <div className="flex items-center gap-2 py-0.5">
-      <span className="flex-1 truncate text-[11px] text-muted-foreground">{label}</span>
+    <div className="flex min-h-[44px] items-center gap-3 py-1">
+      <span className="flex-1 truncate text-[12px] text-muted-foreground">{label}</span>
       <button
         type="button"
         onClick={toggleMobile}
-        title={mobileHidden ? "Hidden on mobile - click to show" : "Visible on mobile - click to hide"}
+        title={mobileHidden ? "Hidden on mobile — tap to show" : "Visible on mobile — tap to hide"}
         className={[
-          "flex h-6 w-6 items-center justify-center rounded-sm transition-all",
+          "flex h-9 w-9 items-center justify-center rounded-md transition-all",
           viewMode === "mobile" ? "bg-muted ring-1 ring-border" : "opacity-60 hover:opacity-100",
           mobileHidden ? "text-muted-foreground/40" : "text-emerald-500",
         ].join(" ")}
       >
-        <Smartphone className="h-3 w-3" />
+        <Smartphone className="h-4 w-4" />
       </button>
       <button
         type="button"
         onClick={toggleDesktop}
-        title={desktopHidden ? "Hidden on desktop - click to show" : "Visible on desktop - click to hide"}
+        title={desktopHidden ? "Hidden on desktop — tap to show" : "Visible on desktop — tap to hide"}
         className={[
-          "flex h-6 w-6 items-center justify-center rounded-sm transition-all",
+          "flex h-9 w-9 items-center justify-center rounded-md transition-all",
           viewMode !== "mobile" ? "bg-muted ring-1 ring-border" : "opacity-60 hover:opacity-100",
           desktopHidden ? "text-muted-foreground/40" : "text-blue-400",
         ].join(" ")}
       >
-        <Monitor className="h-3 w-3" />
+        <Monitor className="h-4 w-4" />
       </button>
     </div>
   );
 }
+
+// ── InspectorColorInput ───────────────────────────────────────────────────────
 
 export function InspectorColorInput({
   value,
@@ -447,12 +483,12 @@ export function InspectorColorInput({
   const isPreviewable = value && !value.startsWith("var(") && !value.startsWith("--");
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <button
         type="button"
         title="Pick color"
         onClick={() => pickerRef.current?.click()}
-        className="relative h-7 w-7 shrink-0 overflow-hidden rounded-sm border border-border/70"
+        className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md border border-border/70"
         style={{ background: isPreviewable ? value : "transparent" }}
       >
         {!isPreviewable ? (
@@ -473,7 +509,7 @@ export function InspectorColorInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? "#000 or var(--...)"}
         className={[
-          "h-7 min-w-0 flex-1 rounded-sm border border-border/70 bg-muted/80 px-2 font-mono text-xs text-foreground",
+          "h-11 min-w-0 flex-1 rounded-md border border-border/70 bg-muted/80 px-3 font-mono text-[13px] text-foreground",
           "placeholder:text-muted-foreground/50 focus:border-primary/70 focus:outline-none focus:ring-1 focus:ring-ring/70",
         ].join(" ")}
       />

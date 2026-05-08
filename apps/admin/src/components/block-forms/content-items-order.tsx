@@ -6,6 +6,11 @@ function cn(...args: (string | false | null | undefined)[]) {
   return args.filter(Boolean).join(" ");
 }
 
+function stripHtml(value: string | undefined): string {
+  if (!value) return "";
+  return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 type ContentItem = { id?: string; kind?: "image" | "text"; heading?: string; src?: string; alt?: string };
 
 export function ItemOrderList({
@@ -52,7 +57,7 @@ export function ItemOrderList({
       <span className="flex-1 min-w-0 truncate text-[11px] text-foreground">
         {item.kind === "image"
           ? (item.alt || "Image")
-          : ((item as any).heading || "Text block")}
+          : (stripHtml((item as any).heading) || "Text block")}
       </span>
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button

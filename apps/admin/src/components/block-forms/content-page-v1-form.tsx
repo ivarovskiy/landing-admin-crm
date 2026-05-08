@@ -29,8 +29,8 @@ import {
 
 const API_BASE = typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "") : "";
 
-// TipTap stores HTML; strip it back to plain text for inspector fields.
-// Mirror of tiptap-inline.tsx toHtml(): paragraph breaks ↔ double newline, <br> ↔ newline.
+// Strip HTML tags from a value so inspector text fields show plain text.
+// TipTap stores HTML; this converts it back for display in admin inputs.
 function h(value: string | undefined): string {
   if (!value) return "";
   if (!value.trimStart().startsWith("<")) return value;
@@ -44,12 +44,6 @@ function h(value: string | undefined): string {
     .replace(/&[a-z0-9]+;/gi, "")
     .replace(/<[^>]+>/g, "")
     .trim();
-}
-
-function plainToHtml(text: string): string {
-  if (!text.trim()) return "";
-  const paragraphs = text.split(/\n\n+/);
-  return paragraphs.map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
 }
 
 const ASPECT_RATIOS = [
@@ -244,9 +238,11 @@ function TextItemEditor({
 
   return (
     <>
+      <SectionNote>Edit text and formatting directly in the preview.</SectionNote>
+
       <InspectorTextarea
         value={h(item.heading)}
-        onChange={(v) => onChange({ ...item, heading: plainToHtml(v) })}
+        onChange={(v) => onChange({ ...item, heading: v })}
         placeholder="Heading"
         rows={2}
       />
@@ -254,7 +250,7 @@ function TextItemEditor({
         value={h(item.body)}
         onChange={(v) => onChange({ ...item, body: v })}
         placeholder="Body text. Enter = new line, empty line = new paragraph."
-        rows={5}
+        rows={4}
       />
 
       <InspectorField label="Align">
@@ -273,20 +269,7 @@ function TextItemEditor({
         />
       </PresetRow>
 
-      <InspectorField label="Width">
-        <InspectorInput
-          value={widthValue}
-          onChange={(v) =>
-            onChange({
-              ...updateDesktopLayout(item, { width: v || undefined }),
-              textMaxWidth: v || undefined,
-            })
-          }
-          placeholder="533px / 78% / 100%"
-        />
-      </InspectorField>
-
-      <AdvancedPanel title="Typography">
+      <AdvancedPanel title="Typography + width">
         <FieldGrid>
           <InspectorField label="Head typo">
             <InspectorSelect
@@ -317,6 +300,18 @@ function TextItemEditor({
             />
           </InspectorField>
         </FieldGrid>
+        <InspectorField label="Width">
+          <InspectorInput
+            value={widthValue}
+            onChange={(v) =>
+              onChange({
+                ...updateDesktopLayout(item, { width: v || undefined }),
+                textMaxWidth: v || undefined,
+              })
+            }
+            placeholder="533px / 78% / 100%"
+          />
+        </InspectorField>
       </AdvancedPanel>
 
       <ItemLayoutAdvanced item={item} onChange={onChange} />
@@ -357,30 +352,27 @@ function ImageItemEditor({
         />
       </PresetRow>
 
-      <FieldGrid>
-        <InspectorField label="Aspect">
-          <InspectorSelect
-            value={item.aspectRatio ?? ""}
-            onChange={(v) => onChange({ ...item, aspectRatio: v })}
-            options={[{ value: "", label: "Auto" }, ...ASPECT_RATIOS]}
-          />
-        </InspectorField>
-        <InspectorField label="Width">
-          <InspectorInput
-            value={widthValue}
-            onChange={(v) =>
-              onChange({
-                ...updateDesktopLayout(item, { width: v || undefined }),
-                imageWidth: v || undefined,
-              })
-            }
-            placeholder="420px / 100%"
-          />
-        </InspectorField>
-      </FieldGrid>
-
-      <AdvancedPanel title="Image frame">
+      <AdvancedPanel title="Size + frame">
         <FieldGrid>
+          <InspectorField label="Aspect">
+            <InspectorSelect
+              value={item.aspectRatio ?? ""}
+              onChange={(v) => onChange({ ...item, aspectRatio: v })}
+              options={[{ value: "", label: "Auto" }, ...ASPECT_RATIOS]}
+            />
+          </InspectorField>
+          <InspectorField label="Width">
+            <InspectorInput
+              value={widthValue}
+              onChange={(v) =>
+                onChange({
+                  ...updateDesktopLayout(item, { width: v || undefined }),
+                  imageWidth: v || undefined,
+                })
+              }
+              placeholder="420px / 100%"
+            />
+          </InspectorField>
           <InspectorField label="Height">
             <InspectorInput
               value={item.imageHeight ?? ""}
