@@ -24,8 +24,11 @@
   padding-inline: 60px;
 }
 
-/* Clip overflow before JS zoom kicks in — `clip` doesn't break sticky. */
-html {
+/* Clip overflow before JS zoom kicks in — `clip` doesn't break sticky.
+   Must be on body, not html: overflow-x on the root element (<html>) scopes
+   position:fixed elements to the root box on WebKit/Safari, breaking the
+   scroll-to-top button on iPad (it positions as if absolute at doc bottom). */
+body {
   overflow-x: clip;
 }
 
