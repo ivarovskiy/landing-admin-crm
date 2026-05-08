@@ -182,7 +182,8 @@ function FloatingToolbar({
 }: FloatingToolbarProps) {
   if (!state) return null;
 
-  const toolbarH = 38;
+  // 2-row height for multiline (lists + alignment + blockquote wrap), 1-row for single-line
+  const toolbarH = state.multiline ? 84 : 44;
   const gap = 8;
   const rawTop = state.rect.top - toolbarH - gap;
   const top = Math.max(8, rawTop);
@@ -190,6 +191,7 @@ function FloatingToolbar({
 
   return createPortal(
     <div
+      data-tt-toolbar
       style={{
         position: "fixed",
         top,
@@ -477,17 +479,21 @@ export function TipTapInline({
   useEffect(() => {
     if (!editor) return;
 
-    const hideToolbar = () => setToolbarState(null);
-
     // Keyboard selection: selectionUpdate fires when not dragging
     const handleSelectionUpdate = () => {
       if (!isDragging.current) computeToolbar();
     };
 
-    // Mouse drag: hide toolbar on pointerdown inside editor, show on pointerup
     const handlePointerDown = (e: PointerEvent) => {
-      if ((e.target as HTMLElement).closest("[data-tiptap]")) {
+      const target = e.target as HTMLElement;
+      // Click inside the floating toolbar portal — keep toolbar visible
+      if (target.closest("[data-tt-toolbar]")) return;
+      if (target.closest("[data-tiptap]")) {
+        // Starting a new drag-selection inside the editor
         isDragging.current = true;
+        setToolbarState(null);
+      } else {
+        // Clicked outside editor and toolbar — hide
         setToolbarState(null);
       }
     };
@@ -500,13 +506,14 @@ export function TipTapInline({
     };
 
     editor.on("selectionUpdate", handleSelectionUpdate);
-    editor.on("blur", hideToolbar);
+    // Re-check active marks after any content change (e.g. Bold toggle, typing)
+    editor.on("update", computeToolbar);
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("pointerup", handlePointerUp);
 
     return () => {
       editor.off("selectionUpdate", handleSelectionUpdate);
-      editor.off("blur", hideToolbar);
+      editor.off("update", computeToolbar);
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("pointerup", handlePointerUp);
     };
