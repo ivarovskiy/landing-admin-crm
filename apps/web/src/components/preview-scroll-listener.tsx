@@ -24,16 +24,9 @@ export function PreviewScrollListener() {
     const originalStyles = `
       [data-block-id] {
         position: relative;
-        transition: outline 0.15s ease;
       }
       [data-block-id]:hover {
-        outline: 2px dashed hsl(217, 91%, 60%);
-        outline-offset: -2px;
         cursor: pointer;
-      }
-      [data-block-id].preview-active {
-        outline: 2px solid hsl(217, 91%, 60%);
-        outline-offset: -2px;
       }
       [data-block-id]:hover::after {
         content: attr(data-block-label);
@@ -188,6 +181,14 @@ export function PreviewScrollListener() {
 
       if (type === "clear-element") {
         clearActiveElement();
+      }
+
+      // Instant block reorder — update CSS --order-base without page reload
+      if (type === "reorder-blocks" && Array.isArray(e.data.order)) {
+        (e.data.order as { blockId: string; order: number }[]).forEach(({ blockId, order }) => {
+          const el = document.querySelector<HTMLElement>(`[data-block-id="${blockId}"]`);
+          if (el) el.style.setProperty("--order-base", String(order));
+        });
       }
     }
 

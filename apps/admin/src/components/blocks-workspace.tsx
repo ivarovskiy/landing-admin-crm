@@ -39,7 +39,6 @@ import {
   Hand,
   Settings,
   Keyboard,
-  Check,
 } from "lucide-react";
 
 /* ================================================================
@@ -165,7 +164,6 @@ export function BlocksWorkspace({
   const [moving, setMoving] = useState<string | null>(null);
   const [showLayers, setShowLayers] = useState(false);
   const [showInspector, setShowInspector] = useState(true);
-  const [savedFlash, setSavedFlash] = useState(false);
   const [activeDraftOptions, setActiveDraftOptions] = useState<any>(null);
   const [showAddBlock, setShowAddBlock] = useState(false);
 
@@ -432,6 +430,29 @@ export function BlocksWorkspace({
     } catch { /* cross-origin */ }
   }
 
+  // Optimistic local order — array of blockIds used for immediate preview updates.
+  // Initialised from sorted; re-synced after router.refresh() settles.
+  const [localOrder, setLocalOrder] = useState<string[]>(() => sorted.map((b) => b.id));
+  const prevSortedKey = useRef(sorted.map((b) => b.id).join(","));
+  useEffect(() => {
+    const key = sorted.map((b) => b.id).join(",");
+    if (key !== prevSortedKey.current) {
+      prevSortedKey.current = key;
+      setLocalOrder(sorted.map((b) => b.id));
+    }
+  }, [sorted]);
+
+  // Broadcast new order to preview iframe whenever localOrder changes
+  useEffect(() => {
+    const orderMap = localOrder.map((id, idx) => ({ blockId: id, order: idx }));
+    try {
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: "reorder-blocks", order: orderMap },
+        "*",
+      );
+    } catch { /* cross-origin */ }
+  }, [localOrder]);
+
   /* ---------- filtered lists ---------- */
   const searched = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -468,6 +489,17 @@ export function BlocksWorkspace({
 
   /* ---------- actions ---------- */
   async function move(blockId: string, direction: "up" | "down") {
+    // Optimistic: swap in localOrder immediately so preview updates instantly
+    setLocalOrder((prev) => {
+      const idx = prev.indexOf(blockId);
+      if (idx < 0) return prev;
+      const target = direction === "up" ? idx - 1 : idx + 1;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
+
     setMoving(blockId);
     setBanner(null);
     try {
@@ -480,6 +512,8 @@ export function BlocksWorkspace({
       router.refresh();
     } catch (e: any) {
       setBanner({ kind: "error", message: e?.message ?? "Move failed" });
+      // Revert optimistic order on error
+      setLocalOrder(sorted.map((b) => b.id));
     } finally {
       setMoving(null);
     }
@@ -492,6 +526,22 @@ export function BlocksWorkspace({
 
     const steps = Math.abs(toIdx - fromIdx);
     const direction = toIdx < fromIdx ? "up" : "down";
+
+    // Optimistic: reposition fromId in localOrder before the target block
+    setLocalOrder((prev) => {
+      const srcIdx = prev.indexOf(fromId);
+      if (srcIdx < 0) return prev;
+      const targetBlock = filtered[toIdx];
+      const next = [...prev];
+      next.splice(srcIdx, 1);
+      if (!targetBlock) {
+        next.push(fromId);
+      } else {
+        const dstIdx = next.indexOf(targetBlock.id);
+        next.splice(dstIdx < 0 ? next.length : dstIdx, 0, fromId);
+      }
+      return next;
+    });
 
     setMoving(fromId);
     setBanner(null);
@@ -509,6 +559,8 @@ export function BlocksWorkspace({
       router.refresh();
     } catch (e: any) {
       setBanner({ kind: "error", message: e?.message ?? "Reorder failed" });
+      // Revert on error
+      setLocalOrder(sorted.map((b) => b.id));
       router.refresh();
     } finally {
       setMoving(null);
@@ -679,13 +731,6 @@ export function BlocksWorkspace({
 
         {/* Right: actions */}
         <div className="flex items-center gap-1.5 shrink-0 text-foreground">
-          {savedFlash && (
-            <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium select-none">
-              <Check className="h-3 w-3" />
-              Saved
-            </span>
-          )}
-
           <TBtn label="Refresh preview" shortcut="—" onClick={() => setRefreshKey((v) => v + 1)}>
             <RefreshCw className="h-3.5 w-3.5" />
           </TBtn>
@@ -1037,10 +1082,6 @@ export function BlocksWorkspace({
                 externalSelectedElementId={selectedElementId}
                 externalDraftUpdate={externalDraftUpdate}
                 onElementSelect={handleElementSelect}
-                onSaved={() => {
-                  setSavedFlash(true);
-                  setTimeout(() => setSavedFlash(false), 2000);
-                }}
                 onDraftChange={(blockId, data) => {
                   if (blockId === activeId) setActiveDraftOptions(data?.options ?? {});
                   try {
@@ -1370,47 +1411,51 @@ function LayerItem({
 
       {/* Controls — show on active */}
       {isActive && (
-        <div className="flex items-center gap-0.5 px-2 pb-1.5">
-          <Button
-            size="icon-xs"
-            variant="ghost"
-            onClick={() => onMove("up")}
-            disabled={isFirst || isBusy}
-            title="Move up"
-            type="button"
-          >
-            <ChevronUp className="h-3 w-3" />
-          </Button>
-          <Button
-            size="icon-xs"
-            variant="ghost"
-            onClick={() => onMove("down")}
-            disabled={isLast || isBusy}
-            title="Move down"
-            type="button"
-          >
-            <ChevronDown className="h-3 w-3" />
-          </Button>
+        <>
+          {/* Move + visibility row */}
+          <div className="flex items-center gap-0.5 px-2 pb-1">
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => onMove("up")}
+              disabled={isFirst || isBusy}
+              title="Move up"
+              type="button"
+            >
+              <ChevronUp className="h-3 w-3" />
+            </Button>
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => onMove("down")}
+              disabled={isLast || isBusy}
+              title="Move down"
+              type="button"
+            >
+              <ChevronDown className="h-3 w-3" />
+            </Button>
 
-          <div className="w-px h-3.5 bg-border mx-0.5" />
+            <div className="w-px h-3.5 bg-border mx-0.5" />
 
-          <BlockVisibilityControls
-            blockId={block.id}
-            initial={block.data}
-          />
+            <BlockVisibilityControls
+              blockId={block.id}
+              initial={block.data}
+            />
+          </div>
 
-          <div className="flex-1" />
-
-          <DeleteBlockButton
-            blockId={block.id}
-            onResult={(r) =>
-              onBanner({
-                kind: r.ok ? "success" : "error",
-                message: r.message ?? (r.ok ? "Done" : "Failed"),
-              })
-            }
-          />
-        </div>
+          {/* Delete row — visually separated */}
+          <div className="mx-2 mb-1.5 pt-1 border-t border-border/40 flex justify-end">
+            <DeleteBlockButton
+              blockId={block.id}
+              onResult={(r) =>
+                onBanner({
+                  kind: r.ok ? "success" : "error",
+                  message: r.message ?? (r.ok ? "Done" : "Failed"),
+                })
+              }
+            />
+          </div>
+        </>
       )}
     </div>
   );

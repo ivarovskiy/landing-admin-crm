@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { Button, Badge } from "@acme/ui";
 import { BlockJsonPanel } from "@/components/block-json-panel";
 import { getBlockForm } from "@/components/block-forms";
@@ -28,7 +29,6 @@ export function BlockEditPanel({
   externalDraftUpdate,
   onElementSelect,
   onDraftChange,
-  onSaved,
 }: {
   blockId: string;
   title: string;
@@ -40,7 +40,6 @@ export function BlockEditPanel({
   externalDraftUpdate?: { blockId: string; data: any; version: number } | null;
   onElementSelect?: (elementId: string | null) => void;
   onDraftChange?: (blockId: string, data: any) => void;
-  onSaved?: () => void;
 }) {
   const router = useRouter();
   const Form = useMemo(() => getBlockForm(type, variant), [type, variant]);
@@ -94,7 +93,6 @@ export function BlockEditPanel({
       if (!r.ok) throw new Error(await r.text());
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-      onSaved?.();
       router.refresh();
     } catch (e: any) {
       setError(e?.message ?? "Save failed");
@@ -175,43 +173,121 @@ export function BlockEditPanel({
         </div>
       )}
 
-      {/* Save bar */}
-      <div className="sticky bottom-0 z-10 shrink-0 border-t border-border/60 bg-card/95 px-3 py-2.5">
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={!dirty || saving}
-            onClick={() => setDraft(initial ?? {})}
-            className="h-8 text-xs"
-          >
-            <RotateCcw className="h-3 w-3 mr-1" />
-            Reset
-          </Button>
-
-          <div className="flex-1" />
-
-          {saved && (
-            <span className="flex items-center gap-1 text-xs text-emerald-600">
-              <Check className="h-3 w-3" />
-              Saved
-            </span>
-          )}
-
-          <Button
-            type="button"
-            size="sm"
-            disabled={!dirty || saving}
-            onClick={save}
-            className="h-8 text-xs"
-          >
-            <Save className="h-3 w-3 mr-1" />
-            {saving ? "Saving..." : "Save"}
-          </Button>
-        </div>
-      </div>
+      <FloatingSaveBar
+        dirty={dirty}
+        saving={saving}
+        saved={saved}
+        onReset={() => setDraft(initial ?? {})}
+        onSave={save}
+      />
     </div>
+  );
+}
+
+/* ---------- Floating save bar ---------- */
+
+function FloatingSaveBar({
+  dirty,
+  saving,
+  saved,
+  onReset,
+  onSave,
+}: {
+  dirty: boolean;
+  saving: boolean;
+  saved: boolean;
+  onReset: () => void;
+  onSave: () => void;
+}) {
+  const visible = dirty || saving || saved;
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        bottom: 24,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 99998,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "6px 8px",
+        borderRadius: 14,
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.2)",
+        pointerEvents: visible ? "all" : "none",
+        opacity: visible ? 1 : 0,
+        transition: "opacity 0.2s ease, background 0.35s ease, border-color 0.35s ease",
+        background: saved
+          ? "rgba(16, 185, 129, 0.92)"
+          : "rgba(15, 15, 26, 0.88)",
+        border: `1px solid ${saved ? "rgba(52, 211, 153, 0.5)" : "rgba(255,255,255,0.1)"}`,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {/* Reset */}
+      <button
+        type="button"
+        disabled={!dirty || saving}
+        onClick={onReset}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          height: 30,
+          padding: "0 10px",
+          borderRadius: 8,
+          border: "1px solid rgba(255,255,255,0.12)",
+          background: "transparent",
+          color: saved ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.65)",
+          fontSize: 12,
+          fontWeight: 500,
+          cursor: "pointer",
+          opacity: !dirty || saving ? 0.4 : 1,
+          transition: "opacity 0.15s",
+        }}
+      >
+        <RotateCcw style={{ width: 12, height: 12 }} />
+        Reset
+      </button>
+
+      {/* Save / Saved */}
+      <button
+        type="button"
+        disabled={(!dirty && !saved) || saving}
+        onClick={onSave}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          height: 30,
+          padding: "0 14px",
+          borderRadius: 8,
+          border: "none",
+          background: saved
+            ? "rgba(255,255,255,0.22)"
+            : "rgba(99,102,241,0.9)",
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: saving ? "default" : "pointer",
+          transition: "background 0.25s ease",
+          boxShadow: saved ? "none" : "0 2px 8px rgba(99,102,241,0.4)",
+        }}
+      >
+        {saved ? (
+          <Check style={{ width: 12, height: 12 }} />
+        ) : saving ? null : (
+          <Save style={{ width: 12, height: 12 }} />
+        )}
+        {saving ? "Saving…" : saved ? "Saved" : "Save"}
+      </button>
+    </div>,
+    document.body,
   );
 }
 
