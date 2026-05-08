@@ -77,6 +77,7 @@ type ToolbarState = {
   alignRight: boolean;
   alignJustify: boolean;
   inBlockquote: boolean;
+  typoClass: string;
   multiline: boolean;
 } | null;
 
@@ -99,6 +100,8 @@ type FloatingToolbarProps = {
   onClearFormat: () => void;
   onIndent: () => void;
   onOutdent: () => void;
+  typoOptions?: { value: string; label: string }[];
+  onTypoChange?: (cls: string) => void;
 };
 
 function Btn({
@@ -174,10 +177,11 @@ function FloatingToolbar({
   onClearFormat,
   onIndent,
   onOutdent,
+  typoOptions,
+  onTypoChange,
 }: FloatingToolbarProps) {
   if (!state) return null;
 
-  // position: fixed — viewport-relative, no scrollY needed, never drifts on scroll
   const toolbarH = 38;
   const gap = 8;
   const rawTop = state.rect.top - toolbarH - gap;
@@ -202,10 +206,44 @@ function FloatingToolbar({
         boxShadow: "0 6px 24px rgba(0,0,0,0.55)",
         pointerEvents: "all",
         flexWrap: "wrap",
-        maxWidth: 380,
+        maxWidth: 460,
       }}
       onMouseDown={(e) => e.preventDefault()}
     >
+      {/* Typography preset select — shown first when available */}
+      {typoOptions && onTypoChange && (
+        <>
+          <select
+            value={state.typoClass}
+            onChange={(e) => onTypoChange(e.target.value)}
+            title="Typography preset (applies to selected text)"
+            style={{
+              font: "11px/1.4 system-ui, -apple-system, sans-serif",
+              color: "rgba(255,255,255,0.82)",
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: 4,
+              padding: "2px 4px",
+              cursor: "pointer",
+              outline: "none",
+              maxWidth: 150,
+              WebkitTextStroke: "0",
+              filter: "none",
+              textShadow: "none",
+              textTransform: "none",
+              letterSpacing: "normal",
+            }}
+          >
+            {typoOptions.map((o) => (
+              <option key={o.value} value={o.value} style={{ background: "#1a1a2e", color: "#fff" }}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <Sep />
+        </>
+      )}
+
       {/* Text marks */}
       <Btn label="B" title="Bold" active={state.bold} handler={onBold} style={{ fontWeight: 700 }} />
       <Btn label="I" title="Italic" active={state.italic} handler={onItalic} style={{ fontStyle: "italic" }} />
@@ -266,14 +304,6 @@ function FloatingToolbar({
   );
 }
 
-// ── TypoBar — permanent bar above the editor for typography presets ────────────
-//
-// • No text selected  → applies the chosen preset to ALL text in the block
-// • Text selected     → applies only to the selected words
-//
-// The select element uses explicit system-font styles so it is never affected
-// by whatever typo class the outer wrapper carries.
-
 type EditorInstance = ReturnType<typeof useEditor>;
 
 // Read the typo class actually present in the document (not cursor-dependent)
@@ -299,105 +329,6 @@ function getDocTypo(editor: NonNullable<EditorInstance>): string {
   return found;
 }
 
-function TypoBar({
-  editor,
-  typoOptions,
-  initialTypo,
-}: {
-  editor: EditorInstance | null;
-  typoOptions: { value: string; label: string }[];
-  initialTypo?: string;
-}) {
-  if (!editor) return null;
-
-  const currentTypo = getDocTypo(editor) || initialTypo || "";
-
-  const applyTypo = (cls: string) => {
-    const { from, to } = editor.state.selection;
-    const hasSelection = from !== to;
-    const markType = editor.schema.marks.typoClass;
-    if (!markType) return;
-
-    const { tr } = editor.state;
-    if (cls) {
-      const mark = markType.create({ class: cls });
-      hasSelection
-        ? tr.addMark(from, to, mark)
-        : tr.addMark(0, editor.state.doc.content.size, mark);
-    } else {
-      hasSelection
-        ? tr.removeMark(from, to, markType)
-        : tr.removeMark(0, editor.state.doc.content.size, markType);
-    }
-    editor.view.dispatch(tr);
-    editor.commands.focus();
-  };
-
-  // Shared style for undo/redo mini-buttons
-  const undoRedoStyle: CSSProperties = {
-    font: "12px/1 system-ui, -apple-system, sans-serif",
-    color: "#555",
-    background: "rgba(255,255,255,0.88)",
-    border: "1px solid rgba(0,0,0,0.22)",
-    borderRadius: 4,
-    padding: "2px 5px",
-    cursor: "pointer",
-    lineHeight: 1,
-    userSelect: "none",
-    WebkitTextStroke: "0",
-    filter: "none",
-    textShadow: "none",
-    textTransform: "none",
-    letterSpacing: "normal",
-  };
-
-  return (
-    <div
-      contentEditable={false}
-      style={{ marginBottom: 4, userSelect: "none", display: "flex", alignItems: "center", gap: 4 }}
-    >
-      <select
-        value={currentTypo}
-        onChange={(e) => applyTypo(e.target.value)}
-        title="Typography preset — applies to selected text, or to the whole block if nothing is selected"
-        style={{
-          font: "11px/1.4 system-ui, -apple-system, sans-serif",
-          textTransform: "none",
-          letterSpacing: "normal",
-          color: "#333",
-          WebkitTextStroke: "0",
-          filter: "none",
-          textShadow: "none",
-          padding: "2px 4px",
-          borderRadius: 4,
-          border: "1px solid rgba(0,0,0,0.22)",
-          background: "rgba(255,255,255,0.88)",
-          cursor: "pointer",
-          outline: "none",
-          maxWidth: "180px",
-        }}
-      >
-        {typoOptions.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-
-      <button
-        type="button"
-        title="Undo (Ctrl+Z)"
-        onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().undo().run(); }}
-        style={undoRedoStyle}
-      >↩</button>
-      <button
-        type="button"
-        title="Redo (Ctrl+Shift+Z)"
-        onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().redo().run(); }}
-        style={undoRedoStyle}
-      >↪</button>
-    </div>
-  );
-}
-
 // ── main component ────────────────────────────────────────────────────────────
 
 export function TipTapInline({
@@ -415,10 +346,9 @@ export function TipTapInline({
   className?: string;
   style?: CSSProperties;
   /** Current block-level typo class. Used once on mount to migrate old content
-   *  (applies as a TypoMark to all text if no marks exist yet). Also shown
-   *  as the selected value in the TypoBar when cursor has no mark. */
+   *  (applies as a TypoMark to all text if no marks exist yet). */
   typoClass?: string;
-  /** If provided, renders a TypoBar above the editor with these preset options. */
+  /** If provided, shows a typography preset select inside the floating toolbar. */
   typoOptions?: { value: string; label: string }[];
 }) {
   const [toolbarState, setToolbarState] = useState<ToolbarState>(null);
@@ -538,6 +468,7 @@ export function TipTapInline({
       alignRight: editor.isActive({ textAlign: "right" }),
       alignJustify: editor.isActive({ textAlign: "justify" }),
       inBlockquote: editor.isActive("blockquote"),
+      typoClass: getDocTypo(editor),
       multiline,
     });
   }, [editor, multiline]);
@@ -612,15 +543,33 @@ export function TipTapInline({
     editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, next).run();
   }, [editor]);
 
+  const handleApplyTypo = useCallback((cls: string) => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    const hasSelection = from !== to;
+    const markType = editor.schema.marks.typoClass;
+    if (!markType) return;
+    const { tr } = editor.state;
+    if (cls) {
+      const mark = markType.create({ class: cls });
+      hasSelection
+        ? tr.addMark(from, to, mark)
+        : tr.addMark(0, editor.state.doc.content.size, mark);
+    } else {
+      hasSelection
+        ? tr.removeMark(from, to, markType)
+        : tr.removeMark(0, editor.state.doc.content.size, markType);
+    }
+    editor.view.dispatch(tr);
+    editor.commands.focus();
+  }, [editor]);
+
   const wordCount = editor
     ? editor.state.doc.textContent.trim().split(/\s+/).filter(Boolean).length
     : 0;
 
   return (
     <div data-tiptap style={style}>
-      {typoOptions && (
-        <TypoBar editor={editor} typoOptions={typoOptions} initialTypo={typoClass} />
-      )}
       <FloatingToolbar
         state={toolbarState}
         onBold={() => editor?.chain().focus().toggleBold().run()}
@@ -638,6 +587,8 @@ export function TipTapInline({
         onBlockquote={() => editor?.chain().focus().toggleBlockquote().run()}
         onHR={() => editor?.chain().focus().setHorizontalRule().run()}
         onClearFormat={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
+        typoOptions={typoOptions}
+        onTypoChange={typoOptions ? handleApplyTypo : undefined}
         onIndent={() => editor?.chain().focus().sinkListItem("listItem").run()}
         onOutdent={() => editor?.chain().focus().liftListItem("listItem").run()}
       />
