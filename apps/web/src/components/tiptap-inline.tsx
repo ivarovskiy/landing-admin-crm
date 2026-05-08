@@ -6,6 +6,7 @@ import { Link } from "@tiptap/extension-link";
 import { Underline } from "@tiptap/extension-underline";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { TextAlign } from "@tiptap/extension-text-align";
+import { Mark, mergeAttributes } from "@tiptap/core";
 import { useEffect, useCallback, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 
@@ -29,6 +30,35 @@ function cycleCase(text: string): string {
   if (text === lo) return title;
   return up;
 }
+
+// ── TypoMark — applies a CSS class inline to selected text ────────────────────
+//
+// Renders as <span class="typo-xxx" data-typo="typo-xxx">…</span>.
+// The data-typo attr is used for round-trip parseHTML so the mark survives
+// serialize→parse (HTML stored in DB → loaded back into editor).
+
+const TypoMark = Mark.create({
+  name: "typoClass",
+
+  addAttributes() {
+    return {
+      class: {
+        default: null,
+        parseHTML: (el) => el.getAttribute("data-typo"),
+        renderHTML: (attrs) =>
+          attrs.class ? { class: attrs.class, "data-typo": attrs.class } : {},
+      },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: "span[data-typo]" }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ["span", mergeAttributes(HTMLAttributes), 0];
+  },
+});
 
 // ── floating toolbar ──────────────────────────────────────────────────────────
 
@@ -200,6 +230,85 @@ function FloatingToolbar({
   );
 }
 
+// ── TypoBar — permanent bar above the editor for typography presets ────────────
+//
+// • No text selected  → applies the chosen preset to ALL text in the block
+// • Text selected     → applies only to the selected words
+//
+// The select element uses explicit system-font styles so it is never affected
+// by whatever typo class the outer wrapper carries.
+
+type EditorInstance = ReturnType<typeof useEditor>;
+
+function TypoBar({
+  editor,
+  typoOptions,
+  initialTypo,
+}: {
+  editor: EditorInstance;
+  typoOptions: { value: string; label: string }[];
+  initialTypo?: string;
+}) {
+  if (!editor) return null;
+
+  const currentTypo = (editor.getAttributes("typoClass").class as string | null) ?? initialTypo ?? "";
+
+  const applyTypo = (cls: string) => {
+    const { from, to } = editor.state.selection;
+    const hasSelection = from !== to;
+    const markType = editor.schema.marks.typoClass;
+    if (!markType) return;
+
+    const { tr } = editor.state;
+    if (cls) {
+      const mark = markType.create({ class: cls });
+      hasSelection
+        ? tr.addMark(from, to, mark)
+        : tr.addMark(0, editor.state.doc.content.size, mark);
+    } else {
+      hasSelection
+        ? tr.removeMark(from, to, markType)
+        : tr.removeMark(0, editor.state.doc.content.size, markType);
+    }
+    editor.view.dispatch(tr);
+    editor.commands.focus();
+  };
+
+  return (
+    <div
+      contentEditable={false}
+      style={{ marginBottom: 4, userSelect: "none" }}
+    >
+      <select
+        value={currentTypo}
+        onChange={(e) => applyTypo(e.target.value)}
+        title="Typography preset — applies to selected text, or to the whole block if nothing is selected"
+        style={{
+          // Fully reset font so outer typo classes never bleed in
+          font: "11px/1.4 system-ui, -apple-system, sans-serif",
+          textTransform: "none",
+          letterSpacing: "normal",
+          color: "#333",
+          WebkitTextStroke: "0",
+          filter: "none",
+          textShadow: "none",
+          padding: "2px 4px",
+          borderRadius: 4,
+          border: "1px solid rgba(0,0,0,0.22)",
+          background: "rgba(255,255,255,0.88)",
+          cursor: "pointer",
+          outline: "none",
+          maxWidth: "180px",
+        }}
+      >
+        {typoOptions.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 
 export function TipTapInline({
@@ -209,7 +318,6 @@ export function TipTapInline({
   className,
   style,
   typoClass,
-  onTypoChange,
   typoOptions,
 }: {
   value: string;
@@ -217,14 +325,19 @@ export function TipTapInline({
   multiline?: boolean;
   className?: string;
   style?: CSSProperties;
+  /** Current block-level typo class. Used once on mount to migrate old content
+   *  (applies as a TypoMark to all text if no marks exist yet). Also shown
+   *  as the selected value in the TypoBar when cursor has no mark. */
   typoClass?: string;
-  onTypoChange?: (cls: string) => void;
+  /** If provided, renders a TypoBar above the editor with these preset options. */
   typoOptions?: { value: string; label: string }[];
 }) {
   const [toolbarState, setToolbarState] = useState<ToolbarState>(null);
   const isSettingContent = useRef(false);
   // Tracks whether user is mid-drag-selection — toolbar is hidden during drag
   const isDragging = useRef(false);
+  // Capture typoClass at mount so migration runs exactly once
+  const initialTypoRef = useRef(typoClass);
 
   const editor = useEditor({
     extensions: [
@@ -244,6 +357,7 @@ export function TipTapInline({
         openOnClick: false,
         HTMLAttributes: { class: "tt-link" },
       }),
+      TypoMark,
     ],
     content: toHtml(value, multiline),
     onUpdate: ({ editor: e }) => {
@@ -276,6 +390,30 @@ export function TipTapInline({
     },
     immediatelyRender: false,
   });
+
+  // Migration: on editor mount, if a typoClass is set and the content has no
+  // existing TypoMarks, apply the class as a mark to all text. This ensures
+  // old content (stored before marks were introduced) renders consistently in
+  // edit mode. Suppressed via isSettingContent so onChange doesn't fire.
+  useEffect(() => {
+    if (!editor || !initialTypoRef.current) return;
+    let hasMark = false;
+    editor.state.doc.descendants((node) => {
+      if (!hasMark && node.isText && node.marks.some((m) => m.type.name === "typoClass")) {
+        hasMark = true;
+      }
+    });
+    if (hasMark) return;
+    const markType = editor.schema.marks.typoClass;
+    if (!markType) return;
+    const size = editor.state.doc.content.size;
+    if (size <= 0) return;
+    const { tr } = editor.state;
+    tr.addMark(0, size, markType.create({ class: initialTypoRef.current }));
+    isSettingContent.current = true;
+    editor.view.dispatch(tr);
+    isSettingContent.current = false;
+  }, [editor]); // intentionally [editor] only — migration runs once on mount
 
   // Computes and sets toolbar state from current editor selection.
   // Only called after selection settles (keyboard nav or pointerup).
@@ -384,31 +522,8 @@ export function TipTapInline({
 
   return (
     <div data-tiptap style={style}>
-      {typoOptions && onTypoChange && (
-        <div
-          contentEditable={false}
-          style={{ marginBottom: 4, userSelect: "none" }}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <select
-            value={typoClass ?? ""}
-            onChange={(e) => onTypoChange(e.target.value)}
-            style={{
-              fontSize: 10,
-              padding: "2px 6px",
-              borderRadius: 4,
-              border: "1px solid rgba(0,0,0,0.18)",
-              background: "rgba(0,0,0,0.06)",
-              cursor: "pointer",
-              outline: "none",
-              maxWidth: "100%",
-            }}
-          >
-            {typoOptions.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
+      {typoOptions && (
+        <TypoBar editor={editor} typoOptions={typoOptions} initialTypo={typoClass} />
       )}
       <FloatingToolbar
         state={toolbarState}

@@ -436,8 +436,14 @@ function renderItem(
     );
   }
 
-  const headingClass = ["cp__heading", item.headingTypo].filter(Boolean).join(" ");
-  const bodyClass = ["cp__prose", item.bodyTypo].filter(Boolean).join(" ");
+  // In edit mode the typo class is applied as a TipTap mark inside the content —
+  // NOT on the outer wrapper — so the wrapper's styles never bleed into editor UI.
+  const headingClass = onItemChange
+    ? "cp__heading"
+    : ["cp__heading", item.headingTypo].filter(Boolean).join(" ");
+  const bodyClass = onItemChange
+    ? "cp__prose"
+    : ["cp__prose", item.bodyTypo].filter(Boolean).join(" ");
   const headingStroke = strokeStyle(item.headingStrokeW);
   const bodyStroke = strokeStyle(item.bodyStrokeW);
 
@@ -460,7 +466,6 @@ function renderItem(
               value={item.heading ?? ""}
               onChange={(html) => onItemChange({ heading: html })}
               typoClass={item.headingTypo ?? ""}
-              onTypoChange={(cls) => onItemChange({ headingTypo: cls })}
               typoOptions={TYPO_PRESETS}
             />
           ) : renderRichText(item.heading ?? "")}
@@ -473,7 +478,6 @@ function renderItem(
               value={item.body ?? ""}
               onChange={(html) => onItemChange({ body: html })}
               typoClass={item.bodyTypo ?? ""}
-              onTypoChange={(cls) => onItemChange({ bodyTypo: cls })}
               typoOptions={TYPO_PRESETS}
             />
           ) : renderRichText(item.body ?? "")}
