@@ -66,16 +66,19 @@ function Btn({
   label,
   active,
   handler,
+  title,
   style: extraStyle,
 }: {
   label: string;
   active: boolean;
   handler: () => void;
+  title?: string;
   style?: CSSProperties;
 }) {
   return (
     <button
       type="button"
+      title={title}
       onMouseDown={(e) => {
         e.preventDefault();
         handler();
@@ -159,39 +162,39 @@ function FloatingToolbar({
       onMouseDown={(e) => e.preventDefault()}
     >
       {/* Text marks */}
-      <Btn label="B" active={state.bold} handler={onBold} style={{ fontWeight: 700 }} />
-      <Btn label="I" active={state.italic} handler={onItalic} style={{ fontStyle: "italic" }} />
-      <Btn label="U" active={state.underline} handler={onUnderline} style={{ textDecoration: "underline" }} />
-      <Btn label="S" active={state.strike} handler={onStrike} style={{ textDecoration: "line-through" }} />
+      <Btn label="B" title="Bold" active={state.bold} handler={onBold} style={{ fontWeight: 700 }} />
+      <Btn label="I" title="Italic" active={state.italic} handler={onItalic} style={{ fontStyle: "italic" }} />
+      <Btn label="U" title="Underline" active={state.underline} handler={onUnderline} style={{ textDecoration: "underline" }} />
+      <Btn label="S" title="Strikethrough" active={state.strike} handler={onStrike} style={{ textDecoration: "line-through" }} />
 
       <Sep />
 
       {/* Lists — only for multiline fields */}
       {state.multiline && (
         <>
-          <Btn label="•—" active={state.bulletList} handler={onBulletList} style={{ fontSize: 11 }} />
-          <Btn label="1." active={state.orderedList} handler={onOrderedList} style={{ fontSize: 11 }} />
+          <Btn label="•—" title="Bullet list" active={state.bulletList} handler={onBulletList} style={{ fontSize: 11 }} />
+          <Btn label="1." title="Numbered list" active={state.orderedList} handler={onOrderedList} style={{ fontSize: 11 }} />
           <Sep />
         </>
       )}
 
       {/* Link */}
-      <Btn label="🔗" active={state.link} handler={onLink} style={{ fontSize: 13 }} />
+      <Btn label="🔗" title="Link" active={state.link} handler={onLink} style={{ fontSize: 13 }} />
 
       <Sep />
 
       {/* Text alignment — only for multiline fields */}
       {state.multiline && (
         <>
-          <Btn label="≡L" active={state.alignLeft} handler={onAlignLeft} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
-          <Btn label="≡C" active={state.alignCenter} handler={onAlignCenter} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
-          <Btn label="≡R" active={state.alignRight} handler={onAlignRight} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+          <Btn label="≡L" title="Align left" active={state.alignLeft} handler={onAlignLeft} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+          <Btn label="≡C" title="Align center" active={state.alignCenter} handler={onAlignCenter} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+          <Btn label="≡R" title="Align right" active={state.alignRight} handler={onAlignRight} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
           <Sep />
         </>
       )}
 
       {/* Case cycle */}
-      <Btn label="AA" active={false} handler={onCase} style={{ fontSize: 9, letterSpacing: "-0.5px", fontWeight: 600 }} />
+      <Btn label="AA" title="Cycle case (UPPER / lower / Title)" active={false} handler={onCase} style={{ fontSize: 9, letterSpacing: "-0.5px", fontWeight: 600 }} />
     </div>,
     document.body,
   );
@@ -205,12 +208,18 @@ export function TipTapInline({
   multiline = true,
   className,
   style,
+  typoClass,
+  onTypoChange,
+  typoOptions,
 }: {
   value: string;
   onChange: (html: string) => void;
   multiline?: boolean;
   className?: string;
   style?: CSSProperties;
+  typoClass?: string;
+  onTypoChange?: (cls: string) => void;
+  typoOptions?: { value: string; label: string }[];
 }) {
   const [toolbarState, setToolbarState] = useState<ToolbarState>(null);
   const isSettingContent = useRef(false);
@@ -242,9 +251,20 @@ export function TipTapInline({
       onChange(e.getHTML());
     },
     editorProps: {
-      handleKeyDown(_view, event) {
+      handleKeyDown(view, event) {
         if (!multiline && event.key === "Enter") {
           event.preventDefault();
+          return true;
+        }
+        if (event.key === "Enter") {
+          const { $from } = view.state.selection;
+          // Inside a list item: let TipTap handle it (creates new list item)
+          if ($from.parent.type.name === "listItem") return false;
+          event.preventDefault();
+          const br = view.state.schema.nodes.hardBreak;
+          if (br) {
+            view.dispatch(view.state.tr.replaceSelectionWith(br.create()).scrollIntoView());
+          }
           return true;
         }
         return false;
@@ -364,6 +384,32 @@ export function TipTapInline({
 
   return (
     <div data-tiptap style={style}>
+      {typoOptions && onTypoChange && (
+        <div
+          contentEditable={false}
+          style={{ marginBottom: 4, userSelect: "none" }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <select
+            value={typoClass ?? ""}
+            onChange={(e) => onTypoChange(e.target.value)}
+            style={{
+              fontSize: 10,
+              padding: "2px 6px",
+              borderRadius: 4,
+              border: "1px solid rgba(0,0,0,0.18)",
+              background: "rgba(0,0,0,0.06)",
+              cursor: "pointer",
+              outline: "none",
+              maxWidth: "100%",
+            }}
+          >
+            {typoOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <FloatingToolbar
         state={toolbarState}
         onBold={() => editor?.chain().focus().toggleBold().run()}
