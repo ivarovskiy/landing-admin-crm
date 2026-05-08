@@ -71,9 +71,12 @@ type ToolbarState = {
   link: boolean;
   bulletList: boolean;
   orderedList: boolean;
+  inList: boolean;
   alignLeft: boolean;
   alignCenter: boolean;
   alignRight: boolean;
+  alignJustify: boolean;
+  inBlockquote: boolean;
   multiline: boolean;
 } | null;
 
@@ -90,6 +93,12 @@ type FloatingToolbarProps = {
   onAlignLeft: () => void;
   onAlignCenter: () => void;
   onAlignRight: () => void;
+  onAlignJustify: () => void;
+  onBlockquote: () => void;
+  onHR: () => void;
+  onClearFormat: () => void;
+  onIndent: () => void;
+  onOutdent: () => void;
 };
 
 function Btn({
@@ -159,6 +168,12 @@ function FloatingToolbar({
   onAlignLeft,
   onAlignCenter,
   onAlignRight,
+  onAlignJustify,
+  onBlockquote,
+  onHR,
+  onClearFormat,
+  onIndent,
+  onOutdent,
 }: FloatingToolbarProps) {
   if (!state) return null;
 
@@ -187,7 +202,7 @@ function FloatingToolbar({
         boxShadow: "0 6px 24px rgba(0,0,0,0.55)",
         pointerEvents: "all",
         flexWrap: "wrap",
-        maxWidth: 340,
+        maxWidth: 380,
       }}
       onMouseDown={(e) => e.preventDefault()}
     >
@@ -204,6 +219,12 @@ function FloatingToolbar({
         <>
           <Btn label="•—" title="Bullet list" active={state.bulletList} handler={onBulletList} style={{ fontSize: 11 }} />
           <Btn label="1." title="Numbered list" active={state.orderedList} handler={onOrderedList} style={{ fontSize: 11 }} />
+          {state.inList && (
+            <>
+              <Btn label="⇤" title="Outdent (decrease indent)" active={false} handler={onOutdent} style={{ fontSize: 13 }} />
+              <Btn label="⇥" title="Indent (increase indent)" active={false} handler={onIndent} style={{ fontSize: 13 }} />
+            </>
+          )}
           <Sep />
         </>
       )}
@@ -219,9 +240,24 @@ function FloatingToolbar({
           <Btn label="≡L" title="Align left" active={state.alignLeft} handler={onAlignLeft} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
           <Btn label="≡C" title="Align center" active={state.alignCenter} handler={onAlignCenter} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
           <Btn label="≡R" title="Align right" active={state.alignRight} handler={onAlignRight} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+          <Btn label="≡J" title="Justify" active={state.alignJustify} handler={onAlignJustify} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
           <Sep />
         </>
       )}
+
+      {/* Block-level — multiline only */}
+      {state.multiline && (
+        <>
+          <Btn label="❝" title="Blockquote" active={state.inBlockquote} handler={onBlockquote} style={{ fontSize: 13 }} />
+          <Btn label="—" title="Horizontal rule" active={false} handler={onHR} style={{ fontSize: 13, fontWeight: 700 }} />
+          <Sep />
+        </>
+      )}
+
+      {/* Clear formatting */}
+      <Btn label="Ix" title="Clear formatting" active={false} handler={onClearFormat} style={{ fontSize: 11, fontStyle: "italic" }} />
+
+      <Sep />
 
       {/* Case cycle */}
       <Btn label="AA" title="Cycle case (UPPER / lower / Title)" active={false} handler={onCase} style={{ fontSize: 9, letterSpacing: "-0.5px", fontWeight: 600 }} />
@@ -240,18 +276,41 @@ function FloatingToolbar({
 
 type EditorInstance = ReturnType<typeof useEditor>;
 
+// Read the typo class actually present in the document (not cursor-dependent)
+function getDocTypo(editor: NonNullable<EditorInstance>): string {
+  const { from, to } = editor.state.selection;
+  const hasSelection = from !== to;
+  // With selection: return the mark on the selected text
+  if (hasSelection) {
+    return (editor.getAttributes("typoClass").class as string | null) ?? "";
+  }
+  // No selection: scan the document for the first typoClass mark
+  let found = "";
+  editor.state.doc.descendants((node) => {
+    if (found) return false;
+    if (node.isText) {
+      const mark = node.marks.find((m) => m.type.name === "typoClass");
+      if (mark) {
+        found = (mark.attrs.class as string) ?? "";
+        return false;
+      }
+    }
+  });
+  return found;
+}
+
 function TypoBar({
   editor,
   typoOptions,
   initialTypo,
 }: {
-  editor: EditorInstance;
+  editor: EditorInstance | null;
   typoOptions: { value: string; label: string }[];
   initialTypo?: string;
 }) {
   if (!editor) return null;
 
-  const currentTypo = (editor.getAttributes("typoClass").class as string | null) ?? initialTypo ?? "";
+  const currentTypo = getDocTypo(editor) || initialTypo || "";
 
   const applyTypo = (cls: string) => {
     const { from, to } = editor.state.selection;
@@ -274,17 +333,34 @@ function TypoBar({
     editor.commands.focus();
   };
 
+  // Shared style for undo/redo mini-buttons
+  const undoRedoStyle: CSSProperties = {
+    font: "12px/1 system-ui, -apple-system, sans-serif",
+    color: "#555",
+    background: "rgba(255,255,255,0.88)",
+    border: "1px solid rgba(0,0,0,0.22)",
+    borderRadius: 4,
+    padding: "2px 5px",
+    cursor: "pointer",
+    lineHeight: 1,
+    userSelect: "none",
+    WebkitTextStroke: "0",
+    filter: "none",
+    textShadow: "none",
+    textTransform: "none",
+    letterSpacing: "normal",
+  };
+
   return (
     <div
       contentEditable={false}
-      style={{ marginBottom: 4, userSelect: "none" }}
+      style={{ marginBottom: 4, userSelect: "none", display: "flex", alignItems: "center", gap: 4 }}
     >
       <select
         value={currentTypo}
         onChange={(e) => applyTypo(e.target.value)}
         title="Typography preset — applies to selected text, or to the whole block if nothing is selected"
         style={{
-          // Fully reset font so outer typo classes never bleed in
           font: "11px/1.4 system-ui, -apple-system, sans-serif",
           textTransform: "none",
           letterSpacing: "normal",
@@ -305,6 +381,19 @@ function TypoBar({
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
+
+      <button
+        type="button"
+        title="Undo (Ctrl+Z)"
+        onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().undo().run(); }}
+        style={undoRedoStyle}
+      >↩</button>
+      <button
+        type="button"
+        title="Redo (Ctrl+Shift+Z)"
+        onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().redo().run(); }}
+        style={undoRedoStyle}
+      >↪</button>
     </div>
   );
 }
@@ -342,9 +431,9 @@ export function TipTapInline({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        blockquote: false,
+        blockquote: {},
         codeBlock: false,
-        horizontalRule: false,
+        horizontalRule: {},
         code: false,
       }),
       Underline,
@@ -443,9 +532,12 @@ export function TipTapInline({
       link: editor.isActive("link"),
       bulletList: editor.isActive("bulletList"),
       orderedList: editor.isActive("orderedList"),
+      inList: editor.isActive("bulletList") || editor.isActive("orderedList"),
       alignLeft: editor.isActive({ textAlign: "left" }),
       alignCenter: editor.isActive({ textAlign: "center" }),
       alignRight: editor.isActive({ textAlign: "right" }),
+      alignJustify: editor.isActive({ textAlign: "justify" }),
+      inBlockquote: editor.isActive("blockquote"),
       multiline,
     });
   }, [editor, multiline]);
@@ -520,6 +612,10 @@ export function TipTapInline({
     editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, next).run();
   }, [editor]);
 
+  const wordCount = editor
+    ? editor.state.doc.textContent.trim().split(/\s+/).filter(Boolean).length
+    : 0;
+
   return (
     <div data-tiptap style={style}>
       {typoOptions && (
@@ -538,8 +634,27 @@ export function TipTapInline({
         onAlignLeft={() => editor?.chain().focus().setTextAlign("left").run()}
         onAlignCenter={() => editor?.chain().focus().setTextAlign("center").run()}
         onAlignRight={() => editor?.chain().focus().setTextAlign("right").run()}
+        onAlignJustify={() => editor?.chain().focus().setTextAlign("justify").run()}
+        onBlockquote={() => editor?.chain().focus().toggleBlockquote().run()}
+        onHR={() => editor?.chain().focus().setHorizontalRule().run()}
+        onClearFormat={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
+        onIndent={() => editor?.chain().focus().sinkListItem("listItem").run()}
+        onOutdent={() => editor?.chain().focus().liftListItem("listItem").run()}
       />
       <EditorContent editor={editor} className={className} />
+      {multiline && (
+        <div
+          style={{
+            marginTop: 4,
+            fontSize: 10,
+            color: "rgba(0,0,0,0.35)",
+            userSelect: "none",
+            lineHeight: 1,
+          }}
+        >
+          {wordCount} {wordCount === 1 ? "word" : "words"}
+        </div>
+      )}
     </div>
   );
 }
