@@ -61,6 +61,7 @@ html.hide-scrollbar ::-webkit-scrollbar {
   min-height: 100vh;
   background: var(--color-bg);
   color: var(--color-fg);
+  height: 100%;
 }
 
 .text-center {
