@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, ChevronRight, Trash2 } from "lucide-react";
 
 export function FieldGrid({ children }: { children: ReactNode }) {
   return <div className="flex flex-col gap-3">{children}</div>;
@@ -10,7 +10,7 @@ export function FieldGrid({ children }: { children: ReactNode }) {
 
 export function MiniLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+    <span className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
       {children}
     </span>
   );
@@ -53,9 +53,9 @@ export function ControlCard({
       >
         {icon ? <span className="shrink-0 text-muted-foreground">{icon}</span> : null}
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-semibold text-foreground">{title}</div>
+          <div className="truncate text-sm font-semibold text-foreground">{title}</div>
           {subtitle ? (
-            <div className="truncate text-[11px] text-muted-foreground">{subtitle}</div>
+            <div className="truncate text-[12px] text-muted-foreground">{subtitle}</div>
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -100,7 +100,7 @@ export function AdvancedPanel({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex min-h-[40px] w-full items-center gap-2 px-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+        className="flex min-h-[40px] w-full items-center gap-2 px-3 text-left text-[12px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
       >
         <ChevronRight
           className={[
@@ -160,6 +160,50 @@ export function PresetButton({
       ].join(" ")}
     >
       {children}
+    </button>
+  );
+}
+
+// ── InlineDeleteBtn ───────────────────────────────────────────────────────────
+// Two-step delete confirmation for list items — idle → confirm (2.5 s) → delete.
+
+export function InlineDeleteBtn({ onDelete }: { onDelete: () => void }) {
+  const [confirm, setConfirm] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleClick() {
+    if (!confirm) {
+      setConfirm(true);
+      timerRef.current = setTimeout(() => setConfirm(false), 2500);
+    } else {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setConfirm(false);
+      onDelete();
+    }
+  }
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      title={confirm ? "Click again to confirm delete" : "Delete"}
+      className={[
+        "flex items-center gap-1 rounded px-1.5 py-1 text-[11px] font-medium transition-all",
+        confirm
+          ? "border border-red-400/60 bg-red-500/10 text-red-500"
+          : "border border-transparent text-muted-foreground hover:bg-red-500/10 hover:text-red-500",
+      ].join(" ")}
+    >
+      {confirm ? (
+        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+      ) : (
+        <Trash2 className="h-3.5 w-3.5 shrink-0" />
+      )}
+      {confirm && <span>Sure?</span>}
     </button>
   );
 }

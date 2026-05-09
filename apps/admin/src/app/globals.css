@@ -143,7 +143,7 @@
   --secondary-foreground: oklch(0.25 0.005 255);
 
   --muted:              oklch(0.94 0.005 250);    /* light blue-grey controls */
-  --muted-foreground:   oklch(0.52 0.012 250);    /* medium grey-blue */
+  --muted-foreground:   oklch(0.40 0.015 250);    /* dark blue-grey — readable on white */
 
   --accent:             oklch(0.55 0.2 255 / 10%);
   --accent-foreground:  oklch(0.14 0.005 255);

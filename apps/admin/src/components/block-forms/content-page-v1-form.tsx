@@ -14,7 +14,7 @@ import {
   BlockLayoutSection,
   ImageUpload,
 } from "@/components/inspector";
-import { AlignLeft, Columns2, Image, Trash2, Type } from "lucide-react";
+import { AlignLeft, Columns2, Image, Type } from "lucide-react";
 import { TYPO_OPTIONS } from "./hero-slider-presets";
 import { ContentGridDnd, prepareGridItems, type ContentGridConfig } from "./content-grid-dnd";
 import { ItemOrderList } from "./content-items-order";
@@ -22,6 +22,7 @@ import {
   AdvancedPanel,
   ControlCard,
   FieldGrid,
+  InlineDeleteBtn,
   PresetButton,
   PresetRow,
   SectionNote,
@@ -417,24 +418,24 @@ function ColumnEditor({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           {label}
         </span>
         <div className="flex gap-1">
           <button
             type="button"
             onClick={() => addItem("image")}
-            className="flex items-center gap-0.5 rounded-sm px-1.5 py-1 text-[10px] font-medium text-primary hover:bg-primary/10"
+            className="flex items-center gap-1 rounded-sm px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/10"
           >
-            <Image className="h-3 w-3" />
+            <Image className="h-3.5 w-3.5" />
             Image
           </button>
           <button
             type="button"
             onClick={() => addItem("text")}
-            className="flex items-center gap-0.5 rounded-sm px-1.5 py-1 text-[10px] font-medium text-primary hover:bg-primary/10"
+            className="flex items-center gap-1 rounded-sm px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/10"
           >
-            <Type className="h-3 w-3" />
+            <Type className="h-3.5 w-3.5" />
             Text
           </button>
         </div>
@@ -446,16 +447,9 @@ function ColumnEditor({
             key={idx}
             title={itemTitle(item, idx)}
             subtitle={itemSummary(item)}
-            icon={item.kind === "image" ? <Image className="h-3.5 w-3.5" /> : <AlignLeft className="h-3.5 w-3.5" />}
+            icon={item.kind === "image" ? <Image className="h-4 w-4" /> : <AlignLeft className="h-4 w-4" />}
             action={
-              <button
-                type="button"
-                onClick={() => onChange(removeAt(items, idx))}
-                className="rounded-sm p-1 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
-                title="Delete block"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              <InlineDeleteBtn onDelete={() => onChange(removeAt(items, idx))} />
             }
           >
             {item.kind === "image" ? (
@@ -496,16 +490,10 @@ function EntryEditor({
   return (
     <div className="rounded-lg border border-border bg-card p-3 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold text-primary uppercase tracking-wider">
+        <span className="text-xs font-bold text-primary uppercase tracking-wider">
           Entry {idx + 1}
         </span>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="text-muted-foreground hover:text-red-500 transition-colors"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <InlineDeleteBtn onDelete={onRemove} />
       </div>
 
       <ItemOrderList

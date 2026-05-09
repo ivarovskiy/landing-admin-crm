@@ -53,7 +53,7 @@ export function BlockLayoutSection({
   return (
     <InspectorSection
       title="Layout"
-      icon={<Layout className="h-3 w-3" />}
+      icon={<Layout className="h-3.5 w-3.5" />}
       defaultOpen={false}
     >
       <InspectorField label="Anchor">
@@ -93,14 +93,14 @@ export function BlockLayoutSection({
       />
 
       <div className="pt-1">
-        <div className="text-[11px] font-medium text-muted-foreground mb-2">
+        <div className="text-[12px] font-medium text-muted-foreground mb-2">
           Visibility
         </div>
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Smartphone className="h-3 w-3 text-muted-foreground" />
-              <span className="text-[11px] text-muted-foreground">Mobile</span>
+              <span className="text-[12px] text-muted-foreground">Mobile</span>
             </div>
             <InspectorToggle
               checked={!hide.base}
@@ -111,7 +111,7 @@ export function BlockLayoutSection({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Monitor className="h-3 w-3 text-muted-foreground" />
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-[12px] text-muted-foreground">
                 Desktop
               </span>
             </div>

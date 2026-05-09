@@ -82,7 +82,7 @@ export function InspectorSection({
           ].join(" ")}
         />
         {icon ? <span className="shrink-0 text-muted-foreground">{icon}</span> : null}
-        <span className="flex-1 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="flex-1 text-left text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
         </span>
         {badge ? (
@@ -114,7 +114,7 @@ export function InspectorField({
     return (
       <div className="space-y-1.5">
         {label ? (
-          <label className="text-[12px] font-medium text-muted-foreground">{label}</label>
+          <label className="text-[13px] font-medium text-muted-foreground">{label}</label>
         ) : null}
         {children}
         {hint ? <p className="text-[11px] leading-snug text-muted-foreground/70">{hint}</p> : null}
@@ -123,8 +123,8 @@ export function InspectorField({
   }
 
   return (
-    <div className="grid grid-cols-[80px_minmax(0,1fr)] items-center gap-3">
-      <label className="truncate text-[12px] font-medium text-muted-foreground">{label}</label>
+    <div className="grid grid-cols-[88px_minmax(0,1fr)] items-center gap-3">
+      <label className="truncate text-[13px] font-medium text-muted-foreground">{label}</label>
       <div className="min-w-0">
         {children}
         {hint ? <p className="mt-1 text-[11px] leading-snug text-muted-foreground/70">{hint}</p> : null}
