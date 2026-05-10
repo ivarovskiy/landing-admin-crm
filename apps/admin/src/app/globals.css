@@ -189,3 +189,164 @@
   color: oklch(0.14 0.005 255) !important;
   border-color: oklch(0.87 0.008 250) !important;
 }
+
+/* Compatibility layer for older admin screens with hardcoded dark Tailwind colors. */
+.admin-theme [class*="text-[oklch(0.93"],
+.admin-theme [class*="text-[oklch(0.88"] {
+  color: var(--foreground) !important;
+}
+
+.admin-theme [class*="text-[oklch(0.72"],
+.admin-theme [class*="text-[oklch(0.65"],
+.admin-theme [class*="text-[oklch(0.6"],
+.admin-theme [class*="text-[oklch(0.58"],
+.admin-theme [class*="text-[oklch(0.55"],
+.admin-theme [class*="text-[oklch(0.5"],
+.admin-theme [class*="text-[oklch(0.45"],
+.admin-theme [class*="text-[oklch(0.4"],
+.admin-theme [class*="text-[oklch(0.38"],
+.admin-theme [class*="text-[oklch(0.35"] {
+  color: var(--muted-foreground) !important;
+}
+
+.admin-theme [class*="bg-[oklch(1_0_0/3"],
+.admin-theme [class*="bg-[oklch(1_0_0/4"],
+.admin-theme [class*="bg-[oklch(1_0_0/5"],
+.admin-theme [class*="bg-[oklch(1_0_0/6"] {
+  background-color: var(--card) !important;
+}
+
+.admin-theme [class*="border-[oklch(1_0_0/6"],
+.admin-theme [class*="border-[oklch(1_0_0/8"],
+.admin-theme [class*="border-[oklch(1_0_0/10"],
+.admin-theme [class*="border-[oklch(1_0_0/12"] {
+  border-color: var(--border) !important;
+}
+
+/* ============================================================
+   Admin shell + iPad touch density
+   ============================================================ */
+.admin-shell {
+  color-scheme: light;
+  min-height: 100dvh;
+}
+
+.admin-shell.dark {
+  color-scheme: dark;
+}
+
+.admin-shell__header {
+  min-height: 64px;
+}
+
+.admin-shell__brand,
+.admin-shell__nav-link {
+  min-height: 44px;
+  padding-inline: 12px;
+}
+
+.admin-shell__mark {
+  width: 28px;
+  height: 28px;
+}
+
+.admin-shell__actions {
+  min-width: 0;
+}
+
+.admin-shell__email {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-theme-menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--muted) 72%, transparent);
+  padding: 3px;
+}
+
+.admin-theme-menu__btn {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  padding: 0 10px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-theme-menu__btn:hover {
+  color: var(--foreground);
+}
+
+.admin-theme-menu__btn--active {
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 10%);
+}
+
+.admin-touch {
+  --admin-touch-target: 44px;
+  --admin-touch-target-sm: 40px;
+}
+
+.admin-touch :where(button, [role="button"]) {
+  min-height: var(--admin-touch-target-sm);
+}
+
+.admin-touch :where(input:not([type="checkbox"]):not([type="radio"]), select) {
+  min-height: var(--admin-touch-target) !important;
+  font-size: 14px !important;
+}
+
+.admin-touch :where(textarea) {
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+}
+
+.admin-touch .text-\[10px\] {
+  font-size: 12px !important;
+}
+
+.admin-touch .text-\[11px\] {
+  font-size: 12.5px !important;
+}
+
+.admin-touch .text-xs {
+  font-size: 13px !important;
+}
+
+.admin-touch .text-sm {
+  font-size: 14.5px !important;
+}
+
+@media (max-width: 900px) {
+  .admin-shell__header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+    height: auto;
+    padding-block: 10px;
+  }
+
+  .admin-shell__actions {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .admin-shell__email {
+    order: 10;
+    flex-basis: 100%;
+  }
+}

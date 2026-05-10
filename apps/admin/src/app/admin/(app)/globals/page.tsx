@@ -34,8 +34,8 @@ export default async function GlobalBlocksPage({
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-base font-semibold text-[oklch(0.93_0_0)]">Global Blocks</h1>
-        <p className="text-xs text-[oklch(0.55_0_0)] mt-0.5">
+        <h1 className="text-xl font-semibold text-foreground">Global Blocks</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Shared header &amp; footer. Each scope (site-wide or per parent page) has its own pair.
           Child pages inherit from their nearest parent scope, falling back to site-wide.
         </p>

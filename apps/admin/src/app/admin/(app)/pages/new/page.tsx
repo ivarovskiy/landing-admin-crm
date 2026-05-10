@@ -1,112 +1,106 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { PAGE_TEMPLATES } from "@acme/block-library"
-import { ArrowLeft, Check } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { PAGE_TEMPLATES } from "@acme/block-library";
+import { ArrowLeft, Check } from "lucide-react";
 
-const GROUP_ORDER = ["IBC Ballet", "Simply Dance Studio", "Generic"]
+const GROUP_ORDER = ["IBC Ballet", "Simply Dance Studio", "Generic"];
+const GROUP_COLORS: Record<string, string> = {
+  "IBC Ballet": "oklch(0.58 0.22 25)",
+  "Simply Dance Studio": "oklch(0.6 0.18 270)",
+  Generic: "oklch(0.5 0 0)",
+};
 
 export default function NewPage() {
-  const router = useRouter()
-  const [slug, setSlug] = useState("")
-  const [locale, setLocale] = useState("uk")
-  const [templateKey, setTemplateKey] = useState("blank")
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const [slug, setSlug] = useState("");
+  const [locale, setLocale] = useState("uk");
+  const [templateKey, setTemplateKey] = useState("blank");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const trimmed = slug.trim()
-    if (!trimmed) { setError("Slug is required"); return }
+    e.preventDefault();
+    const trimmed = slug.trim();
+    if (!trimmed) {
+      setError("Slug is required");
+      return;
+    }
 
-    setError(null)
-    setSaving(true)
+    setError(null);
+    setSaving(true);
 
     try {
       const r = await fetch("/api/admin/pages", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ slug: trimmed, locale }),
-      })
-      if (!r.ok) throw new Error(`Create failed (HTTP ${r.status})`)
-      const { page } = (await r.json()) as { page: { id: string } }
+      });
+      if (!r.ok) throw new Error(`Create failed (HTTP ${r.status})`);
+      const { page } = (await r.json()) as { page: { id: string } };
 
-      const template = PAGE_TEMPLATES.find((t) => t.key === templateKey)
+      const template = PAGE_TEMPLATES.find((t) => t.key === templateKey);
       if (template) {
         for (const block of template.blocks) {
           const br = await fetch(`/api/admin/pages/${page.id}/blocks`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(block),
-          })
-          if (!br.ok) throw new Error(`Block create failed (HTTP ${br.status})`)
+          });
+          if (!br.ok) throw new Error(`Block create failed (HTTP ${br.status})`);
         }
       }
 
-      router.push(`/admin/pages/${page.id}`)
-    } catch (err: any) {
-      setError(err?.message ?? "Failed")
-      setSaving(false)
+      router.push(`/admin/pages/${page.id}`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed");
+      setSaving(false);
     }
   }
 
-  const selectedTemplate = PAGE_TEMPLATES.find((t) => t.key === templateKey)
-
-  // Group templates preserving GROUP_ORDER, ungrouped at the end
-  const allGroups = [...new Set(PAGE_TEMPLATES.map((t) => t.group ?? "Generic"))]
+  const selectedTemplate = PAGE_TEMPLATES.find((t) => t.key === templateKey);
+  const allGroups = [...new Set(PAGE_TEMPLATES.map((t) => t.group ?? "Generic"))];
   const ordered = [
     ...GROUP_ORDER.filter((g) => allGroups.includes(g)),
     ...allGroups.filter((g) => !GROUP_ORDER.includes(g)),
-  ]
+  ];
   const groups = ordered
     .map((name) => ({ name, tpls: PAGE_TEMPLATES.filter((t) => (t.group ?? "Generic") === name) }))
-    .filter((g) => g.tpls.length > 0)
-
-  const GROUP_COLORS: Record<string, string> = {
-    "IBC Ballet": "oklch(0.58_0.22_25)",
-    "Simply Dance Studio": "oklch(0.6_0.18_270)",
-    "Generic": "oklch(0.5_0_0)",
-  }
+    .filter((g) => g.tpls.length > 0);
 
   return (
-    <div className="min-h-screen bg-[oklch(0.13_0_0)] text-[oklch(0.93_0_0)] p-6">
-      <div className="max-w-2xl mx-auto space-y-6">
-
+    <div className="min-h-screen bg-background p-6 text-foreground">
+      <div className="mx-auto max-w-2xl space-y-6">
         <Link
           href="/admin"
-          className="inline-flex items-center gap-1.5 text-xs text-[oklch(0.6_0_0)] hover:text-[oklch(0.93_0_0)] transition-colors"
+          className="inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
+          <ArrowLeft className="h-4 w-4" />
           All pages
         </Link>
 
         <div>
-          <h1 className="text-base font-semibold text-[oklch(0.93_0_0)]">New page</h1>
-          <p className="text-xs text-[oklch(0.55_0_0)] mt-0.5">Choose a template and set a slug to get started</p>
+          <h1 className="text-xl font-semibold text-foreground">New page</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Choose a template and set a slug to get started</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-
-          {/* Template selection — grouped */}
           <div className="space-y-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[oklch(0.5_0_0)]">Template</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Template</p>
 
-            {(groups as { name: string; tpls: typeof PAGE_TEMPLATES }[]).map(({ name, tpls }) => {
-              const color = GROUP_COLORS[name] ?? "oklch(0.5_0_0)"
+            {groups.map(({ name, tpls }) => {
+              const color = GROUP_COLORS[name] ?? "oklch(0.5 0 0)";
               return (
                 <div key={name} className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <div
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{ background: `oklch(${color.replace("oklch(", "").replace(")", "")})` }}
-                    />
-                    <p className="text-[11px] font-semibold text-[oklch(0.55_0_0)]">{name}</p>
+                    <div className="h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
+                    <p className="text-xs font-semibold text-muted-foreground">{name}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {tpls.map((t) => {
-                      const active = templateKey === t.key
+                      const active = templateKey === t.key;
                       return (
                         <button
                           key={t.key}
@@ -115,91 +109,90 @@ export default function NewPage() {
                           className={[
                             "relative text-left rounded-xl border px-4 py-3.5 transition-all",
                             active
-                              ? "border-[oklch(0.58_0.22_25)] bg-[oklch(0.58_0.22_25/10%)]"
-                              : "border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] hover:bg-[oklch(1_0_0/6%)] hover:border-[oklch(1_0_0/16%)]",
+                              ? "border-primary bg-primary/10"
+                              : "border-border bg-card hover:border-primary/35 hover:bg-muted/55",
                           ].join(" ")}
                         >
                           {active && (
-                            <span className="absolute top-2.5 right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-[oklch(0.58_0.22_25)]">
-                              <Check className="h-2.5 w-2.5 text-white" />
+                            <span className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                              <Check className="h-3 w-3 text-primary-foreground" />
                             </span>
                           )}
-                          <p className={["text-xs font-semibold", active ? "text-[oklch(0.58_0.22_25)]" : "text-[oklch(0.88_0_0)]"].join(" ")}>
+                          <p className={["text-sm font-semibold", active ? "text-primary" : "text-foreground"].join(" ")}>
                             {t.label}
                           </p>
                           {t.description && (
-                            <p className="text-[10px] text-[oklch(0.5_0_0)] mt-0.5 leading-snug">{t.description}</p>
+                            <p className="mt-1 text-xs leading-snug text-muted-foreground">{t.description}</p>
                           )}
                           {t.blocks.length > 0 && (
-                            <p className="text-[10px] text-[oklch(0.45_0_0)] mt-1.5">
+                            <p className="mt-2 text-xs text-muted-foreground/75">
                               {t.blocks.length} block{t.blocks.length !== 1 ? "s" : ""}
                             </p>
                           )}
                         </button>
-                      )
+                      );
                     })}
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
 
-          {/* Page details */}
           <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[oklch(0.5_0_0)]">Page details</p>
-            <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)]">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Page details</p>
+            <div className="divide-y divide-border rounded-xl border border-border bg-card">
               <div className="flex items-center gap-3 px-4 py-3">
-                <label className="w-16 text-xs text-[oklch(0.55_0_0)] shrink-0">Slug</label>
+                <label className="w-16 shrink-0 text-sm text-muted-foreground">Slug</label>
                 <input
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="about-us"
                   required
-                  className="flex-1 bg-transparent text-xs text-[oklch(0.93_0_0)] placeholder-[oklch(0.4_0_0)] outline-none"
+                  className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50"
                 />
               </div>
               <div className="flex items-center gap-3 px-4 py-3">
-                <label className="w-16 text-xs text-[oklch(0.55_0_0)] shrink-0">Locale</label>
+                <label className="w-16 shrink-0 text-sm text-muted-foreground">Locale</label>
                 <select
                   value={locale}
                   onChange={(e) => setLocale(e.target.value)}
-                  className="flex-1 bg-transparent text-xs text-[oklch(0.93_0_0)] outline-none appearance-none cursor-pointer"
+                  className="flex-1 cursor-pointer appearance-none bg-transparent text-sm text-foreground outline-none"
                 >
-                  <option value="uk" style={{ background: "#1a1a1a" }}>uk — Ukrainian</option>
-                  <option value="en" style={{ background: "#1a1a1a" }}>en — English</option>
+                  <option value="uk">uk - Ukrainian</option>
+                  <option value="en">en - English</option>
                 </select>
               </div>
             </div>
-            <p className="text-[10px] text-[oklch(0.4_0_0)]">Slug: lowercase letters, numbers and hyphens (e.g. <span className="text-[oklch(0.55_0_0)]">about-us</span>)</p>
+            <p className="text-xs text-muted-foreground">
+              Slug: lowercase letters, numbers and hyphens (e.g. <span className="text-foreground/70">about-us</span>)
+            </p>
           </div>
 
           {error && (
-            <div className="text-[11px] text-red-400 bg-red-400/10 rounded-lg px-3 py-2">{error}</div>
+            <div className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
           )}
 
           <div className="flex items-center gap-2">
             <button
               type="submit"
               disabled={saving}
-              className="h-9 px-5 rounded-lg bg-[oklch(0.58_0.22_25)] text-white text-xs font-semibold disabled:opacity-50 hover:bg-[oklch(0.54_0.22_25)] transition-colors"
+              className="h-11 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {saving
                 ? selectedTemplate && selectedTemplate.blocks.length > 0
-                  ? `Creating ${selectedTemplate.blocks.length} blocks…`
-                  : "Creating…"
-                : "Create page"
-              }
+                  ? `Creating ${selectedTemplate.blocks.length} blocks...`
+                  : "Creating..."
+                : "Create page"}
             </button>
             <Link
               href="/admin"
-              className="h-9 px-4 rounded-lg border border-[oklch(1_0_0/10%)] text-xs text-[oklch(0.6_0_0)] hover:text-[oklch(0.93_0_0)] hover:border-[oklch(1_0_0/20%)] transition-colors inline-flex items-center"
+              className="inline-flex h-11 items-center rounded-lg border border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
             >
               Cancel
             </Link>
           </div>
-
         </form>
       </div>
     </div>
-  )
+  );
 }
