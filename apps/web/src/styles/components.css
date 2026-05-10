@@ -599,3 +599,35 @@
   text-underline-offset: 2px;
   cursor: text;
 }
+
+.media-resize-target {
+  position: relative;
+}
+
+.media-resize-target--resizing {
+  outline: 1px solid color-mix(in srgb, var(--color-primary, #ff2b57) 85%, white 15%);
+  outline-offset: 4px;
+}
+
+.media-resize-handle {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  z-index: 20;
+  width: 16px;
+  height: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-primary, #ff2b57) 75%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-primary, #ff2b57) 70%, white 30%);
+  cursor: nwse-resize;
+  touch-action: none;
+  padding: 0;
+}
+
+.media-resize-handle::before {
+  content: "";
+  position: absolute;
+  inset: 4px 3px 3px 4px;
+  border-right: 1px solid rgba(255, 255, 255, 0.78);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.78);
+}

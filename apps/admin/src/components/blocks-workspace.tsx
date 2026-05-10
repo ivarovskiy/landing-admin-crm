@@ -87,6 +87,7 @@ function blockIcon(type: string) {
     case "features":
       return <Box className="h-3.5 w-3.5" />;
     case "scrapbook":
+    case "image-block":
       return <Image className="h-3.5 w-3.5" />;
     case "content-page":
       return <Type className="h-3.5 w-3.5" />;

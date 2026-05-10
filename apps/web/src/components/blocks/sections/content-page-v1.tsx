@@ -6,9 +6,10 @@ import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, Poi
 import { CSS } from "@dnd-kit/utilities";
 import { Container, Kicker, OutlineStampText, STAMP_TITLE } from "@/components/landing/ui";
 import { MediaImage } from "@/components/media-image";
+import { MediaResizeHandle } from "@/components/blocks/media-resize-handle";
 import ClipIcon from "@/assets/icons/clip.svg";
 import { ScrollProgressDot } from "./scroll-progress-dot";
-import { TipTapInline, renderRichText } from "@/components/tiptap-inline";
+import { TipTapInline, renderRichText } from "@/components/rich-text";
 
 const TYPO_PRESETS: { value: string; label: string }[] = [
   { value: "", label: "Default" },
@@ -414,25 +415,16 @@ function renderItem(
 
   if (item.kind === "image") {
     return (
-      <div
+      <ContentImageItem
         key={`img-${idx}`}
-        className="cp__item cp__item--image"
+        item={item}
+        idx={idx}
+        col={col}
         style={mergedStyle}
-        data-el={`${col}-${idx}-image`}
-        {...restEdit}
-      >
-        {editOverlay}
-        {item.src ? (
-          <MediaImage
-            src={item.src}
-            alt={item.alt ?? ""}
-            className="cp__image"
-            sizes="(max-width: 767px) 100vw, 530px"
-          />
-        ) : (
-          <div className="cp__image cp__image--placeholder" />
-        )}
-      </div>
+        editProps={restEdit}
+        editOverlay={editOverlay}
+        onItemChange={onItemChange}
+      />
     );
   }
 
@@ -482,6 +474,69 @@ function renderItem(
             />
           ) : renderRichText(item.body ?? "")}
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ContentImageItem({
+  item,
+  idx,
+  col,
+  style,
+  editProps,
+  editOverlay,
+  onItemChange,
+}: {
+  item: ContentItem;
+  idx: number;
+  col: "left" | "right";
+  style: React.CSSProperties;
+  editProps: React.ComponentProps<"div">;
+  editOverlay?: React.ReactNode;
+  onItemChange?: (changes: Partial<ContentItem>) => void;
+}) {
+  const imageRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div
+      className="cp__item cp__item--image"
+      style={style}
+      data-el={`${col}-${idx}-image`}
+      {...editProps}
+    >
+      {editOverlay}
+      <div
+        ref={imageRef}
+        className={[
+          "cp__image",
+          item.src ? "" : "cp__image--placeholder",
+          onItemChange ? "media-resize-target" : "",
+        ].filter(Boolean).join(" ")}
+      >
+        {item.src ? (
+          <MediaImage
+            src={item.src}
+            alt={item.alt ?? ""}
+            className="cp__image-media"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+            sizes="(max-width: 767px) 100vw, 530px"
+          />
+        ) : null}
+      </div>
+      {onItemChange ? (
+        <MediaResizeHandle
+          targetRef={imageRef}
+          onResize={(width) =>
+            onItemChange({
+              imageWidth: width,
+              layout: {
+                ...(item.layout ?? {}),
+                lg: { ...(item.layout?.lg ?? {}), width },
+              },
+            })
+          }
+        />
       ) : null}
     </div>
   );

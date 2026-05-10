@@ -21,7 +21,10 @@ export function LiveBlockWrapper({
       data={data}
       editMode={
         editMode &&
-        (blockKey === "hero:slider-v1" || blockKey === "content-page:v1")
+        (blockKey === "hero:slider-v1" ||
+          blockKey === "content-page:v1" ||
+          blockKey === "text-block:v1" ||
+          blockKey === "image-block:v1")
       }
       onChange={(next: any) => updateBlock(blockId, next)}
     />

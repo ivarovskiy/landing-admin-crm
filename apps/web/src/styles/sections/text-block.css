@@ -5,6 +5,9 @@
 
 .tb__inner {
   /* align and maxWidth applied via inline style */
+  display: flex;
+  flex-direction: column;
+  gap: var(--tb-gap, 0px);
 }
 
 .tb__kicker {
@@ -15,6 +18,7 @@
   text-transform: uppercase;
   color: var(--color-primary);
   margin-bottom: 12px;
+  max-width: 100%;
 }
 
 .tb__heading {
@@ -25,6 +29,8 @@
   text-transform: uppercase;
   color: var(--color-primary);
   margin: 0 0 16px;
+  max-width: 100%;
+  text-wrap: balance;
 }
 
 .tb__body {
@@ -34,12 +40,63 @@
   max-width: 72ch;
 }
 
-.tb__body p {
+.tb__body p,
+.tb__kicker p,
+.tb__heading p {
   margin: 0;
 }
 
-.tb__body p + p {
+.tb__body p + p,
+.tb__kicker p + p,
+.tb__heading p + p {
   margin-top: 1em;
+}
+
+.tb__kicker u,
+.tb__heading u,
+.tb__body u {
+  text-decoration: underline;
+}
+
+.tb__kicker s,
+.tb__heading s,
+.tb__body s {
+  text-decoration: line-through;
+}
+
+.tb__kicker .tt-link,
+.tb__heading .tt-link,
+.tb__body .tt-link {
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.tb__body ul,
+.tb__body ol {
+  padding-left: 1.4em;
+}
+
+.tb__body ul {
+  list-style: disc;
+}
+
+.tb__body ol {
+  list-style: decimal;
+}
+
+.tb__body blockquote {
+  border-left: 3px solid currentColor;
+  margin: 0.75em 0;
+  padding-left: 1em;
+  opacity: 0.72;
+}
+
+.tb__body hr {
+  border: none;
+  border-top: 1px solid currentColor;
+  margin: 1em 0;
+  opacity: 0.25;
 }
 
 .tb__cta {
