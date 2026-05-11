@@ -41,11 +41,13 @@ function BlockSection({
   title,
   blockKey,
   scope,
+  allPages,
 }: {
   icon: React.ReactNode
   title: string
   blockKey: "header" | "footer"
   scope: string | null
+  allPages: PageLite[]
 }) {
   const [block, setBlock] = useState<GlobalBlock | null>(null)
   const [data, setData] = useState<any>({})
@@ -126,7 +128,7 @@ function BlockSection({
         ) : !block ? (
           <p className="text-xs text-[oklch(0.5_0_0)]">Loading…</p>
         ) : Form ? (
-          <Form value={data} onChange={onChange} viewMode="desktop" />
+          <Form value={data} onChange={onChange} viewMode="desktop" allPages={allPages} />
         ) : (
           <p className="text-xs text-[oklch(0.55_0_0)]">
             No form registered for <code>{type}:{variant}</code>.
@@ -196,12 +198,14 @@ export function GlobalBlocksEditor({
         title="Header"
         blockKey="header"
         scope={scope}
+        allPages={allPages}
       />
       <BlockSection
         icon={<Layout className="h-4 w-4" />}
         title="Footer"
         blockKey="footer"
         scope={scope}
+        allPages={allPages}
       />
 
       {scope === null && (

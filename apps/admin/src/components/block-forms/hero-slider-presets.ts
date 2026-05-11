@@ -46,7 +46,14 @@ export type ElementStyle = {
   size?: string;  // font-size override
   typo?: TypoClass; // typography class from design system
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
+  snapToBaseline?: boolean; // lock Y to the canvas baseline guideline
   viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
+};
+
+/** Canvas guideline offsets stored at block level (shared across all slides) */
+export type CanvasGuidelines = {
+  gapOffset?: number;       // px from top — amber dashed line
+  baselineOffset?: number;  // px from bottom — purple dashed line
 };
 
 export type ElementStyleProfile = Omit<ElementStyle, "viewportProfiles">;

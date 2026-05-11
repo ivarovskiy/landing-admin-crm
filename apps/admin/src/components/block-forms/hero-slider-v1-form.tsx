@@ -42,6 +42,7 @@ import {
   type SlideExtra,
   type TypoClass,
   type BodyVariant,
+  type CanvasGuidelines,
   TEMPLATE_OPTIONS,
   PRESET_OPTIONS,
   FIT_OPTIONS,
@@ -185,6 +186,7 @@ function updateMedia(
 export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) {
   const slides: Slide[] = arr<Slide>(value?.slides);
   const options = value?.options ?? {};
+  const canvasGuidelines: CanvasGuidelines = value?.canvasGuidelines ?? {};
 
   const showDots = options?.showDots !== false;
   const showArrows = options?.showArrows === true;
@@ -275,6 +277,23 @@ export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) 
             />
           </InspectorField>
         </div>
+
+        <div className="grid grid-cols-2 gap-1.5 mt-1">
+          <InspectorField label="Gap guide (px from top)" hint="Amber dashed line on canvas">
+            <InspectorNumber
+              value={canvasGuidelines.gapOffset ?? undefined}
+              onChange={(v) => set(["canvasGuidelines", "gapOffset"], v ?? undefined)}
+              placeholder="e.g. 80"
+            />
+          </InspectorField>
+          <InspectorField label="Baseline (px from bottom)" hint="Purple dashed line; elements can snap to it">
+            <InspectorNumber
+              value={canvasGuidelines.baselineOffset ?? undefined}
+              onChange={(v) => set(["canvasGuidelines", "baselineOffset"], v ?? undefined)}
+              placeholder="e.g. 23"
+            />
+          </InspectorField>
+        </div>
       </InspectorSection>
 
       <InspectorSection
@@ -310,6 +329,7 @@ export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) 
               }}
               enableCanvasDrag={enableCanvasDrag}
               tuningScope={viewMode === "ipadPro" ? "ipadPro" : "default"}
+              canvasGuidelines={canvasGuidelines}
             />
           ))}
         </div>
@@ -334,6 +354,7 @@ function SlideEditor({
   onDuplicate,
   enableCanvasDrag,
   tuningScope,
+  canvasGuidelines,
 }: {
   slide: Slide;
   index: number;
@@ -344,6 +365,7 @@ function SlideEditor({
   onDuplicate: () => void;
   enableCanvasDrag: boolean;
   tuningScope: HeroTuningScope;
+  canvasGuidelines: CanvasGuidelines;
 }) {
   const [collapsed, setCollapsed] = useState(true);
   const [showCanvas, setShowCanvas] = useState(false);
@@ -428,7 +450,14 @@ function SlideEditor({
       {/* Canvas editor — shown independently of collapsed state */}
       {showCanvas && (
         <div className="border-t px-2 py-2">
-          <SlideCanvas slide={s} tuningScope={tuningScope} enableDrag={enableCanvasDrag} onChange={onChange} />
+          <SlideCanvas
+            slide={s}
+            tuningScope={tuningScope}
+            enableDrag={enableCanvasDrag}
+            onChange={onChange}
+            gapOffset={canvasGuidelines.gapOffset}
+            baselineOffset={canvasGuidelines.baselineOffset}
+          />
         </div>
       )}
 
@@ -733,12 +762,14 @@ function ElementStyleEditor({
   style,
   onChange,
   showTypo = false,
+  showSnap = false,
   tuningScope = "default",
 }: {
   label: string;
   style?: ElementStyle;
   onChange: (next: ElementStyle) => void;
   showTypo?: boolean;
+  showSnap?: boolean;
   tuningScope?: HeroTuningScope;
 }) {
   const s = getScopedElementStyle(style, tuningScope);
@@ -823,6 +854,13 @@ function ElementStyleEditor({
           />
         </div>
       </div>
+      {showSnap && tuningScope === "default" && (
+        <InspectorToggle
+          label="Snap to baseline"
+          checked={!!(style?.snapToBaseline)}
+          onChange={(v) => onChange({ ...(style ?? {}), snapToBaseline: v || undefined })}
+        />
+      )}
     </div>
   );
 }
@@ -1000,21 +1038,21 @@ function TextElementCard({
             <>
               <InspectorTextarea value={s.kicker ?? ""} onChange={(v) => onChange({ ...s, kicker: v })} rows={2} />
               <IconInsertBar value={s.kicker ?? ""} onChange={(v) => onChange({ ...s, kicker: v })} />
-              <ElementStyleEditor label="" style={s.kickerStyle} onChange={(es) => onChange({ ...s, kickerStyle: es })} showTypo tuningScope={tuningScope} />
+              <ElementStyleEditor label="" style={s.kickerStyle} onChange={(es) => onChange({ ...s, kickerStyle: es })} showTypo showSnap tuningScope={tuningScope} />
             </>
           )}
           {elementKey === "title" && (
             <>
               <InspectorTextarea value={s.title ?? ""} onChange={(v) => onChange({ ...s, title: v })} rows={2} />
               <IconInsertBar value={s.title ?? ""} onChange={(v) => onChange({ ...s, title: v })} />
-              <ElementStyleEditor label="" style={s.titleStyle} onChange={(es) => onChange({ ...s, titleStyle: es })} showTypo tuningScope={tuningScope} />
+              <ElementStyleEditor label="" style={s.titleStyle} onChange={(es) => onChange({ ...s, titleStyle: es })} showTypo showSnap tuningScope={tuningScope} />
             </>
           )}
           {elementKey === "subtitle" && (
             <>
               <InspectorTextarea value={s.subtitle ?? ""} onChange={(v) => onChange({ ...s, subtitle: v })} rows={2} />
               <IconInsertBar value={s.subtitle ?? ""} onChange={(v) => onChange({ ...s, subtitle: v })} />
-              <ElementStyleEditor label="" style={s.subtitleStyle} onChange={(es) => onChange({ ...s, subtitleStyle: es })} showTypo tuningScope={tuningScope} />
+              <ElementStyleEditor label="" style={s.subtitleStyle} onChange={(es) => onChange({ ...s, subtitleStyle: es })} showTypo showSnap tuningScope={tuningScope} />
             </>
           )}
           {elementKey === "body" && (
@@ -1029,14 +1067,14 @@ function TextElementCard({
                   options={BODY_VARIANT_OPTIONS}
                 />
               </div>
-              <ElementStyleEditor label="" style={s.bodyStyle} onChange={(es) => onChange({ ...s, bodyStyle: es })} showTypo tuningScope={tuningScope} />
+              <ElementStyleEditor label="" style={s.bodyStyle} onChange={(es) => onChange({ ...s, bodyStyle: es })} showTypo showSnap tuningScope={tuningScope} />
             </>
           )}
           {elementKey === "quote" && (
             <>
               <InspectorTextarea value={s.quote ?? ""} onChange={(v) => onChange({ ...s, quote: v })} rows={2} />
               <IconInsertBar value={s.quote ?? ""} onChange={(v) => onChange({ ...s, quote: v })} />
-              <ElementStyleEditor label="" style={s.quoteStyle} onChange={(es) => onChange({ ...s, quoteStyle: es })} showTypo tuningScope={tuningScope} />
+              <ElementStyleEditor label="" style={s.quoteStyle} onChange={(es) => onChange({ ...s, quoteStyle: es })} showTypo showSnap tuningScope={tuningScope} />
             </>
           )}
           {isExtra && extra && (
@@ -1050,7 +1088,7 @@ function TextElementCard({
                 />
               </div>
               <InspectorTextarea value={extra.text} onChange={(v) => updateExtra({ text: v })} rows={2} placeholder="Text content..." />
-              <ElementStyleEditor label="" style={extra.style} tuningScope={tuningScope} onChange={(es) => updateExtra({ style: es })} showTypo />
+              <ElementStyleEditor label="" style={extra.style} tuningScope={tuningScope} onChange={(es) => updateExtra({ style: es })} showTypo showSnap />
             </>
           )}
         </div>

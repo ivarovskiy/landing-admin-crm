@@ -25,6 +25,7 @@ export function BlockEditPanel({
   variant,
   initial,
   viewMode,
+  allPages,
   externalSelectedElementId,
   externalDraftUpdate,
   onElementSelect,
@@ -36,6 +37,7 @@ export function BlockEditPanel({
   variant: string;
   initial: any;
   viewMode: "desktop" | "ipadPro" | "mobile";
+  allPages?: Array<{ id: string; slug: string; parentId?: string | null }>;
   externalSelectedElementId?: string | null;
   externalDraftUpdate?: { blockId: string; data: any; version: number } | null;
   onElementSelect?: (elementId: string | null) => void;
@@ -160,7 +162,7 @@ export function BlockEditPanel({
           />
         ) : Form ? (
           <div className="p-3">
-            <Form value={draft} onChange={setDraft} viewMode={viewMode} />
+            <Form value={draft} onChange={setDraft} viewMode={viewMode} allPages={allPages} />
           </div>
         ) : null}
       </div>

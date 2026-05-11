@@ -10,9 +10,9 @@ import {
   InspectorInput,
   InspectorTextarea,
   BlockLayoutSection,
-  HrefInput,
+  PageHrefInput,
 } from "@/components/inspector";
-import { Monitor, Smartphone, PanelLeft, PanelRight, Menu, Megaphone, Plus, Eye, EyeOff, ChevronDown, ChevronRight, Link2, Link2Off } from "lucide-react";
+import { Monitor, Smartphone, PanelLeft, PanelRight, Menu, Megaphone, Plus, Eye, EyeOff, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 type LinkItem = { label?: string; href?: string; hidden?: boolean; noLink?: boolean };
@@ -28,6 +28,7 @@ function NavItemEditor({
   onToggleHidden,
   onToggleNoLink,
   idx,
+  pages,
 }: {
   item: NavItem;
   basePath: (string | number)[];
@@ -35,6 +36,7 @@ function NavItemEditor({
   onToggleHidden: () => void;
   onToggleNoLink: () => void;
   idx: number;
+  pages?: { id: string; slug: string }[];
 }) {
   const children = arr<LinkItem>(item?.children);
   const [open, setOpen] = useState(children.length > 0);
@@ -54,39 +56,29 @@ function NavItemEditor({
             {idx + 1}. {item?.label || "Link"}
           </span>
         </button>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={onToggleNoLink}
-            className={isNoLink ? "text-amber-500" : "text-muted-foreground hover:text-foreground"}
-            title={isNoLink ? "Make clickable link" : "Make non-clickable (label only)"}
-          >
-            {isNoLink ? <Link2Off className="h-3 w-3" /> : <Link2 className="h-3 w-3" />}
-          </button>
-          <button
-            type="button"
-            onClick={onToggleHidden}
-            className="text-muted-foreground hover:text-foreground"
-            title={isHidden ? "Show" : "Hide"}
-          >
-            {isHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onToggleHidden}
+          className="text-muted-foreground hover:text-foreground"
+          title={isHidden ? "Show" : "Hide"}
+        >
+          {isHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-1">
+      <div className="space-y-1">
         <InspectorInput
           value={item?.label ?? ""}
           onChange={(v) => set([...basePath, "label"], v)}
           placeholder="Label"
         />
-        <div className={isNoLink ? "opacity-40 pointer-events-none" : ""}>
-          <InspectorInput
-            value={item?.href ?? ""}
-            onChange={(v) => set([...basePath, "href"], v)}
-            placeholder={isNoLink ? "(non-link)" : "Href"}
-          />
-        </div>
+        <PageHrefInput
+          hrefValue={item?.href ?? ""}
+          noLink={isNoLink}
+          onHrefChange={(v) => set([...basePath, "href"], v)}
+          onNoLinkChange={onToggleNoLink}
+          pages={pages}
+        />
       </div>
 
       {open && (
@@ -95,45 +87,33 @@ function NavItemEditor({
             const childHidden = !!c?.hidden;
             const childNoLink = !!c?.noLink;
             return (
-              <div key={cIdx} className={`flex gap-1 ${childHidden ? "opacity-50" : ""}`}>
-                <InspectorInput
-                  value={c?.label ?? ""}
-                  onChange={(v) => set([...basePath, "children", cIdx, "label"], v)}
-                  placeholder="Child label"
-                />
-                <div className={`flex-1 ${childNoLink ? "opacity-40 pointer-events-none" : ""}`}>
+              <div key={cIdx} className={`space-y-0.5 ${childHidden ? "opacity-50" : ""}`}>
+                <div className="flex items-center justify-between">
                   <InspectorInput
-                    value={c?.href ?? ""}
-                    onChange={(v) => set([...basePath, "children", cIdx, "href"], v)}
-                    placeholder={childNoLink ? "(non-link)" : "Href"}
+                    value={c?.label ?? ""}
+                    onChange={(v) => set([...basePath, "children", cIdx, "label"], v)}
+                    placeholder="Child label"
                   />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      set([...basePath, "children"], setAt(children, cIdx, { ...c, hidden: !childHidden }))
+                    }
+                    className="ml-1 shrink-0 text-muted-foreground hover:text-foreground"
+                    title={childHidden ? "Show" : "Hide"}
+                  >
+                    {childHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    set(
-                      [...basePath, "children"],
-                      setAt(children, cIdx, { ...c, noLink: !childNoLink }),
-                    )
+                <PageHrefInput
+                  hrefValue={c?.href ?? ""}
+                  noLink={childNoLink}
+                  onHrefChange={(v) => set([...basePath, "children", cIdx, "href"], v)}
+                  onNoLinkChange={(v) =>
+                    set([...basePath, "children"], setAt(children, cIdx, { ...c, noLink: v || undefined }))
                   }
-                  className={`shrink-0 pt-1.5 ${childNoLink ? "text-amber-500" : "text-muted-foreground hover:text-foreground"}`}
-                  title={childNoLink ? "Make clickable link" : "Make non-clickable (label only)"}
-                >
-                  {childNoLink ? <Link2Off className="h-3 w-3" /> : <Link2 className="h-3 w-3" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    set(
-                      [...basePath, "children"],
-                      setAt(children, cIdx, { ...c, hidden: !childHidden }),
-                    )
-                  }
-                  className="text-muted-foreground hover:text-foreground shrink-0 pt-1.5"
-                  title={childHidden ? "Show" : "Hide"}
-                >
-                  {childHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                </button>
+                  pages={pages}
+                />
               </div>
             );
           })}
@@ -162,12 +142,14 @@ function NavColumnEditor({
   items,
   path,
   set,
+  pages,
 }: {
   title: string;
   icon: React.ReactNode;
   items: NavItem[];
   path: (string | number)[];
   set: (path: (string | number)[], v: unknown) => void;
+  pages?: { id: string; slug: string }[];
 }) {
   return (
     <InspectorSection
@@ -195,6 +177,7 @@ function NavColumnEditor({
             onToggleHidden={() => set(path, setAt(items, idx, { ...item, hidden: !item?.hidden }))}
             onToggleNoLink={() => set(path, setAt(items, idx, { ...item, noLink: !item?.noLink }))}
             idx={idx}
+            pages={pages}
           />
         ))}
         {items.length === 0 && (
@@ -208,7 +191,7 @@ function NavColumnEditor({
 /* ------------------------------------------------------------------ */
 /*  Main form                                                          */
 /* ------------------------------------------------------------------ */
-export function HeaderV1Form({ value, onChange }: BlockFormProps) {
+export function HeaderV1Form({ value, onChange, allPages }: BlockFormProps) {
   const brand = value?.brand ?? {};
   const desktop = value?.desktop ?? {};
   const desktopPortal = desktop?.portal ?? {};
@@ -243,12 +226,13 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         </InspectorField>
 
         <InspectorField label="Brand href">
-          <HrefInput
+          <PageHrefInput
             hrefValue={brand?.href ?? ""}
             noLink={!!brand?.noLink}
             onHrefChange={(v) => set(["brand", "href"], v)}
             onNoLinkChange={(v) => set(["brand", "noLink"], v || undefined)}
             placeholder="#hero"
+            pages={allPages}
           />
         </InspectorField>
 
@@ -269,7 +253,7 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         </InspectorField>
 
         <InspectorField label="Phone href">
-          <HrefInput
+          <PageHrefInput
             hrefValue={desktop?.phoneHref ?? ""}
             noLink={!!desktop?.phoneNoLink}
             onHrefChange={(v) => set(["desktop", "phoneHref"], v)}
@@ -287,12 +271,13 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         </InspectorField>
 
         <InspectorField label="Portal href">
-          <HrefInput
+          <PageHrefInput
             hrefValue={desktopPortal?.href ?? ""}
             noLink={!!desktopPortal?.noLink}
             onHrefChange={(v) => set(["desktop", "portal", "href"], v)}
             onNoLinkChange={(v) => set(["desktop", "portal", "noLink"], v || undefined)}
             placeholder="#"
+            pages={allPages}
           />
         </InspectorField>
 
@@ -305,12 +290,13 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         </InspectorField>
 
         <InspectorField label="Secondary CTA href">
-          <HrefInput
+          <PageHrefInput
             hrefValue={desktop?.secondaryPortal?.href ?? ""}
             noLink={!!desktop?.secondaryPortal?.noLink}
             onHrefChange={(v) => set(["desktop", "secondaryPortal", "href"], v)}
             onNoLinkChange={(v) => set(["desktop", "secondaryPortal", "noLink"], v || undefined)}
             placeholder="#"
+            pages={allPages}
           />
         </InspectorField>
 
@@ -330,6 +316,7 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         items={navLeft}
         path={["desktop", "navigation", "left"]}
         set={set}
+        pages={allPages}
       />
 
       {/* ===== Desktop Nav Right ===== */}
@@ -339,12 +326,13 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         items={navRight}
         path={["desktop", "navigation", "right"]}
         set={set}
+        pages={allPages}
       />
 
       {/* ===== Mobile Top Bar ===== */}
       <InspectorSection title="Mobile Top Bar" icon={<Smartphone className="h-3 w-3" />} defaultOpen={false}>
         <InspectorField label="Phone href">
-          <HrefInput
+          <PageHrefInput
             hrefValue={top?.phoneHref ?? ""}
             noLink={!!top?.phoneNoLink}
             onHrefChange={(v) => set(["mobile", "top", "phoneHref"], v)}
@@ -354,7 +342,7 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         </InspectorField>
 
         <InspectorField label="Email href">
-          <HrefInput
+          <PageHrefInput
             hrefValue={top?.emailHref ?? ""}
             noLink={!!top?.emailNoLink}
             onHrefChange={(v) => set(["mobile", "top", "emailHref"], v)}
@@ -391,12 +379,13 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
           onChange={(v) => set(["mobile", "portal", "label"], v)}
           placeholder="Parent Portal"
         />
-        <HrefInput
+        <PageHrefInput
           hrefValue={portal?.href ?? ""}
           noLink={!!portal?.noLink}
           onHrefChange={(v) => set(["mobile", "portal", "href"], v)}
           onNoLinkChange={(v) => set(["mobile", "portal", "noLink"], v || undefined)}
           placeholder="#"
+          pages={allPages}
         />
       </InspectorSection>
 
@@ -431,6 +420,7 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
                 set(["mobile", "menu"], setAt(menu, idx, { ...m, noLink: !m?.noLink }))
               }
               idx={idx}
+              pages={allPages}
             />
           ))}
           {menu.length === 0 && (
@@ -478,12 +468,13 @@ export function HeaderV1Form({ value, onChange }: BlockFormProps) {
         </div>
 
         <InspectorField label="Href">
-          <HrefInput
+          <PageHrefInput
             hrefValue={promo?.href ?? ""}
             noLink={!!promo?.noLink}
             onHrefChange={(v) => set(["mobile", "promo", "href"], v)}
             onNoLinkChange={(v) => set(["mobile", "promo", "noLink"], v || undefined)}
             placeholder="#"
+            pages={allPages}
           />
         </InspectorField>
       </InspectorSection>

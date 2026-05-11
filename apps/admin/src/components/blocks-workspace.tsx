@@ -1098,6 +1098,7 @@ export function BlocksWorkspace({
                 variant={active.variant}
                 initial={active.data}
                 viewMode={viewMode}
+                allPages={allPages}
                 externalSelectedElementId={selectedElementId}
                 externalDraftUpdate={externalDraftUpdate}
                 onElementSelect={handleElementSelect}

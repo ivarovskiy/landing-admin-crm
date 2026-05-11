@@ -11,14 +11,14 @@ import {
   InspectorTextarea,
   InspectorSelect,
   BlockLayoutSection,
-  HrefInput,
+  PageHrefInput,
 } from "@/components/inspector";
 import { LayoutGrid, Link2, Megaphone, Plus, Trash2, Type } from "lucide-react";
 
 type Link = { label?: string; href?: string; noLink?: boolean };
 type Column = { links?: Link[] };
 
-export function FooterV1Form({ value, onChange }: BlockFormProps) {
+export function FooterV1Form({ value, onChange, allPages }: BlockFormProps) {
   const left = value?.left ?? {};
   const right = value?.right ?? {};
   const portal = right?.portal ?? {};
@@ -35,12 +35,13 @@ export function FooterV1Form({ value, onChange }: BlockFormProps) {
     <div>
       <InspectorSection title="Brand (Left)" icon={<LayoutGrid className="h-3 w-3" />}>
         <InspectorField label="Href">
-          <HrefInput
+          <PageHrefInput
             hrefValue={left?.href ?? ""}
             noLink={!!left?.noLink}
             onHrefChange={(v) => set(["left", "href"], v)}
             onNoLinkChange={(v) => set(["left", "noLink"], v || undefined)}
             placeholder="#top"
+            pages={allPages}
           />
         </InspectorField>
 
@@ -121,7 +122,7 @@ export function FooterV1Form({ value, onChange }: BlockFormProps) {
                       placeholder="Label"
                     />
                     <div className="flex-1">
-                      <HrefInput
+                      <PageHrefInput
                         hrefValue={l?.href ?? ""}
                         noLink={!!l?.noLink}
                         onHrefChange={(v) => set(["columns", colIdx, "links", linkIdx, "href"], v)}
@@ -129,6 +130,7 @@ export function FooterV1Form({ value, onChange }: BlockFormProps) {
                           set(["columns", colIdx, "links", linkIdx, "noLink"], v || undefined)
                         }
                         placeholder="Href"
+                        pages={allPages}
                       />
                     </div>
                     <button
@@ -159,12 +161,13 @@ export function FooterV1Form({ value, onChange }: BlockFormProps) {
             onChange={(v) => set(["right", "portal", "label"], v)}
             placeholder="Label"
           />
-          <HrefInput
+          <PageHrefInput
             hrefValue={portal?.href ?? ""}
             noLink={!!portal?.noLink}
             onHrefChange={(v) => set(["right", "portal", "href"], v)}
             onNoLinkChange={(v) => set(["right", "portal", "noLink"], v || undefined)}
             placeholder="Href"
+            pages={allPages}
           />
           <InspectorSelect
             value={portal?.icon ?? "lock"}
@@ -186,12 +189,13 @@ export function FooterV1Form({ value, onChange }: BlockFormProps) {
             onChange={(v) => set(["right", "promo", "label"], v)}
             placeholder="Label"
           />
-          <HrefInput
+          <PageHrefInput
             hrefValue={promo?.href ?? ""}
             noLink={!!promo?.noLink}
             onHrefChange={(v) => set(["right", "promo", "href"], v)}
             onNoLinkChange={(v) => set(["right", "promo", "noLink"], v || undefined)}
             placeholder="Href"
+            pages={allPages}
           />
           <LogoField
             value={leftLogo}

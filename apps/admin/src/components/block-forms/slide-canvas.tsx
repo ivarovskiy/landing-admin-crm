@@ -106,6 +106,7 @@ function CanvasItem({
   canMoveDown,
   onMove,
   onChange,
+  baselineOffset,
 }: {
   itemKey: string;
   slide: Slide;
@@ -114,12 +115,14 @@ function CanvasItem({
   canMoveDown: boolean;
   onMove: (key: string, dir: "up" | "down") => void;
   onChange: (s: Slide) => void;
+  baselineOffset?: number;
 }) {
   const elRef = useRef<HTMLDivElement>(null);
   const style = getStyle(slide, itemKey);
   const text = getText(slide, itemKey);
   const label = getLabel(itemKey);
-  const mt = parsePx(style?.mt);
+  const snapToBaseline = !!(style?.snapToBaseline && baselineOffset != null && baselineOffset > 0);
+  const mt = snapToBaseline ? REF_H - baselineOffset! : parsePx(style?.mt);
   const ml = parsePx(style?.ml);
   const typo = style?.typo ?? "";
 
@@ -148,31 +151,32 @@ function CanvasItem({
   const onPM = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
     if (!d) return;
-    const dy = (e.clientY - d.startY) / d.scale;
+    const rawDy = (e.clientY - d.startY) / d.scale;
     const dx = (e.clientX - d.startX) / d.scale;
-    if (Math.abs(dy) > 4 || Math.abs(dx) > 4) d.moved = true;
+    const dy = snapToBaseline ? 0 : rawDy;
+    if (Math.abs(rawDy) > 4 || Math.abs(dx) > 4) d.moved = true;
     if (!d.moved) return;
     // Direct DOM — no React state during drag
     const el = elRef.current;
     if (!el) return;
-    el.style.top = `${Math.round(d.startMt + dy)}px`;
+    if (!snapToBaseline) el.style.top = `${Math.round(d.startMt + dy)}px`;
     el.style.left = `${Math.round(d.startMl + dx)}px`;
-  }, []);
+  }, [snapToBaseline]);
 
   const onPU = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
     dragRef.current = null;
     if (!d?.moved) return;
-    const dy = (e.clientY - d.startY) / d.scale;
+    const rawDy = (e.clientY - d.startY) / d.scale;
     const dx = (e.clientX - d.startX) / d.scale;
-    const newMt = Math.round(d.startMt + dy);
+    const newMt = snapToBaseline ? mt : Math.round(d.startMt + rawDy);
     const newMl = Math.round(d.startMl + dx);
     commitStyle(slide, itemKey, {
       ...(style ?? {}),
       mt: newMt ? `${newMt}px` : undefined,
       ml: newMl ? `${newMl}px` : undefined,
     }, onChange);
-  }, [slide, itemKey, style, onChange]);
+  }, [slide, itemKey, style, onChange, snapToBaseline, mt]);
 
   const onPC = useCallback(() => {
     if (!dragRef.current) return;
@@ -251,11 +255,15 @@ export function SlideCanvas({
   slide,
   enableDrag = true,
   onChange,
+  gapOffset,
+  baselineOffset,
 }: {
   slide: Slide;
   tuningScope: HeroTuningScope; // reserved for future scope-aware editing
   enableDrag?: boolean;
   onChange: (s: Slide) => void;
+  gapOffset?: number;
+  baselineOffset?: number;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -342,6 +350,26 @@ export function SlideCanvas({
             }}
           />
 
+          {/* Gap guideline — amber dashed line at gapOffset from top */}
+          {gapOffset != null && gapOffset > 0 && (
+            <div
+              className="absolute left-0 right-0 pointer-events-none"
+              style={{ top: gapOffset, borderTop: "1.5px dashed rgba(245,158,11,0.75)", zIndex: 1 }}
+            >
+              <span className="absolute left-1 -top-3 text-[7px] font-medium" style={{ color: "rgba(245,158,11,0.9)" }}>gap {gapOffset}px</span>
+            </div>
+          )}
+
+          {/* Baseline guideline — purple dashed line at baselineOffset from bottom */}
+          {baselineOffset != null && baselineOffset > 0 && (
+            <div
+              className="absolute left-0 right-0 pointer-events-none"
+              style={{ top: REF_H - baselineOffset, borderTop: "1.5px dashed rgba(139,92,246,0.75)", zIndex: 1 }}
+            >
+              <span className="absolute left-1 -top-3 text-[7px] font-medium" style={{ color: "rgba(139,92,246,0.9)" }}>baseline {baselineOffset}px</span>
+            </div>
+          )}
+
           {!hasText ? (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span className="text-[11px] text-muted-foreground/40">Full-image template — no text elements</span>
@@ -366,6 +394,7 @@ export function SlideCanvas({
                   canMoveDown={index < keys.length - 1}
                   onMove={moveKey}
                   onChange={onChange}
+                  baselineOffset={baselineOffset}
                 />
               );
             })

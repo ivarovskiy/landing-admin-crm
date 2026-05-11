@@ -12,10 +12,13 @@ import { DocHeaderV1Form } from "./doc-header-v1-form";
 import { DocBodyV1Form } from "./doc-body-v1-form";
 import { NewStudentMemoV1Form } from "./new-student-memo-v1-form";
 
+export type PageLite = { id: string; slug: string; parentId?: string | null };
+
 export type BlockFormProps = {
   value: any;
   onChange: (next: any) => void;
   viewMode: "desktop" | "ipadPro" | "mobile";
+  allPages?: PageLite[];
 };
 
 const REGISTRY: Record<string, ComponentType<BlockFormProps>> = {
