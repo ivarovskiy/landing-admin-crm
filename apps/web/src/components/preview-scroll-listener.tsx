@@ -140,7 +140,9 @@ export function PreviewScrollListener() {
       const elNode = blockEl.querySelector(`[data-el="${CSS.escape(elementId)}"]`);
       if (elNode) {
         elNode.classList.add("preview-el-active");
-        elNode.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        // Canvas positions the artboard via block-offset; scrollIntoView here would
+        // shift the iframe's internal scroll, clipping the element behind the artboard's
+        // overflow:hidden and making it appear to jump to the top.
       }
     }
 
