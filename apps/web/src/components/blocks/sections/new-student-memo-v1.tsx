@@ -317,7 +317,7 @@ export function NewStudentMemoV1({ data }: { data: any }) {
               ) : null}
               {subtitle ? (
                 <div
-                  className={classFromStyle("nsm__subtitle", typo?.subtitle, data?.subtitleStyle)}
+                  className={classFromStyle("typo-subtitle", typo?.subtitle, data?.subtitleStyle)}
                   style={elementStyle(data?.subtitleStyle)}
                 >
                   {renderRichText(subtitle)}
