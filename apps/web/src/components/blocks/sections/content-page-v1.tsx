@@ -56,6 +56,8 @@ type ContentItem = {
   bodyStrokeW?: string;
   // mobile
   mobileOrder?: number;
+  // row layout
+  fullWidth?: boolean;
   // free-flow layout per breakpoint
   layout?: {
     md?: ResponsiveItemLayout;
@@ -502,6 +504,7 @@ function ContentImageItem({
           item.src ? "" : "cp__image--placeholder",
           onItemChange ? "media-resize-target" : "",
         ].filter(Boolean).join(" ")}
+        style={{ width: item.imageWidth || "" }}
       >
         {item.src ? (
           <MediaImage
@@ -823,6 +826,16 @@ export function ContentPageV1({
       )
     ) : null;
 
+  // Full-width items (two-column mode only) — rendered below both columns
+  const leftWithIdx = left.map((item, idx) => ({ item, idx }));
+  const rightWithIdx = right.map((item, idx) => ({ item, idx }));
+  const leftNormal = leftWithIdx.filter(({ item }) => !item.fullWidth);
+  const rightNormal = rightWithIdx.filter(({ item }) => !item.fullWidth);
+  const fullWidthEntries = columnsMode === "two" ? [
+    ...leftWithIdx.filter(({ item }) => item.fullWidth).map(({ item, idx }) => ({ item, col: "left" as const, flatIdx: idx })),
+    ...rightWithIdx.filter(({ item }) => item.fullWidth).map(({ item, idx }) => ({ item, col: "right" as const, flatIdx: left.length + idx })),
+  ] : [];
+
   // Normal flat columns layout
   const columns =
     gridContent ?? (columnsMode === "one" ? (
@@ -836,16 +849,16 @@ export function ContentPageV1({
           </div>
         </div>
       ) : null
-    ) : left.length > 0 || right.length > 0 ? (
+    ) : leftNormal.length > 0 || rightNormal.length > 0 ? (
       <div className={columnsClass} style={columnsStyle}>
         <div className="cp__col cp__col--left">
-          {left.map((item, idx) => renderItem(
+          {leftNormal.map(({ item, idx }) => renderItem(
             item, idx, "left", undefined,
             editMode ? (changes) => updateFlatItem(idx, changes) : undefined,
           ))}
         </div>
         <div className="cp__col cp__col--right">
-          {right.map((item, idx) => renderItem(
+          {rightNormal.map(({ item, idx }) => renderItem(
             item, idx, "right", undefined,
             editMode ? (changes) => updateFlatItem(left.length + idx, changes) : undefined,
           ))}
@@ -853,18 +866,38 @@ export function ContentPageV1({
       </div>
     ) : null);
 
+  const fullRowsSection = fullWidthEntries.length > 0 ? (
+    <div
+      className="cp__full-rows"
+      style={contentMaxWidth ? { "--cp-content-max-w": contentMaxWidth } as React.CSSProperties : undefined}
+    >
+      {fullWidthEntries.map(({ item, col, flatIdx }) => renderItem(
+        item, flatIdx, col, undefined,
+        editMode ? (changes) => updateFlatItem(flatIdx, changes) : undefined,
+      ))}
+    </div>
+  ) : null;
+
   const updateHero = editMode && onChange
     ? (field: string, value: unknown) => onChange({ ...data, [field]: value })
     : null;
 
   const bodyContent = entriesContent ?? (boxed ? (
-    <div className="cp__box">
-      <div className="cp__box-clip" aria-hidden="true">
-        <ClipIcon />
+    <>
+      <div className="cp__box">
+        <div className="cp__box-clip" aria-hidden="true">
+          <ClipIcon />
+        </div>
+        {columns}
       </div>
+      {fullRowsSection}
+    </>
+  ) : (
+    <>
       {columns}
-    </div>
-  ) : columns);
+      {fullRowsSection}
+    </>
+  ));
 
   const heroClass = ["cp__hero", heroAlign ? `cp__hero--align-${heroAlign}` : ""]
     .filter(Boolean)
@@ -876,7 +909,7 @@ export function ContentPageV1({
         {kicker || title || subtitle || cta?.label ? (
           <div className={heroClass}>
             <div className="cp__hero-text">
-              {kicker ? (
+              {kicker || updateHero ? (
                 <div className="cp__hero-row" style={rowStyle(kickerAlign, kickerGap)}>
                   <div
                     data-el="kicker"
@@ -885,28 +918,40 @@ export function ContentPageV1({
                   >
                     {updateHero ? (
                       <TipTapInline
-                        value={kicker}
+                        value={kicker ?? ""}
                         onChange={(html) => updateHero("kicker", html)}
-                        multiline={false}
                       />
                     ) : kicker}
                   </div>
                 </div>
               ) : null}
-              {title ? (
+              {title || updateHero ? (
                 <div className="cp__hero-row" style={rowStyle(titleAlign, titleGap)}>
-                  <OutlineStampText
-                    as="h1"
-                    className="cp__title"
-                    stamp={STAMP_TITLE}
-                    data-el="title"
-                    style={elementStyle(titleStrokeW, titleMaxW)}
-                  >
-                    {title}
-                  </OutlineStampText>
+                  {updateHero ? (
+                    <h1
+                      className="ds-outline-stamp cp__title"
+                      data-el="title"
+                      style={elementStyle(titleStrokeW, titleMaxW)}
+                    >
+                      <TipTapInline
+                        value={title ?? ""}
+                        onChange={(html) => updateHero("title", html)}
+                      />
+                    </h1>
+                  ) : (
+                    <OutlineStampText
+                      as="h1"
+                      className="cp__title"
+                      stamp={STAMP_TITLE}
+                      data-el="title"
+                      style={elementStyle(titleStrokeW, titleMaxW)}
+                    >
+                      {title}
+                    </OutlineStampText>
+                  )}
                 </div>
               ) : null}
-              {subtitle ? (
+              {subtitle || updateHero ? (
                 <div className="cp__hero-row" style={rowStyle(subtitleAlign, subtitleGap)}>
                   <p
                     className={subtitleTypo}
@@ -915,9 +960,8 @@ export function ContentPageV1({
                   >
                     {updateHero ? (
                       <TipTapInline
-                        value={subtitle}
+                        value={subtitle ?? ""}
                         onChange={(html) => updateHero("subtitle", html)}
-                        multiline={false}
                       />
                     ) : subtitle}
                   </p>

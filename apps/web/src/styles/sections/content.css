@@ -563,6 +563,15 @@
   transition: top 80ms linear, opacity 200ms ease;
 }
 
+/* ---- Full-width items (below both columns) ---- */
+.cp__full-rows {
+  margin-top: clamp(16px, 2vw, 24px);
+  max-width: var(--cp-content-max-w, none);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2vw, 24px);
+}
+
 /* ---- Single-column mode ---- */
 .cp__columns--single {
   display: flex;

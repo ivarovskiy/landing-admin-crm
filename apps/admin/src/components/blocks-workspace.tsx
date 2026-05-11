@@ -601,8 +601,12 @@ export function BlocksWorkspace({
     !!active &&
     !previewMode &&
     effectiveOptions?.enableCanvasDrag !== false &&
-    ((active.type === "hero" && active.variant === "slider-v1") ||
-      (active.type === "content-page" && active.variant === "v1"));
+    (
+      (active.type === "hero" && active.variant === "slider-v1") ||
+      (active.type === "content-page" && active.variant === "v1") ||
+      (active.type === "text-block" && active.variant === "v1") ||
+      (active.type === "image-block" && active.variant === "v1")
+    );
 
   const postLiveEditMode = useCallback(() => {
     try {

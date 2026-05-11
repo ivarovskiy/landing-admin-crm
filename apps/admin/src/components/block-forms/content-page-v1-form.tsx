@@ -241,6 +241,14 @@ function TextItemEditor({
     <>
       <SectionNote>Edit text and formatting directly in the preview.</SectionNote>
 
+      <InspectorField label="Full width">
+        <InspectorToggle
+          checked={!!item.fullWidth}
+          onChange={(v) => onChange({ ...item, fullWidth: v || undefined })}
+          label="Spans full content width (below columns)"
+        />
+      </InspectorField>
+
       <InspectorTextarea
         value={h(item.heading)}
         onChange={(v) => onChange({ ...item, heading: v })}
@@ -331,6 +339,14 @@ function ImageItemEditor({
 
   return (
     <>
+      <InspectorField label="Full width">
+        <InspectorToggle
+          checked={!!item.fullWidth}
+          onChange={(v) => onChange({ ...item, fullWidth: v || undefined })}
+          label="Spans full content width (below columns)"
+        />
+      </InspectorField>
+
       <ImageUpload
         value={item.src ?? ""}
         onChange={(url) => onChange({ ...item, src: url })}
