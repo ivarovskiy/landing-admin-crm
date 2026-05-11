@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { FileText, ExternalLink, Search } from "lucide-react";
+import { timeAgo } from "@/lib/time-utils";
 
 export type AdminPageRow = {
   id: string;
@@ -26,15 +27,6 @@ function detectSite(slug: string): { label: string; color: string } | null {
     return { label: "Simply Dance Studio", color: "oklch(0.6 0.18 270)" };
   }
   return null;
-}
-
-function timeAgo(date: string, now: number) {
-  const diff = now - new Date(date).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
 }
 
 export function PagesTable({ pages }: { pages: AdminPageRow[] }) {

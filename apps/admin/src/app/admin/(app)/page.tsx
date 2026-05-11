@@ -1,17 +1,9 @@
 import { requireUser } from "@/lib/auth";
 import { fetchAdminPages } from "@/lib/admin-api";
+import { timeAgo } from "@/lib/time-utils";
 import Link from "next/link";
 import { Plus, Globe, PenLine } from "lucide-react";
 import { PagesTable, type AdminPageRow } from "./pages-table";
-
-function timeAgo(date: string, now: number) {
-  const diff = now - new Date(date).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
 
 export default async function AdminHome() {
   await requireUser();

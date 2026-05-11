@@ -1,6 +1,7 @@
 import type React from "react";
 import { Container } from "@/components/landing/ui";
 import { TipTapInline, renderRichText } from "@/components/rich-text";
+import { TYPO_PRESETS } from "@/lib/typo-presets";
 
 type TextBlockV1Data = {
   kicker?: string;
@@ -28,17 +29,6 @@ type TextBlockV1Data = {
   bodyMaxWidth?: string;
 };
 
-const TYPO_PRESETS: { value: string; label: string }[] = [
-  { value: "", label: "Default" },
-  { value: "typo-content-header", label: "Content Header (78px)" },
-  { value: "typo-homepage-header", label: "Homepage Header (104px)" },
-  { value: "typo-subtitle", label: "Subtitle (47px italic)" },
-  { value: "typo-body-text", label: "Body Text (20px)" },
-  { value: "typo-section-header", label: "Section Header (22px)" },
-  { value: "typo-text-header", label: "Text Header (22px)" },
-  { value: "typo-promo-header", label: "Promo Header (26px)" },
-  { value: "typo-teachers-header", label: "Teachers Header (22px)" },
-];
 
 function strokeStyle(value?: string): React.CSSProperties | undefined {
   return value ? ({ "--text-stroke-w": value } as React.CSSProperties) : undefined;

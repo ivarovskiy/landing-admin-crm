@@ -13,7 +13,7 @@ import {
 import { Image as ImageIcon, Maximize2 } from "lucide-react";
 import { AdvancedPanel, FieldGrid, PresetButton, PresetRow } from "./admin-control-kit";
 
-const API_BASE = typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_API_URL ?? "") : "";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const ASPECT_RATIOS = [
   { value: "", label: "Auto" },

@@ -18,7 +18,7 @@ export default async function GlobalBlocksPage({
 }) {
   await requireUser()
 
-  const sp = await Promise.resolve(searchParams)
+  const sp = await searchParams
   const scopeRaw = pickScope(sp)
 
   const pagesRes = await fetchAdminPages().catch(() => ({ items: [] as any[] }))

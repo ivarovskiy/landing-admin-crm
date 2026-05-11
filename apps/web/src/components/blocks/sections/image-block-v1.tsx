@@ -71,7 +71,6 @@ export function ImageBlockV1({
           src={d.src}
           alt={d.alt ?? ""}
           className="image-block__media"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
           sizes="(max-width: 767px) 100vw, 960px"
           objectFit={d.objectFit ?? "cover"}
         />
