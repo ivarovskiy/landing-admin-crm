@@ -2,6 +2,7 @@ import type React from "react";
 import { Container } from "@/components/landing/ui";
 import NextImage from "next/image";
 import ClipIcon from "@/assets/icons/clip.svg";
+import { renderRichText } from "@/components/rich-text";
 
 type ElementStyle = {
   mt?: string;
@@ -74,7 +75,7 @@ export function DocBodyV1({ data }: { data: any }) {
                         .join(" ")}
                       style={elStyle(s.headingStyle)}
                     >
-                      {s.heading}
+                      {renderRichText(s.heading)}
                     </h2>
                   ) : null}
                   {s.body ? (
@@ -84,9 +85,7 @@ export function DocBodyV1({ data }: { data: any }) {
                         .join(" ")}
                       style={elStyle(s.bodyStyle)}
                     >
-                      {s.body.split("\n\n").map((p, pi) => (
-                        <p key={pi}>{p}</p>
-                      ))}
+                      {renderRichText(s.body)}
                     </div>
                   ) : null}
                 </div>

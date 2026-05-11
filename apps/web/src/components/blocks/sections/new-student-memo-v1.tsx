@@ -1,5 +1,6 @@
 import type React from "react";
 import { cn } from "@/lib/cn";
+import { renderRichText } from "@/components/rich-text";
 import {
   OutlineStampText,
   STAMP_HERO_TITLE,
@@ -288,12 +289,12 @@ export function NewStudentMemoV1({ data }: { data: any }) {
           <div className="nsm__title-row">
             <div className="nsm__title-copy">
               {kicker ? (
-                <p
+                <div
                   className={classFromStyle("nsm__kicker", typo?.kicker, data?.kickerStyle)}
                   style={elementStyle(data?.kickerStyle)}
                 >
-                  {kicker}
-                </p>
+                  {renderRichText(kicker)}
+                </div>
               ) : null}
               {title ? (
                 isTitleStamp ? (
@@ -303,24 +304,24 @@ export function NewStudentMemoV1({ data }: { data: any }) {
                     className={classFromStyle("nsm__title", typo?.title, data?.titleStyle)}
                     style={elementStyle(data?.titleStyle)}
                   >
-                    {title}
+                    {renderRichText(title)}
                   </OutlineStampText>
                 ) : (
                   <h1
                     className={classFromStyle("nsm__title", typo?.title, data?.titleStyle)}
                     style={elementStyle(data?.titleStyle)}
                   >
-                    {title}
+                    {renderRichText(title)}
                   </h1>
                 )
               ) : null}
               {subtitle ? (
-                <p
+                <div
                   className={classFromStyle("nsm__subtitle", typo?.subtitle, data?.subtitleStyle)}
                   style={elementStyle(data?.subtitleStyle)}
                 >
-                  {subtitle}
-                </p>
+                  {renderRichText(subtitle)}
+                </div>
               ) : null}
             </div>
 
@@ -364,20 +365,17 @@ export function NewStudentMemoV1({ data }: { data: any }) {
                           className={classFromStyle("nsm__section-title", typo?.sectionTitle, headingStyle)}
                           style={elementStyle(headingStyle)}
                         >
-                          {section.heading}
+                          {renderRichText(section.heading)}
                         </h2>
                       ) : null}
-                      {section.body
-                        ? section.body.split("\n\n").map((para, j) => (
-                            <p
-                              key={j}
-                              className={classFromStyle("nsm__body-text", typo?.bodyText, bodyStyle)}
-                              style={elementStyle(bodyStyle)}
-                            >
-                              {para}
-                            </p>
-                          ))
-                        : null}
+                      {section.body ? (
+                        <div
+                          className={classFromStyle("nsm__body-text", typo?.bodyText, bodyStyle)}
+                          style={elementStyle(bodyStyle)}
+                        >
+                          {renderRichText(section.body)}
+                        </div>
+                      ) : null}
                     </section>
                   );
                 })}

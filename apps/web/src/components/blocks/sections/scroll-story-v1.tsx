@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type React from "react";
 import { Container } from "@/components/landing/ui";
 import { MediaImage } from "@/components/media-image";
+import { renderRichText } from "@/components/rich-text";
 
 // Same item schema as content-page-v1 — copy the JSON as-is
 type ContentItem = {
@@ -62,12 +63,10 @@ function Col({ items }: { items: ContentItem[] }) {
 
         return (
           <div key={idx} className="ss__text-item">
-            {item.heading ? <p className="ss__label">{item.heading}</p> : null}
+            {item.heading ? <div className="ss__label">{renderRichText(item.heading)}</div> : null}
             {item.body ? (
               <div className="ss__body">
-                {item.body.split("\n\n").map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))}
+                {renderRichText(item.body)}
               </div>
             ) : null}
           </div>

@@ -924,7 +924,7 @@ export function ContentPageV1({
                         currentTypoClass={kickerTypo}
                         onTypoChange={(cls) => updateHero("kickerTypo", cls || undefined)}
                       />
-                    ) : kicker}
+                    ) : renderRichText(kicker ?? "")}
                   </div>
                 </div>
               ) : null}
@@ -961,7 +961,7 @@ export function ContentPageV1({
               ) : null}
               {subtitle || updateHero ? (
                 <div className="cp__hero-row" style={rowStyle(subtitleAlign, subtitleGap)}>
-                  <p
+                  <div
                     className={subtitleTypo}
                     data-el="subtitle"
                     style={elementStyle(subtitleStrokeW, subtitleMaxW)}
@@ -974,8 +974,8 @@ export function ContentPageV1({
                         currentTypoClass={subtitleTypo}
                         onTypoChange={(cls) => updateHero("subtitleTypo", cls || undefined)}
                       />
-                    ) : subtitle}
-                  </p>
+                    ) : renderRichText(subtitle ?? "")}
+                  </div>
                 </div>
               ) : null}
             </div>

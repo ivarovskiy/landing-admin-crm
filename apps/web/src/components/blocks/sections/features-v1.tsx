@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { renderRichText } from "@/components/rich-text";
 import {
   Container,
   Kicker,
@@ -97,7 +98,7 @@ export function FeaturesV1({ data }: { data: FeaturesV1Data }) {
                 style={rStyle}
                 data-el="subtitle"
               >
-                {data.subtitle}
+                {renderRichText(data.subtitle)}
               </div>
 
           );
@@ -129,11 +130,11 @@ export function FeaturesV1({ data }: { data: FeaturesV1Data }) {
                   </div>
 
                   {it?.title ? (
-                    <Kicker className="feature-card__title" data-el={`item-${idx}-title`}>{it.title}</Kicker>
+                    <Kicker className="feature-card__title" data-el={`item-${idx}-title`}>{renderRichText(it.title)}</Kicker>
                   ) : null}
 
                   {it?.text ? (
-                    <p className="feature-card__text" data-el={`item-${idx}-body`}>{it.text}</p>
+                    <div className="feature-card__text" data-el={`item-${idx}-body`}>{renderRichText(it.text)}</div>
                   ) : null}
                 </div>
               </div>
