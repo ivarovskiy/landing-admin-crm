@@ -10,7 +10,7 @@
 
 .guidLineTemp {
   width: 1px;
-  height: 100vh;
+  height: 100%;
   background: red;
   position: absolute;
   left: 50%;
