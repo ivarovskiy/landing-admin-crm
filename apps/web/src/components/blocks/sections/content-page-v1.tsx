@@ -920,6 +920,9 @@ export function ContentPageV1({
                       <TipTapInline
                         value={kicker ?? ""}
                         onChange={(html) => updateHero("kicker", html)}
+                        typoOptions={TYPO_PRESETS}
+                        currentTypoClass={kickerTypo}
+                        onTypoChange={(cls) => updateHero("kickerTypo", cls || undefined)}
                       />
                     ) : kicker}
                   </div>
@@ -933,10 +936,15 @@ export function ContentPageV1({
                       data-el="title"
                       style={elementStyle(titleStrokeW, titleMaxW)}
                     >
-                      <TipTapInline
-                        value={title ?? ""}
-                        onChange={(html) => updateHero("title", html)}
-                      />
+                      <span className="ds-outline-stamp__shadow" aria-hidden="true">
+                        {(title ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}
+                      </span>
+                      <span className="ds-outline-stamp__front">
+                        <TipTapInline
+                          value={title ?? ""}
+                          onChange={(html) => updateHero("title", html)}
+                        />
+                      </span>
                     </h1>
                   ) : (
                     <OutlineStampText
@@ -962,6 +970,9 @@ export function ContentPageV1({
                       <TipTapInline
                         value={subtitle ?? ""}
                         onChange={(html) => updateHero("subtitle", html)}
+                        typoOptions={TYPO_PRESETS}
+                        currentTypoClass={subtitleTypo}
+                        onTypoChange={(cls) => updateHero("subtitleTypo", cls || undefined)}
                       />
                     ) : subtitle}
                   </p>

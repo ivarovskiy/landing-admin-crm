@@ -103,6 +103,8 @@ type FloatingToolbarProps = {
   onThinSpace: () => void;
   typoOptions?: { value: string; label: string }[];
   onTypoChange?: (cls: string) => void;
+  /** When provided, shown as the selected value in the typo dropdown (external state). */
+  currentTypoClass?: string;
 };
 
 function Btn({
@@ -181,6 +183,7 @@ function FloatingToolbar({
   onThinSpace,
   typoOptions,
   onTypoChange,
+  currentTypoClass,
 }: FloatingToolbarProps) {
   if (!state) return null;
 
@@ -218,7 +221,7 @@ function FloatingToolbar({
       {typoOptions && onTypoChange && (
         <>
           <select
-            value={state.typoClass}
+            value={currentTypoClass ?? state.typoClass}
             onChange={(e) => onTypoChange(e.target.value)}
             onMouseDown={(e) => e.stopPropagation()}
             title="Typography preset (applies to selected text)"
@@ -349,6 +352,8 @@ export function TipTapInline({
   style,
   typoClass,
   typoOptions,
+  onTypoChange,
+  currentTypoClass,
   showWordCount = false,
 }: {
   value: string;
@@ -361,6 +366,11 @@ export function TipTapInline({
   typoClass?: string;
   /** If provided, shows a typography preset select inside the floating toolbar. */
   typoOptions?: { value: string; label: string }[];
+  /** When provided, replaces the internal mark-based handler — dropdown changes
+   *  fire this instead of inserting an inline TypoMark (for external-state fields). */
+  onTypoChange?: (cls: string) => void;
+  /** Selected value shown in the typo dropdown when using external state. */
+  currentTypoClass?: string;
   /** Show word count below the editor (opt-in, default false). */
   showWordCount?: boolean;
 }) {
@@ -610,7 +620,8 @@ export function TipTapInline({
         onHR={() => editor?.chain().focus().setHorizontalRule().run()}
         onClearFormat={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
         typoOptions={typoOptions}
-        onTypoChange={typoOptions ? handleApplyTypo : undefined}
+        onTypoChange={onTypoChange ?? (typoOptions ? handleApplyTypo : undefined)}
+        currentTypoClass={currentTypoClass}
         onIndent={() => editor?.chain().focus().sinkListItem("listItem").run()}
         onOutdent={() => editor?.chain().focus().liftListItem("listItem").run()}
         onThinSpace={handleThinSpace}
