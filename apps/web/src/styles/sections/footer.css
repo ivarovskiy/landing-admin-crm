@@ -214,7 +214,7 @@
 }
 
 .footer-desktop__grid {
-  /* padding-left: 32px; */
+  padding-left: 32px;
   display: flex;
   justify-content: space-between;
   width: 100%;
@@ -233,7 +233,7 @@
 }
 
 .footer-desktop__logo {
-  width: clamp(240px, 18vw, 333px);
+  width: clamp(240px, 24vw, 333px);
   height: 99px;
   display: block;
 }
@@ -299,7 +299,6 @@
   width: min(100%, 300px);
   height: clamp(46px, 4.9vw, 60px);
   display: block;
-  transform: scale(1.05);
 }
 
 .footer-desktop__rule-wrap {
