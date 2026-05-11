@@ -13,7 +13,7 @@
  */
 
 import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
-import { ArrowDown, ArrowUp, GripVertical, Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, Lock, Plus } from "lucide-react";
 import type {
   Slide,
   ElementStyle,
@@ -121,7 +121,8 @@ function CanvasItem({
   const style = getStyle(slide, itemKey);
   const text = getText(slide, itemKey);
   const label = getLabel(itemKey);
-  const snapToBaseline = !!(style?.snapToBaseline && baselineOffset != null && baselineOffset > 0);
+  const isLocked = !!(style?.locked);
+  const snapToBaseline = !isLocked && !!(style?.snapToBaseline && baselineOffset != null && baselineOffset > 0);
   const mt = snapToBaseline ? REF_H - baselineOffset! : parsePx(style?.mt);
   const ml = parsePx(style?.ml);
   const typo = style?.typo ?? "";
@@ -136,6 +137,7 @@ function CanvasItem({
   } | null>(null);
 
   const onPD = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (isLocked) { e.stopPropagation(); return; }
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
     dragRef.current = {
@@ -146,7 +148,7 @@ function CanvasItem({
       moved: false,
       scale: scaleRef.current ?? 1,
     };
-  }, [mt, ml, scaleRef]);
+  }, [isLocked, mt, ml, scaleRef]);
 
   const onPM = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
@@ -195,12 +197,17 @@ function CanvasItem({
   return (
     <div
       ref={elRef}
-      className="sc-item absolute flex items-start gap-1 select-none cursor-grab active:cursor-grabbing rounded border border-primary/30 bg-background/80 px-1.5 py-1 hover:border-primary/70 transition-colors max-w-[90%]"
+      className={[
+        "sc-item absolute flex items-start gap-1 select-none rounded border bg-background/80 px-1.5 py-1 transition-colors max-w-[90%]",
+        isLocked
+          ? "cursor-default border-amber-400/50 opacity-70"
+          : "cursor-grab active:cursor-grabbing border-primary/30 hover:border-primary/70",
+      ].join(" ")}
       style={{ top: mt, left: ml, fontSize, touchAction: "none" }}
       onPointerDown={onPD}
-      onPointerMove={onPM}
-      onPointerUp={onPU}
-      onPointerCancel={onPC}
+      onPointerMove={isLocked ? undefined : onPM}
+      onPointerUp={isLocked ? undefined : onPU}
+      onPointerCancel={isLocked ? undefined : onPC}
     >
       <div
         className="flex shrink-0 flex-col gap-0.5"
@@ -209,7 +216,7 @@ function CanvasItem({
         <button
           type="button"
           className="rounded border border-border/70 bg-background/80 p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-25"
-          disabled={!canMoveUp}
+          disabled={!canMoveUp || isLocked}
           title="Move forward"
           onClick={(e) => {
             e.preventDefault();
@@ -222,7 +229,7 @@ function CanvasItem({
         <button
           type="button"
           className="rounded border border-border/70 bg-background/80 p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-25"
-          disabled={!canMoveDown}
+          disabled={!canMoveDown || isLocked}
           title="Move backward"
           onClick={(e) => {
             e.preventDefault();
@@ -233,10 +240,11 @@ function CanvasItem({
           <ArrowDown className="h-2.5 w-2.5" />
         </button>
       </div>
-      <GripVertical
-        className="shrink-0 text-muted-foreground/50 mt-px"
-        style={{ width: fontSize, height: fontSize }}
-      />
+      {isLocked ? (
+        <Lock className="shrink-0 text-amber-400/80 mt-px" style={{ width: fontSize, height: fontSize }} />
+      ) : (
+        <GripVertical className="shrink-0 text-muted-foreground/50 mt-px" style={{ width: fontSize, height: fontSize }} />
+      )}
       <div className="min-w-0">
         <div className="text-[8px] font-semibold uppercase tracking-widest text-muted-foreground/60 leading-none mb-0.5">
           {label}

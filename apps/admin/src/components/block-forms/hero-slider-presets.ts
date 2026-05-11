@@ -47,6 +47,7 @@ export type ElementStyle = {
   typo?: TypoClass; // typography class from design system
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
   snapToBaseline?: boolean; // lock Y to the canvas baseline guideline
+  locked?: boolean;         // prevent position/size changes in canvas and preview
   viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
 };
 

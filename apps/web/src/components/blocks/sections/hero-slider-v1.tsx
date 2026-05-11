@@ -5,6 +5,8 @@ import { Container, Hairline, Kicker, OutlineStampText, STAMP_TITLE, STAMP_SECTI
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { InlineText } from "./inline-icons";
+import { TipTapInline } from "@/components/rich-text";
+import { TYPO_PRESETS } from "@/lib/typo-presets";
 
 type SlideTemplate =
   | "image-left-copy-right"
@@ -29,6 +31,7 @@ type ElementStyle = {
   size?: string;
   typo?: string; // typography class from design system
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
+  locked?: boolean; // prevents drag/resize in preview and canvas
   viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
 };
 
@@ -930,6 +933,7 @@ function HeroSlide({
       spread={false}
       viewportProfile={viewportProfile}
       editableProps={editableProps}
+      onSlideChange={editMode ? onSlideChange : undefined}
     />
   );
 
@@ -1026,6 +1030,8 @@ function useSlideElementEditor(
 
   function editableProps(key: string, className?: string): React.HTMLAttributes<HTMLElement> {
     if (!editMode || !onSlideChange) return { className };
+    const elStyle = getSlideElementStyle(slide, key);
+    if (elStyle?.locked) return { className: cn(className, "hero-slide__editable hero-slide__editable--locked") };
 
     return {
       className: cn(className, "hero-slide__editable"),
@@ -1162,12 +1168,14 @@ function CopyStack({
   spread,
   viewportProfile,
   editableProps,
+  onSlideChange,
 }: {
   slide: Slide;
   slideIndex: number;
   spread?: boolean;
   viewportProfile?: HeroViewportProfileKey | null;
   editableProps: (key: string, className?: string) => React.HTMLAttributes<HTMLElement>;
+  onSlideChange?: (next: Slide) => void;
 }) {
   const kicker = slide?.kicker;
   const quote = slide?.quote;
@@ -1203,13 +1211,18 @@ function CopyStack({
 
   function renderElement(key: string) {
     if (key === "kicker" && kicker) {
+      const es = mergeElementStyle(slide.kickerStyle, viewportProfile);
+      const typo = es?.typo;
+      const s = elStyle(es);
+      if (onSlideChange) {
+        return (
+          <div key="kicker" className={typo || undefined} style={s} data-el={`slide-${slideIndex}-kicker`}>
+            <TipTapInline value={kicker} onChange={(html) => onSlideChange({ ...slide, kicker: html })} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} />
+          </div>
+        );
+      }
       return (
-        <div
-          key="kicker"
-          {...editableProps("kicker", mergeElementStyle(slide.kickerStyle, viewportProfile)?.typo || undefined)}
-          style={elStyle(mergeElementStyle(slide.kickerStyle, viewportProfile))}
-          data-el={`slide-${slideIndex}-kicker`}
-        >
+        <div key="kicker" {...editableProps("kicker", typo || undefined)} style={s} data-el={`slide-${slideIndex}-kicker`}>
           <SlideKicker text={kicker} />
         </div>
       );
@@ -1219,68 +1232,82 @@ function CopyStack({
       const titleTypo = titleEs?.typo;
       const titleStyle = elStyle(titleEs);
       const titleClass = cn("hero-slide__title", titleTypo);
-      // Use stamp rendering only for stamp typo classes; plain element otherwise
       const isTitleStamp = !titleTypo || titleTypo === "typo-content-header" || titleTypo === "typo-homepage-header" || titleTypo === "typo-subtitle";
+      if (onSlideChange) {
+        if (isTitleStamp) {
+          return (
+            <OutlineStampText key="title" className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={titleStyle}>
+              <TipTapInline value={title} onChange={(html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} />
+            </OutlineStampText>
+          );
+        }
+        return (
+          <p key="title" className={titleClass} data-el={`slide-${slideIndex}-title`} style={titleStyle}>
+            <TipTapInline value={title} onChange={(html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} />
+          </p>
+        );
+      }
       if (isTitleStamp) {
         return (
-          <OutlineStampText
-            key="title"
-            {...editableProps("title", titleClass)}
-            data-el={`slide-${slideIndex}-title`}
-            stamp={stampForTypo(titleTypo)}
-            style={titleStyle}
-          >
+          <OutlineStampText key="title" {...editableProps("title", titleClass)} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={titleStyle}>
             <InlineText text={title} />
           </OutlineStampText>
         );
       }
       return (
-        <p
-          key="title"
-          {...editableProps("title", titleClass)}
-          data-el={`slide-${slideIndex}-title`}
-          style={titleStyle}
-        >
+        <p key="title" {...editableProps("title", titleClass)} data-el={`slide-${slideIndex}-title`} style={titleStyle}>
           <InlineText text={title} />
         </p>
       );
     }
     if (key === "subtitle" && subtitle) {
+      const es = mergeElementStyle(slide.subtitleStyle, viewportProfile);
+      const typo = es?.typo;
+      const s = elStyle(es);
+      if (onSlideChange) {
+        return (
+          <div key="subtitle" className={typo || undefined} style={s} data-el={`slide-${slideIndex}-subtitle`}>
+            <TipTapInline value={subtitle} onChange={(html) => onSlideChange({ ...slide, subtitle: html })} typoClass={typo} typoOptions={TYPO_PRESETS} />
+          </div>
+        );
+      }
       return (
-        <div
-          key="subtitle"
-          {...editableProps("subtitle", mergeElementStyle(slide.subtitleStyle, viewportProfile)?.typo || undefined)}
-          style={elStyle(mergeElementStyle(slide.subtitleStyle, viewportProfile))}
-          data-el={`slide-${slideIndex}-subtitle`}
-        >
-          <SlideSubtitle
-            text={subtitle}
-            variant={slide?.subtitleVariant}
-            slotId={`slide-${slideIndex}-subtitle`}
-          />
+        <div key="subtitle" {...editableProps("subtitle", typo || undefined)} style={s} data-el={`slide-${slideIndex}-subtitle`}>
+          <SlideSubtitle text={subtitle} variant={slide?.subtitleVariant} slotId={`slide-${slideIndex}-subtitle`} />
         </div>
       );
     }
     if (key === "body" && body) {
+      const es = mergeElementStyle(slide.bodyStyle, viewportProfile);
+      const typo = es?.typo;
+      const s = elStyle(es);
+      if (onSlideChange) {
+        return (
+          <div key="body" className={typo || undefined} style={s} data-el={`slide-${slideIndex}-body`}>
+            <TipTapInline value={body} onChange={(html) => onSlideChange({ ...slide, body: html })} typoClass={typo} typoOptions={TYPO_PRESETS} showWordCount />
+          </div>
+        );
+      }
       return (
-        <div
-          key="body"
-          {...editableProps("body", mergeElementStyle(slide.bodyStyle, viewportProfile)?.typo || undefined)}
-          style={elStyle(mergeElementStyle(slide.bodyStyle, viewportProfile))}
-          data-el={`slide-${slideIndex}-body`}
-        >
+        <div key="body" {...editableProps("body", typo || undefined)} style={s} data-el={`slide-${slideIndex}-body`}>
           <SlideBody text={body} variant={slide?.bodyVariant} />
         </div>
       );
     }
     if (key === "quote" && quote) {
+      const es = mergeElementStyle(slide.quoteStyle, viewportProfile);
+      const typo = es?.typo;
+      const s = elStyle(es);
+      const cls = cn("hero-slide__quote", typo);
+      if (onSlideChange) {
+        return (
+          <p key="quote" className={cls} style={s} data-el={`slide-${slideIndex}-quote`}>
+            <TipTapInline value={quote} onChange={(html) => onSlideChange({ ...slide, quote: html })} typoClass={typo} typoOptions={TYPO_PRESETS} />
+          </p>
+        );
+      }
       return (
-        <p
-          key="quote"
-          {...editableProps("quote", cn("hero-slide__quote", mergeElementStyle(slide.quoteStyle, viewportProfile)?.typo))}
-          style={elStyle(mergeElementStyle(slide.quoteStyle, viewportProfile))}
-          data-el={`slide-${slideIndex}-quote`}
-        >
+        <p key="quote" {...editableProps("quote", cls)} style={s} data-el={`slide-${slideIndex}-quote`}>
           <InlineText text={quote} />
         </p>
       );
@@ -1296,6 +1323,8 @@ function CopyStack({
           extraIndex={exIdx}
           viewportProfile={viewportProfile}
           editableProps={editableProps}
+          slide={onSlideChange ? slide : undefined}
+          onSlideChange={onSlideChange}
         />
       );
     }
@@ -1317,22 +1346,41 @@ function ExtraElement({
   extraIndex,
   viewportProfile,
   editableProps,
+  slide,
+  onSlideChange,
 }: {
   extra: SlideExtra;
   slideIndex: number;
   extraIndex: number;
   viewportProfile?: HeroViewportProfileKey | null;
   editableProps?: (key: string, className?: string) => React.HTMLAttributes<HTMLElement>;
+  slide?: Slide;
+  onSlideChange?: (next: Slide) => void;
 }) {
   const resolvedStyle = mergeElementStyle(extra.style, viewportProfile);
   const style = elStyle(resolvedStyle);
   const typo = resolvedStyle?.typo;
   const slotId = `slide-${slideIndex}-extra-${extraIndex}`;
 
+  const updateText = onSlideChange && slide
+    ? (html: string) => {
+        const extras = Array.isArray(slide.extras) ? slide.extras : [];
+        onSlideChange({ ...slide, extras: extras.map(e => e.id === extra.id ? { ...e, text: html } : e) });
+      }
+    : null;
+
   if (extra.kind === "stamp") {
+    const cls = cn("hero-slide__title", typo);
+    if (updateText) {
+      return (
+        <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={style}>
+          <TipTapInline value={extra.text} onChange={updateText} typoClass={typo} typoOptions={TYPO_PRESETS} />
+        </OutlineStampText>
+      );
+    }
     return (
       <OutlineStampText
-        {...(editableProps?.(extra.id ?? "", cn("hero-slide__title", typo)) ?? { className: cn("hero-slide__title", typo) })}
+        {...(editableProps?.(extra.id ?? "", cls) ?? { className: cls })}
         data-el={slotId}
         stamp={stampForTypo(typo)}
         style={style}
@@ -1343,6 +1391,13 @@ function ExtraElement({
   }
 
   if (extra.kind === "kicker") {
+    if (updateText) {
+      return (
+        <div className={typo || undefined} style={style} data-el={slotId}>
+          <Kicker><TipTapInline value={extra.text} onChange={updateText} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} /></Kicker>
+        </div>
+      );
+    }
     return (
       <div
         {...(editableProps?.(extra.id ?? "", typo || undefined) ?? { className: typo || undefined })}
@@ -1354,9 +1409,17 @@ function ExtraElement({
     );
   }
 
+  const cls = cn("hero-slide__quote", typo);
+  if (updateText) {
+    return (
+      <p className={cls} style={style} data-el={slotId}>
+        <TipTapInline value={extra.text} onChange={updateText} typoClass={typo} typoOptions={TYPO_PRESETS} />
+      </p>
+    );
+  }
   return (
     <p
-      {...(editableProps?.(extra.id ?? "", cn("hero-slide__quote", typo)) ?? { className: cn("hero-slide__quote", typo) })}
+      {...(editableProps?.(extra.id ?? "", cls) ?? { className: cls })}
       style={style}
       data-el={slotId}
     >
