@@ -318,7 +318,8 @@
   margin-top: 40px;
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 2vw, 24px);
+  /* gap: clamp(16px, 2vw, 24px); */
+  gap: 120px;
   max-width: var(--cp-content-max-w, none);
 }
 
