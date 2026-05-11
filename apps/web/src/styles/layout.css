@@ -5,6 +5,17 @@
 .landing-stack {
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.guidLineTemp {
+  width: 1px;
+  height: 100vh;
+  background: red;
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(50%);
 }
 
 /* Desktop: fixed Figma artboard strategy
