@@ -191,14 +191,14 @@ export const JUSTIFY_OPTIONS = [
 
 export const TYPO_OPTIONS: { value: TypoClass; label: string }[] = [
   { value: "", label: "Default" },
-  { value: "typo-content-header", label: "Content Header (78px stamp)" },
-  { value: "typo-homepage-header", label: "Homepage Header (104px stamp)" },
-  { value: "typo-subtitle", label: "Subtitle (47px oblique stamp)" },
-  { value: "typo-body-text", label: "Body Text (20px)" },
-  { value: "typo-section-header", label: "Section Header (22px, ls 32.7%)" },
-  { value: "typo-text-header", label: "Text Header (22px, ls 32.1%)" },
-  { value: "typo-promo-header", label: "Promo Header (26px)" },
-  { value: "typo-teachers-header", label: "Teachers Header (22px, ls 20%)" },
+  { value: "typo-homepage-header", label: "Block Title (104px stamp)" },
+  { value: "typo-content-header", label: "Page / Slider Header (78px stamp)" },
+  { value: "typo-subtitle", label: "Tagline (47px oblique stamp)" },
+  { value: "typo-promo-header", label: "Slider Promo Header (26px)" },
+  { value: "typo-section-header", label: "Section Title (22px, ls 32.7%)" },
+  { value: "typo-teachers-header", label: "Teachers Names (22px, ls 20%)" },
+  { value: "typo-text-header", label: "Pull-Out Quote (22px, ls 32.1%)" },
+  { value: "typo-body-text", label: "Column Text (20px)" },
 ];
 
 const CTA_DEFAULT = { label: "LEARN MORE", href: "#address" };
