@@ -861,13 +861,11 @@ function ElementStyleEditor({
           onChange={(v) => onChange({ ...(style ?? {}), snapToBaseline: v || undefined })}
         />
       )}
-      {tuningScope === "default" && (
-        <InspectorToggle
-          label="Lock position"
-          checked={!!(style?.locked)}
-          onChange={(v) => onChange({ ...(style ?? {}), locked: v || undefined })}
-        />
-      )}
+      <InspectorToggle
+        label="Lock position"
+        checked={!!(style?.locked)}
+        onChange={(v) => onChange({ ...(style ?? {}), locked: v || undefined })}
+      />
     </div>
   );
 }

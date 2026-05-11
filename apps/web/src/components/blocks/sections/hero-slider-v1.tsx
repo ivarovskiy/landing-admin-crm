@@ -435,7 +435,7 @@ export function HeroSliderV1({
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.pointerType === "mouse" && (e as any).button !== 0) return;
-    if ((e.target as HTMLElement).closest("a, button")) return;
+    if ((e.target as HTMLElement).closest("a, button, [contenteditable]")) return;
 
     setPaused(true);
 
@@ -924,7 +924,7 @@ function HeroSlide({
   const mediaPrimary = (
     <MediaFrame media={slide.media} className="hero-slide__media-box" slotId={`slide-${i}-media`} priority={i === 0} />
   );
-  const editableProps = useSlideElementEditor(slide, editMode, onSlideChange);
+  const { editableProps, dragHandleProps } = useSlideElementEditor(slide, editMode, onSlideChange);
 
   const standardCopy = (
     <CopyStack
@@ -933,6 +933,7 @@ function HeroSlide({
       spread={false}
       viewportProfile={viewportProfile}
       editableProps={editableProps}
+      dragHandleProps={dragHandleProps}
       onSlideChange={editMode ? onSlideChange : undefined}
     />
   );
@@ -1011,6 +1012,31 @@ function setSlideElementStyle(slide: Slide, key: string, style: ElementStyle): S
   };
 }
 
+const DRAG_HANDLE_STYLE: React.CSSProperties = {
+  position: "absolute",
+  top: 2,
+  right: 2,
+  width: 18,
+  height: 18,
+  cursor: "grab",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "rgba(99,102,241,0.75)",
+  borderRadius: 3,
+  color: "rgba(255,255,255,0.9)",
+  fontSize: 11,
+  zIndex: 100,
+  touchAction: "none",
+  userSelect: "none",
+  lineHeight: 1,
+  flexShrink: 0,
+};
+
+function DragHandle(props: React.HTMLAttributes<HTMLSpanElement>) {
+  return <span style={DRAG_HANDLE_STYLE} title="Drag to move" {...props}>⠿</span>;
+}
+
 function useSlideElementEditor(
   slide: Slide,
   editMode: boolean,
@@ -1027,6 +1053,77 @@ function useSlideElementEditor(
     scale: number;
     moved: boolean;
   } | null>(null);
+
+  // Props for a dedicated drag handle child — applies transform to closest [data-hs-draggable]
+  function dragHandleProps(key: string): React.HTMLAttributes<HTMLElement> {
+    if (!editMode || !onSlideChange) return {};
+    const currentStyle = getSlideElementStyle(slide, key);
+    if (currentStyle?.locked) return {};
+
+    return {
+      onPointerDown: (e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const handle = e.currentTarget as HTMLElement;
+        const el = handle.closest<HTMLElement>("[data-hs-draggable]");
+        if (!el) return;
+        const slideEl = el.closest(".hero-slide") as HTMLElement | null;
+        const scale = slideEl ? slideEl.getBoundingClientRect().width / slideEl.offsetWidth || 1 : 1;
+        const computed = getComputedStyle(el);
+        const matrix = new DOMMatrix(computed.transform === "none" ? "" : computed.transform);
+        handle.setPointerCapture(e.pointerId);
+        el.classList.add("hero-slide__editable--dragging");
+        dragRef.current = {
+          key, mode: "move",
+          startX: e.clientX, startY: e.clientY,
+          startTx: matrix.m41 || 0, startTy: matrix.m42 || 0,
+          startSize: parseFloat(computed.fontSize || "0") || 16,
+          scale, moved: false,
+        };
+      },
+      onPointerMove: (e) => {
+        const d = dragRef.current;
+        if (!d || d.key !== key) return;
+        e.stopPropagation();
+        const dx = (e.clientX - d.startX) / d.scale;
+        const dy = (e.clientY - d.startY) / d.scale;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) d.moved = true;
+        if (!d.moved) return;
+        const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hs-draggable]");
+        if (!el) return;
+        el.style.transform = `translate(${Math.round(d.startTx + dx)}px, ${Math.round(d.startTy + dy)}px)`;
+      },
+      onPointerUp: (e) => {
+        const d = dragRef.current;
+        dragRef.current = null;
+        const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hs-draggable]");
+        if (el) el.classList.remove("hero-slide__editable--dragging");
+        if (!d || d.key !== key || !d.moved) return;
+        e.stopPropagation();
+        const dx = (e.clientX - d.startX) / d.scale;
+        const dy = (e.clientY - d.startY) / d.scale;
+        const newTx = Math.round(d.startTx + dx);
+        const newTy = Math.round(d.startTy + dy);
+        const style = getSlideElementStyle(slide, key) ?? {};
+        onSlideChange(setSlideElementStyle(slide, key, {
+          ...style,
+          x: newTx ? `${newTx}px` : undefined,
+          y: newTy ? `${newTy}px` : undefined,
+        }));
+      },
+      onPointerCancel: (e) => {
+        const d = dragRef.current;
+        dragRef.current = null;
+        if (!d || d.key !== key) return;
+        const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hs-draggable]");
+        if (!el) return;
+        el.classList.remove("hero-slide__editable--dragging");
+        el.style.transform = (d.startTx || d.startTy)
+          ? `translate(${d.startTx}px, ${d.startTy}px)` : "";
+      },
+    };
+  }
 
   function editableProps(key: string, className?: string): React.HTMLAttributes<HTMLElement> {
     if (!editMode || !onSlideChange) return { className };
@@ -1159,7 +1256,7 @@ function useSlideElementEditor(
     };
   }
 
-  return editableProps;
+  return { editableProps, dragHandleProps };
 }
 
 function CopyStack({
@@ -1168,6 +1265,7 @@ function CopyStack({
   spread,
   viewportProfile,
   editableProps,
+  dragHandleProps,
   onSlideChange,
 }: {
   slide: Slide;
@@ -1175,6 +1273,7 @@ function CopyStack({
   spread?: boolean;
   viewportProfile?: HeroViewportProfileKey | null;
   editableProps: (key: string, className?: string) => React.HTMLAttributes<HTMLElement>;
+  dragHandleProps: (key: string) => React.HTMLAttributes<HTMLElement>;
   onSlideChange?: (next: Slide) => void;
 }) {
   const kicker = slide?.kicker;
@@ -1215,8 +1314,16 @@ function CopyStack({
       const typo = es?.typo;
       const s = elStyle(es);
       if (onSlideChange) {
+        const isLocked = !!es?.locked;
         return (
-          <div key="kicker" className={typo || undefined} style={s} data-el={`slide-${slideIndex}-kicker`}>
+          <div
+            key="kicker"
+            className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
+            data-hs-draggable="kicker"
+            style={{ ...s, position: "relative" }}
+            data-el={`slide-${slideIndex}-kicker`}
+          >
+            {!isLocked && <DragHandle {...dragHandleProps("kicker")} />}
             <TipTapInline value={kicker} onChange={(html) => onSlideChange({ ...slide, kicker: html })} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} />
           </div>
         );
@@ -1234,17 +1341,34 @@ function CopyStack({
       const titleClass = cn("hero-slide__title", titleTypo);
       const isTitleStamp = !titleTypo || titleTypo === "typo-content-header" || titleTypo === "typo-homepage-header" || titleTypo === "typo-subtitle";
       if (onSlideChange) {
+        const isTitleLocked = !!titleEs?.locked;
         if (isTitleStamp) {
           return (
-            <OutlineStampText key="title" className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={titleStyle}>
-              <TipTapInline value={title} onChange={(html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} />
-            </OutlineStampText>
+            <div
+              key="title"
+              className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
+              data-hs-draggable="title"
+              style={{ ...titleStyle, position: "relative" }}
+            >
+              {!isTitleLocked && <DragHandle {...dragHandleProps("title")} />}
+              <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)}>
+                <TipTapInline value={title} onChange={(html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} />
+              </OutlineStampText>
+            </div>
           );
         }
         return (
-          <p key="title" className={titleClass} data-el={`slide-${slideIndex}-title`} style={titleStyle}>
-            <TipTapInline value={title} onChange={(html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} />
-          </p>
+          <div
+            key="title"
+            className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
+            data-hs-draggable="title"
+            style={{ ...titleStyle, position: "relative" }}
+          >
+            {!isTitleLocked && <DragHandle {...dragHandleProps("title")} />}
+            <p className={titleClass} data-el={`slide-${slideIndex}-title`}>
+              <TipTapInline value={title} onChange={(html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} />
+            </p>
+          </div>
         );
       }
       if (isTitleStamp) {
@@ -1265,8 +1389,16 @@ function CopyStack({
       const typo = es?.typo;
       const s = elStyle(es);
       if (onSlideChange) {
+        const isLocked = !!es?.locked;
         return (
-          <div key="subtitle" className={typo || undefined} style={s} data-el={`slide-${slideIndex}-subtitle`}>
+          <div
+            key="subtitle"
+            className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
+            data-hs-draggable="subtitle"
+            style={{ ...s, position: "relative" }}
+            data-el={`slide-${slideIndex}-subtitle`}
+          >
+            {!isLocked && <DragHandle {...dragHandleProps("subtitle")} />}
             <TipTapInline value={subtitle} onChange={(html) => onSlideChange({ ...slide, subtitle: html })} typoClass={typo} typoOptions={TYPO_PRESETS} />
           </div>
         );
@@ -1282,8 +1414,16 @@ function CopyStack({
       const typo = es?.typo;
       const s = elStyle(es);
       if (onSlideChange) {
+        const isLocked = !!es?.locked;
         return (
-          <div key="body" className={typo || undefined} style={s} data-el={`slide-${slideIndex}-body`}>
+          <div
+            key="body"
+            className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
+            data-hs-draggable="body"
+            style={{ ...s, position: "relative" }}
+            data-el={`slide-${slideIndex}-body`}
+          >
+            {!isLocked && <DragHandle {...dragHandleProps("body")} />}
             <TipTapInline value={body} onChange={(html) => onSlideChange({ ...slide, body: html })} typoClass={typo} typoOptions={TYPO_PRESETS} showWordCount />
           </div>
         );
@@ -1300,10 +1440,18 @@ function CopyStack({
       const s = elStyle(es);
       const cls = cn("hero-slide__quote", typo);
       if (onSlideChange) {
+        const isLocked = !!es?.locked;
         return (
-          <p key="quote" className={cls} style={s} data-el={`slide-${slideIndex}-quote`}>
+          <div
+            key="quote"
+            className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls)}
+            data-hs-draggable="quote"
+            style={{ ...s, position: "relative" }}
+            data-el={`slide-${slideIndex}-quote`}
+          >
+            {!isLocked && <DragHandle {...dragHandleProps("quote")} />}
             <TipTapInline value={quote} onChange={(html) => onSlideChange({ ...slide, quote: html })} typoClass={typo} typoOptions={TYPO_PRESETS} />
-          </p>
+          </div>
         );
       }
       return (
@@ -1323,6 +1471,7 @@ function CopyStack({
           extraIndex={exIdx}
           viewportProfile={viewportProfile}
           editableProps={editableProps}
+          dragHandleProps={dragHandleProps}
           slide={onSlideChange ? slide : undefined}
           onSlideChange={onSlideChange}
         />
@@ -1346,6 +1495,7 @@ function ExtraElement({
   extraIndex,
   viewportProfile,
   editableProps,
+  dragHandleProps,
   slide,
   onSlideChange,
 }: {
@@ -1354,6 +1504,7 @@ function ExtraElement({
   extraIndex: number;
   viewportProfile?: HeroViewportProfileKey | null;
   editableProps?: (key: string, className?: string) => React.HTMLAttributes<HTMLElement>;
+  dragHandleProps?: (key: string) => React.HTMLAttributes<HTMLElement>;
   slide?: Slide;
   onSlideChange?: (next: Slide) => void;
 }) {
@@ -1361,6 +1512,8 @@ function ExtraElement({
   const style = elStyle(resolvedStyle);
   const typo = resolvedStyle?.typo;
   const slotId = `slide-${slideIndex}-extra-${extraIndex}`;
+  const extraKey = extra.id ?? "";
+  const isLocked = !!resolvedStyle?.locked;
 
   const updateText = onSlideChange && slide
     ? (html: string) => {
@@ -1373,14 +1526,21 @@ function ExtraElement({
     const cls = cn("hero-slide__title", typo);
     if (updateText) {
       return (
-        <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={style}>
-          <TipTapInline value={extra.text} onChange={updateText} typoClass={typo} typoOptions={TYPO_PRESETS} />
-        </OutlineStampText>
+        <div
+          className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
+          data-hs-draggable={extraKey}
+          style={{ ...style, position: "relative" }}
+        >
+          {!isLocked && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
+          <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)}>
+            <TipTapInline value={extra.text} onChange={updateText} typoClass={typo} typoOptions={TYPO_PRESETS} />
+          </OutlineStampText>
+        </div>
       );
     }
     return (
       <OutlineStampText
-        {...(editableProps?.(extra.id ?? "", cls) ?? { className: cls })}
+        {...(editableProps?.(extraKey, cls) ?? { className: cls })}
         data-el={slotId}
         stamp={stampForTypo(typo)}
         style={style}
@@ -1393,14 +1553,20 @@ function ExtraElement({
   if (extra.kind === "kicker") {
     if (updateText) {
       return (
-        <div className={typo || undefined} style={style} data-el={slotId}>
+        <div
+          className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
+          data-hs-draggable={extraKey}
+          style={{ ...style, position: "relative" }}
+          data-el={slotId}
+        >
+          {!isLocked && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <Kicker><TipTapInline value={extra.text} onChange={updateText} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} /></Kicker>
         </div>
       );
     }
     return (
       <div
-        {...(editableProps?.(extra.id ?? "", typo || undefined) ?? { className: typo || undefined })}
+        {...(editableProps?.(extraKey, typo || undefined) ?? { className: typo || undefined })}
         style={style}
         data-el={slotId}
       >
@@ -1412,14 +1578,20 @@ function ExtraElement({
   const cls = cn("hero-slide__quote", typo);
   if (updateText) {
     return (
-      <p className={cls} style={style} data-el={slotId}>
+      <div
+        className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls)}
+        data-hs-draggable={extraKey}
+        style={{ ...style, position: "relative" }}
+        data-el={slotId}
+      >
+        {!isLocked && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
         <TipTapInline value={extra.text} onChange={updateText} typoClass={typo} typoOptions={TYPO_PRESETS} />
-      </p>
+      </div>
     );
   }
   return (
     <p
-      {...(editableProps?.(extra.id ?? "", cls) ?? { className: cls })}
+      {...(editableProps?.(extraKey, cls) ?? { className: cls })}
       style={style}
       data-el={slotId}
     >
