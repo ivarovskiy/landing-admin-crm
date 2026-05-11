@@ -336,6 +336,8 @@ export function HeroSliderV1({
   const showElementGuides = options?.showElementGuides === true;
   const showCompositionGuides = options?.compositionGuides === true;
   const compositionGuideColor = options?.compositionGuideColor as string | undefined;
+  const showLayoutGuides = options?.showLayoutGuides === true;
+  const layoutGuideBottomOffset = options?.layoutGuideBottomOffset as string | undefined;
   const viewportProfile = useHeroViewportProfile();
 
   // Real slide currently displayed (for dots / aria / live preview)
@@ -592,6 +594,8 @@ export function HeroSliderV1({
                     showElementGuides={showElementGuides}
                     showCompositionGuides={showCompositionGuides}
                     compositionGuideColor={compositionGuideColor}
+                    showLayoutGuides={showLayoutGuides}
+                    layoutGuideBottomOffset={layoutGuideBottomOffset}
                     viewportProfile={viewportProfile}
                   />
                 </div>
@@ -653,6 +657,8 @@ function HeroSlide({
   showElementGuides = false,
   showCompositionGuides = false,
   compositionGuideColor,
+  showLayoutGuides = false,
+  layoutGuideBottomOffset,
   viewportProfile,
 }: {
   slide: Slide;
@@ -664,6 +670,8 @@ function HeroSlide({
   showElementGuides?: boolean;
   showCompositionGuides?: boolean;
   compositionGuideColor?: string;
+  showLayoutGuides?: boolean;
+  layoutGuideBottomOffset?: string;
   viewportProfile?: HeroViewportProfileKey | null;
 }) {
   const template = resolveTemplate(slide, viewportProfile);
@@ -695,8 +703,10 @@ function HeroSlide({
   const [elementRects, setElementRects] = useState<ElementRect[]>([]);
   type CompLine = { axis: "v" | "h"; pos: number };
   const [compGuides, setCompGuides] = useState<CompLine[]>([]);
+  type LayoutGuideLines = { gapX?: number; bottomY?: number };
+  const [layoutGuideLines, setLayoutGuideLines] = useState<LayoutGuideLines>({});
   // Measurement is needed for guides and for media-aligned text stretching.
-  const measureNeeded = showGuides || showElementGuides || stretchToMedia || showCompositionGuides;
+  const measureNeeded = showGuides || showElementGuides || stretchToMedia || showCompositionGuides || showLayoutGuides;
 
   useLayoutEffect(() => {
     if (!measureNeeded) {
@@ -838,6 +848,27 @@ function HeroSlide({
       } else {
         setCompGuides([]);
       }
+
+      // Layout guides: gap vertical line + configurable bottom horizontal line
+      if (showLayoutGuides) {
+        const lgTextCol = slideEl.querySelector<HTMLElement>(".hero-slide__text-col");
+        const lgMediaCol = slideEl.querySelector<HTMLElement>(".hero-slide__media-col");
+        const ltc = lgTextCol?.getBoundingClientRect();
+        const lmc = lgMediaCol?.getBoundingClientRect();
+        let gapX: number | undefined;
+        if (ltc && lmc && ltc.width && lmc.width) {
+          gapX = lmc.left > ltc.left
+            ? (ltc.right - sr.left) / scale
+            : (lmc.right - sr.left) / scale;
+        }
+        const offsetPx = parseFloat(layoutGuideBottomOffset ?? "") || 0;
+        const bottomY = offsetPx > 0 ? sr.height / scale - offsetPx : undefined;
+        setLayoutGuideLines((prev) =>
+          prev.gapX === gapX && prev.bottomY === bottomY ? prev : { gapX, bottomY }
+        );
+      } else {
+        setLayoutGuideLines((prev) => (prev.gapX === undefined && prev.bottomY === undefined ? prev : {}));
+      }
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -856,7 +887,7 @@ function HeroSlide({
       ro.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [measureNeeded, showGuides, showElementGuides, showCompositionGuides, slide]);
+  }, [measureNeeded, showGuides, showElementGuides, showCompositionGuides, showLayoutGuides, layoutGuideBottomOffset, slide]);
 
   const slideClass = cn(
     "hero-slide",
@@ -870,8 +901,10 @@ function HeroSlide({
   const hasMediaGuides = showGuides && mediaRect;
   const hasElementGuides = showElementGuides && elementRects.length > 0;
   const hasCompGuides = showCompositionGuides && compGuides.length > 0;
+  const hasLayoutGuides = showLayoutGuides && (layoutGuideLines.gapX !== undefined || layoutGuideLines.bottomY !== undefined);
   const compGuideColor = compositionGuideColor || "rgba(255, 6, 102, 0.8)"; // цвет guidlines
-  const guides = hasMediaGuides || hasElementGuides || hasCompGuides ? (
+  const LAYOUT_GUIDE_COLOR = "#FF0066";
+  const guides = hasMediaGuides || hasElementGuides || hasCompGuides || hasLayoutGuides ? (
     <div className="hero-slide__guides" aria-hidden="true">
       {hasMediaGuides ? (
         <>
@@ -908,6 +941,22 @@ function HeroSlide({
             )
           )
         : null}
+      {hasLayoutGuides ? (
+        <>
+          {layoutGuideLines.gapX !== undefined ? (
+            <div
+              className="hero-slide__guide hero-slide__guide--vertical"
+              style={{ left: `${layoutGuideLines.gapX}px`, background: LAYOUT_GUIDE_COLOR, opacity: 1 }}
+            />
+          ) : null}
+          {layoutGuideLines.bottomY !== undefined ? (
+            <div
+              className="hero-slide__guide hero-slide__guide--horizontal"
+              style={{ top: `${layoutGuideLines.bottomY}px`, background: LAYOUT_GUIDE_COLOR, opacity: 1 }}
+            />
+          ) : null}
+        </>
+      ) : null}
     </div>
   ) : null;
 
