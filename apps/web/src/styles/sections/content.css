@@ -192,7 +192,8 @@
 
 .content-page {
   padding-top: 62px;
-  padding-bottom: clamp(56px, 6vw, 82px);
+  /* padding-bottom: clamp(56px, 6vw, 82px); */
+  padding-bottom: 40px;
   color: var(--color-primary);
 }
 
