@@ -571,7 +571,7 @@
 /* ── TipTap inline editor (edit mode) ─────────────────────────────────────── */
 
 [data-tiptap] {
-  display: contents; /* transparent wrapper */
+  display: block;
 }
 
 [data-tiptap-content="true"] {
@@ -602,6 +602,23 @@
   text-underline-offset: 2px;
   cursor: text;
 }
+
+/* When a typo class is applied as an inline <span> mark inside TipTap (TypoMark),
+   the block-level margin-right centering fix must not apply — on inline elements it
+   removes the trailing letter-space from the line's content width, which causes
+   text-align:center to place glyphs shifted right by ~L/2 (especially visible in
+   flex align-items:center containers). The parent block already provides the
+   correct margin-right compensation. */
+/* [data-tiptap-content="true"] .typo-content-header,
+[data-tiptap-content="true"] .typo-homepage-header,
+[data-tiptap-content="true"] .typo-subtitle,
+[data-tiptap-content="true"] .typo-section-header,
+[data-tiptap-content="true"] .typo-text-header,
+[data-tiptap-content="true"] .typo-promo-header,
+[data-tiptap-content="true"] .typo-teachers-header,
+[data-tiptap-content="true"] .typo-hero-title {
+  margin-right: 0;
+} */
 
 .media-resize-target {
   position: relative;

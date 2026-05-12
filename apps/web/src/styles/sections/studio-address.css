@@ -104,6 +104,7 @@
   font-size: 22px;
   line-height: 33.2px;
   letter-spacing: 0.2em;
+  margin-right: -0.2em;
   margin-top: 1px;
   /* font-weight: 500; */
 }
@@ -242,7 +243,7 @@
 
 .studio-address__row {
   flex-direction: row;
-  /* justify-content: space-between; */
+  justify-content: space-between;
   align-items: flex-start;
 }
 
@@ -250,7 +251,7 @@
 .studio-address__notes {
   align-items: flex-end;
   text-align: left;
-  /* flex: 1; */
+  flex: 1;
 }
 
 .studio-address__notes {

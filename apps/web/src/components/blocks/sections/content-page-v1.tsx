@@ -555,6 +555,7 @@ function elementStyle(strokeW?: string, maxWidth?: string): React.CSSProperties 
   const s: Record<string, string> = {};
   if (strokeW) s["--text-stroke-w"] = strokeW;
   if (maxWidth) {
+    s.width = maxWidth;
     s.maxWidth = maxWidth;
     s.display = "inline-block";
   }
