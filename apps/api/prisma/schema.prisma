@@ -142,6 +142,7 @@ model SiteSettings {
   scrollToTop  Json?
   typography   Json?
   header       Json?
+  grid         Json?
   updatedAt    DateTime @updatedAt
 }
 

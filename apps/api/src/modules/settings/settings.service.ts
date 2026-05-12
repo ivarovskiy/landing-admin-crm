@@ -143,11 +143,24 @@ export interface HeaderSettings {
   navUnderlineMode?: NavUnderlineMode;
 }
 
+export interface GridSettings {
+  enabled?: boolean;
+  columns?: number;
+  columnColor?: string;
+  columnGap?: number;
+  maxWidth?: number;
+  marginH?: number;
+  rowsEnabled?: boolean;
+  rowHeight?: number;
+  rowColor?: string;
+}
+
 export interface SiteSettingsData {
   zoom?: ZoomSettings;
   scrollToTop?: ScrollToTopSettings;
   typography?: TypographySettings;
   header?: HeaderSettings;
+  grid?: GridSettings;
 }
 
 @Injectable()
