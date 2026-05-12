@@ -366,6 +366,22 @@
   background: #d9d9d9;
 }
 
+/* ---- Media pair ---- */
+
+.cp__media-pair {
+  display: flex;
+  align-items: stretch;
+  gap: var(--cp-pair-gap, 24px);
+  width: 100%;
+}
+
+.cp__media-pair__media {
+  position: relative;
+  overflow: hidden;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .cp__image-media {
   position: absolute;
   inset: 0;

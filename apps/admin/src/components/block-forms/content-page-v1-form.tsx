@@ -116,11 +116,13 @@ function updateDesktopLayout(item: any, patch: Record<string, string | undefined
 
 function itemTitle(item: any, idx: number) {
   if (item?.kind === "image") return item?.alt || `Image ${idx + 1}`;
+  if (item?.kind === "media-pair") return `Media pair ${idx + 1}`;
   return h(item?.heading) || `Text ${idx + 1}`;
 }
 
 function itemSummary(item: any) {
   if (item?.kind === "image") return item?.src ? "Uploaded image" : "Image block";
+  if (item?.kind === "media-pair") return `Gap: ${item?.pairGap || "24px"}${item?.pairLinked ? " · linked" : ""}`;
   if (item?.body) return h(item.body).replace(/\s+/g, " ").slice(0, 54);
   return "Text block";
 }
@@ -412,6 +414,109 @@ function ImageItemEditor({
   );
 }
 
+function MediaPairItemEditor({
+  item,
+  onChange,
+}: {
+  item: any;
+  onChange: (next: any) => void;
+}) {
+  const handleWidthChange = (side: "left" | "right", value: string) => {
+    if (item.pairLinked) {
+      onChange({ ...item, leftWidth: value || undefined, rightWidth: value || undefined });
+    } else {
+      onChange({ ...item, [`${side}Width`]: value || undefined });
+    }
+  };
+
+  return (
+    <>
+      <FieldGrid>
+        <InspectorField label="Gap">
+          <InspectorInput
+            value={item.pairGap ?? ""}
+            onChange={(v) => onChange({ ...item, pairGap: v || undefined })}
+            placeholder="24px"
+          />
+        </InspectorField>
+        <InspectorField label="Link sizes">
+          <InspectorToggle
+            checked={!!item.pairLinked}
+            onChange={(v) => onChange({ ...item, pairLinked: v || undefined })}
+            label="Both resize equally"
+          />
+        </InspectorField>
+      </FieldGrid>
+
+      <SectionNote>Left image</SectionNote>
+      <ImageUpload
+        value={item.leftSrc ?? ""}
+        onChange={(url) => onChange({ ...item, leftSrc: url })}
+        apiBase={API_BASE}
+      />
+      <FieldGrid>
+        <InspectorField label="Alt">
+          <InspectorInput
+            value={item.leftAlt ?? ""}
+            onChange={(v) => onChange({ ...item, leftAlt: v || undefined })}
+            placeholder="Describe image"
+          />
+        </InspectorField>
+        <InspectorField label="Width">
+          <InspectorInput
+            value={item.leftWidth ?? ""}
+            onChange={(v) => handleWidthChange("left", v)}
+            placeholder="auto"
+          />
+        </InspectorField>
+        <InspectorField label="Aspect">
+          <InspectorSelect
+            value={item.leftAspect ?? ""}
+            onChange={(v) => onChange({ ...item, leftAspect: v || undefined })}
+            options={[{ value: "", label: "Auto" }, ...ASPECT_RATIOS]}
+          />
+        </InspectorField>
+      </FieldGrid>
+
+      <SectionNote>Right image</SectionNote>
+      <ImageUpload
+        value={item.rightSrc ?? ""}
+        onChange={(url) => onChange({ ...item, rightSrc: url })}
+        apiBase={API_BASE}
+      />
+      <FieldGrid>
+        <InspectorField label="Alt">
+          <InspectorInput
+            value={item.rightAlt ?? ""}
+            onChange={(v) => onChange({ ...item, rightAlt: v || undefined })}
+            placeholder="Describe image"
+          />
+        </InspectorField>
+        <InspectorField label="Width">
+          <InspectorInput
+            value={item.rightWidth ?? ""}
+            onChange={(v) => handleWidthChange("right", v)}
+            placeholder="auto"
+          />
+        </InspectorField>
+        <InspectorField label="Aspect">
+          <InspectorSelect
+            value={item.rightAspect ?? ""}
+            onChange={(v) => onChange({ ...item, rightAspect: v || undefined })}
+            options={[{ value: "", label: "Auto" }, ...ASPECT_RATIOS]}
+          />
+        </InspectorField>
+      </FieldGrid>
+    </>
+  );
+}
+
+function itemKindIcon(kind: string) {
+  if (kind === "image") return <Image className="h-4 w-4" />;
+  if (kind === "media-pair") return <Columns2 className="h-4 w-4" />;
+  return <AlignLeft className="h-4 w-4" />;
+}
+
 function ColumnEditor({
   label,
   items,
@@ -421,12 +526,14 @@ function ColumnEditor({
   items: any[];
   onChange: (next: any[]) => void;
 }) {
-  const addItem = (kind: "image" | "text") => {
+  const addItem = (kind: "image" | "text" | "media-pair") => {
     const maxOrder = items.reduce((m: number, x: any) => Math.max(m, x.mobileOrder ?? 0), 0);
     const item =
       kind === "image"
         ? { kind: "image", src: "", alt: "", aspectRatio: "4/3", mobileOrder: maxOrder + 1 }
-        : { kind: "text", heading: "", body: "", textMaxWidth: "533px", mobileOrder: maxOrder + 1 };
+        : kind === "media-pair"
+          ? { kind: "media-pair", pairGap: "24px", mobileOrder: maxOrder + 1 }
+          : { kind: "text", heading: "", body: "", textMaxWidth: "533px", mobileOrder: maxOrder + 1 };
 
     onChange([...items, item]);
   };
@@ -454,6 +561,14 @@ function ColumnEditor({
             <Type className="h-3.5 w-3.5" />
             Text
           </button>
+          <button
+            type="button"
+            onClick={() => addItem("media-pair")}
+            className="flex items-center gap-1 rounded-sm px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/10"
+          >
+            <Columns2 className="h-3.5 w-3.5" />
+            Pair
+          </button>
         </div>
       </div>
 
@@ -463,13 +578,18 @@ function ColumnEditor({
             key={idx}
             title={itemTitle(item, idx)}
             subtitle={itemSummary(item)}
-            icon={item.kind === "image" ? <Image className="h-4 w-4" /> : <AlignLeft className="h-4 w-4" />}
+            icon={itemKindIcon(item.kind)}
             action={
               <InlineDeleteBtn onDelete={() => onChange(removeAt(items, idx))} />
             }
           >
             {item.kind === "image" ? (
               <ImageItemEditor
+                item={item}
+                onChange={(next) => onChange(setAt(items, idx, next))}
+              />
+            ) : item.kind === "media-pair" ? (
+              <MediaPairItemEditor
                 item={item}
                 onChange={(next) => onChange(setAt(items, idx, next))}
               />

@@ -412,19 +412,27 @@ export function TipTapInline({
           event.preventDefault();
           return true;
         }
-        // Shift+Enter → hard line break within paragraph
-        if (event.key === "Enter" && event.shiftKey) {
-          event.preventDefault();
-          const br = view.state.schema.nodes.hardBreak;
-          if (br) {
-            view.dispatch(view.state.tr.replaceSelectionWith(br.create()).scrollIntoView());
-          }
-          return true;
-        }
-        // Enter inside a list item → let TipTap create new list item
         if (event.key === "Enter") {
           const { $from } = view.state.selection;
+          // Inside a list item: let TipTap handle (creates new list item)
           if ($from.parent.type.name === "listItem") return false;
+
+          event.preventDefault();
+          const brType = view.state.schema.nodes.hardBreak;
+
+          // Double Enter: previous node is a hardBreak → remove it and split paragraph
+          if (brType && $from.nodeBefore?.type === brType) {
+            const brPos = $from.pos - 1;
+            const tr = view.state.tr.delete(brPos, brPos + 1).split(brPos);
+            view.dispatch(tr.scrollIntoView());
+            return true;
+          }
+
+          // Single Enter: insert hard line break
+          if (brType) {
+            view.dispatch(view.state.tr.replaceSelectionWith(brType.create()).scrollIntoView());
+          }
+          return true;
         }
         return false;
       },

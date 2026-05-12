@@ -560,11 +560,11 @@
   pointer-events: auto;
 }
 
-.scroll-to-top:hover {
-  /* transform: scale(1.02); */
-  /* background: var(--color-primary);
-  color: var(--color-bg); */
-}
+/* .scroll-to-top:hover {
+  transform: scale(1.02);
+  background: var(--color-primary);
+  color: var(--color-bg);
+} */
 
 /* mobile scroll-to-top hide — disabled (desktop-only layout) */
 
@@ -586,7 +586,7 @@
   margin: 0;
 }
 [data-tiptap-content="true"] p + p {
-  margin-top: 0;
+  margin-top: 1em;
 }
 [data-tiptap-content="true"] li p {
   margin: 0;

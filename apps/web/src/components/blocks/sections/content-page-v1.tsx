@@ -37,7 +37,7 @@ type ContentGridConfig = {
 type TextAlign = "left" | "center" | "right";
 
 type ContentItem = {
-  kind: "image" | "text";
+  kind: "image" | "text" | "media-pair";
   // image
   src?: string;
   alt?: string;
@@ -54,6 +54,17 @@ type ContentItem = {
   bodyTypo?: string;
   headingStrokeW?: string;
   bodyStrokeW?: string;
+  // media-pair
+  pairGap?: string;     // gap between the two media, e.g. "24px"
+  pairLinked?: boolean; // when true, resizing one media resizes the other to match
+  leftSrc?: string;
+  leftAlt?: string;
+  leftWidth?: string;
+  leftAspect?: string;
+  rightSrc?: string;
+  rightAlt?: string;
+  rightWidth?: string;
+  rightAspect?: string;
   // mobile
   mobileOrder?: number;
   // row layout
@@ -69,7 +80,7 @@ type ContentItem = {
 function normalize(raw: unknown): ContentItem[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter(
-    (x: any) => x && typeof x === "object" && (x.kind === "image" || x.kind === "text"),
+    (x: any) => x && typeof x === "object" && (x.kind === "image" || x.kind === "text" || x.kind === "media-pair"),
   ) as ContentItem[];
 }
 
@@ -419,6 +430,21 @@ function renderItem(
     );
   }
 
+  if (item.kind === "media-pair") {
+    return (
+      <MediaPairItem
+        key={`mp-${idx}`}
+        item={item}
+        idx={idx}
+        col={col}
+        style={mergedStyle}
+        editProps={restEdit}
+        editOverlay={editOverlay}
+        onItemChange={onItemChange}
+      />
+    );
+  }
+
   // In edit mode the typo class is applied as a TipTap mark inside the content —
   // NOT on the outer wrapper — so the wrapper's styles never bleed into editor UI.
   const headingClass = onItemChange
@@ -530,6 +556,99 @@ function ContentImageItem({
           }
         />
       ) : null}
+    </div>
+  );
+}
+
+function MediaPairItem({
+  item,
+  idx,
+  col,
+  style,
+  editProps,
+  editOverlay,
+  onItemChange,
+}: {
+  item: ContentItem;
+  idx: number;
+  col: "left" | "right";
+  style: React.CSSProperties;
+  editProps: React.ComponentProps<"div">;
+  editOverlay?: React.ReactNode;
+  onItemChange?: (changes: Partial<ContentItem>) => void;
+}) {
+  const leftRef = useRef<HTMLDivElement>(null);
+  const rightRef = useRef<HTMLDivElement>(null);
+
+  const leftSizeStyle: React.CSSProperties = item.leftWidth
+    ? { flex: "0 0 auto", width: item.leftWidth }
+    : {};
+  const rightSizeStyle: React.CSSProperties = item.rightWidth
+    ? { flex: "0 0 auto", width: item.rightWidth }
+    : {};
+
+  return (
+    <div
+      className="cp__item cp__item--media-pair"
+      style={style}
+      data-el={`${col}-${idx}-media-pair`}
+      {...editProps}
+    >
+      {editOverlay}
+      <div
+        className="cp__media-pair"
+        style={{ "--cp-pair-gap": item.pairGap || "24px" } as React.CSSProperties}
+      >
+        {/* Left media */}
+        <div
+          ref={leftRef}
+          className={["cp__media-pair__media", !item.leftSrc ? "cp__image--placeholder" : ""].filter(Boolean).join(" ")}
+          style={{ ...leftSizeStyle, aspectRatio: item.leftAspect || "auto" }}
+        >
+          {item.leftSrc ? (
+            <MediaImage
+              src={item.leftSrc}
+              alt={item.leftAlt ?? ""}
+              className="cp__image-media"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+              sizes="(max-width: 767px) 100vw, 530px"
+            />
+          ) : null}
+          {onItemChange ? (
+            <MediaResizeHandle
+              targetRef={leftRef}
+              onResize={(w) =>
+                onItemChange(item.pairLinked ? { leftWidth: w, rightWidth: w } : { leftWidth: w })
+              }
+            />
+          ) : null}
+        </div>
+
+        {/* Right media */}
+        <div
+          ref={rightRef}
+          className={["cp__media-pair__media", !item.rightSrc ? "cp__image--placeholder" : ""].filter(Boolean).join(" ")}
+          style={{ ...rightSizeStyle, aspectRatio: item.rightAspect || "auto" }}
+        >
+          {item.rightSrc ? (
+            <MediaImage
+              src={item.rightSrc}
+              alt={item.rightAlt ?? ""}
+              className="cp__image-media"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+              sizes="(max-width: 767px) 100vw, 530px"
+            />
+          ) : null}
+          {onItemChange ? (
+            <MediaResizeHandle
+              targetRef={rightRef}
+              onResize={(w) =>
+                onItemChange(item.pairLinked ? { leftWidth: w, rightWidth: w } : { rightWidth: w })
+              }
+            />
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
