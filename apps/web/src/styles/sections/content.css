@@ -380,6 +380,7 @@
   overflow: hidden;
   flex: 1 1 0;
   min-width: 0;
+  aspect-ratio: 4/3;
 }
 
 .cp__image-media {

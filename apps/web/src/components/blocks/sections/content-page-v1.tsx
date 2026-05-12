@@ -603,7 +603,7 @@ function MediaPairItem({
         <div
           ref={leftRef}
           className={["cp__media-pair__media", !item.leftSrc ? "cp__image--placeholder" : ""].filter(Boolean).join(" ")}
-          style={{ ...leftSizeStyle, aspectRatio: item.leftAspect || "auto" }}
+          style={{ ...leftSizeStyle, ...(item.leftAspect ? { aspectRatio: item.leftAspect } : {}) }}
         >
           {item.leftSrc ? (
             <MediaImage
@@ -628,7 +628,7 @@ function MediaPairItem({
         <div
           ref={rightRef}
           className={["cp__media-pair__media", !item.rightSrc ? "cp__image--placeholder" : ""].filter(Boolean).join(" ")}
-          style={{ ...rightSizeStyle, aspectRatio: item.rightAspect || "auto" }}
+          style={{ ...rightSizeStyle, ...(item.rightAspect ? { aspectRatio: item.rightAspect } : {}) }}
         >
           {item.rightSrc ? (
             <MediaImage
