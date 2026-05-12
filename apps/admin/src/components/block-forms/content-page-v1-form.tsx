@@ -446,6 +446,20 @@ function MediaPairItemEditor({
             label="Both resize equally"
           />
         </InspectorField>
+        <InspectorField label="Padding top">
+          <InspectorInput
+            value={item.pairPaddingTop ?? ""}
+            onChange={(v) => onChange({ ...item, pairPaddingTop: v || undefined })}
+            placeholder="0px"
+          />
+        </InspectorField>
+        <InspectorField label="Padding bottom">
+          <InspectorInput
+            value={item.pairPaddingBottom ?? ""}
+            onChange={(v) => onChange({ ...item, pairPaddingBottom: v || undefined })}
+            placeholder="0px"
+          />
+        </InspectorField>
       </FieldGrid>
 
       <SectionNote>Left image</SectionNote>

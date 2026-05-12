@@ -55,15 +55,17 @@ type ContentItem = {
   headingStrokeW?: string;
   bodyStrokeW?: string;
   // media-pair
-  pairGap?: string;     // gap between the two media, e.g. "24px"
-  pairLinked?: boolean; // when true, resizing one media resizes the other to match
+  pairGap?: string;         // column-gap between the two media, e.g. "24px"
+  pairLinked?: boolean;     // when true, resizing one media resizes the other to match
+  pairPaddingTop?: string;  // padding above the pair, e.g. "40px"
+  pairPaddingBottom?: string; // padding below the pair, e.g. "40px"
   leftSrc?: string;
   leftAlt?: string;
-  leftWidth?: string;
+  leftWidth?: string;  // becomes left grid-template column, e.g. "300px" or "1fr"
   leftAspect?: string;
   rightSrc?: string;
   rightAlt?: string;
-  rightWidth?: string;
+  rightWidth?: string; // becomes right grid-template column
   rightAspect?: string;
   // mobile
   mobileOrder?: number;
@@ -580,30 +582,32 @@ function MediaPairItem({
   const leftRef = useRef<HTMLDivElement>(null);
   const rightRef = useRef<HTMLDivElement>(null);
 
-  const leftSizeStyle: React.CSSProperties = item.leftWidth
-    ? { flex: "0 0 auto", width: item.leftWidth }
-    : {};
-  const rightSizeStyle: React.CSSProperties = item.rightWidth
-    ? { flex: "0 0 auto", width: item.rightWidth }
-    : {};
+  const pairStyle = {
+    "--cp-pair-gap": item.pairGap || "24px",
+    "--cp-pair-left": item.leftWidth || "1fr",
+    "--cp-pair-right": item.rightWidth || "1fr",
+  } as React.CSSProperties;
+
+  const outerStyle: React.CSSProperties = {
+    ...style,
+    ...(item.pairPaddingTop ? { paddingTop: item.pairPaddingTop } : {}),
+    ...(item.pairPaddingBottom ? { paddingBottom: item.pairPaddingBottom } : {}),
+  };
 
   return (
     <div
       className="cp__item cp__item--media-pair"
-      style={style}
+      style={outerStyle}
       data-el={`${col}-${idx}-media-pair`}
       {...editProps}
     >
       {editOverlay}
-      <div
-        className="cp__media-pair"
-        style={{ "--cp-pair-gap": item.pairGap || "24px" } as React.CSSProperties}
-      >
-        {/* Left media */}
+      <div className="cp__media-pair" style={pairStyle}>
+        {/* Left media — occupies left grid column */}
         <div
           ref={leftRef}
           className={["cp__media-pair__media", !item.leftSrc ? "cp__image--placeholder" : ""].filter(Boolean).join(" ")}
-          style={{ ...leftSizeStyle, ...(item.leftAspect ? { aspectRatio: item.leftAspect } : {}) }}
+          style={item.leftAspect ? { aspectRatio: item.leftAspect } : undefined}
         >
           {item.leftSrc ? (
             <MediaImage
@@ -624,11 +628,11 @@ function MediaPairItem({
           ) : null}
         </div>
 
-        {/* Right media */}
+        {/* Right media — occupies right grid column */}
         <div
           ref={rightRef}
           className={["cp__media-pair__media", !item.rightSrc ? "cp__image--placeholder" : ""].filter(Boolean).join(" ")}
-          style={{ ...rightSizeStyle, ...(item.rightAspect ? { aspectRatio: item.rightAspect } : {}) }}
+          style={item.rightAspect ? { aspectRatio: item.rightAspect } : undefined}
         >
           {item.rightSrc ? (
             <MediaImage
