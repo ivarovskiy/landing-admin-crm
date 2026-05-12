@@ -412,16 +412,19 @@ export function TipTapInline({
           event.preventDefault();
           return true;
         }
-        if (event.key === "Enter") {
-          const { $from } = view.state.selection;
-          // Inside a list item: let TipTap handle it (creates new list item)
-          if ($from.parent.type.name === "listItem") return false;
+        // Shift+Enter → hard line break within paragraph
+        if (event.key === "Enter" && event.shiftKey) {
           event.preventDefault();
           const br = view.state.schema.nodes.hardBreak;
           if (br) {
             view.dispatch(view.state.tr.replaceSelectionWith(br.create()).scrollIntoView());
           }
           return true;
+        }
+        // Enter inside a list item → let TipTap create new list item
+        if (event.key === "Enter") {
+          const { $from } = view.state.selection;
+          if ($from.parent.type.name === "listItem") return false;
         }
         return false;
       },

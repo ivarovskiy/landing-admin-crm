@@ -586,7 +586,10 @@
   margin: 0;
 }
 [data-tiptap-content="true"] p + p {
-  margin-top: 1em;
+  margin-top: 0;
+}
+[data-tiptap-content="true"] li p {
+  margin: 0;
 }
 
 /* edit-mode focus ring — subtle blue glow */
