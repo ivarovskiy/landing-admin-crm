@@ -549,7 +549,6 @@ function SlideEditor({
             gapOffset={canvasGuidelines.gapOffset}
             baselineOffset={canvasGuidelines.baselineOffset}
             italicBaselineOffset={canvasGuidelines.italicBaselineOffset}
-            classicGrid={canvasGuidelines.classicGrid}
           />
         </div>
       )}

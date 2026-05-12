@@ -108,6 +108,27 @@ type Slide = {
   };
 };
 
+// ─── Canvas guideline types (mirrored from admin hero-slider-presets) ─────────
+
+type ClassicGridSettings = {
+  enabled?: boolean;
+  columns?: number;
+  rows?: number;
+  showVerticalCenter?: boolean;
+  showHorizontalCenter?: boolean;
+  color?: string;
+};
+
+type CanvasGuidelines = {
+  gapOffset?: number;            // px from top in design canvas (574px total)
+  baselineOffset?: number;       // px from bottom in design canvas
+  italicBaselineOffset?: number; // px from bottom in design canvas
+  classicGrid?: ClassicGridSettings;
+};
+
+/** Design canvas height used in the admin mini-canvas — offsets are relative to this. */
+const DESIGN_CANVAS_H = 574;
+
 const DESIGN_WIDTH_PX = 1440;
 const VW_UNIT_RE = /(-?(?:\d+\.?\d*|\.\d+))vw\b/g;
 
@@ -302,6 +323,7 @@ export function HeroSliderV1({
   );
   const slides: Slide[] = useMemo(() => visibleSlides.map((item) => item.slide), [visibleSlides]);
   const options = data?.options ?? {};
+  const canvasGuidelines: CanvasGuidelines = data?.canvasGuidelines ?? {};
   const count = slides.length;
 
   const sectionRef = useRef<HTMLElement>(null);
@@ -596,6 +618,7 @@ export function HeroSliderV1({
                     compositionGuideColor={compositionGuideColor}
                     showLayoutGuides={showLayoutGuides}
                     layoutGuideBottomOffset={layoutGuideBottomOffset}
+                    canvasGuidelines={canvasGuidelines}
                     viewportProfile={viewportProfile}
                   />
                 </div>
@@ -659,6 +682,7 @@ function HeroSlide({
   compositionGuideColor,
   showLayoutGuides = false,
   layoutGuideBottomOffset,
+  canvasGuidelines,
   viewportProfile,
 }: {
   slide: Slide;
@@ -672,6 +696,7 @@ function HeroSlide({
   compositionGuideColor?: string;
   showLayoutGuides?: boolean;
   layoutGuideBottomOffset?: string;
+  canvasGuidelines?: CanvasGuidelines;
   viewportProfile?: HeroViewportProfileKey | null;
 }) {
   const template = resolveTemplate(slide, viewportProfile);
@@ -898,6 +923,92 @@ function HeroSlide({
     (showGuides || showElementGuides || showCompositionGuides) && "hero-slide--with-guides"
   );
 
+  // ── Canvas guideline overlay (pure CSS — no DOM measurement needed) ──────────
+  const classicGrid = canvasGuidelines?.classicGrid;
+  const hasClassicGrid = !!(classicGrid?.enabled);
+  const hasFigmaGuidelines =
+    !!(canvasGuidelines?.gapOffset) ||
+    !!(canvasGuidelines?.baselineOffset) ||
+    !!(canvasGuidelines?.italicBaselineOffset);
+
+  const canvasOverlay = (hasClassicGrid || hasFigmaGuidelines) ? (
+    <div className="hero-slide__guides" aria-hidden="true">
+      {hasClassicGrid && (() => {
+        const cols = Math.max(1, classicGrid!.columns ?? 6);
+        const rows = Math.max(1, classicGrid!.rows ?? 4);
+        const lineColor = classicGrid!.color ?? "rgba(100,149,237,0.45)";
+        const centerColor = "rgba(72,199,72,0.75)";
+        return (
+          <>
+            {/* Column dividers */}
+            {Array.from({ length: cols - 1 }, (_, k) => (
+              <div
+                key={`cg-col-${k}`}
+                className="hero-slide__guide hero-slide__guide--vertical"
+                style={{ left: `${(k + 1) / cols * 100}%`, background: lineColor, opacity: 1 }}
+              />
+            ))}
+            {/* Row dividers */}
+            {Array.from({ length: rows - 1 }, (_, k) => (
+              <div
+                key={`cg-row-${k}`}
+                className="hero-slide__guide hero-slide__guide--horizontal"
+                style={{ top: `${(k + 1) / rows * 100}%`, background: lineColor, opacity: 1 }}
+              />
+            ))}
+            {/* Vertical center line */}
+            {classicGrid!.showVerticalCenter && (
+              <div
+                className="hero-slide__guide hero-slide__guide--vertical"
+                style={{ left: "50%", background: centerColor, opacity: 1 }}
+              />
+            )}
+            {/* Horizontal center line */}
+            {classicGrid!.showHorizontalCenter && (
+              <div
+                className="hero-slide__guide hero-slide__guide--horizontal"
+                style={{ top: "50%", background: centerColor, opacity: 1 }}
+              />
+            )}
+          </>
+        );
+      })()}
+      {/* Figma gap guideline — amber, from top */}
+      {!!(canvasGuidelines?.gapOffset) && (
+        <div
+          className="hero-slide__guide hero-slide__guide--horizontal"
+          style={{
+            top: `${(canvasGuidelines!.gapOffset! / DESIGN_CANVAS_H) * 100}%`,
+            background: "rgba(245,158,11,0.8)",
+            opacity: 1,
+          }}
+        />
+      )}
+      {/* Figma baseline guideline — purple, from bottom */}
+      {!!(canvasGuidelines?.baselineOffset) && (
+        <div
+          className="hero-slide__guide hero-slide__guide--horizontal"
+          style={{
+            top: `${((DESIGN_CANVAS_H - canvasGuidelines!.baselineOffset!) / DESIGN_CANVAS_H) * 100}%`,
+            background: "rgba(139,92,246,0.8)",
+            opacity: 1,
+          }}
+        />
+      )}
+      {/* Figma italic design-element baseline — teal, from bottom */}
+      {!!(canvasGuidelines?.italicBaselineOffset) && (
+        <div
+          className="hero-slide__guide hero-slide__guide--horizontal"
+          style={{
+            top: `${((DESIGN_CANVAS_H - canvasGuidelines!.italicBaselineOffset!) / DESIGN_CANVAS_H) * 100}%`,
+            background: "rgba(20,184,166,0.85)",
+            opacity: 1,
+          }}
+        />
+      )}
+    </div>
+  ) : null;
+
   const hasMediaGuides = showGuides && mediaRect;
   const hasElementGuides = showElementGuides && elementRects.length > 0;
   const hasCompGuides = showCompositionGuides && compGuides.length > 0;
@@ -1001,6 +1112,7 @@ function HeroSlide({
         <div className="hero-slide__media-col hero-slide__media-col--full">
           {mediaPrimary}
         </div>
+        {canvasOverlay}
         {guides}
       </div>
     );
@@ -1016,6 +1128,7 @@ function HeroSlide({
         {mediaPrimary}
       </div>
 
+      {canvasOverlay}
       {guides}
 
       {cta?.href && cta?.enabled !== false ? (

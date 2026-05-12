@@ -19,7 +19,6 @@ import type {
   ElementStyle,
   HeroTuningScope,
   SlideExtra,
-  ClassicGridSettings,
 } from "./hero-slider-presets";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -95,53 +94,6 @@ function commitStyle(
   if (key === "quote") { onChange({ ...slide, quoteStyle: style }); return; }
   const extras = Array.isArray(slide.extras) ? slide.extras : [];
   onChange({ ...slide, extras: extras.map((e) => e.id === key ? { ...e, style } : e) });
-}
-
-// ─── ClassicGridOverlay ───────────────────────────────────────────────────────
-
-function ClassicGridOverlay({ settings }: { settings: ClassicGridSettings }) {
-  if (!settings.enabled) return null;
-  const cols = Math.max(1, settings.columns ?? 6);
-  const rows = Math.max(1, settings.rows ?? 4);
-  const colW = REF_W / cols;
-  const rowH = REF_H / rows;
-  const lineColor = settings.color ?? "rgba(100,149,237,0.35)";
-  const centerColor = "rgba(72,199,72,0.7)";
-
-  return (
-    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 2 }}>
-      {/* Column dividers */}
-      {Array.from({ length: cols - 1 }, (_, i) => (
-        <div
-          key={`col-${i}`}
-          className="absolute top-0 bottom-0"
-          style={{ left: Math.round(colW * (i + 1)), width: 1, background: lineColor }}
-        />
-      ))}
-      {/* Row dividers */}
-      {Array.from({ length: rows - 1 }, (_, i) => (
-        <div
-          key={`row-${i}`}
-          className="absolute left-0 right-0"
-          style={{ top: Math.round(rowH * (i + 1)), height: 1, background: lineColor }}
-        />
-      ))}
-      {/* Vertical center line */}
-      {settings.showVerticalCenter && (
-        <div
-          className="absolute top-0 bottom-0"
-          style={{ left: REF_W / 2, width: 1, background: centerColor }}
-        />
-      )}
-      {/* Horizontal center line */}
-      {settings.showHorizontalCenter && (
-        <div
-          className="absolute left-0 right-0"
-          style={{ top: REF_H / 2, height: 1, background: centerColor }}
-        />
-      )}
-    </div>
-  );
 }
 
 // ─── CanvasItem ───────────────────────────────────────────────────────────────
@@ -331,7 +283,6 @@ export function SlideCanvas({
   gapOffset,
   baselineOffset,
   italicBaselineOffset,
-  classicGrid,
 }: {
   slide: Slide;
   tuningScope: HeroTuningScope; // reserved for future scope-aware editing
@@ -340,7 +291,6 @@ export function SlideCanvas({
   gapOffset?: number;
   baselineOffset?: number;
   italicBaselineOffset?: number;
-  classicGrid?: ClassicGridSettings;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -463,9 +413,6 @@ export function SlideCanvas({
               backgroundSize: "46px 46px",
             }}
           />
-
-          {/* Classic design grid overlay */}
-          {classicGrid && <ClassicGridOverlay settings={classicGrid} />}
 
           {/* Gap guideline — amber dashed line at gapOffset from top */}
           {gapOffset != null && gapOffset > 0 && (
