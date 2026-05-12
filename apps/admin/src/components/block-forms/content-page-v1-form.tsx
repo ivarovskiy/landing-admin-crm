@@ -507,6 +507,8 @@ function MediaPairItemEditor({
           />
         </InspectorField>
       </FieldGrid>
+
+      <ItemLayoutAdvanced item={item} onChange={onChange} />
     </>
   );
 }
