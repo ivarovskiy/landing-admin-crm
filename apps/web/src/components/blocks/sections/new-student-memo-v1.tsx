@@ -198,7 +198,10 @@ function elementStyle(style?: MemoElementStyle): React.CSSProperties | undefined
   if (style.width) out.width = style.width;
   if (style.size) out.fontSize = style.size;
   if (style.lineHeight) out.lineHeight = style.lineHeight;
-  if (style.letterSpacing) out.letterSpacing = style.letterSpacing;
+  if (style.letterSpacing) {
+    out.letterSpacing = style.letterSpacing;
+    out["--_ls" as string] = style.letterSpacing;
+  }
   if (style.weight) {
     const weight = Number(style.weight);
     out.fontWeight = Number.isFinite(weight) ? weight : style.weight;

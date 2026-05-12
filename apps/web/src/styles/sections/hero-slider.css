@@ -182,6 +182,7 @@
   outline: 1px solid color-mix(in srgb, var(--color-primary, #ff2b57) 70%, transparent);
   outline-offset: 3px;
   touch-action: none;
+  align-self: stretch;
 }
 
 .hero-slide__editable:hover,

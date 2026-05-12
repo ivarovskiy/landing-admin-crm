@@ -164,11 +164,24 @@ export type SiteHeaderSettings = {
    *  none   = no underline anywhere in the desktop nav. */
   navUnderlineMode?: NavUnderlineMode;
 }
+export type SiteGridSettings = {
+  enabled?: boolean;
+  columns?: number;
+  columnColor?: string;
+  columnGap?: number;
+  maxWidth?: number;
+  marginH?: number;
+  rowsEnabled?: boolean;
+  rowHeight?: number;
+  rowColor?: string;
+};
+
 export type SiteSettingsData = {
   zoom?: SiteZoomSettings;
   scrollToTop?: SiteScrollToTopSettings;
   typography?: SiteTypographySettings;
   header?: SiteHeaderSettings;
+  grid?: SiteGridSettings;
 }
 
 export async function fetchSiteSettings(): Promise<SiteSettingsData> {

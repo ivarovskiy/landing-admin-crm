@@ -146,6 +146,7 @@
   font-size: 21px;
   font-weight: 700;
   letter-spacing: 0.26em;
+  margin-right: -0.26em;
   text-transform: uppercase;
   line-height: 31px;
 }
@@ -214,6 +215,7 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.28em;
+  margin-right: -0.28em;
   text-transform: uppercase;
   display: inline-flex;
   align-items: center;
@@ -575,7 +577,8 @@
 [data-tiptap-content="true"] {
   outline: none;
   caret-color: currentColor;
-  min-width: 4px;
+  min-width: min-content;
+  width: 100%;
 }
 
 /* keep paragraph margins consistent with surrounding text */

@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor, Link2, Zap, Underline, Layers, Type } from "lucide-react";
+import { Maximize2, ScanLine, Check, Loader2, MonitorSmartphone, ZoomIn, Ruler, LayoutTemplate, EyeOff, ArrowUp, MoveHorizontal, MoveVertical, Eye, Anchor, Link2, Zap, Underline, Layers, Type, Grid3x3, Columns3, AlignJustify, Palette } from "lucide-react";
 import type {
   SiteSettingsData,
   SiteZoomSettings,
   SiteScrollToTopSettings,
   SiteTypographySettings,
   SiteHeaderSettings,
+  SiteGridSettings,
   SiteTextMetrics,
   SiteTypographyViewportProfileKey,
   NavUnderlineMode,
@@ -541,6 +542,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
   const [header, setHeader] = useState<SiteHeaderSettings>({
     navUnderlineMode: initialSettings?.header?.navUnderlineMode ?? "parent",
   });
+  const [grid, setGrid] = useState<SiteGridSettings>(initialSettings?.grid ?? {});
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   async function save(body: SiteSettingsData) {
@@ -582,6 +584,12 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     const next = { ...header, ...patch };
     setHeader(next);
     save({ header: next });
+  }
+
+  function updateGrid(patch: Partial<SiteGridSettings>) {
+    const next = { ...grid, ...patch };
+    setGrid(next);
+    save({ grid: next });
   }
 
   function getTextMetricValue(
@@ -776,6 +784,102 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
             placeholder="0"
             onChange={(v) => updateScrollToTop({ stopOffset: v })}
           />
+
+        </div>
+      </div>
+
+      {/* ---- Grid overlay section ---- */}
+      <div className="space-y-2">
+        <SectionLabel>Grid Overlay</SectionLabel>
+
+        <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] divide-y divide-[oklch(1_0_0/6%)] overflow-hidden">
+
+          <ToggleRow
+            icon={<Grid3x3 className="h-3.5 w-3.5" />}
+            label="Show grid"
+            description="Display a column + row guide grid over the entire page for layout alignment"
+            value={grid.enabled === true}
+            onChange={(v) => updateGrid({ enabled: v || undefined })}
+          />
+
+          {grid.enabled ? (
+            <>
+              <NumberRow
+                icon={<Columns3 className="h-3.5 w-3.5" />}
+                label="Columns"
+                description="Number of columns (default 12)"
+                value={grid.columns}
+                placeholder="12"
+                onChange={(v) => updateGrid({ columns: v })}
+              />
+
+              <NumberRow
+                icon={<MoveHorizontal className="h-3.5 w-3.5" />}
+                label="Column gap (px)"
+                description="Gap between columns in pixels (default 20)"
+                value={grid.columnGap}
+                placeholder="20"
+                onChange={(v) => updateGrid({ columnGap: v })}
+              />
+
+              <NumberRow
+                icon={<Maximize2 className="h-3.5 w-3.5" />}
+                label="Max width (px)"
+                description="Grid container max width (default 1440)"
+                value={grid.maxWidth}
+                placeholder="1440"
+                onChange={(v) => updateGrid({ maxWidth: v })}
+              />
+
+              <NumberRow
+                icon={<Ruler className="h-3.5 w-3.5" />}
+                label="H margin (px)"
+                description="Horizontal margin inside the grid container (default 60)"
+                value={grid.marginH}
+                placeholder="60"
+                onChange={(v) => updateGrid({ marginH: v })}
+              />
+
+              <TextRow
+                icon={<Palette className="h-3.5 w-3.5" />}
+                label="Column color"
+                description="CSS color for column fills (e.g. rgba(255,0,102,0.1))"
+                value={grid.columnColor}
+                placeholder="rgba(255,0,102,0.1)"
+                onChange={(v) => updateGrid({ columnColor: v })}
+              />
+
+              <ToggleRow
+                icon={<AlignJustify className="h-3.5 w-3.5" />}
+                label="Show row grid"
+                description="Overlay horizontal baseline lines"
+                value={grid.rowsEnabled === true}
+                onChange={(v) => updateGrid({ rowsEnabled: v || undefined })}
+              />
+
+              {grid.rowsEnabled ? (
+                <>
+                  <NumberRow
+                    icon={<MoveVertical className="h-3.5 w-3.5" />}
+                    label="Row height (px)"
+                    description="Distance between horizontal lines (default 8)"
+                    value={grid.rowHeight}
+                    placeholder="8"
+                    onChange={(v) => updateGrid({ rowHeight: v })}
+                  />
+
+                  <TextRow
+                    icon={<Palette className="h-3.5 w-3.5" />}
+                    label="Row color"
+                    description="CSS color for row lines (e.g. rgba(0,100,255,0.08))"
+                    value={grid.rowColor}
+                    placeholder="rgba(0,100,255,0.08)"
+                    onChange={(v) => updateGrid({ rowColor: v })}
+                  />
+                </>
+              ) : null}
+            </>
+          ) : null}
 
         </div>
       </div>

@@ -28,7 +28,11 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(pnpm -F admin exec tsc --noEmit)",
       "Bash(pnpm.cmd -C apps/admin exec tsc --noEmit)",
-      "Bash(pnpm.cmd -C apps/web exec tsc --noEmit)"
+      "Bash(pnpm.cmd -C apps/web exec tsc --noEmit)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\" -Recurse -Filter \"*.scss\" -ErrorAction SilentlyContinue)",
+      "Bash(grep -E \"\\\\.tsx?$\")",
+      "Bash(node -e \"const l = require\\('apps/admin/node_modules/lucide-react'\\); console.log\\(['Grid3x3','Columns3','AlignJustify','Palette'].map\\(k => k + ':' + \\(k in l\\)\\)\\)\")",
+      "Bash(node -e \"const l = require\\('c:/Users/ThinkPad/Desktop/Work/landing-admin-crm/apps/admin/node_modules/lucide-react'\\); console.log\\(['Grid3x3','Columns3','AlignJustify','Palette'].map\\(k => k + ':' + \\(k in l\\)\\).join\\(', '\\)\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\ThinkPad\\.claude\\projects\\c--Users-ThinkPad-Desktop-Work-landing-admin-crm\\memory"

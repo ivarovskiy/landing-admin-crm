@@ -9,7 +9,9 @@
   font-weight: 500;
   font-size: var(--typo-content-header-font-size, 78px);
   line-height: var(--typo-content-header-line-height, 86px);
-  letter-spacing: var(--typo-content-header-letter-spacing, 0.02em);
+  --_ls: var(--typo-content-header-letter-spacing, 0.02em);
+  letter-spacing: var(--_ls);
+  margin-right: calc(-1 * var(--_ls));
   color: var(--stamp-fill, var(--color-outline-fill));
   text-transform: uppercase;
   paint-order: stroke fill;
@@ -20,7 +22,9 @@
 .typo-homepage-header {
   font-size: var(--typo-homepage-header-font-size, 104px);
   line-height: var(--typo-homepage-header-line-height, 126px);
-  letter-spacing: var(--typo-homepage-header-letter-spacing, 0.02em);
+  --_ls: var(--typo-homepage-header-letter-spacing, 0.02em);
+  letter-spacing: var(--_ls);
+  margin-right: calc(-1 * var(--_ls));
 }
 
 .typo-subtitle {
@@ -29,7 +33,9 @@
   font-style: normal;
   font-size: var(--typo-subtitle-font-size, 47px);
   line-height: var(--typo-subtitle-line-height, 60px); /* 60/47 */
-  letter-spacing: var(--typo-subtitle-letter-spacing, 0.01em);
+  --_ls: var(--typo-subtitle-letter-spacing, 0.01em);
+  letter-spacing: var(--_ls);
+  margin-right: calc(-1 * var(--_ls));
   color: var(--stamp-fill, var(--color-outline-fill));
   paint-order: stroke fill;
   -webkit-text-stroke: var(--text-stroke-w, 3.6px) var(--stamp-stroke, var(--color-primary)); /* 2px outside × 2 */
@@ -49,7 +55,9 @@
   font-weight: 700;
   font-size: var(--typo-section-header-font-size, clamp(14px, 2vw, 22px));
   line-height: var(--typo-section-header-line-height, 1.51);
-  letter-spacing: var(--typo-section-header-letter-spacing, 0.327em);
+  --_ls: var(--typo-section-header-letter-spacing, 0.327em);
+  letter-spacing: var(--_ls);
+  margin-right: calc(-1 * var(--_ls));
   text-transform: uppercase;
   color: var(--color-primary);
 }
@@ -57,7 +65,9 @@
 .typo-text-header {
   font-size: var(--typo-text-header-font-size, var(--typo-section-header-font-size, clamp(14px, 2vw, 22px)));
   line-height: var(--typo-text-header-line-height, var(--typo-section-header-line-height, 1.51));
-  letter-spacing: var(--typo-text-header-letter-spacing, 0.321em);
+  --_ls: var(--typo-text-header-letter-spacing, 0.321em);
+  letter-spacing: var(--_ls);
+  margin-right: calc(-1 * var(--_ls));
 }
 
 
@@ -67,7 +77,9 @@
   font-weight: 700;
   font-size: var(--typo-promo-header-font-size, 26px);
   line-height: var(--typo-promo-header-line-height, 38px); /* 38/26 */
-  letter-spacing: var(--typo-promo-header-letter-spacing, 0.327em);
+  --_ls: var(--typo-promo-header-letter-spacing, 0.327em);
+  letter-spacing: var(--_ls);
+  margin-right: calc(-1 * var(--_ls));
   text-transform: uppercase;
 }
 
@@ -80,7 +92,9 @@
   font-weight: 700;
   font-size: var(--typo-teachers-header-font-size, 22px);
   line-height: var(--typo-teachers-header-line-height, 33.2px); /* 33.2/22 */
-  letter-spacing: var(--typo-teachers-header-letter-spacing, 0.327em);
+  --_ls: var(--typo-teachers-header-letter-spacing, 0.327em);
+  letter-spacing: var(--_ls);
+  margin-right: calc(-1 * var(--_ls));
   text-transform: uppercase;
 }
 
@@ -116,7 +130,9 @@
   font-weight: 500;
   font-size: var(--typo-hero-title-font-size, clamp(44px, 5.7vw, 78px));
   line-height: var(--typo-hero-title-line-height, 0.92);
-  letter-spacing: var(--typo-hero-title-letter-spacing, 0.02em);
+  --_ls: var(--typo-hero-title-letter-spacing, 0.02em);
+  letter-spacing: var(--_ls);
+  margin-right: calc(-1 * var(--_ls));
   color: var(--stamp-fill, var(--color-outline-fill));
   paint-order: stroke fill;
   -webkit-text-stroke: var(--text-stroke-w, 2.6px) var(--stamp-stroke, var(--color-primary)); /* 1.3px outside × 2 */

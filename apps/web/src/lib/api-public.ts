@@ -120,6 +120,18 @@ export type HeaderSettings = {
   navUnderlineMode?: NavUnderlineMode;
 };
 
+export type GridSettings = {
+  enabled?: boolean;
+  columns?: number;
+  columnColor?: string;
+  columnGap?: number;
+  maxWidth?: number;
+  marginH?: number;
+  rowsEnabled?: boolean;
+  rowHeight?: number;
+  rowColor?: string;
+};
+
 export async function getSiteSettings() {
   const url = `${BASE}/v1/public/settings`;
   return safeFetchJson<{
@@ -127,6 +139,7 @@ export async function getSiteSettings() {
     scrollToTop?: ScrollToTopSettings;
     typography?: TypographySettings;
     header?: HeaderSettings;
+    grid?: GridSettings;
   }>(url, { cache: "no-store" });
 }
 

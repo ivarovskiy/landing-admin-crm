@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { fontMaru, fontMaruOblique, fontDisplay } from "./fonts";
 import { ScrollToTop } from "@/components/landing/ui/scroll-to-top";
+import { GridOverlay } from "@/components/landing/ui/grid-overlay";
 import {
   getSiteSettings,
   type TextMetricsSettings,
@@ -193,6 +194,7 @@ export default async function RootLayout({ children }: {
   const typography = data?.typography;
   const zoom = data?.zoom;
   const header = data?.header;
+  const grid = data?.grid;
 
   // Default mode keeps the legacy "parent only" behavior — childless top
   // items show no underline. Only `'all'` or `'none'` materialize a
@@ -337,6 +339,7 @@ export default async function RootLayout({ children }: {
           showAfter={scrollToTop?.showAfter}
           stopOffset={scrollToTop?.stopOffset}
         />
+        <GridOverlay {...(grid ?? {})} />
       </body>
     </html>
   );

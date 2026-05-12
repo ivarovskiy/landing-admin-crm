@@ -95,6 +95,7 @@
   line-height: 38px;
   /* 38/26 */
   letter-spacing: 0.327em;
+  margin-right: -0.327em;
   /* 0.327em/1.3ch */
   text-transform: uppercase;
   text-align: center;
