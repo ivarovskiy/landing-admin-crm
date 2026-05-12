@@ -213,14 +213,35 @@ describe("splitTextElement", () => {
     expect(order.indexOf(newId)).toBe(subtitleIdx + 1);
   });
 
-  it("inherits typo and align from original style", () => {
+  it("inherits ALL style fields from original (typo, align, size, strokeW, locked, groupId)", () => {
     const slide = makeSlide({
-      titleStyle: { mt: "100px", typo: "typo-content-header", align: "right" },
+      titleStyle: {
+        mt: "100px",
+        ml: "20px",
+        typo: "typo-content-header",
+        align: "right",
+        size: "48px",
+        strokeW: "3.6px",
+        locked: true,
+        groupId: "header",
+      },
     });
     const result = splitTextElement(slide, "title");
     const ex = result.extras?.[0];
     expect(ex?.style?.typo).toBe("typo-content-header");
     expect(ex?.style?.align).toBe("right");
+    expect(ex?.style?.size).toBe("48px");
+    expect(ex?.style?.strokeW).toBe("3.6px");
+    expect(ex?.style?.locked).toBe(true);
+    expect(ex?.style?.groupId).toBe("header");
+  });
+
+  it("does not carry over snapToBaseline (each split line is free)", () => {
+    const slide = makeSlide({
+      titleStyle: { mt: "100px", snapToBaseline: true },
+    });
+    const result = splitTextElement(slide, "title");
+    expect(result.extras?.[0]?.style?.snapToBaseline).toBeUndefined();
   });
 
   it("staggers split extras vertically by lineSpacingPx", () => {

@@ -115,17 +115,12 @@ export function splitTextElement(
     kind: "text" as const,
     text: line,
     style: {
-      ...(originalStyle
-        ? {
-            typo: originalStyle.typo,
-            align: originalStyle.align,
-            size: originalStyle.size,
-            strokeW: originalStyle.strokeW,
-            groupId: originalStyle.groupId,
-          }
-        : {}),
+      // Inherit ALL original style fields (typo, align, size, strokeW, locked, groupId, viewportProfiles…)
+      ...(originalStyle ?? {}),
+      // Override position to stack lines vertically; reset baseline snap since each line is now free
       mt: `${baseMt + (i + 1) * lineSpacingPx}px`,
       ml: baseMl ? `${baseMl}px` : undefined,
+      snapToBaseline: undefined,
     },
   }));
 
