@@ -12,13 +12,14 @@
  * applied directly to the inner DOM node — no re-renders on resize.
  */
 
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, GripVertical, Lock, Plus } from "lucide-react";
 import type {
   Slide,
   ElementStyle,
   HeroTuningScope,
   SlideExtra,
+  ClassicGridSettings,
 } from "./hero-slider-presets";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -96,6 +97,53 @@ function commitStyle(
   onChange({ ...slide, extras: extras.map((e) => e.id === key ? { ...e, style } : e) });
 }
 
+// ─── ClassicGridOverlay ───────────────────────────────────────────────────────
+
+function ClassicGridOverlay({ settings }: { settings: ClassicGridSettings }) {
+  if (!settings.enabled) return null;
+  const cols = Math.max(1, settings.columns ?? 6);
+  const rows = Math.max(1, settings.rows ?? 4);
+  const colW = REF_W / cols;
+  const rowH = REF_H / rows;
+  const lineColor = settings.color ?? "rgba(100,149,237,0.35)";
+  const centerColor = "rgba(72,199,72,0.7)";
+
+  return (
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 2 }}>
+      {/* Column dividers */}
+      {Array.from({ length: cols - 1 }, (_, i) => (
+        <div
+          key={`col-${i}`}
+          className="absolute top-0 bottom-0"
+          style={{ left: Math.round(colW * (i + 1)), width: 1, background: lineColor }}
+        />
+      ))}
+      {/* Row dividers */}
+      {Array.from({ length: rows - 1 }, (_, i) => (
+        <div
+          key={`row-${i}`}
+          className="absolute left-0 right-0"
+          style={{ top: Math.round(rowH * (i + 1)), height: 1, background: lineColor }}
+        />
+      ))}
+      {/* Vertical center line */}
+      {settings.showVerticalCenter && (
+        <div
+          className="absolute top-0 bottom-0"
+          style={{ left: REF_W / 2, width: 1, background: centerColor }}
+        />
+      )}
+      {/* Horizontal center line */}
+      {settings.showHorizontalCenter && (
+        <div
+          className="absolute left-0 right-0"
+          style={{ top: REF_H / 2, height: 1, background: centerColor }}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── CanvasItem ───────────────────────────────────────────────────────────────
 
 function CanvasItem({
@@ -106,6 +154,8 @@ function CanvasItem({
   canMoveDown,
   onMove,
   onChange,
+  onSelect,
+  isSelected,
   baselineOffset,
 }: {
   itemKey: string;
@@ -115,6 +165,8 @@ function CanvasItem({
   canMoveDown: boolean;
   onMove: (key: string, dir: "up" | "down") => void;
   onChange: (s: Slide) => void;
+  onSelect: (key: string) => void;
+  isSelected: boolean;
   baselineOffset?: number;
 }) {
   const elRef = useRef<HTMLDivElement>(null);
@@ -168,7 +220,12 @@ function CanvasItem({
   const onPU = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
     dragRef.current = null;
-    if (!d?.moved) return;
+    if (!d) return;
+    if (!d.moved) {
+      // Click without drag — select this element
+      onSelect(itemKey);
+      return;
+    }
     const rawDy = (e.clientY - d.startY) / d.scale;
     const dx = (e.clientX - d.startX) / d.scale;
     const newMt = snapToBaseline ? mt : Math.round(d.startMt + rawDy);
@@ -178,7 +235,7 @@ function CanvasItem({
       mt: newMt ? `${newMt}px` : undefined,
       ml: newMl ? `${newMl}px` : undefined,
     }, onChange);
-  }, [slide, itemKey, style, onChange, snapToBaseline, mt]);
+  }, [slide, itemKey, style, onChange, snapToBaseline, mt, onSelect]);
 
   const onPC = useCallback(() => {
     if (!dragRef.current) return;
@@ -194,14 +251,19 @@ function CanvasItem({
   const fontSize = isLarge ? 24 : isMid ? 16 : 11;
   const textPreview = text ? text.replace(/\n/g, " ").slice(0, 36) : "·";
 
+  const borderClass = isLocked
+    ? "border-amber-400/50 opacity-70"
+    : isSelected
+      ? "border-blue-400 shadow-[0_0_0_1px_rgba(96,165,250,0.5)]"
+      : "border-primary/30 hover:border-primary/70";
+
   return (
     <div
       ref={elRef}
       className={[
         "sc-item absolute flex items-start gap-1 select-none rounded border bg-background/80 px-1.5 py-1 transition-colors max-w-[90%]",
-        isLocked
-          ? "cursor-default border-amber-400/50 opacity-70"
-          : "cursor-grab active:cursor-grabbing border-primary/30 hover:border-primary/70",
+        isLocked ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+        borderClass,
       ].join(" ")}
       style={{ top: mt, left: ml, fontSize, touchAction: "none" }}
       onPointerDown={onPD}
@@ -248,6 +310,9 @@ function CanvasItem({
       <div className="min-w-0">
         <div className="text-[8px] font-semibold uppercase tracking-widest text-muted-foreground/60 leading-none mb-0.5">
           {label}
+          {style?.groupId ? (
+            <span className="ml-1 opacity-60">#{style.groupId.slice(0, 4)}</span>
+          ) : null}
         </div>
         <div className="font-medium leading-tight truncate" style={{ fontSize }}>
           {textPreview}
@@ -265,6 +330,8 @@ export function SlideCanvas({
   onChange,
   gapOffset,
   baselineOffset,
+  italicBaselineOffset,
+  classicGrid,
 }: {
   slide: Slide;
   tuningScope: HeroTuningScope; // reserved for future scope-aware editing
@@ -272,10 +339,13 @@ export function SlideCanvas({
   onChange: (s: Slide) => void;
   gapOffset?: number;
   baselineOffset?: number;
+  italicBaselineOffset?: number;
+  classicGrid?: ClassicGridSettings;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const scaleRef = useRef<number>(0.6);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   // Scale inner canvas to fill outer wrapper — direct DOM, no re-render
   useLayoutEffect(() => {
@@ -305,6 +375,38 @@ export function SlideCanvas({
     onChange({ ...slide, elementOrder: nextOrder });
   }, [slide, onChange]);
 
+  // Keyboard nudging — arrow keys move the selected element by 1px (10px with shift)
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!selectedKey || !enableDrag) return;
+    const style = getStyle(slide, selectedKey);
+    if (style?.locked) return; // Locked elements are immune to keyboard movement
+
+    let dx = 0;
+    let dy = 0;
+    const delta = e.shiftKey ? 10 : 1;
+
+    if (e.key === "ArrowLeft") { dx = -delta; }
+    else if (e.key === "ArrowRight") { dx = delta; }
+    else if (e.key === "ArrowUp") { dy = -delta; }
+    else if (e.key === "ArrowDown") { dy = delta; }
+    else return;
+
+    e.preventDefault();
+
+    const snapToBaseline =
+      !!(style?.snapToBaseline && baselineOffset != null && baselineOffset > 0);
+    const curMt = snapToBaseline ? REF_H - baselineOffset! : parsePx(style?.mt);
+    const curMl = parsePx(style?.ml);
+    const newMt = snapToBaseline ? curMt : curMt + dy;
+    const newMl = curMl + dx;
+
+    commitStyle(slide, selectedKey, {
+      ...(style ?? {}),
+      mt: newMt ? `${newMt}px` : undefined,
+      ml: newMl ? `${newMl}px` : undefined,
+    }, onChange);
+  }, [selectedKey, slide, onChange, enableDrag, baselineOffset]);
+
   // Click on empty canvas → add new extra at the clicked Y position
   const onCanvasClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest(".sc-item")) return;
@@ -329,6 +431,7 @@ export function SlideCanvas({
       extras: [...(Array.isArray(slide.extras) ? slide.extras : []), newExtra],
       elementOrder: [...orderedKeys(slide), id],
     });
+    setSelectedKey(id);
   }, [slide, onChange]);
 
   const hasText = slide.template !== "full-image";
@@ -340,6 +443,9 @@ export function SlideCanvas({
         ref={outerRef}
         className="relative w-full overflow-hidden rounded border bg-muted/10"
         style={{ paddingBottom: `${(REF_H / REF_W) * 100}%` }}
+        // tabIndex enables keyboard focus so arrow-key nudging works
+        tabIndex={enableDrag ? 0 : undefined}
+        onKeyDown={enableDrag ? handleKeyDown : undefined}
       >
         {/* Inner canvas at REF_W × REF_H, scaled via transform */}
         <div
@@ -348,7 +454,7 @@ export function SlideCanvas({
           style={{ width: REF_W, height: REF_H, transformOrigin: "top left", touchAction: enableDrag ? "none" : undefined }}
           onClick={enableDrag ? onCanvasClick : undefined}
         >
-          {/* Grid background */}
+          {/* Background grid (subtle) */}
           <div
             className="absolute inset-0 pointer-events-none opacity-[0.07]"
             style={{
@@ -358,11 +464,14 @@ export function SlideCanvas({
             }}
           />
 
+          {/* Classic design grid overlay */}
+          {classicGrid && <ClassicGridOverlay settings={classicGrid} />}
+
           {/* Gap guideline — amber dashed line at gapOffset from top */}
           {gapOffset != null && gapOffset > 0 && (
             <div
               className="absolute left-0 right-0 pointer-events-none"
-              style={{ top: gapOffset, borderTop: "1.5px dashed rgba(245,158,11,0.75)", zIndex: 1 }}
+              style={{ top: gapOffset, borderTop: "1.5px dashed rgba(245,158,11,0.75)", zIndex: 3 }}
             >
               <span className="absolute left-1 -top-3 text-[7px] font-medium" style={{ color: "rgba(245,158,11,0.9)" }}>gap {gapOffset}px</span>
             </div>
@@ -372,9 +481,19 @@ export function SlideCanvas({
           {baselineOffset != null && baselineOffset > 0 && (
             <div
               className="absolute left-0 right-0 pointer-events-none"
-              style={{ top: REF_H - baselineOffset, borderTop: "1.5px dashed rgba(139,92,246,0.75)", zIndex: 1 }}
+              style={{ top: REF_H - baselineOffset, borderTop: "1.5px dashed rgba(139,92,246,0.75)", zIndex: 3 }}
             >
               <span className="absolute left-1 -top-3 text-[7px] font-medium" style={{ color: "rgba(139,92,246,0.9)" }}>baseline {baselineOffset}px</span>
+            </div>
+          )}
+
+          {/* Italic design-element guideline — teal dashed line, lowest allowed italic position */}
+          {italicBaselineOffset != null && italicBaselineOffset > 0 && (
+            <div
+              className="absolute left-0 right-0 pointer-events-none"
+              style={{ top: REF_H - italicBaselineOffset, borderTop: "1.5px dashed rgba(20,184,166,0.8)", zIndex: 3 }}
+            >
+              <span className="absolute right-1 -top-3 text-[7px] font-medium" style={{ color: "rgba(20,184,166,0.95)" }}>italic min {italicBaselineOffset}px</span>
             </div>
           )}
 
@@ -402,6 +521,8 @@ export function SlideCanvas({
                   canMoveDown={index < keys.length - 1}
                   onMove={moveKey}
                   onChange={onChange}
+                  onSelect={setSelectedKey}
+                  isSelected={selectedKey === key}
                   baselineOffset={baselineOffset}
                 />
               );
@@ -413,6 +534,7 @@ export function SlideCanvas({
             <div className="absolute bottom-1.5 left-0 right-0 flex justify-center pointer-events-none">
               <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground/35">
                 <Plus className="w-2 h-2" /> click empty area to add text
+                {selectedKey && <span className="ml-1 opacity-60">· arrow keys to nudge · shift+arrow for 10px</span>}
               </span>
             </div>
           )}
@@ -420,7 +542,7 @@ export function SlideCanvas({
       </div>
 
       <p className="text-[9px] text-muted-foreground/50 px-0.5">
-        Drag handles to set position (mt / ml). Edit text and styling in the Text fields above.
+        Drag handles to set position (mt / ml). Click to select, then use arrow keys to nudge. Edit text and styling in the Text fields above.
       </p>
     </div>
   );

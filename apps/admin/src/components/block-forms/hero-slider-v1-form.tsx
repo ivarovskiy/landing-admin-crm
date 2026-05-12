@@ -5,6 +5,11 @@ import type { BlockFormProps } from "./index";
 import { arr, moveAt, removeAt, setAt } from "@/lib/array";
 import { updatePath } from "@/lib/update-path";
 import {
+  splitTextElement,
+  setGroupLock,
+  getSlideText as getTextLocal,
+} from "./slide-layout-utils";
+import {
   BlockLayoutSection,
   ImageUpload,
   InspectorField,
@@ -21,13 +26,17 @@ import {
   Copy,
   Eye,
   EyeOff,
+  Grid,
   Image,
   LayoutTemplate,
   Layers,
+  Lock,
   Plus,
+  ScissorsLineDashed,
   SlidersHorizontal,
   Trash2,
   Type,
+  Unlock,
 } from "lucide-react";
 import { SlideCanvas } from "./slide-canvas";
 import {
@@ -43,6 +52,7 @@ import {
   type TypoClass,
   type BodyVariant,
   type CanvasGuidelines,
+  type ClassicGridSettings,
   TEMPLATE_OPTIONS,
   PRESET_OPTIONS,
   FIT_OPTIONS,
@@ -292,22 +302,89 @@ export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) 
           </InspectorField>
         </div>
 
-        <div className="grid grid-cols-2 gap-1.5 mt-1">
-          <InspectorField label="Gap guide (px from top)" hint="Amber dashed line on canvas">
-            <InspectorNumber
-              value={canvasGuidelines.gapOffset ?? undefined}
-              onChange={(v) => set(["canvasGuidelines", "gapOffset"], v ?? undefined)}
-              placeholder="e.g. 80"
-            />
-          </InspectorField>
-          <InspectorField label="Baseline (px from bottom)" hint="Purple dashed line; elements can snap to it">
-            <InspectorNumber
-              value={canvasGuidelines.baselineOffset ?? undefined}
-              onChange={(v) => set(["canvasGuidelines", "baselineOffset"], v ?? undefined)}
-              placeholder="e.g. 23"
-            />
-          </InspectorField>
-        </div>
+        {/* Figma / design-guideline grid */}
+        <InspectorSection
+          title="Figma Guideline Grid"
+          icon={<Grid className="h-3 w-3" />}
+          defaultOpen={false}
+        >
+          <p className="text-[10px] text-muted-foreground/70 mb-1">
+            Named design guidelines shown on the canvas. Set pixel offsets to match Figma specs.
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            <InspectorField label="Gap guide (px from top)" hint="Amber dashed line">
+              <InspectorNumber
+                value={canvasGuidelines.gapOffset ?? undefined}
+                onChange={(v) => set(["canvasGuidelines", "gapOffset"], v ?? undefined)}
+                placeholder="e.g. 80"
+              />
+            </InspectorField>
+            <InspectorField label="Baseline (px from bottom)" hint="Purple dashed line; elements snap to it">
+              <InspectorNumber
+                value={canvasGuidelines.baselineOffset ?? undefined}
+                onChange={(v) => set(["canvasGuidelines", "baselineOffset"], v ?? undefined)}
+                placeholder="e.g. 23"
+              />
+            </InspectorField>
+            <InspectorField label="Italic baseline (px from bottom)" hint="Teal dashed line — lowest allowed italic design-element position">
+              <InspectorNumber
+                value={canvasGuidelines.italicBaselineOffset ?? undefined}
+                onChange={(v) => set(["canvasGuidelines", "italicBaselineOffset"], v ?? undefined)}
+                placeholder="e.g. 18"
+              />
+            </InspectorField>
+          </div>
+        </InspectorSection>
+
+        {/* Classic design grid */}
+        <InspectorSection
+          title="Classic Design Grid"
+          icon={<Grid className="h-3 w-3" />}
+          defaultOpen={false}
+        >
+          <InspectorToggle
+            label="Show classic grid"
+            checked={!!(canvasGuidelines.classicGrid?.enabled)}
+            onChange={(v) => set(["canvasGuidelines", "classicGrid", "enabled"], v || undefined)}
+          />
+          {canvasGuidelines.classicGrid?.enabled && (
+            <>
+              <div className="grid grid-cols-2 gap-1.5 mt-1">
+                <InspectorField label="Columns">
+                  <InspectorNumber
+                    value={canvasGuidelines.classicGrid?.columns ?? undefined}
+                    onChange={(v) => set(["canvasGuidelines", "classicGrid", "columns"], v ?? 6)}
+                    placeholder="6"
+                  />
+                </InspectorField>
+                <InspectorField label="Rows">
+                  <InspectorNumber
+                    value={canvasGuidelines.classicGrid?.rows ?? undefined}
+                    onChange={(v) => set(["canvasGuidelines", "classicGrid", "rows"], v ?? 4)}
+                    placeholder="4"
+                  />
+                </InspectorField>
+              </div>
+              <InspectorToggle
+                label="Show vertical center line"
+                checked={!!(canvasGuidelines.classicGrid?.showVerticalCenter)}
+                onChange={(v) => set(["canvasGuidelines", "classicGrid", "showVerticalCenter"], v || undefined)}
+              />
+              <InspectorToggle
+                label="Show horizontal center line"
+                checked={!!(canvasGuidelines.classicGrid?.showHorizontalCenter)}
+                onChange={(v) => set(["canvasGuidelines", "classicGrid", "showHorizontalCenter"], v || undefined)}
+              />
+              <InspectorField label="Line color" hint="CSS color (default: cornflower blue)">
+                <InspectorInput
+                  value={canvasGuidelines.classicGrid?.color ?? ""}
+                  onChange={(v) => set(["canvasGuidelines", "classicGrid", "color"], v || undefined)}
+                  placeholder="rgba(100,149,237,0.35)"
+                />
+              </InspectorField>
+            </>
+          )}
+        </InspectorSection>
       </InspectorSection>
 
       <InspectorSection
@@ -471,6 +548,8 @@ function SlideEditor({
             onChange={onChange}
             gapOffset={canvasGuidelines.gapOffset}
             baselineOffset={canvasGuidelines.baselineOffset}
+            italicBaselineOffset={canvasGuidelines.italicBaselineOffset}
+            classicGrid={canvasGuidelines.classicGrid}
           />
         </div>
       )}
@@ -880,9 +959,20 @@ function ElementStyleEditor({
         checked={!!(style?.locked)}
         onChange={(v) => onChange({ ...(style ?? {}), locked: v || undefined })}
       />
+      {tuningScope === "default" && (
+        <InspectorField label="Group ID" hint="Assign a group name to lock/unlock together">
+          <InspectorInput
+            value={style?.groupId ?? ""}
+            onChange={(v) => onChange({ ...(style ?? {}), groupId: v || undefined })}
+            placeholder="e.g. header-group"
+          />
+        </InspectorField>
+      )}
     </div>
   );
 }
+
+// splitTextElement, setGroupLock, getTextLocal imported from slide-layout-utils above
 
 /* ------------------------------------------------------------------ */
 /*  TextElementsEditor — unified reorderable list of all text elements */
@@ -956,6 +1046,17 @@ function TextElementsEditor({
     });
   };
 
+  // Collect all unique group IDs present on this slide's elements
+  const getAllStyles = (): ElementStyle[] =>
+    [
+      s.titleStyle, s.subtitleStyle, s.kickerStyle, s.bodyStyle, s.quoteStyle,
+      ...extras.map(e => e.style),
+    ].filter((st): st is ElementStyle => !!st);
+
+  const allGroupIds = Array.from(
+    new Set(getAllStyles().map(st => st.groupId).filter((g): g is string => !!g))
+  );
+
   return (
     <div className="space-y-1.5">
       {orderedKeys.map((key, idx) => (
@@ -978,6 +1079,44 @@ function TextElementsEditor({
       >
         <Plus className="h-2.5 w-2.5" /> Add text block
       </button>
+
+      {/* Group lock controls — shown when any element has a groupId */}
+      {allGroupIds.length > 0 && (
+        <div className="mt-2 space-y-1 rounded border border-dashed border-border/60 p-2">
+          <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">Group Lock</span>
+          {allGroupIds.map((gid) => {
+            const groupStyles = getAllStyles().filter(st => st.groupId === gid);
+            const allLocked = groupStyles.every(st => st.locked);
+            const anyLocked = groupStyles.some(st => st.locked);
+            return (
+              <div key={gid} className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground truncate max-w-[140px]">#{gid}</span>
+                <div className="flex items-center gap-1">
+                  {anyLocked && !allLocked && (
+                    <span className="text-[9px] text-amber-500">partial</span>
+                  )}
+                  <button
+                    type="button"
+                    title={allLocked ? "Unlock group" : "Lock group"}
+                    onClick={() => onChange(setGroupLock(s, gid, !allLocked))}
+                    className={[
+                      "flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium border",
+                      allLocked
+                        ? "border-amber-400/50 text-amber-500 hover:text-amber-400"
+                        : "border-border/60 text-muted-foreground hover:text-foreground",
+                    ].join(" ")}
+                  >
+                    {allLocked
+                      ? <><Unlock className="h-2.5 w-2.5" /> Unlock</>
+                      : <><Lock className="h-2.5 w-2.5" /> Lock</>
+                    }
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1009,6 +1148,9 @@ function TextElementCard({
   const updateExtra = (patch: Partial<SlideExtra>) =>
     onChange({ ...s, extras: extras.map(e => e.id === elementKey ? { ...e, ...patch } : e) });
 
+  const rawText = isExtra ? (extra?.text ?? "") : getTextLocal(s, elementKey);
+  const canSplit = rawText.includes("\n") && rawText.split("\n").filter(l => l.trim()).length >= 2;
+
   const label = isExtra
     ? `Extra${extra.text ? ": " + extra.text.split("\n")[0].slice(0, 22) : ""}`
     : (FIXED_ELEMENT_LABELS[elementKey] ?? elementKey);
@@ -1019,10 +1161,20 @@ function TextElementCard({
         className="flex items-center justify-between px-2 py-1 cursor-pointer select-none"
         onClick={() => setOpen(o => !o)}
       >
-        <span className="text-[11px] font-semibold text-muted-foreground truncate max-w-[150px]">
+        <span className="text-[11px] font-semibold text-muted-foreground truncate max-w-[120px]">
           {open ? "▾" : "▸"} {label}
         </span>
         <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+          {canSplit && (
+            <button
+              type="button"
+              title="Split lines into independent elements"
+              onClick={() => onChange(splitTextElement(s, elementKey))}
+              className="flex items-center gap-0.5 text-[10px] text-primary hover:text-primary/80 p-0.5"
+            >
+              <ScissorsLineDashed className="h-3 w-3" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onMove("up")}

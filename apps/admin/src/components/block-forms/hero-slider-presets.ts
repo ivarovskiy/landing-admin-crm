@@ -48,13 +48,26 @@ export type ElementStyle = {
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
   snapToBaseline?: boolean; // lock Y to the canvas baseline guideline
   locked?: boolean;         // prevent position/size changes in canvas and preview
+  groupId?: string;         // group identifier — used for bulk lock/unlock in the form
   viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
+};
+
+/** Classic design grid overlay — configurable columns/rows + optional center lines */
+export type ClassicGridSettings = {
+  enabled?: boolean;
+  columns?: number;             // number of vertical column divisions (default 6)
+  rows?: number;                // number of horizontal row divisions (default 4)
+  showVerticalCenter?: boolean; // render a bright center-vertical line
+  showHorizontalCenter?: boolean; // render a bright center-horizontal line
+  color?: string;               // optional CSS color for column/row lines
 };
 
 /** Canvas guideline offsets stored at block level (shared across all slides) */
 export type CanvasGuidelines = {
-  gapOffset?: number;       // px from top — amber dashed line
-  baselineOffset?: number;  // px from bottom — purple dashed line
+  gapOffset?: number;            // px from top — amber dashed line
+  baselineOffset?: number;       // px from bottom — purple dashed line
+  italicBaselineOffset?: number; // px from bottom — lowest allowed italic design-element guide
+  classicGrid?: ClassicGridSettings; // classic configurable design grid
 };
 
 export type ElementStyleProfile = Omit<ElementStyle, "viewportProfiles">;
