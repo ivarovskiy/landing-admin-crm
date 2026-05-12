@@ -8,6 +8,7 @@ import {
   splitTextElement,
   setGroupLock,
   getSlideText as getTextLocal,
+  getSlideStyle,
 } from "./slide-layout-utils";
 import {
   BlockLayoutSection,
@@ -21,6 +22,7 @@ import {
   InspectorToggle,
 } from "@/components/inspector";
 import {
+  Check,
   ChevronDown,
   ChevronUp,
   Copy,
@@ -958,20 +960,23 @@ function ElementStyleEditor({
         checked={!!(style?.locked)}
         onChange={(v) => onChange({ ...(style ?? {}), locked: v || undefined })}
       />
-      {tuningScope === "default" && (
-        <InspectorField label="Group ID" hint="Assign a group name to lock/unlock together">
-          <InspectorInput
-            value={style?.groupId ?? ""}
-            onChange={(v) => onChange({ ...(style ?? {}), groupId: v || undefined })}
-            placeholder="e.g. header-group"
-          />
-        </InspectorField>
-      )}
     </div>
   );
 }
 
-// splitTextElement, setGroupLock, getTextLocal imported from slide-layout-utils above
+/** Apply a partial style patch to any element identified by key. Always operates on the root style (not viewport profiles). */
+function applyStylePatch(slide: Slide, key: string, patch: Partial<ElementStyle>): Slide {
+  const extrasArr = Array.isArray(slide.extras) ? slide.extras : [];
+  if (key === "title") return { ...slide, titleStyle: { ...(slide.titleStyle ?? {}), ...patch } as ElementStyle };
+  if (key === "subtitle") return { ...slide, subtitleStyle: { ...(slide.subtitleStyle ?? {}), ...patch } as ElementStyle };
+  if (key === "kicker") return { ...slide, kickerStyle: { ...(slide.kickerStyle ?? {}), ...patch } as ElementStyle };
+  if (key === "body") return { ...slide, bodyStyle: { ...(slide.bodyStyle ?? {}), ...patch } as ElementStyle };
+  if (key === "quote") return { ...slide, quoteStyle: { ...(slide.quoteStyle ?? {}), ...patch } as ElementStyle };
+  return {
+    ...slide,
+    extras: extrasArr.map(e => e.id === key ? { ...e, style: { ...(e.style ?? {}), ...patch } as ElementStyle } : e),
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /*  TextElementsEditor — unified reorderable list of all text elements */
@@ -1000,6 +1005,9 @@ function TextElementsEditor({
   tuningScope: HeroTuningScope;
   onChange: (next: Slide) => void;
 }) {
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
   const extras = Array.isArray(s?.extras) ? s.extras : [];
 
   const activeFixed: string[] = [];
@@ -1045,7 +1053,6 @@ function TextElementsEditor({
     });
   };
 
-  // Collect all unique group IDs present on this slide's elements
   const getAllStyles = (): ElementStyle[] =>
     [
       s.titleStyle, s.subtitleStyle, s.kickerStyle, s.bodyStyle, s.quoteStyle,
@@ -1056,8 +1063,71 @@ function TextElementsEditor({
     new Set(getAllStyles().map(st => st.groupId).filter((g): g is string => !!g))
   );
 
+  // ── Select mode helpers ──────────────────────────────────────────────
+
+  const exitSelectMode = () => { setSelectMode(false); setSelectedKeys(new Set()); };
+
+  const toggleSelect = (key: string) => {
+    setSelectedKeys(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
+
+  const handleGroup = () => {
+    const groupId = `grp-${Math.random().toString(36).slice(2, 6)}`;
+    let updated = s;
+    for (const key of selectedKeys) updated = applyStylePatch(updated, key, { groupId });
+    onChange(updated);
+    exitSelectMode();
+  };
+
+  const handleLockSelected = () => {
+    const selArr = [...selectedKeys];
+    const allLocked = selArr.every(key => !!(getSlideStyle(s, key)?.locked));
+    let updated = s;
+    for (const key of selArr) {
+      updated = applyStylePatch(updated, key, { locked: allLocked ? undefined : true });
+    }
+    onChange(updated);
+  };
+
+  const handleRemoveGroup = (groupId: string) => {
+    const keysInGroup: string[] = [];
+    if (s.titleStyle?.groupId === groupId) keysInGroup.push("title");
+    if (s.subtitleStyle?.groupId === groupId) keysInGroup.push("subtitle");
+    if (s.kickerStyle?.groupId === groupId) keysInGroup.push("kicker");
+    if (s.bodyStyle?.groupId === groupId) keysInGroup.push("body");
+    if (s.quoteStyle?.groupId === groupId) keysInGroup.push("quote");
+    extras.forEach(e => { if (e.style?.groupId === groupId) keysInGroup.push(e.id!); });
+    let updated = s;
+    for (const key of keysInGroup) updated = applyStylePatch(updated, key, { groupId: undefined });
+    onChange(updated);
+  };
+
+  const selArr = [...selectedKeys];
+  const selAllLocked = selArr.length > 0 && selArr.every(k => !!(getSlideStyle(s, k)?.locked));
+
   return (
     <div className="space-y-1.5">
+      {/* Header row with Select toggle */}
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Elements</span>
+        <button
+          type="button"
+          onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+          className={[
+            "text-[11px] font-medium px-2 py-0.5 rounded transition-colors",
+            selectMode
+              ? "text-primary bg-primary/10"
+              : "text-muted-foreground hover:text-foreground",
+          ].join(" ")}
+        >
+          {selectMode ? "Cancel" : "Select"}
+        </button>
+      </div>
+
       {orderedKeys.map((key, idx) => (
         <TextElementCard
           key={key}
@@ -1069,27 +1139,71 @@ function TextElementsEditor({
           onChange={onChange}
           onMove={(dir) => moveElement(idx, dir)}
           onRemove={extraKeys.includes(key) ? () => removeExtra(key) : undefined}
+          selectMode={selectMode}
+          isSelected={selectedKeys.has(key)}
+          onToggleSelect={() => toggleSelect(key)}
         />
       ))}
-      <button
-        type="button"
-        onClick={addExtra}
-        className="flex items-center gap-0.5 text-[10px] font-medium text-primary hover:text-primary/80"
-      >
-        <Plus className="h-2.5 w-2.5" /> Add text block
-      </button>
 
-      {/* Group lock controls — shown when any element has a groupId */}
-      {allGroupIds.length > 0 && (
+      {/* Select mode action bar */}
+      {selectMode ? (
+        <div className="flex items-center gap-1.5 border-t pt-2 mt-1">
+          <span className="text-[11px] text-muted-foreground flex-1">
+            {selectedKeys.size} selected
+          </span>
+          {selectedKeys.size >= 2 && (
+            <button
+              type="button"
+              onClick={handleGroup}
+              className="text-[11px] font-medium px-2.5 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20"
+            >
+              Group
+            </button>
+          )}
+          {selectedKeys.size >= 1 && (
+            <button
+              type="button"
+              onClick={handleLockSelected}
+              className="flex items-center gap-0.5 text-[11px] font-medium px-2.5 py-1 rounded border border-border/60 text-muted-foreground hover:text-foreground"
+            >
+              {selAllLocked
+                ? <><Unlock className="h-2.5 w-2.5 mr-0.5" />Unlock</>
+                : <><Lock className="h-2.5 w-2.5 mr-0.5" />Lock</>
+              }
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={exitSelectMode}
+            className="text-[11px] font-medium px-2.5 py-1 rounded border border-border/60 text-muted-foreground hover:text-foreground"
+          >
+            Done
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={addExtra}
+          className="flex items-center gap-0.5 text-[10px] font-medium text-primary hover:text-primary/80"
+        >
+          <Plus className="h-2.5 w-2.5" /> Add text block
+        </button>
+      )}
+
+      {/* Group controls — shown when any element has a groupId */}
+      {!selectMode && allGroupIds.length > 0 && (
         <div className="mt-2 space-y-1 rounded border border-dashed border-border/60 p-2">
-          <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">Group Lock</span>
+          <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">Groups</span>
           {allGroupIds.map((gid) => {
             const groupStyles = getAllStyles().filter(st => st.groupId === gid);
             const allLocked = groupStyles.every(st => st.locked);
             const anyLocked = groupStyles.some(st => st.locked);
             return (
               <div key={gid} className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground truncate max-w-[140px]">#{gid}</span>
+                <span className="text-[11px] text-muted-foreground truncate max-w-[100px]">
+                  #{gid}{" "}
+                  <span className="text-[9px] text-muted-foreground/40">({groupStyles.length})</span>
+                </span>
                 <div className="flex items-center gap-1">
                   {anyLocked && !allLocked && (
                     <span className="text-[9px] text-amber-500">partial</span>
@@ -1110,6 +1224,14 @@ function TextElementsEditor({
                       : <><Lock className="h-2.5 w-2.5" /> Lock</>
                     }
                   </button>
+                  <button
+                    type="button"
+                    title="Remove group"
+                    onClick={() => handleRemoveGroup(gid)}
+                    className="text-[12px] leading-none text-muted-foreground/40 hover:text-red-400 px-1 py-0.5 rounded"
+                  >
+                    ×
+                  </button>
                 </div>
               </div>
             );
@@ -1129,6 +1251,9 @@ function TextElementCard({
   onChange,
   onMove,
   onRemove,
+  selectMode = false,
+  isSelected = false,
+  onToggleSelect,
 }: {
   elementKey: string;
   slide: Slide;
@@ -1138,11 +1263,16 @@ function TextElementCard({
   onChange: (next: Slide) => void;
   onMove: (dir: "up" | "down") => void;
   onRemove?: () => void;
+  selectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const extras = Array.isArray(s?.extras) ? s.extras : [];
   const extra = extras.find(e => e.id === elementKey);
   const isExtra = !!extra;
+  const elementStyle = getSlideStyle(s, elementKey);
+  const groupId = elementStyle?.groupId;
 
   const updateExtra = (patch: Partial<SlideExtra>) =>
     onChange({ ...s, extras: extras.map(e => e.id === elementKey ? { ...e, ...patch } : e) });
@@ -1155,54 +1285,72 @@ function TextElementCard({
     : (FIXED_ELEMENT_LABELS[elementKey] ?? elementKey);
 
   return (
-    <div className="rounded border bg-muted/5">
+    <div className={[
+      "rounded border",
+      isSelected ? "bg-primary/5 border-primary/30" : "bg-muted/5",
+    ].join(" ")}>
       <div
-        className="flex items-center justify-between px-2 py-1 cursor-pointer select-none"
-        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 px-2 py-1 cursor-pointer select-none min-h-[36px]"
+        onClick={() => selectMode ? onToggleSelect?.() : setOpen(o => !o)}
       >
-        <span className="text-[11px] font-semibold text-muted-foreground truncate max-w-[120px]">
-          {open ? "▾" : "▸"} {label}
+        {selectMode && (
+          <div className={[
+            "flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center",
+            isSelected ? "bg-primary border-primary" : "border-muted-foreground/40",
+          ].join(" ")}>
+            {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+          </div>
+        )}
+        <span className="text-[11px] font-semibold text-muted-foreground truncate flex-1">
+          {!selectMode && (open ? "▾" : "▸")} {label}
+          {groupId ? (
+            <span className="ml-1.5 inline-flex items-center text-[9px] px-1 rounded bg-primary/10 text-primary/70 font-normal align-middle">
+              #{groupId.slice(0, 8)}
+            </span>
+          ) : null}
         </span>
-        <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
-          {canSplit && (
+        {!selectMode && (
+          <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+            {canSplit && (
+              <button
+                type="button"
+                title="Split lines into independent elements"
+                onClick={() => onChange(splitTextElement(s, elementKey))}
+                className="flex items-center gap-0.5 text-[10px] text-primary hover:text-primary/80 p-0.5"
+              >
+                <ScissorsLineDashed className="h-3 w-3" />
+              </button>
+            )}
             <button
               type="button"
-              title="Split lines into independent elements"
-              onClick={() => onChange(splitTextElement(s, elementKey))}
-              className="flex items-center gap-0.5 text-[10px] text-primary hover:text-primary/80 p-0.5"
+              onClick={() => onMove("up")}
+              disabled={index === 0}
+              className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
             >
-              <ScissorsLineDashed className="h-3 w-3" />
+              <ChevronUp className="h-3 w-3" />
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => onMove("up")}
-            disabled={index === 0}
-            className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
-          >
-            <ChevronUp className="h-3 w-3" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onMove("down")}
-            disabled={index === total - 1}
-            className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
-          >
-            <ChevronDown className="h-3 w-3" />
-          </button>
-          {onRemove && (
             <button
               type="button"
-              onClick={onRemove}
-              className="text-muted-foreground hover:text-red-500 p-0.5"
+              onClick={() => onMove("down")}
+              disabled={index === total - 1}
+              className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
             >
-              <Trash2 className="h-3 w-3" />
+              <ChevronDown className="h-3 w-3" />
             </button>
-          )}
-        </div>
+            {onRemove && (
+              <button
+                type="button"
+                onClick={onRemove}
+                className="text-muted-foreground hover:text-red-500 p-0.5"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {open && (
+      {!selectMode && open && (
         <div className="px-2 pb-2 pt-1 space-y-1.5 border-t">
           {elementKey === "kicker" && (
             <>
