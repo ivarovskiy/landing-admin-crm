@@ -5,7 +5,7 @@ import { Container, Hairline, Kicker, OutlineStampText, STAMP_TITLE, STAMP_SECTI
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { InlineText } from "./inline-icons";
-import { TipTapInline } from "@/components/rich-text";
+import { TipTapInline, renderRichText } from "@/components/rich-text";
 import { TYPO_PRESETS } from "@/lib/typo-presets";
 
 type SlideTemplate =
@@ -1686,7 +1686,7 @@ function CopyStack({
               style={absElStyle(titleEs, precedingMtByKey.get(key) ?? 0)}
             >
               {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
-              <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)}>
+              <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} shadowContent={renderRichText(title)}>
                 <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} />
               </OutlineStampText>
             </div>
@@ -1874,7 +1874,7 @@ function ExtraElement({
           style={absElStyle(resolvedStyle, precedingMt)}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
-          <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)}>
+          <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} shadowContent={renderRichText(extra.text)}>
             <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} />
           </OutlineStampText>
         </div>
@@ -1929,7 +1929,7 @@ function ExtraElement({
           style={absElStyle(resolvedStyle, precedingMt)}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
-          <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)}>
+          <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} shadowContent={renderRichText(extra.text)}>
             <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} />
           </OutlineStampText>
         </div>

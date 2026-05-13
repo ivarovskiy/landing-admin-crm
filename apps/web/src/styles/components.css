@@ -133,9 +133,6 @@
 
 /* In edit mode TipTap renders a block div — make the front a block so the stamp
    container expands correctly and filter:drop-shadow follows the full text height */
-.ds-outline-stamp:has([contenteditable]) .ds-outline-stamp__shadow {
-  display: none !important;
-}
 .ds-outline-stamp:has([contenteditable]) .ds-outline-stamp__front {
   display: block;
 }
@@ -585,7 +582,7 @@
 
 [data-tiptap-content="true"] {
   outline: none;
-  caret-color: currentColor;
+  caret-color: rgb(99, 102, 241);
   min-width: min-content;
   width: 100%;
 }

@@ -131,6 +131,9 @@ function stampStyleToVars(style?: OutlineStampStyle): React.CSSProperties {
 type OutlineStampTextProps = React.HTMLAttributes<HTMLElement> & {
   as?: React.ElementType;
   stamp?: OutlineStampStyle;
+  /** Override what renders in the shadow layer. Use static content (e.g. renderRichText)
+   *  when children contains an interactive editor, to avoid duplicate editor instances. */
+  shadowContent?: React.ReactNode;
 };
 
 /**
@@ -144,6 +147,7 @@ export function OutlineStampText({
   className,
   style,
   children,
+  shadowContent,
   ...props
 }: OutlineStampTextProps) {
   const vars = stampStyleToVars(stamp);
@@ -155,7 +159,7 @@ export function OutlineStampText({
       {...props}
     >
       <span className="ds-outline-stamp__shadow" aria-hidden="true">
-        {children}
+        {shadowContent !== undefined ? shadowContent : children}
       </span>
       <span className="ds-outline-stamp__front">{children}</span>
     </As>
