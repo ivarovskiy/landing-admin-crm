@@ -600,7 +600,6 @@ export function BlocksWorkspace({
   const liveEditEnabled =
     !!active &&
     !previewMode &&
-    effectiveOptions?.enableCanvasDrag !== false &&
     (
       (active.type === "hero" && active.variant === "slider-v1") ||
       (active.type === "content-page" && active.variant === "v1") ||
