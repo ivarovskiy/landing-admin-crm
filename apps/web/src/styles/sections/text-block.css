@@ -1,6 +1,6 @@
 .text-block {
   padding-top: clamp(40px, 5vw, 80px);
-  padding-bottom: clamp(40px, 5vw, 80px);
+  padding-bottom: 60px;
 }
 
 .tb__inner {
