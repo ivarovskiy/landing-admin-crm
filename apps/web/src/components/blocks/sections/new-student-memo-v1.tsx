@@ -316,7 +316,34 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
                 </div>
               ) : null}
               {title || updateField ? (
-                isTitleStamp ? (
+                updateField ? (
+                  isTitleStamp ? (
+                    <OutlineStampText
+                      as="div"
+                      frontAs="div"
+                      shadowAs="div"
+                      role="heading"
+                      aria-level={1}
+                      stamp={stampForTypo(titleTypo)}
+                      className={classFromStyle("nsm__title", typo?.title, data?.titleStyle)}
+                      data-el="title"
+                      style={elementStyle(data?.titleStyle)}
+                      shadowContent={renderRichText(title)}
+                    >
+                      <TipTapInline value={title} onChange={(html) => updateField("title", html)} />
+                    </OutlineStampText>
+                  ) : (
+                    <div
+                      role="heading"
+                      aria-level={1}
+                      className={classFromStyle("nsm__title", typo?.title, data?.titleStyle)}
+                      data-el="title"
+                      style={elementStyle(data?.titleStyle)}
+                    >
+                      <TipTapInline value={title} onChange={(html) => updateField("title", html)} />
+                    </div>
+                  )
+                ) : isTitleStamp ? (
                   <OutlineStampText
                     as="h1"
                     stamp={stampForTypo(titleTypo)}
@@ -325,9 +352,7 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
                     style={elementStyle(data?.titleStyle)}
                     shadowContent={renderRichText(title)}
                   >
-                    {updateField ? (
-                      <TipTapInline value={title} onChange={(html) => updateField("title", html)} />
-                    ) : renderRichText(title)}
+                    {renderRichText(title)}
                   </OutlineStampText>
                 ) : (
                   <h1
@@ -335,9 +360,7 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
                     data-el="title"
                     style={elementStyle(data?.titleStyle)}
                   >
-                    {updateField ? (
-                      <TipTapInline value={title} onChange={(html) => updateField("title", html)} />
-                    ) : renderRichText(title)}
+                    {renderRichText(title)}
                   </h1>
                 )
               ) : null}
@@ -391,15 +414,25 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
                   return (
                     <section key={i} className="nsm__section" style={elementStyle(section.sectionStyle)}>
                       {section.heading || updateSection ? (
-                        <h2
-                          className={classFromStyle("nsm__section-title", typo?.sectionTitle, headingStyle)}
-                          data-el={`section-${i}-heading`}
-                          style={elementStyle(headingStyle)}
-                        >
-                          {updateSection ? (
+                        updateSection ? (
+                          <div
+                            role="heading"
+                            aria-level={2}
+                            className={classFromStyle("nsm__section-title", typo?.sectionTitle, headingStyle)}
+                            data-el={`section-${i}-heading`}
+                            style={elementStyle(headingStyle)}
+                          >
                             <TipTapInline value={section.heading ?? ""} onChange={(html) => updateSection(i, "heading", html)} multiline={false} />
-                          ) : renderRichText(section.heading ?? "")}
-                        </h2>
+                          </div>
+                        ) : (
+                          <h2
+                            className={classFromStyle("nsm__section-title", typo?.sectionTitle, headingStyle)}
+                            data-el={`section-${i}-heading`}
+                            style={elementStyle(headingStyle)}
+                          >
+                            {renderRichText(section.heading ?? "")}
+                          </h2>
+                        )
                       ) : null}
                       {section.body || updateSection ? (
                         <div

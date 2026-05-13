@@ -8,7 +8,7 @@
   position: relative;
 }
 
-.guidLineTemp {
+/* .guidLineTemp {
   width: 1px;
   height: 100%;
   background: red;
@@ -17,7 +17,7 @@
   top: 0;
   transform: translateX(50%);
   z-index: 2000;
-}
+} */
 
 /* Desktop: fixed Figma artboard strategy
    - On viewports NARROWER than the design canvas (e.g. iPad Pro landscape

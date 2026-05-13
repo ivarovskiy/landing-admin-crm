@@ -61,7 +61,7 @@ export function PageRenderer({ blocks, zoomSettings }: { blocks: BlockModel[]; z
 
   return (
     <div className="landing-stack">
-      <div className="guidLineTemp"></div>
+      {/* <div className="guidLineTemp"></div> */}
       <PreviewScrollListener />
       <LandingZoom
         enableZoom={zoomSettings?.enableZoom !== false}
