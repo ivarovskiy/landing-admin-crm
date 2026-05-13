@@ -378,6 +378,9 @@ export function TipTapInline({
   const isSettingContent = useRef(false);
   // Tracks whether user is mid-drag-selection — toolbar is hidden during drag
   const isDragging = useRef(false);
+  // Suppress selectionUpdate-triggered hide while interacting with toolbar
+  // (e.g. native <select> dropdown steals focus briefly)
+  const suppressHideUntil = useRef(0);
   // Capture typoClass at mount so migration runs exactly once
   const initialTypoRef = useRef(typoClass);
 
@@ -512,13 +515,17 @@ export function TipTapInline({
 
     // Keyboard selection: selectionUpdate fires when not dragging
     const handleSelectionUpdate = () => {
-      if (!isDragging.current) computeToolbar();
+      if (isDragging.current || Date.now() < suppressHideUntil.current) return;
+      computeToolbar();
     };
 
     const handlePointerDown = (e: PointerEvent) => {
       const target = e.target as HTMLElement;
-      // Click inside the floating toolbar portal — keep toolbar visible
-      if (target.closest("[data-tt-toolbar]")) return;
+      // Click inside the floating toolbar portal — suppress selection-update hide for 500ms
+      if (target.closest("[data-tt-toolbar]")) {
+        suppressHideUntil.current = Date.now() + 500;
+        return;
+      }
       if (target.closest("[data-tiptap]")) {
         // Starting a new drag-selection inside the editor
         isDragging.current = true;
