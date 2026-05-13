@@ -499,16 +499,6 @@ export function HeroSliderV1({
 
     if (moved && Math.abs(dx) >= 30 && count > 1) {
       dx < 0 ? goNext() : goPrev();
-    } else if (!moved) {
-      const cta = slides[active]?.cta;
-      const ctaActive = cta?.enabled !== false && !!cta?.href;
-      if (ctaActive) {
-        if (cta!.target === "_blank") {
-          window.open(cta!.href, "_blank", "noopener,noreferrer");
-        } else {
-          window.location.href = cta!.href!;
-        }
-      }
     }
 
     window.setTimeout(() => setPaused(false), 1200);
@@ -547,9 +537,6 @@ export function HeroSliderV1({
   if (options?.inlineIconMargin) (sectionStyle as any)["--hs-inline-icon-margin"] = options.inlineIconMargin;
   if (options?.inlineIconSize) (sectionStyle as any)["--hs-inline-icon-size"] = options.inlineIconSize;
 
-  const activeCta = slides[active]?.cta;
-  const activeHasCta = activeCta?.enabled !== false && !!activeCta?.href;
-
   return (
     <section className="hero-slider" ref={sectionRef} style={sectionStyle}>
       <Container>
@@ -563,7 +550,7 @@ export function HeroSliderV1({
         />
 
         <div
-          className={cn("hero-slider__viewport", activeHasCta && "hero-slider__viewport--has-cta")}
+          className="hero-slider__viewport"
           tabIndex={0}
           onKeyDown={onKeyDown}
           onMouseEnter={() => setPaused(true)}
@@ -1734,6 +1721,36 @@ function ExtraElement({
       >
         <Kicker><InlineText text={extra.text} /></Kicker>
       </div>
+    );
+  }
+
+  // Stamp-type typo → render identically to title so --hs-title-size CSS var applies
+  const TITLE_TYPOS = new Set(["typo-content-header", "typo-homepage-header", "typo-subtitle", "typo-hero-title"]);
+  if (typo && TITLE_TYPOS.has(typo)) {
+    const cls = cn("hero-slide__title", typo);
+    if (updateText) {
+      return (
+        <div
+          className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
+          data-hs-draggable={extraKey}
+          style={{ ...style, position: "relative" }}
+        >
+          {!isLocked && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
+          <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)}>
+            <TipTapInline value={extra.text} onChange={updateText} typoClass={typo} typoOptions={TYPO_PRESETS} />
+          </OutlineStampText>
+        </div>
+      );
+    }
+    return (
+      <OutlineStampText
+        {...(editableProps?.(extraKey, cls) ?? { className: cls })}
+        data-el={slotId}
+        stamp={stampForTypo(typo)}
+        style={style}
+      >
+        <InlineText text={extra.text} />
+      </OutlineStampText>
     );
   }
 
