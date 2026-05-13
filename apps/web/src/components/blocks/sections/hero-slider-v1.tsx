@@ -204,13 +204,13 @@ function useHeroViewportProfile(): HeroViewportProfileKey | null {
 /** Convert ElementStyle to inline CSS for edit-mode wrappers.
  *  Keeps elements in normal flow (position:relative) so initial layout is preserved,
  *  but folds ml/mt/x/y into a single transform — margin changes don't push siblings. */
-function absElStyle(es?: ElementStyle): React.CSSProperties {
+function absElStyle(es?: ElementStyle, precedingMt = 0): React.CSSProperties {
   const mlPx = parseFloat(resolveDesignViewportUnits(es?.ml) ?? "0") || 0;
   const mtPx = parseFloat(resolveDesignViewportUnits(es?.mt) ?? "0") || 0;
   const xPx  = parseFloat(resolveDesignViewportUnits(es?.x)  ?? "0") || 0;
   const yPx  = parseFloat(resolveDesignViewportUnits(es?.y)  ?? "0") || 0;
   const tx = mlPx + xPx;
-  const ty = mtPx + yPx;
+  const ty = mtPx + yPx + precedingMt;
   const s: Record<string, string> = {};
   if (tx !== 0 || ty !== 0) s.transform = `translate(${tx}px, ${ty}px)`;
   if (es?.align) {
@@ -1183,6 +1183,32 @@ function setSlideElementStyle(slide: Slide, key: string, style: ElementStyle): S
   };
 }
 
+/** Sum of mt values of all elements rendered BEFORE key in the slide's ordered list.
+ *  Used to correct edit-mode transform positioning so it matches CSS flow layout. */
+function getPrecedingMt(slide: Slide, targetKey: string): number {
+  const extras = Array.isArray(slide.extras) ? slide.extras : [];
+  const fixed: string[] = [];
+  if (slide.kicker !== undefined) fixed.push("kicker");
+  fixed.push("title");
+  if (slide.subtitle !== undefined) fixed.push("subtitle");
+  if (slide.body !== undefined) fixed.push("body");
+  if (slide.quote !== undefined) fixed.push("quote");
+  const all = [...fixed, ...extras.map((e) => e.id ?? "")];
+  const stored = slide.elementOrder ?? [];
+  const allSet = new Set(all);
+  const used = new Set<string>();
+  const ordered = [
+    ...stored.filter((k) => allSet.has(k) && !used.has(k) && (used.add(k), true)),
+    ...all.filter((k) => !used.has(k)),
+  ];
+  let sum = 0;
+  for (const k of ordered) {
+    if (k === targetKey) break;
+    sum += parseFloat(getSlideElementStyle(slide, k)?.mt ?? "0") || 0;
+  }
+  return sum;
+}
+
 const DRAG_HANDLE_STYLE: React.CSSProperties = {
   position: "absolute",
   top: 2,
@@ -1301,11 +1327,12 @@ function useSlideElementEditor(
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
         const style = getSlideElementStyle(slide, key) ?? {};
-        // startTx = ml + x (combined in transform), so pure drag x = newTx - ml
+        // startTx = ml + x + precedingMt (all folded in transform), subtract them to get pure drag offset
         const curMl = parseFloat(style.ml ?? "0") || 0;
         const curMt = parseFloat(style.mt ?? "0") || 0;
+        const precedingMt = getPrecedingMt(slide, key);
         const pureX = newTx - curMl;
-        const pureY = newTy - curMt;
+        const pureY = newTy - curMt - precedingMt;
 
         if (d.groupStarts && d.groupStarts.size > 0) {
           // Commit all group members in one update
@@ -1318,12 +1345,13 @@ function useSlideElementEditor(
             const ms = getSlideElementStyle(updated, memberKey) ?? {} as ElementStyle;
             const mCurMl = parseFloat(ms.ml ?? "0") || 0;
             const mCurMt = parseFloat(ms.mt ?? "0") || 0;
+            const mPrecedingMt = getPrecedingMt(slide, memberKey);
             const mNewTx = Math.round(tx + dx);
             const mNewTy = Math.round(ty + dy);
             updated = setSlideElementStyle(updated, memberKey, {
               ...ms,
               x: (mNewTx - mCurMl) !== 0 ? `${mNewTx - mCurMl}px` : undefined,
-              y: (mNewTy - mCurMt) !== 0 ? `${mNewTy - mCurMt}px` : undefined,
+              y: (mNewTy - mCurMt - mPrecedingMt) !== 0 ? `${mNewTy - mCurMt - mPrecedingMt}px` : undefined,
             });
           });
           onSlideChange(updated);
@@ -1442,10 +1470,11 @@ function useSlideElementEditor(
         const newTy = Math.round(d.startTy + dy);
         const curMl = parseFloat(currentStyle.ml ?? "0") || 0;
         const curMt = parseFloat(currentStyle.mt ?? "0") || 0;
+        const precedingMt = getPrecedingMt(slide, key);
         onSlideChange(setSlideElementStyle(slide, key, {
           ...currentStyle,
           x: (newTx - curMl) !== 0 ? `${newTx - curMl}px` : undefined,
-          y: (newTy - curMt) !== 0 ? `${newTy - curMt}px` : undefined,
+          y: (newTy - curMt - precedingMt) !== 0 ? `${newTy - curMt - precedingMt}px` : undefined,
         }));
       },
       onPointerCancel: (e) => {
@@ -1537,6 +1566,18 @@ function CopyStack({
     orderedKeys = defaultOrder;
   }
 
+  // In edit mode, each element uses transform instead of CSS margins.
+  // precedingMtByKey[k] = sum of mt of all elements before k — restores the
+  // vertical spacing that CSS margins would have created in normal flow.
+  const precedingMtByKey = new Map<string, number>();
+  if (onSlideChange) {
+    let _pmt = 0;
+    for (const k of orderedKeys) {
+      precedingMtByKey.set(k, _pmt);
+      _pmt += parseFloat(getSlideElementStyle(slide, k)?.mt ?? "0") || 0;
+    }
+  }
+
   function renderElement(key: string) {
     if (key === "kicker" && kicker) {
       const es = mergeElementStyle(slide.kickerStyle, viewportProfile);
@@ -1549,7 +1590,7 @@ function CopyStack({
             key="kicker"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
             data-hs-draggable="kicker"
-            style={absElStyle(es)}
+            style={absElStyle(es, precedingMtByKey.get(key) ?? 0)}
             data-el={`slide-${slideIndex}-kicker`}
           >
             {!isLocked && <DragHandle {...dragHandleProps("kicker")} />}
@@ -1577,7 +1618,7 @@ function CopyStack({
               key="title"
               className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
               data-hs-draggable="title"
-              style={absElStyle(titleEs)}
+              style={absElStyle(titleEs, precedingMtByKey.get(key) ?? 0)}
             >
               {!isTitleLocked && <DragHandle {...dragHandleProps("title")} />}
               <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)}>
@@ -1591,7 +1632,7 @@ function CopyStack({
             key="title"
             className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
             data-hs-draggable="title"
-            style={absElStyle(titleEs)}
+            style={absElStyle(titleEs, precedingMtByKey.get(key) ?? 0)}
           >
             {!isTitleLocked && <DragHandle {...dragHandleProps("title")} />}
             <p className={titleClass} data-el={`slide-${slideIndex}-title`}>
@@ -1624,7 +1665,7 @@ function CopyStack({
             key="subtitle"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
             data-hs-draggable="subtitle"
-            style={absElStyle(es)}
+            style={absElStyle(es, precedingMtByKey.get(key) ?? 0)}
             data-el={`slide-${slideIndex}-subtitle`}
           >
             {!isLocked && <DragHandle {...dragHandleProps("subtitle")} />}
@@ -1649,7 +1690,7 @@ function CopyStack({
             key="body"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
             data-hs-draggable="body"
-            style={absElStyle(es)}
+            style={absElStyle(es, precedingMtByKey.get(key) ?? 0)}
             data-el={`slide-${slideIndex}-body`}
           >
             {!isLocked && <DragHandle {...dragHandleProps("body")} />}
@@ -1675,7 +1716,7 @@ function CopyStack({
             key="quote"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls)}
             data-hs-draggable="quote"
-            style={absElStyle(es)}
+            style={absElStyle(es, precedingMtByKey.get(key) ?? 0)}
             data-el={`slide-${slideIndex}-quote`}
           >
             {!isLocked && <DragHandle {...dragHandleProps("quote")} />}
@@ -1703,6 +1744,7 @@ function CopyStack({
           dragHandleProps={dragHandleProps}
           slide={onSlideChange ? slide : undefined}
           onSlideChange={onSlideChange}
+          precedingMt={onSlideChange ? (precedingMtByKey.get(key) ?? 0) : 0}
         />
       );
     }
@@ -1727,6 +1769,7 @@ function ExtraElement({
   dragHandleProps,
   slide,
   onSlideChange,
+  precedingMt = 0,
 }: {
   extra: SlideExtra;
   slideIndex: number;
@@ -1736,6 +1779,7 @@ function ExtraElement({
   dragHandleProps?: (key: string) => React.HTMLAttributes<HTMLElement>;
   slide?: Slide;
   onSlideChange?: (next: Slide) => void;
+  precedingMt?: number;
 }) {
   const resolvedStyle = mergeElementStyle(extra.style, viewportProfile);
   const style = elStyle(resolvedStyle);
@@ -1758,7 +1802,7 @@ function ExtraElement({
         <div
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
           data-hs-draggable={extraKey}
-          style={absElStyle(resolvedStyle)}
+          style={absElStyle(resolvedStyle, precedingMt)}
         >
           {!isLocked && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)}>
@@ -1785,7 +1829,7 @@ function ExtraElement({
         <div
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
           data-hs-draggable={extraKey}
-          style={absElStyle(resolvedStyle)}
+          style={absElStyle(resolvedStyle, precedingMt)}
           data-el={slotId}
         >
           {!isLocked && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
@@ -1813,7 +1857,7 @@ function ExtraElement({
         <div
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
           data-hs-draggable={extraKey}
-          style={absElStyle(resolvedStyle)}
+          style={absElStyle(resolvedStyle, precedingMt)}
         >
           {!isLocked && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)}>
@@ -1840,7 +1884,7 @@ function ExtraElement({
       <div
         className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls)}
         data-hs-draggable={extraKey}
-        style={absElStyle(resolvedStyle)}
+        style={absElStyle(resolvedStyle, precedingMt)}
         data-el={slotId}
       >
         {!isLocked && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
