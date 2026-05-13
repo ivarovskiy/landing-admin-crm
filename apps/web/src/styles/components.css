@@ -131,11 +131,6 @@
   display: inline;
 }
 
-/* In edit mode TipTap renders a block div — make the front a block so the stamp
-   container expands correctly and filter:drop-shadow follows the full text height */
-.ds-outline-stamp:has([contenteditable]) .ds-outline-stamp__front {
-  display: block;
-}
 
 .ds-outline-stamp--no-shadow {
   filter: none;

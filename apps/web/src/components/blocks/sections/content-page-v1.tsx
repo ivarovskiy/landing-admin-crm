@@ -1061,7 +1061,7 @@ export function ContentPageV1({
                       style={elementStyle(titleStrokeW, titleMaxW)}
                     >
                       <span className="ds-outline-stamp__shadow" aria-hidden="true">
-                        {(title ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}
+                        {renderRichText(title ?? "")}
                       </span>
                       <span className="ds-outline-stamp__front">
                         <TipTapInline
