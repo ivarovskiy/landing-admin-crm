@@ -201,6 +201,23 @@ function useHeroViewportProfile(): HeroViewportProfileKey | null {
   return profile;
 }
 
+/** Convert ElementStyle to absolute-positioned inline CSS for edit-mode canvases.
+ *  mt → top, ml → left so each element is independent and doesn't push siblings. */
+function absElStyle(es?: ElementStyle): React.CSSProperties {
+  const s: Record<string, string> = {};
+  if (es?.mt) s.top = resolveDesignViewportUnits(es.mt)!;
+  if (es?.ml) s.left = resolveDesignViewportUnits(es.ml)!;
+  if (es?.x != null || es?.y != null) {
+    const tx = resolveDesignViewportUnits(es?.x) ?? "0px";
+    const ty = resolveDesignViewportUnits(es?.y) ?? "0px";
+    s.transform = `translate(${tx}, ${ty})`;
+  }
+  if (es?.align) s.textAlign = es.align;
+  if (es?.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
+  if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
+  return { position: "absolute", ...s } as React.CSSProperties;
+}
+
 /** Convert ElementStyle to inline CSS */
 function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
   if (!es) return undefined;
@@ -1280,42 +1297,30 @@ function useSlideElementEditor(
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
         const style = getSlideElementStyle(slide, key) ?? {};
-        const curMl = parseFloat(style.ml ?? "0") || 0;
-        const curMt = parseFloat(style.mt ?? "0") || 0;
-        const finalMl = curMl + newTx;
-        const finalMt = curMt + newTy;
 
         if (d.groupStarts && d.groupStarts.size > 0) {
-          // Commit all group members in one update — fold into mt/ml, clear x/y
+          // Commit all group members in one update
           let updated = setSlideElementStyle(slide, key, {
             ...style,
-            ml: finalMl !== 0 ? `${finalMl}px` : undefined,
-            mt: finalMt !== 0 ? `${finalMt}px` : undefined,
-            x: undefined,
-            y: undefined,
+            x: newTx ? `${newTx}px` : undefined,
+            y: newTy ? `${newTy}px` : undefined,
           });
           d.groupStarts.forEach(({ tx, ty }, memberKey) => {
             const ms = getSlideElementStyle(updated, memberKey) ?? {} as ElementStyle;
-            const mCurMl = parseFloat(ms.ml ?? "0") || 0;
-            const mCurMt = parseFloat(ms.mt ?? "0") || 0;
             const mNewTx = Math.round(tx + dx);
             const mNewTy = Math.round(ty + dy);
             updated = setSlideElementStyle(updated, memberKey, {
               ...ms,
-              ml: (mCurMl + mNewTx) !== 0 ? `${mCurMl + mNewTx}px` : undefined,
-              mt: (mCurMt + mNewTy) !== 0 ? `${mCurMt + mNewTy}px` : undefined,
-              x: undefined,
-              y: undefined,
+              x: mNewTx ? `${mNewTx}px` : undefined,
+              y: mNewTy ? `${mNewTy}px` : undefined,
             });
           });
           onSlideChange(updated);
         } else {
           onSlideChange(setSlideElementStyle(slide, key, {
             ...style,
-            ml: finalMl !== 0 ? `${finalMl}px` : undefined,
-            mt: finalMt !== 0 ? `${finalMt}px` : undefined,
-            x: undefined,
-            y: undefined,
+            x: newTx ? `${newTx}px` : undefined,
+            y: newTy ? `${newTy}px` : undefined,
           }));
         }
       },
@@ -1424,16 +1429,10 @@ function useSlideElementEditor(
 
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
-        const curMl = parseFloat(currentStyle.ml ?? "0") || 0;
-        const curMt = parseFloat(currentStyle.mt ?? "0") || 0;
-        const finalMl = curMl + newTx;
-        const finalMt = curMt + newTy;
         onSlideChange(setSlideElementStyle(slide, key, {
           ...currentStyle,
-          ml: finalMl !== 0 ? `${finalMl}px` : undefined,
-          mt: finalMt !== 0 ? `${finalMt}px` : undefined,
-          x: undefined,
-          y: undefined,
+          x: newTx ? `${newTx}px` : undefined,
+          y: newTy ? `${newTy}px` : undefined,
         }));
       },
       onPointerCancel: (e) => {
@@ -1460,16 +1459,14 @@ function useSlideElementEditor(
         e.stopPropagation();
         const step = e.shiftKey ? 10 : 1;
         const currentStyle = getSlideElementStyle(slide, key) ?? {};
-        const curMl = parseFloat(currentStyle.ml ?? "0") || 0;
-        const curMt = parseFloat(currentStyle.mt ?? "0") || 0;
-        const nextMl = Math.round(curMl + delta[0] * step);
-        const nextMt = Math.round(curMt + delta[1] * step);
+        const currentTx = parseFloat(currentStyle.x ?? "0") || 0;
+        const currentTy = parseFloat(currentStyle.y ?? "0") || 0;
+        const nextTx = Math.round(currentTx + delta[0] * step);
+        const nextTy = Math.round(currentTy + delta[1] * step);
         onSlideChange(setSlideElementStyle(slide, key, {
           ...currentStyle,
-          ml: nextMl !== 0 ? `${nextMl}px` : undefined,
-          mt: nextMt !== 0 ? `${nextMt}px` : undefined,
-          x: undefined,
-          y: undefined,
+          x: nextTx ? `${nextTx}px` : undefined,
+          y: nextTy ? `${nextTy}px` : undefined,
         }));
       },
     };
@@ -1539,7 +1536,7 @@ function CopyStack({
             key="kicker"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
             data-hs-draggable="kicker"
-            style={{ ...s, position: "relative" }}
+            style={absElStyle(es)}
             data-el={`slide-${slideIndex}-kicker`}
           >
             {!isLocked && <DragHandle {...dragHandleProps("kicker")} />}
@@ -1567,7 +1564,7 @@ function CopyStack({
               key="title"
               className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
               data-hs-draggable="title"
-              style={{ ...titleStyle, position: "relative" }}
+              style={absElStyle(titleEs)}
             >
               {!isTitleLocked && <DragHandle {...dragHandleProps("title")} />}
               <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)}>
@@ -1581,7 +1578,7 @@ function CopyStack({
             key="title"
             className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
             data-hs-draggable="title"
-            style={{ ...titleStyle, position: "relative" }}
+            style={absElStyle(titleEs)}
           >
             {!isTitleLocked && <DragHandle {...dragHandleProps("title")} />}
             <p className={titleClass} data-el={`slide-${slideIndex}-title`}>
@@ -1614,7 +1611,7 @@ function CopyStack({
             key="subtitle"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
             data-hs-draggable="subtitle"
-            style={{ ...s, position: "relative" }}
+            style={absElStyle(es)}
             data-el={`slide-${slideIndex}-subtitle`}
           >
             {!isLocked && <DragHandle {...dragHandleProps("subtitle")} />}
@@ -1639,7 +1636,7 @@ function CopyStack({
             key="body"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
             data-hs-draggable="body"
-            style={{ ...s, position: "relative" }}
+            style={absElStyle(es)}
             data-el={`slide-${slideIndex}-body`}
           >
             {!isLocked && <DragHandle {...dragHandleProps("body")} />}
@@ -1665,7 +1662,7 @@ function CopyStack({
             key="quote"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls)}
             data-hs-draggable="quote"
-            style={{ ...s, position: "relative" }}
+            style={absElStyle(es)}
             data-el={`slide-${slideIndex}-quote`}
           >
             {!isLocked && <DragHandle {...dragHandleProps("quote")} />}
@@ -1701,7 +1698,7 @@ function CopyStack({
 
   return (
     <div className={cn("hero-slide__copy", spread && "hero-slide__copy--spread")}>
-      <div className="hero-slide__copy-main">
+      <div className="hero-slide__copy-main" style={onSlideChange ? { position: "relative" } : undefined}>
         {orderedKeys.map(key => renderElement(key))}
       </div>
     </div>
@@ -1748,7 +1745,7 @@ function ExtraElement({
         <div
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
           data-hs-draggable={extraKey}
-          style={{ ...style, position: "relative" }}
+          style={absElStyle(resolvedStyle)}
         >
           {!isLocked && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)}>
@@ -1775,7 +1772,7 @@ function ExtraElement({
         <div
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
           data-hs-draggable={extraKey}
-          style={{ ...style, position: "relative" }}
+          style={absElStyle(resolvedStyle)}
           data-el={slotId}
         >
           {!isLocked && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
@@ -1803,7 +1800,7 @@ function ExtraElement({
         <div
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
           data-hs-draggable={extraKey}
-          style={{ ...style, position: "relative" }}
+          style={absElStyle(resolvedStyle)}
         >
           {!isLocked && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)}>
@@ -1830,7 +1827,7 @@ function ExtraElement({
       <div
         className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls)}
         data-hs-draggable={extraKey}
-        style={{ ...style, position: "relative" }}
+        style={absElStyle(resolvedStyle)}
         data-el={slotId}
       >
         {!isLocked && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
