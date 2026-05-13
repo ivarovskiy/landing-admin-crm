@@ -201,21 +201,25 @@ function useHeroViewportProfile(): HeroViewportProfileKey | null {
   return profile;
 }
 
-/** Convert ElementStyle to absolute-positioned inline CSS for edit-mode canvases.
- *  mt → top, ml → left so each element is independent and doesn't push siblings. */
+/** Convert ElementStyle to inline CSS for edit-mode wrappers.
+ *  Keeps elements in normal flow (position:relative) so initial layout is preserved,
+ *  but folds ml/mt/x/y into a single transform — margin changes don't push siblings. */
 function absElStyle(es?: ElementStyle): React.CSSProperties {
+  const mlPx = parseFloat(resolveDesignViewportUnits(es?.ml) ?? "0") || 0;
+  const mtPx = parseFloat(resolveDesignViewportUnits(es?.mt) ?? "0") || 0;
+  const xPx  = parseFloat(resolveDesignViewportUnits(es?.x)  ?? "0") || 0;
+  const yPx  = parseFloat(resolveDesignViewportUnits(es?.y)  ?? "0") || 0;
+  const tx = mlPx + xPx;
+  const ty = mtPx + yPx;
   const s: Record<string, string> = {};
-  if (es?.mt) s.top = resolveDesignViewportUnits(es.mt)!;
-  if (es?.ml) s.left = resolveDesignViewportUnits(es.ml)!;
-  if (es?.x != null || es?.y != null) {
-    const tx = resolveDesignViewportUnits(es?.x) ?? "0px";
-    const ty = resolveDesignViewportUnits(es?.y) ?? "0px";
-    s.transform = `translate(${tx}, ${ty})`;
+  if (tx !== 0 || ty !== 0) s.transform = `translate(${tx}px, ${ty}px)`;
+  if (es?.align) {
+    s.textAlign = es.align;
+    s.alignSelf = es.align === "center" ? "center" : es.align === "right" ? "flex-end" : "flex-start";
   }
-  if (es?.align) s.textAlign = es.align;
   if (es?.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
   if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
-  return { position: "absolute", ...s } as React.CSSProperties;
+  return { position: "relative", ...s } as React.CSSProperties;
 }
 
 /** Convert ElementStyle to inline CSS */
@@ -1297,30 +1301,37 @@ function useSlideElementEditor(
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
         const style = getSlideElementStyle(slide, key) ?? {};
+        // startTx = ml + x (combined in transform), so pure drag x = newTx - ml
+        const curMl = parseFloat(style.ml ?? "0") || 0;
+        const curMt = parseFloat(style.mt ?? "0") || 0;
+        const pureX = newTx - curMl;
+        const pureY = newTy - curMt;
 
         if (d.groupStarts && d.groupStarts.size > 0) {
           // Commit all group members in one update
           let updated = setSlideElementStyle(slide, key, {
             ...style,
-            x: newTx ? `${newTx}px` : undefined,
-            y: newTy ? `${newTy}px` : undefined,
+            x: pureX !== 0 ? `${pureX}px` : undefined,
+            y: pureY !== 0 ? `${pureY}px` : undefined,
           });
           d.groupStarts.forEach(({ tx, ty }, memberKey) => {
             const ms = getSlideElementStyle(updated, memberKey) ?? {} as ElementStyle;
+            const mCurMl = parseFloat(ms.ml ?? "0") || 0;
+            const mCurMt = parseFloat(ms.mt ?? "0") || 0;
             const mNewTx = Math.round(tx + dx);
             const mNewTy = Math.round(ty + dy);
             updated = setSlideElementStyle(updated, memberKey, {
               ...ms,
-              x: mNewTx ? `${mNewTx}px` : undefined,
-              y: mNewTy ? `${mNewTy}px` : undefined,
+              x: (mNewTx - mCurMl) !== 0 ? `${mNewTx - mCurMl}px` : undefined,
+              y: (mNewTy - mCurMt) !== 0 ? `${mNewTy - mCurMt}px` : undefined,
             });
           });
           onSlideChange(updated);
         } else {
           onSlideChange(setSlideElementStyle(slide, key, {
             ...style,
-            x: newTx ? `${newTx}px` : undefined,
-            y: newTy ? `${newTy}px` : undefined,
+            x: pureX !== 0 ? `${pureX}px` : undefined,
+            y: pureY !== 0 ? `${pureY}px` : undefined,
           }));
         }
       },
@@ -1429,10 +1440,12 @@ function useSlideElementEditor(
 
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
+        const curMl = parseFloat(currentStyle.ml ?? "0") || 0;
+        const curMt = parseFloat(currentStyle.mt ?? "0") || 0;
         onSlideChange(setSlideElementStyle(slide, key, {
           ...currentStyle,
-          x: newTx ? `${newTx}px` : undefined,
-          y: newTy ? `${newTy}px` : undefined,
+          x: (newTx - curMl) !== 0 ? `${newTx - curMl}px` : undefined,
+          y: (newTy - curMt) !== 0 ? `${newTy - curMt}px` : undefined,
         }));
       },
       onPointerCancel: (e) => {
@@ -1698,7 +1711,7 @@ function CopyStack({
 
   return (
     <div className={cn("hero-slide__copy", spread && "hero-slide__copy--spread")}>
-      <div className="hero-slide__copy-main" style={onSlideChange ? { position: "relative" } : undefined}>
+      <div className="hero-slide__copy-main">
         {orderedKeys.map(key => renderElement(key))}
       </div>
     </div>
