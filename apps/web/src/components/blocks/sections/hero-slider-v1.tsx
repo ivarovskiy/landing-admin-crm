@@ -1216,8 +1216,9 @@ function getPrecedingMt(slide: Slide, targetKey: string): number {
 }
 
 /** After changing one element's mt by deltaMt, subtract deltaMt from all subsequent
- *  elements' mt so their visual positions are preserved (precedingMt compensation). */
-function compensateSubsequentMt(slide: Slide, afterKey: string, deltaMt: number): Slide {
+ *  elements' mt so their visual positions are preserved (precedingMt compensation).
+ *  Pass skipKeys to skip elements whose positions were already explicitly set (e.g. group members). */
+function compensateSubsequentMt(slide: Slide, afterKey: string, deltaMt: number, skipKeys?: Set<string>): Slide {
   if (deltaMt === 0) return slide;
   const extras = Array.isArray(slide.extras) ? slide.extras : [];
   const fixed: string[] = [];
@@ -1239,6 +1240,7 @@ function compensateSubsequentMt(slide: Slide, afterKey: string, deltaMt: number)
   for (const k of ordered) {
     if (k === afterKey) { compensating = true; continue; }
     if (!compensating) continue;
+    if (skipKeys?.has(k)) continue;
     const es = getSlideElementStyle(result, k) ?? {};
     const curMt = parseFloat(es.mt ?? "0") || 0;
     const newMtNum = Math.round(curMt - deltaMt);
@@ -1381,7 +1383,9 @@ function useSlideElementEditor(
           let updated = setSlideElementStyle(slide, key, {
             ...style, ml: newMl, mt: newMt, x: undefined, y: undefined,
           });
+          const groupKeys = new Set([key]);
           d.groupStarts.forEach(({ tx, ty }, memberKey) => {
+            groupKeys.add(memberKey);
             const ms = getSlideElementStyle(updated, memberKey) ?? {} as ElementStyle;
             const mPrecedingMt = getPrecedingMt(updated, memberKey);
             const mNewTx = Math.round(tx + dx);
@@ -1393,6 +1397,10 @@ function useSlideElementEditor(
               ...ms, ml: mNewMl, mt: mNewMt, x: undefined, y: undefined,
             });
           });
+          // Compensate non-group elements after the primary — their precedingMt
+          // shifted by deltaMt because the primary's mt changed. Locked elements
+          // are compensated too (preserves their visual position, which is correct).
+          updated = compensateSubsequentMt(updated, key, deltaMt, groupKeys);
           onSlideChange(updated);
         } else {
           let updated = setSlideElementStyle(slide, key, {
