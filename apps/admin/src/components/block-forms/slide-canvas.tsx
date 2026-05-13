@@ -87,13 +87,17 @@ function commitStyle(
   style: ElementStyle,
   onChange: (s: Slide) => void,
 ) {
-  if (key === "title") { onChange({ ...slide, titleStyle: style }); return; }
-  if (key === "subtitle") { onChange({ ...slide, subtitleStyle: style }); return; }
-  if (key === "kicker") { onChange({ ...slide, kickerStyle: style }); return; }
-  if (key === "body") { onChange({ ...slide, bodyStyle: style }); return; }
-  if (key === "quote") { onChange({ ...slide, quoteStyle: style }); return; }
+  onChange(patchStyle(slide, key, style));
+}
+
+function patchStyle(slide: Slide, key: string, style: ElementStyle): Slide {
+  if (key === "title") return { ...slide, titleStyle: style };
+  if (key === "subtitle") return { ...slide, subtitleStyle: style };
+  if (key === "kicker") return { ...slide, kickerStyle: style };
+  if (key === "body") return { ...slide, bodyStyle: style };
+  if (key === "quote") return { ...slide, quoteStyle: style };
   const extras = Array.isArray(slide.extras) ? slide.extras : [];
-  onChange({ ...slide, extras: extras.map((e) => e.id === key ? { ...e, style } : e) });
+  return { ...slide, extras: extras.map((e) => e.id === key ? { ...e, style } : e) };
 }
 
 // ─── CanvasItem ───────────────────────────────────────────────────────────────
@@ -131,6 +135,7 @@ function CanvasItem({
   const ml = parsePx(style?.ml);
   const typo = style?.typo ?? "";
 
+  type GroupStart = { mt: number; ml: number; el: HTMLElement };
   const dragRef = useRef<{
     startY: number;
     startX: number;
@@ -138,12 +143,35 @@ function CanvasItem({
     startMl: number;
     moved: boolean;
     scale: number;
+    groupStarts?: Map<string, GroupStart>;
   } | null>(null);
 
   const onPD = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (isLocked) { e.stopPropagation(); return; }
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
+
+    // Collect group-member starting positions for live sync during drag
+    let groupStarts: Map<string, GroupStart> | undefined;
+    const groupId = style?.groupId;
+    if (groupId) {
+      const container = (e.currentTarget as HTMLElement).closest("[data-canvas-inner]");
+      if (container) {
+        groupStarts = new Map();
+        container.querySelectorAll<HTMLElement>("[data-group-id]").forEach((member) => {
+          if (member === e.currentTarget) return;
+          if (member.dataset.groupId !== groupId) return;
+          const memberKey = member.dataset.elementKey ?? "";
+          if (!memberKey) return;
+          groupStarts!.set(memberKey, {
+            mt: parseFloat(member.style.top) || 0,
+            ml: parseFloat(member.style.left) || 0,
+            el: member,
+          });
+        });
+      }
+    }
+
     dragRef.current = {
       startY: e.clientY,
       startX: e.clientX,
@@ -151,8 +179,9 @@ function CanvasItem({
       startMl: ml,
       moved: false,
       scale: scaleRef.current ?? 1,
+      groupStarts,
     };
-  }, [isLocked, mt, ml, scaleRef]);
+  }, [isLocked, mt, ml, scaleRef, style]);
 
   const onPM = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
@@ -162,11 +191,16 @@ function CanvasItem({
     const dy = snapToBaseline ? 0 : rawDy;
     if (Math.abs(rawDy) > 4 || Math.abs(dx) > 4) d.moved = true;
     if (!d.moved) return;
-    // Direct DOM — no React state during drag
+    // Move self
     const el = elRef.current;
     if (!el) return;
     if (!snapToBaseline) el.style.top = `${Math.round(d.startMt + dy)}px`;
     el.style.left = `${Math.round(d.startMl + dx)}px`;
+    // Move group members in sync
+    d.groupStarts?.forEach(({ mt: gMt, ml: gMl, el: gEl }) => {
+      gEl.style.top = `${Math.round(gMt + dy)}px`;
+      gEl.style.left = `${Math.round(gMl + dx)}px`;
+    });
   }, [snapToBaseline]);
 
   const onPU = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -174,27 +208,53 @@ function CanvasItem({
     dragRef.current = null;
     if (!d) return;
     if (!d.moved) {
-      // Click without drag — select this element
       onSelect(itemKey);
       return;
     }
     const rawDy = (e.clientY - d.startY) / d.scale;
-    const dx = (e.clientX - d.startX) / d.scale;
+    const dx = Math.round((e.clientX - d.startX) / d.scale);
     const newMt = snapToBaseline ? mt : Math.round(d.startMt + rawDy);
     const newMl = Math.round(d.startMl + dx);
-    commitStyle(slide, itemKey, {
-      ...(style ?? {}),
-      mt: newMt ? `${newMt}px` : undefined,
-      ml: newMl ? `${newMl}px` : undefined,
-    }, onChange);
+
+    if (d.groupStarts && d.groupStarts.size > 0) {
+      // Commit dragged element + all group members in one update
+      let updated = patchStyle(slide, itemKey, {
+        ...(style ?? {}),
+        mt: newMt ? `${newMt}px` : undefined,
+        ml: newMl ? `${newMl}px` : undefined,
+      });
+      d.groupStarts.forEach(({ mt: gMt, ml: gMl }, memberKey) => {
+        const ms = getStyle(updated, memberKey);
+        if (ms?.locked) return;
+        const gNewMt = Math.round(gMt + rawDy);
+        const gNewMl = Math.round(gMl + dx);
+        updated = patchStyle(updated, memberKey, {
+          ...(ms ?? {}),
+          mt: gNewMt ? `${gNewMt}px` : undefined,
+          ml: gNewMl ? `${gNewMl}px` : undefined,
+        });
+      });
+      onChange(updated);
+    } else {
+      commitStyle(slide, itemKey, {
+        ...(style ?? {}),
+        mt: newMt ? `${newMt}px` : undefined,
+        ml: newMl ? `${newMl}px` : undefined,
+      }, onChange);
+    }
   }, [slide, itemKey, style, onChange, snapToBaseline, mt, onSelect]);
 
   const onPC = useCallback(() => {
     if (!dragRef.current) return;
+    const { groupStarts } = dragRef.current;
     dragRef.current = null;
-    // Revert visual position to committed values
     const el = elRef.current;
     if (el) { el.style.top = `${mt}px`; el.style.left = `${ml}px`; }
+    // Revert group members
+    groupStarts?.forEach(({ mt: gMt, ml: gMl, el: gEl }) => {
+      gEl.style.top = `${gMt}px`;
+      gEl.style.left = `${gMl}px`;
+    });
   }, [mt, ml]);
 
   // Approximate visual weight from typo class
@@ -218,6 +278,8 @@ function CanvasItem({
         borderClass,
       ].join(" ")}
       style={{ top: mt, left: ml, fontSize, touchAction: "none" }}
+      data-group-id={style?.groupId ?? undefined}
+      data-element-key={itemKey}
       onPointerDown={onPD}
       onPointerMove={isLocked ? undefined : onPM}
       onPointerUp={isLocked ? undefined : onPU}
@@ -325,36 +387,52 @@ export function SlideCanvas({
     onChange({ ...slide, elementOrder: nextOrder });
   }, [slide, onChange]);
 
-  // Keyboard nudging — arrow keys move the selected element by 1px (10px with shift)
+  // Keyboard nudging — arrow keys move the selected element (and its group) by 1px (10px with shift)
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!selectedKey || !enableDrag) return;
     const style = getStyle(slide, selectedKey);
-    if (style?.locked) return; // Locked elements are immune to keyboard movement
+    if (style?.locked) return;
 
     let dx = 0;
     let dy = 0;
     const delta = e.shiftKey ? 10 : 1;
-
-    if (e.key === "ArrowLeft") { dx = -delta; }
-    else if (e.key === "ArrowRight") { dx = delta; }
-    else if (e.key === "ArrowUp") { dy = -delta; }
-    else if (e.key === "ArrowDown") { dy = delta; }
+    if (e.key === "ArrowLeft") dx = -delta;
+    else if (e.key === "ArrowRight") dx = delta;
+    else if (e.key === "ArrowUp") dy = -delta;
+    else if (e.key === "ArrowDown") dy = delta;
     else return;
 
     e.preventDefault();
 
-    const snapToBaseline =
-      !!(style?.snapToBaseline && baselineOffset != null && baselineOffset > 0);
-    const curMt = snapToBaseline ? REF_H - baselineOffset! : parsePx(style?.mt);
-    const curMl = parsePx(style?.ml);
-    const newMt = snapToBaseline ? curMt : curMt + dy;
-    const newMl = curMl + dx;
-
-    commitStyle(slide, selectedKey, {
-      ...(style ?? {}),
-      mt: newMt ? `${newMt}px` : undefined,
-      ml: newMl ? `${newMl}px` : undefined,
-    }, onChange);
+    const groupId = style?.groupId;
+    if (groupId) {
+      const groupKeys = orderedKeys(slide).filter(k => {
+        const s = getStyle(slide, k);
+        return s?.groupId === groupId && !s?.locked;
+      });
+      let updated = slide;
+      for (const k of groupKeys) {
+        const s = getStyle(updated, k);
+        const snap = !!(s?.snapToBaseline && baselineOffset != null && baselineOffset > 0);
+        const curMt = snap ? REF_H - baselineOffset! : parsePx(s?.mt);
+        const curMl = parsePx(s?.ml);
+        updated = patchStyle(updated, k, {
+          ...(s ?? {}),
+          mt: (snap ? curMt : curMt + dy) ? `${snap ? curMt : curMt + dy}px` : undefined,
+          ml: (curMl + dx) ? `${curMl + dx}px` : undefined,
+        });
+      }
+      onChange(updated);
+    } else {
+      const snap = !!(style?.snapToBaseline && baselineOffset != null && baselineOffset > 0);
+      const curMt = snap ? REF_H - baselineOffset! : parsePx(style?.mt);
+      const curMl = parsePx(style?.ml);
+      commitStyle(slide, selectedKey, {
+        ...(style ?? {}),
+        mt: (snap ? curMt : curMt + dy) ? `${snap ? curMt : curMt + dy}px` : undefined,
+        ml: (curMl + dx) ? `${curMl + dx}px` : undefined,
+      }, onChange);
+    }
   }, [selectedKey, slide, onChange, enableDrag, baselineOffset]);
 
   // Click on empty canvas → add new extra at the clicked Y position
@@ -400,6 +478,7 @@ export function SlideCanvas({
         {/* Inner canvas at REF_W × REF_H, scaled via transform */}
         <div
           ref={innerRef}
+          data-canvas-inner
           className={`absolute top-0 left-0 ${enableDrag ? "cursor-crosshair" : "cursor-default"}`}
           style={{ width: REF_W, height: REF_H, transformOrigin: "top left", touchAction: enableDrag ? "none" : undefined }}
           onClick={enableDrag ? onCanvasClick : undefined}

@@ -32,6 +32,7 @@ type ElementStyle = {
   typo?: string; // typography class from design system
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
   locked?: boolean; // prevents drag/resize in preview and canvas
+  groupId?: string; // group identifier for moving elements together
   viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
 };
 
@@ -1191,6 +1192,7 @@ function useSlideElementEditor(
   editMode: boolean,
   onSlideChange?: (next: Slide) => void,
 ) {
+  type GroupStart = { tx: number; ty: number; el: HTMLElement };
   const dragRef = useRef<{
     key: string;
     mode: "move" | "resize";
@@ -1201,6 +1203,7 @@ function useSlideElementEditor(
     startSize: number;
     scale: number;
     moved: boolean;
+    groupStarts?: Map<string, GroupStart>;
   } | null>(null);
 
   // Props for a dedicated drag handle child — applies transform to closest [data-hs-draggable]
@@ -1223,12 +1226,30 @@ function useSlideElementEditor(
         const matrix = new DOMMatrix(computed.transform === "none" ? "" : computed.transform);
         handle.setPointerCapture(e.pointerId);
         el.classList.add("hero-slide__editable--dragging");
+
+        // Collect group-member starting transforms for live group drag
+        let groupStarts: Map<string, GroupStart> | undefined;
+        const groupId = currentStyle?.groupId;
+        if (groupId && slideEl) {
+          groupStarts = new Map();
+          slideEl.querySelectorAll<HTMLElement>("[data-hs-draggable]").forEach((member) => {
+            if (member === el) return;
+            const memberKey = member.dataset.hsDraggable ?? "";
+            if (!memberKey) return;
+            const ms = getSlideElementStyle(slide, memberKey);
+            if (ms?.groupId !== groupId || ms.locked) return;
+            const mc = getComputedStyle(member);
+            const mm = new DOMMatrix(mc.transform === "none" ? "" : mc.transform);
+            groupStarts!.set(memberKey, { tx: mm.m41 || 0, ty: mm.m42 || 0, el: member });
+          });
+        }
+
         dragRef.current = {
           key, mode: "move",
           startX: e.clientX, startY: e.clientY,
           startTx: matrix.m41 || 0, startTy: matrix.m42 || 0,
           startSize: parseFloat(computed.fontSize || "0") || 16,
-          scale, moved: false,
+          scale, moved: false, groupStarts,
         };
       },
       onPointerMove: (e) => {
@@ -1242,6 +1263,10 @@ function useSlideElementEditor(
         const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hs-draggable]");
         if (!el) return;
         el.style.transform = `translate(${Math.round(d.startTx + dx)}px, ${Math.round(d.startTy + dy)}px)`;
+        // Move group members in sync
+        d.groupStarts?.forEach(({ tx, ty, el: gEl }) => {
+          gEl.style.transform = `translate(${Math.round(tx + dx)}px, ${Math.round(ty + dy)}px)`;
+        });
       },
       onPointerUp: (e) => {
         const d = dragRef.current;
@@ -1255,11 +1280,32 @@ function useSlideElementEditor(
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
         const style = getSlideElementStyle(slide, key) ?? {};
-        onSlideChange(setSlideElementStyle(slide, key, {
-          ...style,
-          x: newTx ? `${newTx}px` : undefined,
-          y: newTy ? `${newTy}px` : undefined,
-        }));
+
+        if (d.groupStarts && d.groupStarts.size > 0) {
+          // Commit all group members in one update
+          let updated = setSlideElementStyle(slide, key, {
+            ...style,
+            x: newTx ? `${newTx}px` : undefined,
+            y: newTy ? `${newTy}px` : undefined,
+          });
+          d.groupStarts.forEach(({ tx, ty }, memberKey) => {
+            const ms = getSlideElementStyle(updated, memberKey) ?? {} as ElementStyle;
+            const mNewTx = Math.round(tx + dx);
+            const mNewTy = Math.round(ty + dy);
+            updated = setSlideElementStyle(updated, memberKey, {
+              ...ms,
+              x: mNewTx ? `${mNewTx}px` : undefined,
+              y: mNewTy ? `${mNewTy}px` : undefined,
+            });
+          });
+          onSlideChange(updated);
+        } else {
+          onSlideChange(setSlideElementStyle(slide, key, {
+            ...style,
+            x: newTx ? `${newTx}px` : undefined,
+            y: newTy ? `${newTy}px` : undefined,
+          }));
+        }
       },
       onPointerCancel: (e) => {
         const d = dragRef.current;
@@ -1270,6 +1316,10 @@ function useSlideElementEditor(
         el.classList.remove("hero-slide__editable--dragging");
         el.style.transform = (d.startTx || d.startTy)
           ? `translate(${d.startTx}px, ${d.startTy}px)` : "";
+        // Revert group members
+        d.groupStarts?.forEach(({ tx, ty, el: gEl }) => {
+          gEl.style.transform = (tx || ty) ? `translate(${tx}px, ${ty}px)` : "";
+        });
       },
     };
   }
