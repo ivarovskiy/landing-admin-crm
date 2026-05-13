@@ -1215,38 +1215,49 @@ function getPrecedingMt(slide: Slide, targetKey: string): number {
   return sum;
 }
 
-/** After changing one element's mt by deltaMt, subtract deltaMt from all subsequent
- *  elements' mt so their visual positions are preserved (precedingMt compensation).
- *  Pass skipKeys to skip elements whose positions were already explicitly set (e.g. group members). */
-function compensateSubsequentMt(slide: Slide, afterKey: string, deltaMt: number, skipKeys?: Set<string>): Slide {
-  if (deltaMt === 0) return slide;
-  const extras = Array.isArray(slide.extras) ? slide.extras : [];
+/** After dragging `afterKey`, preserve every subsequent element's absolute visual position.
+ *  For each element X after afterKey:
+ *    oldAbsY = X.oldMt + getPrecedingMt(original, X)
+ *    X.newMt  = oldAbsY - getPrecedingMt(result_so_far, X)
+ *  Because getPrecedingMt(result, X) is computed from the incrementally-updated state,
+ *  locked elements between `afterKey` and X are handled correctly — their own correction
+ *  propagates forward without double-compensating later elements.
+ *  Pass skipKeys to skip group members that the caller already positioned explicitly. */
+function preserveVisualPositions(
+  original: Slide,
+  current: Slide,
+  afterKey: string,
+  skipKeys?: Set<string>,
+): Slide {
+  const extras = Array.isArray(original.extras) ? original.extras : [];
   const fixed: string[] = [];
-  if (slide.kicker !== undefined) fixed.push("kicker");
+  if (original.kicker !== undefined) fixed.push("kicker");
   fixed.push("title");
-  if (slide.subtitle !== undefined) fixed.push("subtitle");
-  if (slide.body !== undefined) fixed.push("body");
-  if (slide.quote !== undefined) fixed.push("quote");
+  if (original.subtitle !== undefined) fixed.push("subtitle");
+  if (original.body !== undefined) fixed.push("body");
+  if (original.quote !== undefined) fixed.push("quote");
   const all = [...fixed, ...extras.map((e) => e.id ?? "")];
-  const stored = slide.elementOrder ?? [];
+  const stored = original.elementOrder ?? [];
   const allSet = new Set(all);
   const used = new Set<string>();
   const ordered = [
     ...stored.filter((k) => allSet.has(k) && !used.has(k) && (used.add(k), true)),
     ...all.filter((k) => !used.has(k)),
   ];
-  let result = slide;
+  let result = current;
   let compensating = false;
   for (const k of ordered) {
     if (k === afterKey) { compensating = true; continue; }
     if (!compensating) continue;
     if (skipKeys?.has(k)) continue;
-    const es = getSlideElementStyle(result, k) ?? {};
-    const curMt = parseFloat(es.mt ?? "0") || 0;
-    const newMtNum = Math.round(curMt - deltaMt);
+    const origStyle = getSlideElementStyle(original, k) ?? {};
+    const oldMt = parseFloat(origStyle.mt ?? "0") || 0;
+    const oldAbsY = oldMt + getPrecedingMt(original, k);
+    const newPrecedingMt = getPrecedingMt(result, k);
+    const newMt = Math.round(oldAbsY - newPrecedingMt);
     result = setSlideElementStyle(result, k, {
-      ...es,
-      mt: newMtNum !== 0 ? `${newMtNum}px` : undefined,
+      ...getSlideElementStyle(result, k) ?? {},
+      mt: newMt !== 0 ? `${newMt}px` : undefined,
     });
   }
   return result;
@@ -1397,16 +1408,13 @@ function useSlideElementEditor(
               ...ms, ml: mNewMl, mt: mNewMt, x: undefined, y: undefined,
             });
           });
-          // Compensate non-group elements after the primary — their precedingMt
-          // shifted by deltaMt because the primary's mt changed. Locked elements
-          // are compensated too (preserves their visual position, which is correct).
-          updated = compensateSubsequentMt(updated, key, deltaMt, groupKeys);
+          updated = preserveVisualPositions(slide, updated, key, groupKeys);
           onSlideChange(updated);
         } else {
           let updated = setSlideElementStyle(slide, key, {
             ...style, ml: newMl, mt: newMt, x: undefined, y: undefined,
           });
-          updated = compensateSubsequentMt(updated, key, deltaMt);
+          updated = preserveVisualPositions(slide, updated, key);
           onSlideChange(updated);
         }
       },
@@ -1524,7 +1532,7 @@ function useSlideElementEditor(
         let updated = setSlideElementStyle(slide, key, {
           ...currentStyle, ml: newMl, mt: newMt, x: undefined, y: undefined,
         });
-        updated = compensateSubsequentMt(updated, key, deltaMt);
+        updated = preserveVisualPositions(slide, updated, key);
         onSlideChange(updated);
       },
       onPointerCancel: (e) => {
@@ -1563,7 +1571,7 @@ function useSlideElementEditor(
           x: undefined,
           y: undefined,
         });
-        updated = compensateSubsequentMt(updated, key, deltaMt);
+        updated = preserveVisualPositions(slide, updated, key);
         onSlideChange(updated);
       },
     };

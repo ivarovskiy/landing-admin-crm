@@ -597,15 +597,7 @@ export function BlocksWorkspace({
   }, [pageId, refreshKey, viewMode]);
 
   const effectiveOptions = activeDraftOptions ?? active?.data?.options ?? {};
-  const liveEditEnabled =
-    !!active &&
-    !previewMode &&
-    (
-      (active.type === "hero" && active.variant === "slider-v1") ||
-      (active.type === "content-page" && active.variant === "v1") ||
-      (active.type === "text-block" && active.variant === "v1") ||
-      (active.type === "image-block" && active.variant === "v1")
-    );
+  const liveEditEnabled = !!active && !previewMode;
 
   const postLiveEditMode = useCallback(() => {
     try {
@@ -619,6 +611,15 @@ export function BlocksWorkspace({
   useEffect(() => {
     postLiveEditMode();
   }, [postLiveEditMode, previewSrc]);
+
+  // Re-send edit mode when iframe signals it finished hydrating (fixes intermittent activation)
+  useEffect(() => {
+    function handleMessage(e: MessageEvent) {
+      if (e.data?.type === "iframe-ready") postLiveEditMode();
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [postLiveEditMode]);
 
   // Reset iframe height when preview source changes so stale size doesn't flash
   useEffect(() => { setIframeHeight(1200); }, [previewSrc]);
@@ -1081,9 +1082,10 @@ export function BlocksWorkspace({
         {/* --------------------------------------------------------
             INSPECTOR PANEL (right) — floating
             -------------------------------------------------------- */}
-        {/* Inspector panel — Block only */}
-        {showInspector && !previewMode && (
-          <div className="absolute top-3 right-3 bottom-3 z-20 w-[380px] max-w-[calc(100vw-32px)] flex flex-col bg-card/95 backdrop-blur-md rounded-xl border border-border/50 shadow-2xl overflow-hidden">
+        {/* Inspector panel — Block only (always mounted; hidden via CSS when inspector closed
+            so FloatingSaveBar portal and draft state survive inspector toggle) */}
+        {!previewMode && (
+          <div className={`absolute top-3 right-3 bottom-3 z-20 w-[380px] max-w-[calc(100vw-32px)] flex flex-col bg-card/95 backdrop-blur-md rounded-xl border border-border/50 shadow-2xl overflow-hidden${!showInspector ? " hidden" : ""}`}>
             <div className="px-3 py-2.5 border-b border-border/50 shrink-0">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {active ? `${active.type}:${active.variant}` : "Inspector"}

@@ -52,6 +52,9 @@ export function LivePreviewProvider({ children }: { children: ReactNode }) {
     }
 
     window.addEventListener("message", handleMessage);
+    // Signal admin that listeners are ready so it re-sends the current edit mode.
+    // This fixes the race where the admin posts before React has hydrated.
+    window.parent.postMessage({ type: "iframe-ready" }, "*");
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
