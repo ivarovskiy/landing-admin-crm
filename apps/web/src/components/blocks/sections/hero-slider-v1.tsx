@@ -1383,7 +1383,7 @@ function useSlideElementEditor(
           });
           d.groupStarts.forEach(({ tx, ty }, memberKey) => {
             const ms = getSlideElementStyle(updated, memberKey) ?? {} as ElementStyle;
-            const mPrecedingMt = getPrecedingMt(slide, memberKey);
+            const mPrecedingMt = getPrecedingMt(updated, memberKey);
             const mNewTx = Math.round(tx + dx);
             const mNewTy = Math.round(ty + dy);
             const mNewMl = mNewTx !== 0 ? `${mNewTx}px` : undefined;
