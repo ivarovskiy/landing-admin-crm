@@ -623,7 +623,7 @@ export function HeroSliderV1({
                     isDragging={!!drag.current?.moved}
                     slideIndex={realIndex}
                     editMode={editMode && !isClone && realIndex === active}
-                    dragMode={options?.enableCanvasDrag !== false}
+                    dragMode={options?.enableCanvasDrag === true}
                     onSlideChange={(nextSlide) => updateSlide(rawSlideIndex, nextSlide)}
                     showGuides={showGuides}
                     showElementGuides={showElementGuides}
@@ -1663,7 +1663,7 @@ function CopyStack({
             key="kicker"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
             data-hs-draggable="kicker"
-            style={absElStyle(es, precedingMtByKey.get(key) ?? 0)}
+            style={dragMode ? absElStyle(es, precedingMtByKey.get(key) ?? 0) : s}
             data-el={`slide-${slideIndex}-kicker`}
           >
             {!isLocked && dragMode && <DragHandle {...dragHandleProps("kicker")} />}
@@ -1691,7 +1691,7 @@ function CopyStack({
               key="title"
               className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
               data-hs-draggable="title"
-              style={absElStyle(titleEs, precedingMtByKey.get(key) ?? 0)}
+              style={dragMode ? absElStyle(titleEs, precedingMtByKey.get(key) ?? 0) : titleStyle}
             >
               {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
               <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} shadowContent={renderRichText(title)}>
@@ -1705,7 +1705,7 @@ function CopyStack({
             key="title"
             className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
             data-hs-draggable="title"
-            style={absElStyle(titleEs, precedingMtByKey.get(key) ?? 0)}
+            style={dragMode ? absElStyle(titleEs, precedingMtByKey.get(key) ?? 0) : titleStyle}
           >
             {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
             <p className={titleClass} data-el={`slide-${slideIndex}-title`}>
@@ -1722,9 +1722,9 @@ function CopyStack({
         );
       }
       return (
-        <p key="title" {...editableProps("title", titleClass)} data-el={`slide-${slideIndex}-title`} style={titleStyle}>
+        <div key="title" {...editableProps("title", titleClass)} data-el={`slide-${slideIndex}-title`} style={titleStyle}>
           {renderRichText(title)}
-        </p>
+        </div>
       );
     }
     if (key === "subtitle" && subtitle) {
@@ -1738,7 +1738,7 @@ function CopyStack({
             key="subtitle"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
             data-hs-draggable="subtitle"
-            style={absElStyle(es, precedingMtByKey.get(key) ?? 0)}
+            style={dragMode ? absElStyle(es, precedingMtByKey.get(key) ?? 0) : s}
             data-el={`slide-${slideIndex}-subtitle`}
           >
             {!isLocked && dragMode && <DragHandle {...dragHandleProps("subtitle")} />}
@@ -1763,7 +1763,7 @@ function CopyStack({
             key="body"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
             data-hs-draggable="body"
-            style={absElStyle(es, precedingMtByKey.get(key) ?? 0)}
+            style={dragMode ? absElStyle(es, precedingMtByKey.get(key) ?? 0) : s}
             data-el={`slide-${slideIndex}-body`}
           >
             {!isLocked && dragMode && <DragHandle {...dragHandleProps("body")} />}
@@ -1789,7 +1789,7 @@ function CopyStack({
             key="quote"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls)}
             data-hs-draggable="quote"
-            style={absElStyle(es, precedingMtByKey.get(key) ?? 0)}
+            style={dragMode ? absElStyle(es, precedingMtByKey.get(key) ?? 0) : s}
             data-el={`slide-${slideIndex}-quote`}
           >
             {!isLocked && dragMode && <DragHandle {...dragHandleProps("quote")} />}
@@ -1798,9 +1798,9 @@ function CopyStack({
         );
       }
       return (
-        <p key="quote" {...editableProps("quote", cls)} style={s} data-el={`slide-${slideIndex}-quote`}>
+        <div key="quote" {...editableProps("quote", cls)} style={s} data-el={`slide-${slideIndex}-quote`}>
           {renderRichText(quote)}
-        </p>
+        </div>
       );
     }
     const extra = extraById.get(key);
@@ -1879,7 +1879,7 @@ function ExtraElement({
         <div
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
           data-hs-draggable={extraKey}
-          style={absElStyle(resolvedStyle, precedingMt)}
+          style={dragMode ? absElStyle(resolvedStyle, precedingMt) : style}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} shadowContent={renderRichText(extra.text)}>
@@ -1906,7 +1906,7 @@ function ExtraElement({
         <div
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
           data-hs-draggable={extraKey}
-          style={absElStyle(resolvedStyle, precedingMt)}
+          style={dragMode ? absElStyle(resolvedStyle, precedingMt) : style}
           data-el={slotId}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
@@ -1934,7 +1934,7 @@ function ExtraElement({
         <div
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
           data-hs-draggable={extraKey}
-          style={absElStyle(resolvedStyle, precedingMt)}
+          style={dragMode ? absElStyle(resolvedStyle, precedingMt) : style}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} shadowContent={renderRichText(extra.text)}>
@@ -1961,7 +1961,7 @@ function ExtraElement({
       <div
         className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls)}
         data-hs-draggable={extraKey}
-        style={absElStyle(resolvedStyle, precedingMt)}
+        style={dragMode ? absElStyle(resolvedStyle, precedingMt) : style}
         data-el={slotId}
       >
         {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
@@ -1970,13 +1970,13 @@ function ExtraElement({
     );
   }
   return (
-    <p
+    <div
       {...(editableProps?.(extraKey, cls) ?? { className: cls })}
       style={style}
       data-el={slotId}
     >
       {renderRichText(extra.text)}
-    </p>
+    </div>
   );
 }
 
@@ -1985,7 +1985,7 @@ function SlideKicker({
 }: {
   text: string;
 }) {
-  return <p className="hero-slide__kicker">{renderRichText(text)}</p>;
+  return <div className="hero-slide__kicker">{renderRichText(text)}</div>;
 }
 
 function SlideSubtitle({
@@ -2010,9 +2010,9 @@ function SlideSubtitle({
   }
 
   return (
-    <p className="hero-slide__subtitle" data-el={slotId}>
+    <div className="hero-slide__subtitle" data-el={slotId}>
       {renderRichText(text)}
-    </p>
+    </div>
   );
 }
 
