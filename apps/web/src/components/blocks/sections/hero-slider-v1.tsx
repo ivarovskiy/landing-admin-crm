@@ -201,8 +201,10 @@ function useHeroViewportProfile(): HeroViewportProfileKey | null {
 }
 
 /** Convert ElementStyle to inline CSS for edit-mode wrappers.
- *  Keeps elements in normal flow (position:relative) so initial layout is preserved,
- *  but folds ml/mt/x/y into a single transform — margin changes don't push siblings. */
+ *  height:0 + overflow:visible removes each wrapper from the flex flow so that
+ *  TipTap growing (text wrapping) or font-size changes never push sibling elements.
+ *  Visual position is determined solely by the transform; precedingMt compensates
+ *  for the sum of mt values of preceding elements (matching CSS margin-top behaviour). */
 function absElStyle(es?: ElementStyle, precedingMt = 0): React.CSSProperties {
   const mlPx = parseFloat(resolveDesignViewportUnits(es?.ml) ?? "0") || 0;
   const mtPx = parseFloat(resolveDesignViewportUnits(es?.mt) ?? "0") || 0;
@@ -218,7 +220,7 @@ function absElStyle(es?: ElementStyle, precedingMt = 0): React.CSSProperties {
   }
   if (es?.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
   if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
-  return { position: "relative", ...s } as React.CSSProperties;
+  return { position: "relative", height: 0, overflow: "visible", ...s } as React.CSSProperties;
 }
 
 /** Convert ElementStyle to inline CSS */
@@ -1188,9 +1190,8 @@ function setSlideElementStyle(slide: Slide, key: string, style: ElementStyle): S
   };
 }
 
-/** Sum of mt values of all elements rendered BEFORE key in the slide's ordered list.
- *  Used to correct edit-mode transform positioning so it matches CSS flow layout. */
-function getPrecedingMt(slide: Slide, targetKey: string): number {
+/** Canonical ordered key list for a slide, respecting elementOrder overrides. */
+function buildSlideOrderedKeys(slide: Slide): string[] {
   const extras = Array.isArray(slide.extras) ? slide.extras : [];
   const fixed: string[] = [];
   if (slide.kicker !== undefined) fixed.push("kicker");
@@ -1202,12 +1203,17 @@ function getPrecedingMt(slide: Slide, targetKey: string): number {
   const stored = slide.elementOrder ?? [];
   const allSet = new Set(all);
   const used = new Set<string>();
-  const ordered = [
+  return [
     ...stored.filter((k) => allSet.has(k) && !used.has(k) && (used.add(k), true)),
     ...all.filter((k) => !used.has(k)),
   ];
+}
+
+/** Sum of mt values of all elements rendered BEFORE key in the slide's ordered list.
+ *  Used to correct edit-mode transform positioning so it matches CSS flow layout. */
+function getPrecedingMt(slide: Slide, targetKey: string): number {
   let sum = 0;
-  for (const k of ordered) {
+  for (const k of buildSlideOrderedKeys(slide)) {
     if (k === targetKey) break;
     sum += parseFloat(getSlideElementStyle(slide, k)?.mt ?? "0") || 0;
   }
@@ -1228,24 +1234,9 @@ function preserveVisualPositions(
   afterKey: string,
   skipKeys?: Set<string>,
 ): Slide {
-  const extras = Array.isArray(original.extras) ? original.extras : [];
-  const fixed: string[] = [];
-  if (original.kicker !== undefined) fixed.push("kicker");
-  fixed.push("title");
-  if (original.subtitle !== undefined) fixed.push("subtitle");
-  if (original.body !== undefined) fixed.push("body");
-  if (original.quote !== undefined) fixed.push("quote");
-  const all = [...fixed, ...extras.map((e) => e.id ?? "")];
-  const stored = original.elementOrder ?? [];
-  const allSet = new Set(all);
-  const used = new Set<string>();
-  const ordered = [
-    ...stored.filter((k) => allSet.has(k) && !used.has(k) && (used.add(k), true)),
-    ...all.filter((k) => !used.has(k)),
-  ];
   let result = current;
   let compensating = false;
-  for (const k of ordered) {
+  for (const k of buildSlideOrderedKeys(original)) {
     if (k === afterKey) { compensating = true; continue; }
     if (!compensating) continue;
     if (skipKeys?.has(k)) continue;
@@ -1390,24 +1381,42 @@ function useSlideElementEditor(
         const deltaMt = newMtVal - oldMt;
 
         if (d.groupStarts && d.groupStarts.size > 0) {
-          let updated = setSlideElementStyle(slide, key, {
-            ...style, ml: newMl, mt: newMt, x: undefined, y: undefined,
+          // Desired absolute Y and X for every group element (dragged key + members)
+          const desiredY = new Map<string, number>([[key, newTy]]);
+          const desiredX = new Map<string, number>([[key, newTx]]);
+          d.groupStarts.forEach(({ tx: mtx, ty: mty }, memberKey) => {
+            desiredY.set(memberKey, mty + dy);
+            desiredX.set(memberKey, mtx + dx);
           });
-          const groupKeys = new Set([key]);
-          d.groupStarts.forEach(({ tx, ty }, memberKey) => {
-            groupKeys.add(memberKey);
-            const ms = getSlideElementStyle(updated, memberKey) ?? {} as ElementStyle;
-            const mPrecedingMt = getPrecedingMt(updated, memberKey);
-            const mNewTx = Math.round(tx + dx);
-            const mNewTy = Math.round(ty + dy);
-            const mNewMl = mNewTx !== 0 ? `${mNewTx}px` : undefined;
-            const mNewMtVal = Math.round(mNewTy - mPrecedingMt);
-            const mNewMt = mNewMtVal !== 0 ? `${mNewMtVal}px` : undefined;
-            updated = setSlideElementStyle(updated, memberKey, {
-              ...ms, ml: mNewMl, mt: mNewMt, x: undefined, y: undefined,
-            });
-          });
-          updated = preserveVisualPositions(slide, updated, key, groupKeys);
+          const allGroupKeys = new Set(desiredY.keys());
+
+          // Single pass in ordered-list order: position group elements at desired Y,
+          // compensate non-group elements to keep their absolute visual position.
+          let updated = slide;
+          for (const k of buildSlideOrderedKeys(slide)) {
+            const ms = getSlideElementStyle(updated, k) ?? {} as ElementStyle;
+            const kPrecedingMt = getPrecedingMt(updated, k);
+            if (allGroupKeys.has(k)) {
+              const kNewTx = Math.round(desiredX.get(k)!);
+              const kNewMtVal = Math.round(desiredY.get(k)! - kPrecedingMt);
+              updated = setSlideElementStyle(updated, k, {
+                ...ms,
+                ml: kNewTx !== 0 ? `${kNewTx}px` : undefined,
+                mt: kNewMtVal !== 0 ? `${kNewMtVal}px` : undefined,
+                x: undefined, y: undefined,
+              });
+            } else {
+              const origStyle = getSlideElementStyle(slide, k) ?? {};
+              const oldMt = parseFloat(origStyle.mt ?? "0") || 0;
+              const oldAbsY = oldMt + getPrecedingMt(slide, k);
+              const kNewMtVal = Math.round(oldAbsY - kPrecedingMt);
+              if (kNewMtVal !== oldMt) {
+                updated = setSlideElementStyle(updated, k, {
+                  ...ms, mt: kNewMtVal !== 0 ? `${kNewMtVal}px` : undefined,
+                });
+              }
+            }
+          }
           onSlideChange(updated);
         } else {
           let updated = setSlideElementStyle(slide, key, {
