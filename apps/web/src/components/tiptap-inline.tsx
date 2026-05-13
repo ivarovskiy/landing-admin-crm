@@ -357,7 +357,7 @@ export function TipTapInline({
   showWordCount = false,
 }: {
   value: string;
-  onChange: (html: string) => void;
+  onChange?: (html: string) => void;
   multiline?: boolean;
   className?: string;
   style?: CSSProperties;
@@ -407,7 +407,7 @@ export function TipTapInline({
     content: toHtml(value, multiline),
     onUpdate: ({ editor: e }) => {
       if (isSettingContent.current) return;
-      onChange(e.getHTML());
+      onChange?.(e.getHTML());
     },
     editorProps: {
       handleKeyDown(view, event) {
