@@ -384,7 +384,10 @@ export function TipTapInline({
   // Capture typoClass at mount so migration runs exactly once
   const initialTypoRef = useRef(typoClass);
 
+  const isEditable = !!onChange;
+
   const editor = useEditor({
+    editable: isEditable,
     extensions: [
       StarterKit.configure({
         blockquote: {},
@@ -556,6 +559,15 @@ export function TipTapInline({
       document.removeEventListener("pointerup", handlePointerUp);
     };
   }, [editor, computeToolbar]);
+
+  // Sync editable state when onChange changes (e.g. drag mode toggle)
+  useEffect(() => {
+    if (!editor) return;
+    if (editor.isEditable !== isEditable) {
+      editor.setEditable(isEditable);
+      if (!isEditable) setToolbarState(null);
+    }
+  }, [editor, isEditable]);
 
   // Sync external value → editor (only when not focused, suppress onUpdate)
   useEffect(() => {

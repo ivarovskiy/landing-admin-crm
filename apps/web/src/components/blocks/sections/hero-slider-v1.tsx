@@ -481,6 +481,8 @@ export function HeroSliderV1({
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.pointerType === "mouse" && (e as any).button !== 0) return;
+    // In edit mode the slide itself must not swipe — element drag handles stopPropagation themselves
+    if (editMode) return;
     if ((e.target as HTMLElement).closest("a, button, [contenteditable]")) return;
 
     setPaused(true);
@@ -1213,6 +1215,41 @@ function getPrecedingMt(slide: Slide, targetKey: string): number {
   return sum;
 }
 
+/** After changing one element's mt by deltaMt, subtract deltaMt from all subsequent
+ *  elements' mt so their visual positions are preserved (precedingMt compensation). */
+function compensateSubsequentMt(slide: Slide, afterKey: string, deltaMt: number): Slide {
+  if (deltaMt === 0) return slide;
+  const extras = Array.isArray(slide.extras) ? slide.extras : [];
+  const fixed: string[] = [];
+  if (slide.kicker !== undefined) fixed.push("kicker");
+  fixed.push("title");
+  if (slide.subtitle !== undefined) fixed.push("subtitle");
+  if (slide.body !== undefined) fixed.push("body");
+  if (slide.quote !== undefined) fixed.push("quote");
+  const all = [...fixed, ...extras.map((e) => e.id ?? "")];
+  const stored = slide.elementOrder ?? [];
+  const allSet = new Set(all);
+  const used = new Set<string>();
+  const ordered = [
+    ...stored.filter((k) => allSet.has(k) && !used.has(k) && (used.add(k), true)),
+    ...all.filter((k) => !used.has(k)),
+  ];
+  let result = slide;
+  let compensating = false;
+  for (const k of ordered) {
+    if (k === afterKey) { compensating = true; continue; }
+    if (!compensating) continue;
+    const es = getSlideElementStyle(result, k) ?? {};
+    const curMt = parseFloat(es.mt ?? "0") || 0;
+    const newMtNum = Math.round(curMt - deltaMt);
+    result = setSlideElementStyle(result, k, {
+      ...es,
+      mt: newMtNum !== 0 ? `${newMtNum}px` : undefined,
+    });
+  }
+  return result;
+}
+
 const DRAG_HANDLE_STYLE: React.CSSProperties = {
   position: "absolute",
   top: 2,
@@ -1333,10 +1370,12 @@ function useSlideElementEditor(
         const newTy = Math.round(d.startTy + dy);
         const style = getSlideElementStyle(slide, key) ?? {};
         // Fold x/y back into ml/mt so the right panel shows the real position after drag
+        const oldMt = parseFloat(style.mt ?? "0") || 0;
         const precedingMt = getPrecedingMt(slide, key);
         const newMl = newTx !== 0 ? `${newTx}px` : undefined;
         const newMtVal = Math.round(newTy - precedingMt);
         const newMt = newMtVal !== 0 ? `${newMtVal}px` : undefined;
+        const deltaMt = newMtVal - oldMt;
 
         if (d.groupStarts && d.groupStarts.size > 0) {
           let updated = setSlideElementStyle(slide, key, {
@@ -1356,9 +1395,11 @@ function useSlideElementEditor(
           });
           onSlideChange(updated);
         } else {
-          onSlideChange(setSlideElementStyle(slide, key, {
+          let updated = setSlideElementStyle(slide, key, {
             ...style, ml: newMl, mt: newMt, x: undefined, y: undefined,
-          }));
+          });
+          updated = compensateSubsequentMt(updated, key, deltaMt);
+          onSlideChange(updated);
         }
       },
       onPointerCancel: (e) => {
@@ -1466,13 +1507,17 @@ function useSlideElementEditor(
 
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
+        const oldMt = parseFloat(currentStyle.mt ?? "0") || 0;
         const precedingMt = getPrecedingMt(slide, key);
         const newMl = newTx !== 0 ? `${newTx}px` : undefined;
         const newMtVal = Math.round(newTy - precedingMt);
         const newMt = newMtVal !== 0 ? `${newMtVal}px` : undefined;
-        onSlideChange(setSlideElementStyle(slide, key, {
+        const deltaMt = newMtVal - oldMt;
+        let updated = setSlideElementStyle(slide, key, {
           ...currentStyle, ml: newMl, mt: newMt, x: undefined, y: undefined,
-        }));
+        });
+        updated = compensateSubsequentMt(updated, key, deltaMt);
+        onSlideChange(updated);
       },
       onPointerCancel: (e) => {
         const d = dragRef.current;
@@ -1502,13 +1547,16 @@ function useSlideElementEditor(
         const currentMt = parseFloat(currentStyle.mt ?? "0") || 0;
         const nextMl = Math.round(currentMl + delta[0] * step);
         const nextMt = Math.round(currentMt + delta[1] * step);
-        onSlideChange(setSlideElementStyle(slide, key, {
+        const deltaMt = nextMt - currentMt;
+        let updated = setSlideElementStyle(slide, key, {
           ...currentStyle,
           ml: nextMl ? `${nextMl}px` : undefined,
           mt: nextMt ? `${nextMt}px` : undefined,
           x: undefined,
           y: undefined,
-        }));
+        });
+        updated = compensateSubsequentMt(updated, key, deltaMt);
+        onSlideChange(updated);
       },
     };
   }
