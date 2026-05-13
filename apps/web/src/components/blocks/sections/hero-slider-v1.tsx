@@ -1280,30 +1280,42 @@ function useSlideElementEditor(
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
         const style = getSlideElementStyle(slide, key) ?? {};
+        const curMl = parseFloat(style.ml ?? "0") || 0;
+        const curMt = parseFloat(style.mt ?? "0") || 0;
+        const finalMl = curMl + newTx;
+        const finalMt = curMt + newTy;
 
         if (d.groupStarts && d.groupStarts.size > 0) {
-          // Commit all group members in one update
+          // Commit all group members in one update — fold into mt/ml, clear x/y
           let updated = setSlideElementStyle(slide, key, {
             ...style,
-            x: newTx ? `${newTx}px` : undefined,
-            y: newTy ? `${newTy}px` : undefined,
+            ml: finalMl !== 0 ? `${finalMl}px` : undefined,
+            mt: finalMt !== 0 ? `${finalMt}px` : undefined,
+            x: undefined,
+            y: undefined,
           });
           d.groupStarts.forEach(({ tx, ty }, memberKey) => {
             const ms = getSlideElementStyle(updated, memberKey) ?? {} as ElementStyle;
+            const mCurMl = parseFloat(ms.ml ?? "0") || 0;
+            const mCurMt = parseFloat(ms.mt ?? "0") || 0;
             const mNewTx = Math.round(tx + dx);
             const mNewTy = Math.round(ty + dy);
             updated = setSlideElementStyle(updated, memberKey, {
               ...ms,
-              x: mNewTx ? `${mNewTx}px` : undefined,
-              y: mNewTy ? `${mNewTy}px` : undefined,
+              ml: (mCurMl + mNewTx) !== 0 ? `${mCurMl + mNewTx}px` : undefined,
+              mt: (mCurMt + mNewTy) !== 0 ? `${mCurMt + mNewTy}px` : undefined,
+              x: undefined,
+              y: undefined,
             });
           });
           onSlideChange(updated);
         } else {
           onSlideChange(setSlideElementStyle(slide, key, {
             ...style,
-            x: newTx ? `${newTx}px` : undefined,
-            y: newTy ? `${newTy}px` : undefined,
+            ml: finalMl !== 0 ? `${finalMl}px` : undefined,
+            mt: finalMt !== 0 ? `${finalMt}px` : undefined,
+            x: undefined,
+            y: undefined,
           }));
         }
       },
@@ -1412,10 +1424,16 @@ function useSlideElementEditor(
 
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
+        const curMl = parseFloat(currentStyle.ml ?? "0") || 0;
+        const curMt = parseFloat(currentStyle.mt ?? "0") || 0;
+        const finalMl = curMl + newTx;
+        const finalMt = curMt + newTy;
         onSlideChange(setSlideElementStyle(slide, key, {
           ...currentStyle,
-          x: newTx ? `${newTx}px` : undefined,
-          y: newTy ? `${newTy}px` : undefined,
+          ml: finalMl !== 0 ? `${finalMl}px` : undefined,
+          mt: finalMt !== 0 ? `${finalMt}px` : undefined,
+          x: undefined,
+          y: undefined,
         }));
       },
       onPointerCancel: (e) => {
@@ -1442,14 +1460,16 @@ function useSlideElementEditor(
         e.stopPropagation();
         const step = e.shiftKey ? 10 : 1;
         const currentStyle = getSlideElementStyle(slide, key) ?? {};
-        const currentTx = parseFloat(currentStyle.x ?? "0") || 0;
-        const currentTy = parseFloat(currentStyle.y ?? "0") || 0;
-        const nextTx = Math.round(currentTx + delta[0] * step);
-        const nextTy = Math.round(currentTy + delta[1] * step);
+        const curMl = parseFloat(currentStyle.ml ?? "0") || 0;
+        const curMt = parseFloat(currentStyle.mt ?? "0") || 0;
+        const nextMl = Math.round(curMl + delta[0] * step);
+        const nextMt = Math.round(curMt + delta[1] * step);
         onSlideChange(setSlideElementStyle(slide, key, {
           ...currentStyle,
-          x: nextTx ? `${nextTx}px` : undefined,
-          y: nextTy ? `${nextTy}px` : undefined,
+          ml: nextMl !== 0 ? `${nextMl}px` : undefined,
+          mt: nextMt !== 0 ? `${nextMt}px` : undefined,
+          x: undefined,
+          y: undefined,
         }));
       },
     };
