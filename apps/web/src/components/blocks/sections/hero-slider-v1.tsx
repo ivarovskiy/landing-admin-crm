@@ -1332,39 +1332,32 @@ function useSlideElementEditor(
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
         const style = getSlideElementStyle(slide, key) ?? {};
-        // startTx = ml + x + precedingMt (all folded in transform), subtract them to get pure drag offset
-        const curMl = parseFloat(style.ml ?? "0") || 0;
-        const curMt = parseFloat(style.mt ?? "0") || 0;
+        // Fold x/y back into ml/mt so the right panel shows the real position after drag
         const precedingMt = getPrecedingMt(slide, key);
-        const pureX = newTx - curMl;
-        const pureY = newTy - curMt - precedingMt;
+        const newMl = newTx !== 0 ? `${newTx}px` : undefined;
+        const newMtVal = Math.round(newTy - precedingMt);
+        const newMt = newMtVal !== 0 ? `${newMtVal}px` : undefined;
 
         if (d.groupStarts && d.groupStarts.size > 0) {
-          // Commit all group members in one update
           let updated = setSlideElementStyle(slide, key, {
-            ...style,
-            x: pureX !== 0 ? `${pureX}px` : undefined,
-            y: pureY !== 0 ? `${pureY}px` : undefined,
+            ...style, ml: newMl, mt: newMt, x: undefined, y: undefined,
           });
           d.groupStarts.forEach(({ tx, ty }, memberKey) => {
             const ms = getSlideElementStyle(updated, memberKey) ?? {} as ElementStyle;
-            const mCurMl = parseFloat(ms.ml ?? "0") || 0;
-            const mCurMt = parseFloat(ms.mt ?? "0") || 0;
             const mPrecedingMt = getPrecedingMt(slide, memberKey);
             const mNewTx = Math.round(tx + dx);
             const mNewTy = Math.round(ty + dy);
+            const mNewMl = mNewTx !== 0 ? `${mNewTx}px` : undefined;
+            const mNewMtVal = Math.round(mNewTy - mPrecedingMt);
+            const mNewMt = mNewMtVal !== 0 ? `${mNewMtVal}px` : undefined;
             updated = setSlideElementStyle(updated, memberKey, {
-              ...ms,
-              x: (mNewTx - mCurMl) !== 0 ? `${mNewTx - mCurMl}px` : undefined,
-              y: (mNewTy - mCurMt - mPrecedingMt) !== 0 ? `${mNewTy - mCurMt - mPrecedingMt}px` : undefined,
+              ...ms, ml: mNewMl, mt: mNewMt, x: undefined, y: undefined,
             });
           });
           onSlideChange(updated);
         } else {
           onSlideChange(setSlideElementStyle(slide, key, {
-            ...style,
-            x: pureX !== 0 ? `${pureX}px` : undefined,
-            y: pureY !== 0 ? `${pureY}px` : undefined,
+            ...style, ml: newMl, mt: newMt, x: undefined, y: undefined,
           }));
         }
       },
@@ -1473,13 +1466,12 @@ function useSlideElementEditor(
 
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
-        const curMl = parseFloat(currentStyle.ml ?? "0") || 0;
-        const curMt = parseFloat(currentStyle.mt ?? "0") || 0;
         const precedingMt = getPrecedingMt(slide, key);
+        const newMl = newTx !== 0 ? `${newTx}px` : undefined;
+        const newMtVal = Math.round(newTy - precedingMt);
+        const newMt = newMtVal !== 0 ? `${newMtVal}px` : undefined;
         onSlideChange(setSlideElementStyle(slide, key, {
-          ...currentStyle,
-          x: (newTx - curMl) !== 0 ? `${newTx - curMl}px` : undefined,
-          y: (newTy - curMt - precedingMt) !== 0 ? `${newTy - curMt - precedingMt}px` : undefined,
+          ...currentStyle, ml: newMl, mt: newMt, x: undefined, y: undefined,
         }));
       },
       onPointerCancel: (e) => {
@@ -1506,14 +1498,16 @@ function useSlideElementEditor(
         e.stopPropagation();
         const step = e.shiftKey ? 10 : 1;
         const currentStyle = getSlideElementStyle(slide, key) ?? {};
-        const currentTx = parseFloat(currentStyle.x ?? "0") || 0;
-        const currentTy = parseFloat(currentStyle.y ?? "0") || 0;
-        const nextTx = Math.round(currentTx + delta[0] * step);
-        const nextTy = Math.round(currentTy + delta[1] * step);
+        const currentMl = parseFloat(currentStyle.ml ?? "0") || 0;
+        const currentMt = parseFloat(currentStyle.mt ?? "0") || 0;
+        const nextMl = Math.round(currentMl + delta[0] * step);
+        const nextMt = Math.round(currentMt + delta[1] * step);
         onSlideChange(setSlideElementStyle(slide, key, {
           ...currentStyle,
-          x: nextTx ? `${nextTx}px` : undefined,
-          y: nextTy ? `${nextTy}px` : undefined,
+          ml: nextMl ? `${nextMl}px` : undefined,
+          mt: nextMt ? `${nextMt}px` : undefined,
+          x: undefined,
+          y: undefined,
         }));
       },
     };
