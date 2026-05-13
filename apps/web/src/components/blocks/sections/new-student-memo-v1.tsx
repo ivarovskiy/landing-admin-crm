@@ -307,6 +307,7 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
               {kicker || updateField ? (
                 <div
                   className={classFromStyle("nsm__kicker", typo?.kicker, data?.kickerStyle)}
+                  data-el="kicker"
                   style={elementStyle(data?.kickerStyle)}
                 >
                   {updateField ? (
@@ -320,6 +321,7 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
                     as="h1"
                     stamp={stampForTypo(titleTypo)}
                     className={classFromStyle("nsm__title", typo?.title, data?.titleStyle)}
+                    data-el="title"
                     style={elementStyle(data?.titleStyle)}
                     shadowContent={renderRichText(title)}
                   >
@@ -330,6 +332,7 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
                 ) : (
                   <h1
                     className={classFromStyle("nsm__title", typo?.title, data?.titleStyle)}
+                    data-el="title"
                     style={elementStyle(data?.titleStyle)}
                   >
                     {updateField ? (
@@ -341,6 +344,7 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
               {subtitle || updateField ? (
                 <div
                   className={classFromStyle("typo-subtitle", typo?.subtitle, data?.subtitleStyle)}
+                  data-el="subtitle"
                   style={elementStyle(data?.subtitleStyle)}
                 >
                   {updateField ? (
@@ -354,6 +358,7 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
               <a
                 href={cta.href ?? "#"}
                 className={cn("nsm__cta", cta.src && "nsm__cta--image")}
+                data-el="cta"
                 aria-label={cta.alt || cta.label || "Open link"}
                 style={
                   {
@@ -388,6 +393,7 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
                       {section.heading || updateSection ? (
                         <h2
                           className={classFromStyle("nsm__section-title", typo?.sectionTitle, headingStyle)}
+                          data-el={`section-${i}-heading`}
                           style={elementStyle(headingStyle)}
                         >
                           {updateSection ? (
@@ -398,6 +404,7 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
                       {section.body || updateSection ? (
                         <div
                           className={classFromStyle("nsm__body-text", typo?.bodyText, bodyStyle)}
+                          data-el={`section-${i}-body`}
                           style={elementStyle(bodyStyle)}
                         >
                           {updateSection ? (
@@ -412,7 +419,7 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
           </div>
 
           <div className="nsm__image-col">
-            <div className={imageFrameClass}>
+            <div className={imageFrameClass} data-el="image">
               {clipTarget === "image" ? renderClip(clip) : null}
 
               {image?.src ? (

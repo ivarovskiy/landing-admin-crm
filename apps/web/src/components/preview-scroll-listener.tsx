@@ -75,7 +75,12 @@ export function PreviewScrollListener() {
 
     /* ---- Click handler: select block or element ---- */
     function handleClick(e: MouseEvent) {
-      const target = e.target as HTMLElement;
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      if (!target) return;
+
+      if (target.closest("[data-tiptap], [data-tt-toolbar]")) {
+        return;
+      }
 
       // Check if an element with data-el was clicked (inside a block)
       const elTarget = target.closest<HTMLElement>("[data-el]");
