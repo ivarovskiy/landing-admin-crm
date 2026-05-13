@@ -623,7 +623,7 @@ export function HeroSliderV1({
                     isDragging={!!drag.current?.moved}
                     slideIndex={realIndex}
                     editMode={editMode && !isClone && realIndex === active}
-                    dragMode={options?.enableCanvasDrag === true}
+                    dragMode={options?.enableCanvasDrag !== false}
                     onSlideChange={(nextSlide) => updateSlide(rawSlideIndex, nextSlide)}
                     showGuides={showGuides}
                     showElementGuides={showElementGuides}
@@ -1369,50 +1369,59 @@ function useSlideElementEditor(
         e.stopPropagation();
         const dx = (e.clientX - d.startX) / d.scale;
         const dy = (e.clientY - d.startY) / d.scale;
+        // newTx/newTy = final transform offset (includes any existing x/y value)
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
         const style = getSlideElementStyle(slide, key) ?? {};
-        // Fold x/y back into ml/mt so the right panel shows the real position after drag
+        const oldMl = parseFloat(style.ml ?? "0") || 0;
         const oldMt = parseFloat(style.mt ?? "0") || 0;
-        const precedingMt = getPrecedingMt(slide, key);
-        const newMl = newTx !== 0 ? `${newTx}px` : undefined;
-        const newMtVal = Math.round(newTy - precedingMt);
-        const newMt = newMtVal !== 0 ? `${newMtVal}px` : undefined;
-        const deltaMt = newMtVal - oldMt;
+        // Fold startTx (existing x) into ml, add drag delta; same for mt
+        const newMlVal = oldMl + newTx;
+        const newMtVal = oldMt + newTy;
+        const deltaMt = newMtVal - oldMt; // = startTy + dy
 
         if (d.groupStarts && d.groupStarts.size > 0) {
-          // Desired absolute Y and X for every group element (dragged key + members)
-          const desiredY = new Map<string, number>([[key, newTy]]);
-          const desiredX = new Map<string, number>([[key, newTx]]);
-          d.groupStarts.forEach(({ tx: mtx, ty: mty }, memberKey) => {
-            desiredY.set(memberKey, mty + dy);
-            desiredX.set(memberKey, mtx + dx);
-          });
-          const allGroupKeys = new Set(desiredY.keys());
-
-          // Single pass in ordered-list order: position group elements at desired Y,
-          // compensate non-group elements to keep their absolute visual position.
+          // Delta-based group drag: each member moves by the same visual delta.
+          // Members BEFORE the primary key in flow order: add full mt delta.
+          // Members AFTER: flow cascade from primary already carries them down;
+          // only fold their own x into ml and add dx.
+          const orderedKeys = buildSlideOrderedKeys(slide);
+          const allGroupKeys = new Set([key, ...d.groupStarts.keys()]);
           let updated = slide;
-          for (const k of buildSlideOrderedKeys(slide)) {
-            const ms = getSlideElementStyle(updated, k) ?? {} as ElementStyle;
-            const kPrecedingMt = getPrecedingMt(updated, k);
-            if (allGroupKeys.has(k)) {
-              const kNewTx = Math.round(desiredX.get(k)!);
-              const kNewMtVal = Math.round(desiredY.get(k)! - kPrecedingMt);
+          let primaryApplied = false;
+          for (const k of orderedKeys) {
+            if (!allGroupKeys.has(k)) continue;
+            const ms = getSlideElementStyle(slide, k) ?? {};
+            const mOldMl = parseFloat(ms.ml ?? "0") || 0;
+            const mOldMt = parseFloat(ms.mt ?? "0") || 0;
+            if (k === key) {
+              primaryApplied = true;
               updated = setSlideElementStyle(updated, k, {
                 ...ms,
-                ml: kNewTx !== 0 ? `${kNewTx}px` : undefined,
-                mt: kNewMtVal !== 0 ? `${kNewMtVal}px` : undefined,
+                ml: newMlVal !== 0 ? `${newMlVal}px` : undefined,
+                mt: newMtVal !== 0 ? `${newMtVal}px` : undefined,
                 x: undefined, y: undefined,
               });
             } else {
-              const origStyle = getSlideElementStyle(slide, k) ?? {};
-              const oldMt = parseFloat(origStyle.mt ?? "0") || 0;
-              const oldAbsY = oldMt + getPrecedingMt(slide, k);
-              const kNewMtVal = Math.round(oldAbsY - kPrecedingMt);
-              if (kNewMtVal !== oldMt) {
+              const { tx: mTx, ty: mTy } = d.groupStarts!.get(k)!;
+              const newMlM = Math.round(mOldMl + mTx + dx);
+              if (!primaryApplied) {
+                // Before primary: full delta (no cascade yet)
+                const newMtM = Math.round(mOldMt + mTy + dy);
                 updated = setSlideElementStyle(updated, k, {
-                  ...ms, mt: kNewMtVal !== 0 ? `${kNewMtVal}px` : undefined,
+                  ...ms,
+                  ml: newMlM !== 0 ? `${newMlM}px` : undefined,
+                  mt: newMtM !== 0 ? `${newMtM}px` : undefined,
+                  x: undefined, y: undefined,
+                });
+              } else {
+                // After primary: cascade handles Y, just fold x into ml + add dx
+                const newMtM = Math.round(mOldMt + mTy); // fold y only, no extra dy
+                updated = setSlideElementStyle(updated, k, {
+                  ...ms,
+                  ml: newMlM !== 0 ? `${newMlM}px` : undefined,
+                  mt: newMtM !== 0 ? `${newMtM}px` : undefined,
+                  x: undefined, y: undefined,
                 });
               }
             }
@@ -1420,9 +1429,27 @@ function useSlideElementEditor(
           onSlideChange(updated);
         } else {
           let updated = setSlideElementStyle(slide, key, {
-            ...style, ml: newMl, mt: newMt, x: undefined, y: undefined,
+            ...style,
+            ml: newMlVal !== 0 ? `${newMlVal}px` : undefined,
+            mt: newMtVal !== 0 ? `${newMtVal}px` : undefined,
+            x: undefined, y: undefined,
           });
-          updated = preserveVisualPositions(slide, updated, key);
+          // Compensate locked elements below key so they stay in place
+          if (deltaMt !== 0) {
+            let pastKey = false;
+            for (const k of buildSlideOrderedKeys(slide)) {
+              if (k === key) { pastKey = true; continue; }
+              if (!pastKey) continue;
+              const ks = getSlideElementStyle(updated, k);
+              if (!ks?.locked) continue;
+              const kOldMt = parseFloat(ks.mt ?? "0") || 0;
+              const kNewMt = kOldMt - deltaMt;
+              updated = setSlideElementStyle(updated, k, {
+                ...ks,
+                mt: kNewMt !== 0 ? `${kNewMt}px` : undefined,
+              });
+            }
+          }
           onSlideChange(updated);
         }
       },
@@ -1531,16 +1558,32 @@ function useSlideElementEditor(
 
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
+        const oldMl = parseFloat(currentStyle.ml ?? "0") || 0;
         const oldMt = parseFloat(currentStyle.mt ?? "0") || 0;
-        const precedingMt = getPrecedingMt(slide, key);
-        const newMl = newTx !== 0 ? `${newTx}px` : undefined;
-        const newMtVal = Math.round(newTy - precedingMt);
-        const newMt = newMtVal !== 0 ? `${newMtVal}px` : undefined;
+        const newMlVal = oldMl + newTx;
+        const newMtVal = oldMt + newTy;
         const deltaMt = newMtVal - oldMt;
         let updated = setSlideElementStyle(slide, key, {
-          ...currentStyle, ml: newMl, mt: newMt, x: undefined, y: undefined,
+          ...currentStyle,
+          ml: newMlVal !== 0 ? `${newMlVal}px` : undefined,
+          mt: newMtVal !== 0 ? `${newMtVal}px` : undefined,
+          x: undefined, y: undefined,
         });
-        updated = preserveVisualPositions(slide, updated, key);
+        if (deltaMt !== 0) {
+          let pastKey = false;
+          for (const k of buildSlideOrderedKeys(slide)) {
+            if (k === key) { pastKey = true; continue; }
+            if (!pastKey) continue;
+            const ks = getSlideElementStyle(updated, k);
+            if (!ks?.locked) continue;
+            const kOldMt = parseFloat(ks.mt ?? "0") || 0;
+            const kNewMt = kOldMt - deltaMt;
+            updated = setSlideElementStyle(updated, k, {
+              ...ks,
+              mt: kNewMt !== 0 ? `${kNewMt}px` : undefined,
+            });
+          }
+        }
         onSlideChange(updated);
       },
       onPointerCancel: (e) => {
@@ -1579,7 +1622,21 @@ function useSlideElementEditor(
           x: undefined,
           y: undefined,
         });
-        updated = preserveVisualPositions(slide, updated, key);
+        if (deltaMt !== 0) {
+          let pastKey = false;
+          for (const k of buildSlideOrderedKeys(slide)) {
+            if (k === key) { pastKey = true; continue; }
+            if (!pastKey) continue;
+            const ks = getSlideElementStyle(updated, k);
+            if (!ks?.locked) continue;
+            const kOldMt = parseFloat(ks.mt ?? "0") || 0;
+            const kNewMt = kOldMt - deltaMt;
+            updated = setSlideElementStyle(updated, k, {
+              ...ks,
+              mt: kNewMt !== 0 ? `${kNewMt}px` : undefined,
+            });
+          }
+        }
         onSlideChange(updated);
       },
     };
@@ -1639,18 +1696,6 @@ function CopyStack({
     orderedKeys = defaultOrder;
   }
 
-  // In edit mode, each element uses transform instead of CSS margins.
-  // precedingMtByKey[k] = sum of mt of all elements before k — restores the
-  // vertical spacing that CSS margins would have created in normal flow.
-  const precedingMtByKey = new Map<string, number>();
-  if (onSlideChange) {
-    let _pmt = 0;
-    for (const k of orderedKeys) {
-      precedingMtByKey.set(k, _pmt);
-      _pmt += parseFloat(getSlideElementStyle(slide, k)?.mt ?? "0") || 0;
-    }
-  }
-
   function renderElement(key: string) {
     if (key === "kicker" && kicker) {
       const es = mergeElementStyle(slide.kickerStyle, viewportProfile);
@@ -1663,7 +1708,7 @@ function CopyStack({
             key="kicker"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
             data-hs-draggable="kicker"
-            style={dragMode ? absElStyle(es, precedingMtByKey.get(key) ?? 0) : s}
+            style={s}
             data-el={`slide-${slideIndex}-kicker`}
           >
             {!isLocked && dragMode && <DragHandle {...dragHandleProps("kicker")} />}
@@ -1691,7 +1736,7 @@ function CopyStack({
               key="title"
               className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
               data-hs-draggable="title"
-              style={dragMode ? absElStyle(titleEs, precedingMtByKey.get(key) ?? 0) : titleStyle}
+              style={titleStyle}
             >
               {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
               <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} shadowContent={renderRichText(title)}>
@@ -1705,7 +1750,7 @@ function CopyStack({
             key="title"
             className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
             data-hs-draggable="title"
-            style={dragMode ? absElStyle(titleEs, precedingMtByKey.get(key) ?? 0) : titleStyle}
+            style={titleStyle}
           >
             {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
             <p className={titleClass} data-el={`slide-${slideIndex}-title`}>
@@ -1738,7 +1783,7 @@ function CopyStack({
             key="subtitle"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
             data-hs-draggable="subtitle"
-            style={dragMode ? absElStyle(es, precedingMtByKey.get(key) ?? 0) : s}
+            style={s}
             data-el={`slide-${slideIndex}-subtitle`}
           >
             {!isLocked && dragMode && <DragHandle {...dragHandleProps("subtitle")} />}
@@ -1763,7 +1808,7 @@ function CopyStack({
             key="body"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
             data-hs-draggable="body"
-            style={dragMode ? absElStyle(es, precedingMtByKey.get(key) ?? 0) : s}
+            style={s}
             data-el={`slide-${slideIndex}-body`}
           >
             {!isLocked && dragMode && <DragHandle {...dragHandleProps("body")} />}
@@ -1789,7 +1834,7 @@ function CopyStack({
             key="quote"
             className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls)}
             data-hs-draggable="quote"
-            style={dragMode ? absElStyle(es, precedingMtByKey.get(key) ?? 0) : s}
+            style={s}
             data-el={`slide-${slideIndex}-quote`}
           >
             {!isLocked && dragMode && <DragHandle {...dragHandleProps("quote")} />}
@@ -1818,7 +1863,6 @@ function CopyStack({
           dragMode={dragMode}
           slide={onSlideChange ? slide : undefined}
           onSlideChange={onSlideChange}
-          precedingMt={onSlideChange ? (precedingMtByKey.get(key) ?? 0) : 0}
         />
       );
     }
@@ -1844,7 +1888,6 @@ function ExtraElement({
   dragMode = true,
   slide,
   onSlideChange,
-  precedingMt = 0,
 }: {
   extra: SlideExtra;
   slideIndex: number;
@@ -1855,7 +1898,6 @@ function ExtraElement({
   dragMode?: boolean;
   slide?: Slide;
   onSlideChange?: (next: Slide) => void;
-  precedingMt?: number;
 }) {
   const resolvedStyle = mergeElementStyle(extra.style, viewportProfile);
   const style = elStyle(resolvedStyle);
@@ -1879,7 +1921,7 @@ function ExtraElement({
         <div
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
           data-hs-draggable={extraKey}
-          style={dragMode ? absElStyle(resolvedStyle, precedingMt) : style}
+          style={style}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} shadowContent={renderRichText(extra.text)}>
@@ -1906,7 +1948,7 @@ function ExtraElement({
         <div
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
           data-hs-draggable={extraKey}
-          style={dragMode ? absElStyle(resolvedStyle, precedingMt) : style}
+          style={style}
           data-el={slotId}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
@@ -1934,7 +1976,7 @@ function ExtraElement({
         <div
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
           data-hs-draggable={extraKey}
-          style={dragMode ? absElStyle(resolvedStyle, precedingMt) : style}
+          style={style}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} shadowContent={renderRichText(extra.text)}>
@@ -1961,7 +2003,7 @@ function ExtraElement({
       <div
         className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls)}
         data-hs-draggable={extraKey}
-        style={dragMode ? absElStyle(resolvedStyle, precedingMt) : style}
+        style={style}
         data-el={slotId}
       >
         {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}

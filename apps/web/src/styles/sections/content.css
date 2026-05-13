@@ -553,6 +553,7 @@
 
 .cp__entry:first-child {
   padding-top: 0;
+  padding-bottom: var(--cp-entry-gap, 0px);
 }
 
 .cp__entry + .cp__entry {
