@@ -551,6 +551,10 @@
   padding-block: var(--cp-entry-gap, 0px);
 }
 
+.cp__entry:first-child {
+  padding-top: 0;
+}
+
 .cp__entry + .cp__entry {
   /* border-top: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent); */
 }
