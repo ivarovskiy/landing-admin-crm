@@ -1078,7 +1078,7 @@ export function ContentPageV1({
                       data-el="title"
                       style={elementStyle(titleStrokeW, titleMaxW)}
                     >
-                      {title}
+                      {renderRichText(title ?? "")}
                     </OutlineStampText>
                   )}
                 </div>

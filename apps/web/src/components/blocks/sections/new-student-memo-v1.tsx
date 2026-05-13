@@ -1,6 +1,8 @@
+"use client";
+
 import type React from "react";
 import { cn } from "@/lib/cn";
-import { renderRichText } from "@/components/rich-text";
+import { TipTapInline, renderRichText } from "@/components/rich-text";
 import {
   OutlineStampText,
   STAMP_HERO_TITLE,
@@ -253,7 +255,7 @@ function mergeStyle(base?: MemoElementStyle, override?: MemoElementStyle) {
   return override ? { ...(base ?? {}), ...override } : base;
 }
 
-export function NewStudentMemoV1({ data }: { data: any }) {
+export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; editMode?: boolean; onChange?: (next: any) => void }) {
   const kicker = data?.kicker ?? "";
   const title = data?.title ?? "";
   const subtitle = data?.subtitle ?? "";
@@ -262,6 +264,17 @@ export function NewStudentMemoV1({ data }: { data: any }) {
   const typo = data?.typo as NsmTypo | undefined;
   const sections: NsmSection[] = Array.isArray(data?.sections) ? data.sections : [];
   const contentBox = isRecord(data?.contentBox) ? data.contentBox : {};
+
+  const updateField = editMode && onChange
+    ? (field: string, value: unknown) => onChange({ ...data, [field]: value })
+    : null;
+
+  const updateSection = editMode && onChange
+    ? (i: number, field: string, value: string) => {
+        const next = sections.map((s, idx) => idx === i ? { ...s, [field]: value } : s);
+        onChange({ ...data, sections: next });
+      }
+    : null;
   const cta = data?.cta as {
     label?: string;
     href?: string;
@@ -291,39 +304,48 @@ export function NewStudentMemoV1({ data }: { data: any }) {
         <header className="nsm__header">
           <div className="nsm__title-row">
             <div className="nsm__title-copy">
-              {kicker ? (
+              {kicker || updateField ? (
                 <div
                   className={classFromStyle("nsm__kicker", typo?.kicker, data?.kickerStyle)}
                   style={elementStyle(data?.kickerStyle)}
                 >
-                  {renderRichText(kicker)}
+                  {updateField ? (
+                    <TipTapInline value={kicker} onChange={(html) => updateField("kicker", html)} multiline={false} />
+                  ) : renderRichText(kicker)}
                 </div>
               ) : null}
-              {title ? (
+              {title || updateField ? (
                 isTitleStamp ? (
                   <OutlineStampText
                     as="h1"
                     stamp={stampForTypo(titleTypo)}
                     className={classFromStyle("nsm__title", typo?.title, data?.titleStyle)}
                     style={elementStyle(data?.titleStyle)}
+                    shadowContent={renderRichText(title)}
                   >
-                    {renderRichText(title)}
+                    {updateField ? (
+                      <TipTapInline value={title} onChange={(html) => updateField("title", html)} />
+                    ) : renderRichText(title)}
                   </OutlineStampText>
                 ) : (
                   <h1
                     className={classFromStyle("nsm__title", typo?.title, data?.titleStyle)}
                     style={elementStyle(data?.titleStyle)}
                   >
-                    {renderRichText(title)}
+                    {updateField ? (
+                      <TipTapInline value={title} onChange={(html) => updateField("title", html)} />
+                    ) : renderRichText(title)}
                   </h1>
                 )
               ) : null}
-              {subtitle ? (
+              {subtitle || updateField ? (
                 <div
                   className={classFromStyle("typo-subtitle", typo?.subtitle, data?.subtitleStyle)}
                   style={elementStyle(data?.subtitleStyle)}
                 >
-                  {renderRichText(subtitle)}
+                  {updateField ? (
+                    <TipTapInline value={subtitle} onChange={(html) => updateField("subtitle", html)} />
+                  ) : renderRichText(subtitle)}
                 </div>
               ) : null}
             </div>
@@ -363,20 +385,24 @@ export function NewStudentMemoV1({ data }: { data: any }) {
 
                   return (
                     <section key={i} className="nsm__section" style={elementStyle(section.sectionStyle)}>
-                      {section.heading ? (
+                      {section.heading || updateSection ? (
                         <h2
                           className={classFromStyle("nsm__section-title", typo?.sectionTitle, headingStyle)}
                           style={elementStyle(headingStyle)}
                         >
-                          {renderRichText(section.heading)}
+                          {updateSection ? (
+                            <TipTapInline value={section.heading ?? ""} onChange={(html) => updateSection(i, "heading", html)} multiline={false} />
+                          ) : renderRichText(section.heading ?? "")}
                         </h2>
                       ) : null}
-                      {section.body ? (
+                      {section.body || updateSection ? (
                         <div
                           className={classFromStyle("nsm__body-text", typo?.bodyText, bodyStyle)}
                           style={elementStyle(bodyStyle)}
                         >
-                          {renderRichText(section.body)}
+                          {updateSection ? (
+                            <TipTapInline value={section.body ?? ""} onChange={(html) => updateSection(i, "body", html)} />
+                          ) : renderRichText(section.body ?? "")}
                         </div>
                       ) : null}
                     </section>

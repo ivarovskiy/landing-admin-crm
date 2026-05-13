@@ -679,7 +679,8 @@ export function TipTapInline({
 export function renderRichText(value: string): React.ReactNode {
   if (!value) return null;
   if (value.trimStart().startsWith("<")) {
-    return <span dangerouslySetInnerHTML={{ __html: value }} />;
+    const html = value.replace(/<p><\/p>/g, "<p><br></p>");
+    return <span dangerouslySetInnerHTML={{ __html: html }} />;
   }
   return <>{value.split("\n\n").map((p, i) => <p key={i}>{p}</p>)}</>;
 }

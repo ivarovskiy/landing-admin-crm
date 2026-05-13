@@ -4,7 +4,6 @@ import React, { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } f
 import { Container, Hairline, Kicker, OutlineStampText, STAMP_TITLE, STAMP_SECTION_TITLE, STAMP_SUBTITLE } from "@/components/landing/ui";
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
-import { InlineText } from "./inline-icons";
 import { TipTapInline, renderRichText } from "@/components/rich-text";
 import { TYPO_PRESETS } from "@/lib/typo-presets";
 
@@ -202,8 +201,8 @@ function useHeroViewportProfile(): HeroViewportProfileKey | null {
 }
 
 /** Convert ElementStyle to inline CSS for edit-mode wrappers.
- *  Uses position:absolute so content height changes (e.g. typing Enter in TipTap)
- *  don't push siblings. Positioned relative to .hero-slide__copy-main (position:relative). */
+ *  Keeps elements in normal flow (position:relative) so initial layout is preserved,
+ *  but folds ml/mt/x/y into a single transform — margin changes don't push siblings. */
 function absElStyle(es?: ElementStyle, precedingMt = 0): React.CSSProperties {
   const mlPx = parseFloat(resolveDesignViewportUnits(es?.ml) ?? "0") || 0;
   const mtPx = parseFloat(resolveDesignViewportUnits(es?.mt) ?? "0") || 0;
@@ -213,10 +212,13 @@ function absElStyle(es?: ElementStyle, precedingMt = 0): React.CSSProperties {
   const ty = mtPx + yPx + precedingMt;
   const s: Record<string, string> = {};
   if (tx !== 0 || ty !== 0) s.transform = `translate(${tx}px, ${ty}px)`;
-  if (es?.align) s.textAlign = es.align;
+  if (es?.align) {
+    s.textAlign = es.align;
+    s.alignSelf = es.align === "center" ? "center" : es.align === "right" ? "flex-end" : "flex-start";
+  }
   if (es?.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
   if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
-  return { position: "absolute", top: 0, left: 0, width: "100%", ...s } as React.CSSProperties;
+  return { position: "relative", ...s } as React.CSSProperties;
 }
 
 /** Convert ElementStyle to inline CSS */
@@ -1596,26 +1598,6 @@ function CopyStack({
   dragMode?: boolean;
   onSlideChange?: (next: Slide) => void;
 }) {
-  const copyMainRef = useRef<HTMLDivElement>(null);
-  const [elemHeights, setElemHeights] = useState<Map<string, number>>(() => new Map());
-
-  // After every render in edit mode, measure each element's rendered height so
-  // precedingMtByKey stays accurate even when TipTap content grows (e.g. Enter key).
-  // useLayoutEffect runs synchronously before paint → no visible layout flash.
-  useLayoutEffect(() => {
-    if (!onSlideChange || !copyMainRef.current) return;
-    const next = new Map<string, number>();
-    copyMainRef.current.querySelectorAll<HTMLElement>("[data-hs-draggable]").forEach(el => {
-      const k = el.dataset.hsDraggable;
-      if (k) next.set(k, el.offsetHeight);
-    });
-    setElemHeights(prev => {
-      let changed = next.size !== prev.size;
-      if (!changed) next.forEach((h, k) => { if (prev.get(k) !== h) changed = true; });
-      return changed ? next : prev;
-    });
-  });
-
   const kicker = slide?.kicker;
   const quote = slide?.quote;
   const title = slide?.title ?? "";
@@ -1648,17 +1630,15 @@ function CopyStack({
     orderedKeys = defaultOrder;
   }
 
-  // In edit mode, elements are position:absolute — precedingMtByKey encodes the
-  // cumulative offset (sum of preceding mts + rendered heights) so each element
-  // appears at the same visual Y as it would in normal CSS flow with margins.
+  // In edit mode, each element uses transform instead of CSS margins.
+  // precedingMtByKey[k] = sum of mt of all elements before k — restores the
+  // vertical spacing that CSS margins would have created in normal flow.
   const precedingMtByKey = new Map<string, number>();
   if (onSlideChange) {
     let _pmt = 0;
     for (const k of orderedKeys) {
       precedingMtByKey.set(k, _pmt);
-      const mt = parseFloat(getSlideElementStyle(slide, k)?.mt ?? "0") || 0;
-      const h = elemHeights.get(k) ?? 0;
-      _pmt += mt + h;
+      _pmt += parseFloat(getSlideElementStyle(slide, k)?.mt ?? "0") || 0;
     }
   }
 
@@ -1728,13 +1708,13 @@ function CopyStack({
       if (isTitleStamp) {
         return (
           <OutlineStampText key="title" {...editableProps("title", titleClass)} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={titleStyle}>
-            <InlineText text={title} />
+            {renderRichText(title)}
           </OutlineStampText>
         );
       }
       return (
         <p key="title" {...editableProps("title", titleClass)} data-el={`slide-${slideIndex}-title`} style={titleStyle}>
-          <InlineText text={title} />
+          {renderRichText(title)}
         </p>
       );
     }
@@ -1810,7 +1790,7 @@ function CopyStack({
       }
       return (
         <p key="quote" {...editableProps("quote", cls)} style={s} data-el={`slide-${slideIndex}-quote`}>
-          <InlineText text={quote} />
+          {renderRichText(quote)}
         </p>
       );
     }
@@ -1838,7 +1818,7 @@ function CopyStack({
 
   return (
     <div className={cn("hero-slide__copy", spread && "hero-slide__copy--spread")}>
-      <div ref={copyMainRef} className="hero-slide__copy-main">
+      <div className="hero-slide__copy-main">
         {orderedKeys.map(key => renderElement(key))}
       </div>
     </div>
@@ -1906,7 +1886,7 @@ function ExtraElement({
         stamp={stampForTypo(typo)}
         style={style}
       >
-        <InlineText text={extra.text} />
+        {renderRichText(extra.text)}
       </OutlineStampText>
     );
   }
@@ -1931,7 +1911,7 @@ function ExtraElement({
         style={style}
         data-el={slotId}
       >
-        <Kicker><InlineText text={extra.text} /></Kicker>
+        <Kicker>{renderRichText(extra.text)}</Kicker>
       </div>
     );
   }
@@ -1961,7 +1941,7 @@ function ExtraElement({
         stamp={stampForTypo(typo)}
         style={style}
       >
-        <InlineText text={extra.text} />
+        {renderRichText(extra.text)}
       </OutlineStampText>
     );
   }
@@ -1986,7 +1966,7 @@ function ExtraElement({
       style={style}
       data-el={slotId}
     >
-      <InlineText text={extra.text} />
+      {renderRichText(extra.text)}
     </p>
   );
 }
@@ -1996,7 +1976,7 @@ function SlideKicker({
 }: {
   text: string;
 }) {
-  return <p className="hero-slide__kicker"><InlineText text={text} /></p>;
+  return <p className="hero-slide__kicker">{renderRichText(text)}</p>;
 }
 
 function SlideSubtitle({
@@ -2022,7 +2002,7 @@ function SlideSubtitle({
 
   return (
     <p className="hero-slide__subtitle" data-el={slotId}>
-      <InlineText text={text} />
+      {renderRichText(text)}
     </p>
   );
 }
@@ -2034,31 +2014,10 @@ function SlideBody({
   text: string;
   variant?: BodyVariant;
 }) {
-  if (variant === "list") {
-    return (
-      <div className="hero-slide__body hero-slide__body--list">
-        {text
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean)
-          .map((line, idx) => (
-            <div key={idx}><InlineText text={line} /></div>
-          ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="hero-slide__body hero-slide__body--plain">
-      {text
-        .split("\n\n")
-        .map((part) => part.trim())
-        .filter(Boolean)
-        .map((part, idx) => (
-          <p key={idx}><InlineText text={part} /></p>
-        ))}
-    </div>
-  );
+  const cls = variant === "list"
+    ? "hero-slide__body hero-slide__body--list"
+    : "hero-slide__body hero-slide__body--plain";
+  return <div className={cls}>{renderRichText(text)}</div>;
 }
 
 function MediaFrame({
