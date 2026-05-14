@@ -64,7 +64,7 @@ export class PagesService {
         orderBy: { updatedAt: "desc" },
         include: {
           _count: { select: { blocks: true } },
-          blocks: { select: { updatedAt: true }, orderBy: { updatedAt: "desc" }, take: 1 },
+          blocks: { select: { updatedAt: true, type: true, variant: true }, orderBy: { order: "asc" }, take: 1 },
         },
         skip,
         take,
@@ -84,6 +84,9 @@ export class PagesService {
         contentUpdatedAt: p.blocks[0]?.updatedAt ?? p.createdAt,
         publishedAt: p.publishedAt ?? null,
         blocksCount: p._count.blocks,
+        primaryBlock: p.blocks[0]
+          ? { type: p.blocks[0].type, variant: p.blocks[0].variant }
+          : null,
       })),
       total,
     };
