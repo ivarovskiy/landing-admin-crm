@@ -808,7 +808,7 @@ function StyleGuidelineOverlay({
   // DOMRect.bottom is exclusive (first px after image), so subtract 1 to land on the last image row.
   if (config.showPhotoEdges !== false && mediaRect) {
     lines.push({ key: "pe-t", label: lbl(), type: "horizontal",
-      pos: `${Math.round(mediaRect.top)}px`,        color: SG_COLORS.photoEdge, group: "photo-edge" });
+      pos: `${Math.round(mediaRect.top) + 1}px`,    color: SG_COLORS.photoEdge, group: "photo-edge" });
     lines.push({ key: "pe-b", label: lbl(), type: "horizontal",
       pos: `${Math.round(mediaRect.bottom) - 1}px`, color: SG_COLORS.photoEdge, group: "photo-edge" });
   }
