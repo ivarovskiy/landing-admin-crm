@@ -40,7 +40,8 @@
       "Bash(node -e \"const lucide = require\\('./node_modules/.pnpm/lucide-react@0.575.0_react@19.2.3/node_modules/lucide-react/dist/cjs/lucide-react.js'\\); console.log\\('ScissorsLineDashed' in lucide, 'Scissors' in lucide, 'Split' in lucide\\)\")",
       "Bash(npx vitest *)",
       "Bash(pnpm typecheck *)",
-      "Bash(npx jest *)"
+      "Bash(npx jest *)",
+      "Bash(pnpm -C apps/web typecheck)"
     ],
     "additionalDirectories": [
       "c:\\Users\\ThinkPad\\.claude\\projects\\c--Users-ThinkPad-Desktop-Work-landing-admin-crm\\memory"

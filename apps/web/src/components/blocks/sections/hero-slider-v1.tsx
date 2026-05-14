@@ -120,11 +120,37 @@ type ClassicGridSettings = {
   color?: string;
 };
 
+type StyleExtraGuideline = {
+  id: string;
+  label?: string;
+  type: "vertical" | "horizontal";
+  position: number;
+  positionUnit?: "px" | "percent";
+  fromEdge?: "right" | "bottom";
+  pairId?: string;
+  visible?: boolean;
+};
+
+type StyleGuidelinesConfig = {
+  showBoundaries?: boolean;
+  showPhotoMargins?: boolean;
+  photoMarginLeft?: number;
+  photoMarginRight?: number;
+  showPhotoInnerOffsets?: boolean;
+  photoInnerOffsetLeft?: number;
+  photoInnerOffsetRight?: number;
+  showPhotoEdges?: boolean;
+  showItalicLimit?: boolean;
+  italicLimitOffset?: number;
+  extras?: StyleExtraGuideline[];
+};
+
 type CanvasGuidelines = {
   gapOffset?: number;            // px from top in design canvas (574px total)
   baselineOffset?: number;       // px from bottom in design canvas
   italicBaselineOffset?: number; // px from bottom in design canvas
   classicGrid?: ClassicGridSettings;
+  styleGuidelines?: StyleGuidelinesConfig;
 };
 
 /** Design canvas height used in the admin mini-canvas — offsets are relative to this. */
@@ -384,6 +410,7 @@ export function HeroSliderV1({
   const compositionGuideColor = options?.compositionGuideColor as string | undefined;
   const showLayoutGuides = options?.showLayoutGuides === true;
   const layoutGuideBottomOffset = options?.layoutGuideBottomOffset as string | undefined;
+  const showStyleGuides = options?.showStyleGuides === true;
   const viewportProfile = useHeroViewportProfile();
 
   // Real slide currently displayed (for dots / aria / live preview)
@@ -632,6 +659,7 @@ export function HeroSliderV1({
                     compositionGuideColor={compositionGuideColor}
                     showLayoutGuides={showLayoutGuides}
                     layoutGuideBottomOffset={layoutGuideBottomOffset}
+                    showStyleGuides={showStyleGuides}
                     canvasGuidelines={canvasGuidelines}
                     viewportProfile={viewportProfile}
                   />
@@ -684,6 +712,165 @@ export function HeroSliderV1({
   );
 }
 
+// ─── Stylistic guideline overlay ──────────────────────────────────────────────
+// Renders design-helper lines for layout review. pointer-events: none so drag
+// and text editing are never blocked.
+
+type MediaRect = {
+  left: number; right: number; top: number; bottom: number;
+  height: number; stretchTop: number; stretchBottom: number;
+};
+
+type GuideLineDef = {
+  key: string;
+  label: string;
+  type: "vertical" | "horizontal";
+  pos: string; // CSS value: "80px" or "55.56%"
+  color: string;
+  group: string;
+};
+
+const SG_COLORS = {
+  boundary:    "rgba(239, 68, 68, 0.9)",   // 🔴 slide edges
+  photoMargin: "rgba(59, 130, 246, 0.9)",  // 🔵 photo placement margins
+  photoInner:  "rgba(16, 185, 129, 0.9)",  // 🟢 inner offsets from photo bounds
+  photoEdge:   "rgba(139, 92, 246, 0.9)",  // 🟣 photo top/bottom continuation
+  italic:      "rgba(245, 158, 11, 0.9)",  // 🟡 italic lower limit
+  extra:       "rgba(100, 116, 139, 0.85)",// ⚫ style extras
+} as const;
+
+function StyleGuidelineOverlay({
+  config,
+  mediaRect,
+  italicFallbackOffset,
+}: {
+  config: StyleGuidelinesConfig;
+  mediaRect: MediaRect | null;
+  italicFallbackOffset?: number;
+}) {
+  const lines: GuideLineDef[] = [];
+  let labelIdx = 1;
+  const lbl = () => {
+    const CIRCLES = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩","⑪","⑫","⑬","⑭","⑮"];
+    return CIRCLES[(labelIdx++ - 1) % CIRCLES.length];
+  };
+
+  // Group 1 — Slide boundaries (always 0% and 100%)
+  if (config.showBoundaries !== false) {
+    lines.push({ key: "sb-l", label: lbl(), type: "vertical", pos: "0%",   color: SG_COLORS.boundary,    group: "slide-boundary" });
+    lines.push({ key: "sb-r", label: lbl(), type: "vertical", pos: "100%", color: SG_COLORS.boundary,    group: "slide-boundary" });
+  }
+
+  // Group 2 — Photo placement margins (design-canvas px → percent of 1440)
+  if (config.showPhotoMargins !== false) {
+    if (config.photoMarginLeft != null) {
+      lines.push({ key: "pm-l", label: lbl(), type: "vertical",
+        pos: `${(config.photoMarginLeft / DESIGN_WIDTH_PX) * 100}%`,
+        color: SG_COLORS.photoMargin, group: "photo-margin" });
+    }
+    if (config.photoMarginRight != null) {
+      lines.push({ key: "pm-r", label: lbl(), type: "vertical",
+        pos: `${((DESIGN_WIDTH_PX - config.photoMarginRight) / DESIGN_WIDTH_PX) * 100}%`,
+        color: SG_COLORS.photoMargin, group: "photo-margin" });
+    }
+  }
+
+  // Group 3 — Inner offsets from measured photo boundaries (layout px)
+  if (config.showPhotoInnerOffsets !== false && mediaRect) {
+    const iol = config.photoInnerOffsetLeft ?? 0;
+    const ior = config.photoInnerOffsetRight ?? 0;
+    if (iol > 0) {
+      lines.push({ key: "pi-l", label: lbl(), type: "vertical",
+        pos: `${mediaRect.left + iol}px`,
+        color: SG_COLORS.photoInner, group: "photo-inner" });
+    }
+    if (ior > 0) {
+      lines.push({ key: "pi-r", label: lbl(), type: "vertical",
+        pos: `${mediaRect.right - ior}px`,
+        color: SG_COLORS.photoInner, group: "photo-inner" });
+    }
+  }
+
+  // Group 4 — Photo top/bottom horizontal continuation (layout px)
+  if (config.showPhotoEdges !== false && mediaRect) {
+    lines.push({ key: "pe-t", label: lbl(), type: "horizontal",
+      pos: `${mediaRect.top}px`,    color: SG_COLORS.photoEdge, group: "photo-edge" });
+    lines.push({ key: "pe-b", label: lbl(), type: "horizontal",
+      pos: `${mediaRect.bottom}px`, color: SG_COLORS.photoEdge, group: "photo-edge" });
+  }
+
+  // Group 5 — Italic lower-limit line (design-canvas px from bottom → %)
+  if (config.showItalicLimit !== false) {
+    const offset = config.italicLimitOffset ?? italicFallbackOffset;
+    if (offset != null && offset > 0) {
+      lines.push({ key: "italic", label: lbl(), type: "horizontal",
+        pos: `${((DESIGN_CANVAS_H - offset) / DESIGN_CANVAS_H) * 100}%`,
+        color: SG_COLORS.italic, group: "italic-limit" });
+    }
+  }
+
+  // Group 6 — Style extras
+  (config.extras ?? []).forEach((ex, idx) => {
+    if (ex.visible === false) return;
+    let pos: string;
+    const unit = ex.positionUnit ?? "px";
+    if (unit === "percent") {
+      const pct = ex.fromEdge === "right" || ex.fromEdge === "bottom"
+        ? 100 - ex.position : ex.position;
+      pos = `${pct}%`;
+    } else {
+      // design-canvas px
+      if (ex.type === "vertical") {
+        const pct = ex.fromEdge === "right"
+          ? ((DESIGN_WIDTH_PX - ex.position) / DESIGN_WIDTH_PX) * 100
+          : (ex.position / DESIGN_WIDTH_PX) * 100;
+        pos = `${pct}%`;
+      } else {
+        const pct = ex.fromEdge === "bottom"
+          ? ((DESIGN_CANVAS_H - ex.position) / DESIGN_CANVAS_H) * 100
+          : (ex.position / DESIGN_CANVAS_H) * 100;
+        pos = `${pct}%`;
+      }
+    }
+    lines.push({
+      key: `ex-${ex.id ?? idx}`,
+      label: ex.label ?? lbl(),
+      type: ex.type,
+      pos,
+      color: SG_COLORS.extra,
+      group: "style-extra",
+    });
+  });
+
+  if (lines.length === 0) return null;
+
+  return (
+    <div className="hero-slide__guides" aria-hidden="true" data-sg="1">
+      {lines.map((line) =>
+        line.type === "vertical" ? (
+          <div
+            key={line.key}
+            className="hero-slide__guide hero-slide__guide--vertical hero-slide__guide--style"
+            style={{ left: line.pos, "--sg-color": line.color } as React.CSSProperties}
+            data-sg-group={line.group}
+          >
+            <span className="hero-slide__guide-label">{line.label}</span>
+          </div>
+        ) : (
+          <div
+            key={line.key}
+            className="hero-slide__guide hero-slide__guide--horizontal hero-slide__guide--style"
+            style={{ top: line.pos, "--sg-color": line.color } as React.CSSProperties}
+            data-sg-group={line.group}
+          >
+            <span className="hero-slide__guide-label hero-slide__guide-label--h">{line.label}</span>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
 function HeroSlide({
   slide,
   isDragging,
@@ -697,6 +884,7 @@ function HeroSlide({
   compositionGuideColor,
   showLayoutGuides = false,
   layoutGuideBottomOffset,
+  showStyleGuides = false,
   canvasGuidelines,
   viewportProfile,
 }: {
@@ -712,6 +900,7 @@ function HeroSlide({
   compositionGuideColor?: string;
   showLayoutGuides?: boolean;
   layoutGuideBottomOffset?: string;
+  showStyleGuides?: boolean;
   canvasGuidelines?: CanvasGuidelines;
   viewportProfile?: HeroViewportProfileKey | null;
 }) {
@@ -720,19 +909,6 @@ function HeroSlide({
   const stretchToMedia = !!slide?.stretchTextToMedia;
   const desktopLayout = mergeDesktopLayout(slide, viewportProfile);
   const slideRef = useRef<HTMLDivElement>(null);
-  type MediaRect = {
-    /** Media-box rect relative to the slide root — used for guide-line overlay. */
-    left: number;
-    right: number;
-    top: number;
-    bottom: number;
-    height: number;
-    /** Media-box vertical insets relative to the text-col content box —
-     *  used to align `.hero-slide__copy` padding with the media's actual edges
-     *  (NOT the slide outer edges, which include hero-slide padding). */
-    stretchTop: number;
-    stretchBottom: number;
-  };
   type ElementRect = {
     key: string;
     left: number;
@@ -747,7 +923,7 @@ function HeroSlide({
   type LayoutGuideLines = { gapX?: number; bottomY?: number };
   const [layoutGuideLines, setLayoutGuideLines] = useState<LayoutGuideLines>({});
   // Measurement is needed for guides and for media-aligned text stretching.
-  const measureNeeded = showGuides || showElementGuides || stretchToMedia || showCompositionGuides || showLayoutGuides;
+  const measureNeeded = showGuides || showElementGuides || stretchToMedia || showCompositionGuides || showLayoutGuides || showStyleGuides;
 
   useLayoutEffect(() => {
     if (!measureNeeded) {
@@ -936,7 +1112,7 @@ function HeroSlide({
     mobileImageFirst && "hero-slide--mobile-image-first",
     (desktopLayout.textAlignFullWidth || (editMode && desktopLayout.dragIgnoreGap)) && "hs-text-wide",
     slide?.stretchTextToMedia && "hero-slide--copy-stretch",
-    (showGuides || showElementGuides || showCompositionGuides) && "hero-slide--with-guides"
+    (showGuides || showElementGuides || showCompositionGuides || showStyleGuides) && "hero-slide--with-guides"
   );
 
   // ── Canvas guideline overlay (pure CSS — no DOM measurement needed) ──────────
@@ -1023,6 +1199,14 @@ function HeroSlide({
         />
       )}
     </div>
+  ) : null;
+
+  const styleGuidelineOverlay = showStyleGuides ? (
+    <StyleGuidelineOverlay
+      config={canvasGuidelines?.styleGuidelines ?? {}}
+      mediaRect={mediaRect}
+      italicFallbackOffset={canvasGuidelines?.italicBaselineOffset}
+    />
   ) : null;
 
   const hasMediaGuides = showGuides && mediaRect;
@@ -1152,6 +1336,7 @@ function HeroSlide({
         </div>
         {canvasOverlay}
         {guides}
+        {styleGuidelineOverlay}
       </div>
     );
   }
@@ -1168,6 +1353,7 @@ function HeroSlide({
 
       {canvasOverlay}
       {guides}
+      {styleGuidelineOverlay}
 
       {cta?.href && cta?.enabled !== false ? (
         <a

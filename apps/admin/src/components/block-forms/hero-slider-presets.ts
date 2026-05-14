@@ -65,12 +65,41 @@ export type ClassicGridSettings = {
   color?: string;               // optional CSS color for column/row lines
 };
 
+/** One configurable guideline inside the stylistic overlay. */
+export type StyleExtraGuideline = {
+  id: string;
+  label?: string;
+  type: "vertical" | "horizontal";
+  /** Position value. Interpretation depends on positionUnit + fromEdge. */
+  position: number;
+  positionUnit?: "px" | "percent"; // default "px" (design-canvas px: 1440 wide, 574 tall)
+  fromEdge?: "right" | "bottom";   // measure from right/bottom instead of left/top
+  pairId?: string;                 // share a pairId with another guideline for pair-toggle
+  visible?: boolean;               // false hides the line without deleting it
+};
+
+/** Stylistic guideline system config — stored at block level inside canvasGuidelines. */
+export type StyleGuidelinesConfig = {
+  showBoundaries?: boolean;         // group 1: left/right slide-edge vertical lines
+  showPhotoMargins?: boolean;       // group 2: outer photo placement margin verticals
+  photoMarginLeft?: number;         // px from left slide edge (design-canvas px, 1440 basis)
+  photoMarginRight?: number;        // px from right slide edge (design-canvas px, 1440 basis)
+  showPhotoInnerOffsets?: boolean;  // group 3: inner offsets measured from photo bounds
+  photoInnerOffsetLeft?: number;    // layout px inward from photo left edge
+  photoInnerOffsetRight?: number;   // layout px inward from photo right edge
+  showPhotoEdges?: boolean;         // group 4: horizontal lines at photo top/bottom
+  showItalicLimit?: boolean;        // group 5: italic text lower-limit horizontal line
+  italicLimitOffset?: number;       // px from bottom (design-canvas px, 574 basis); falls back to canvasGuidelines.italicBaselineOffset
+  extras?: StyleExtraGuideline[];   // group 6: up to 4–6 additional named guidelines
+};
+
 /** Canvas guideline offsets stored at block level (shared across all slides) */
 export type CanvasGuidelines = {
   gapOffset?: number;            // px from top — amber dashed line
   baselineOffset?: number;       // px from bottom — purple dashed line
   italicBaselineOffset?: number; // px from bottom — lowest allowed italic design-element guide
   classicGrid?: ClassicGridSettings; // classic configurable design grid
+  styleGuidelines?: StyleGuidelinesConfig; // stylistic layout guideline overlay
 };
 
 export type ElementStyleProfile = Omit<ElementStyle, "viewportProfiles">;

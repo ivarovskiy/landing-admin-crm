@@ -56,6 +56,7 @@ import {
   type BodyVariant,
   type CanvasGuidelines,
   type ClassicGridSettings,
+  type StyleGuidelinesConfig,
   TEMPLATE_OPTIONS,
   PRESET_OPTIONS,
   FIT_OPTIONS,
@@ -400,6 +401,104 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
               </InspectorField>
             </>
           )}
+        </InspectorSection>
+
+        {/* Stylistic guidelines overlay */}
+        <InspectorSection
+          title="Style Guidelines"
+          icon={<Layers className="h-3 w-3" />}
+          defaultOpen={false}
+        >
+          <p className="text-[10px] text-muted-foreground/70 mb-1">
+            Layout helper lines for photo placement, text fields, and italic limits. Color-coded for client review.
+          </p>
+          <InspectorToggle
+            label="Show style guidelines"
+            checked={!!options?.showStyleGuides}
+            onChange={(v) => set(["options", "showStyleGuides"], v || undefined)}
+          />
+          {!!options?.showStyleGuides && (() => {
+            const sg: StyleGuidelinesConfig = canvasGuidelines.styleGuidelines ?? {};
+            const setSg = (path: (string | number)[], v: unknown) =>
+              set(["canvasGuidelines", "styleGuidelines", ...path], v);
+            return (
+              <>
+                <p className="text-[10px] text-muted-foreground/60 mt-1 mb-0.5">
+                  🔴 Boundaries &nbsp;🔵 Photo margins &nbsp;🟢 Inner offsets &nbsp;🟣 Photo edges &nbsp;🟡 Italic limit
+                </p>
+                <InspectorToggle
+                  label="① ② Slide boundaries"
+                  checked={sg.showBoundaries !== false}
+                  onChange={(v) => setSg(["showBoundaries"], v ? undefined : false)}
+                />
+                <InspectorToggle
+                  label="③ ④ Photo margin guides"
+                  checked={sg.showPhotoMargins !== false}
+                  onChange={(v) => setSg(["showPhotoMargins"], v ? undefined : false)}
+                />
+                {sg.showPhotoMargins !== false && (
+                  <div className="grid grid-cols-2 gap-1.5 pl-2">
+                    <InspectorField label="③ Left margin (px)" hint="Design-canvas px from left edge (1440 basis)">
+                      <InspectorNumber
+                        value={sg.photoMarginLeft ?? undefined}
+                        onChange={(v) => setSg(["photoMarginLeft"], v ?? undefined)}
+                        placeholder="e.g. 80"
+                      />
+                    </InspectorField>
+                    <InspectorField label="④ Right margin (px)" hint="Design-canvas px from right edge">
+                      <InspectorNumber
+                        value={sg.photoMarginRight ?? undefined}
+                        onChange={(v) => setSg(["photoMarginRight"], v ?? undefined)}
+                        placeholder="e.g. 80"
+                      />
+                    </InspectorField>
+                  </div>
+                )}
+                <InspectorToggle
+                  label="⑤ ⑥ Photo inner offset guides"
+                  checked={sg.showPhotoInnerOffsets !== false}
+                  onChange={(v) => setSg(["showPhotoInnerOffsets"], v ? undefined : false)}
+                />
+                {sg.showPhotoInnerOffsets !== false && (
+                  <div className="grid grid-cols-2 gap-1.5 pl-2">
+                    <InspectorField label="⑤ Inner offset left (px)" hint="Layout px inward from photo left edge">
+                      <InspectorNumber
+                        value={sg.photoInnerOffsetLeft ?? undefined}
+                        onChange={(v) => setSg(["photoInnerOffsetLeft"], v ?? undefined)}
+                        placeholder="e.g. 40"
+                      />
+                    </InspectorField>
+                    <InspectorField label="⑥ Inner offset right (px)" hint="Layout px inward from photo right edge">
+                      <InspectorNumber
+                        value={sg.photoInnerOffsetRight ?? undefined}
+                        onChange={(v) => setSg(["photoInnerOffsetRight"], v ?? undefined)}
+                        placeholder="e.g. 40"
+                      />
+                    </InspectorField>
+                  </div>
+                )}
+                <InspectorToggle
+                  label="⑦ ⑧ Photo top/bottom edge guides"
+                  checked={sg.showPhotoEdges !== false}
+                  onChange={(v) => setSg(["showPhotoEdges"], v ? undefined : false)}
+                />
+                <InspectorToggle
+                  label="⑨ Italic text lower-limit guide"
+                  checked={sg.showItalicLimit !== false}
+                  onChange={(v) => setSg(["showItalicLimit"], v ? undefined : false)}
+                />
+                {sg.showItalicLimit !== false && (
+                  <InspectorField label="⑨ Italic limit (px from bottom)" hint="Design-canvas px from bottom (574 basis). Falls back to Figma italic baseline if not set.">
+                    <InspectorNumber
+                      value={sg.italicLimitOffset ?? undefined}
+                      onChange={(v) => setSg(["italicLimitOffset"], v ?? undefined)}
+                      placeholder="e.g. 60"
+                    />
+                  </InspectorField>
+                )}
+              </>
+            );
+          })()}
         </InspectorSection>
       </InspectorSection>
 
