@@ -196,7 +196,7 @@ function updateMedia(
   };
 }
 
-export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) {
+export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFormProps) {
   const slides: Slide[] = arr<Slide>(value?.slides);
   const options = value?.options ?? {};
   const canvasGuidelines: CanvasGuidelines = value?.canvasGuidelines ?? {};
@@ -213,6 +213,19 @@ export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) 
 
   const set = (path: (string | number)[], v: unknown) =>
     onChange(updatePath(value, path, v));
+
+  const requestAbsoluteConversion = (slideIndex: number) => {
+    if (blockId) {
+      window.dispatchEvent(new CustomEvent("hero-slider-convert-to-absolute", {
+        detail: { blockId },
+      }));
+      return;
+    }
+    onChange({
+      ...(value ?? {}),
+      slides: setAt(slides, slideIndex, migrateSlideToAbsolute(slides[slideIndex])),
+    });
+  };
 
   return (
     <div>
@@ -424,6 +437,7 @@ export function HeroSliderV1Form({ value, onChange, viewMode }: BlockFormProps) 
               enableCanvasDrag={enableCanvasDrag}
               tuningScope={viewMode === "ipadPro" ? "ipadPro" : "default"}
               canvasGuidelines={canvasGuidelines}
+              onRequestAbsolute={() => requestAbsoluteConversion(idx)}
             />
           ))}
         </div>
@@ -449,6 +463,7 @@ function SlideEditor({
   enableCanvasDrag,
   tuningScope,
   canvasGuidelines,
+  onRequestAbsolute,
 }: {
   slide: Slide;
   index: number;
@@ -460,6 +475,7 @@ function SlideEditor({
   enableCanvasDrag: boolean;
   tuningScope: HeroTuningScope;
   canvasGuidelines: CanvasGuidelines;
+  onRequestAbsolute: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(true);
   const [showCanvas, setShowCanvas] = useState(false);
@@ -550,7 +566,7 @@ function SlideEditor({
               <button
                 type="button"
                 className="w-full rounded-md bg-red-600 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-sm hover:bg-red-700"
-                onClick={() => onChange(migrateSlideToAbsolute(s))}
+                onClick={onRequestAbsolute}
               >
                 Перенести на absolute
               </button>
@@ -577,7 +593,7 @@ function SlideEditor({
             <button
               type="button"
               className="w-full rounded-md bg-red-600 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-sm hover:bg-red-700"
-              onClick={() => onChange(migrateSlideToAbsolute(s))}
+              onClick={onRequestAbsolute}
             >
               Перенести на absolute
             </button>

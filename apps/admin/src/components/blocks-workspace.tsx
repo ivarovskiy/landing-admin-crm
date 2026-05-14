@@ -616,10 +616,31 @@ export function BlocksWorkspace({
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
       if (e.data?.type === "iframe-ready") postLiveEditMode();
+      if (e.data?.type === "hero-slider-absolute-converted") {
+        setBanner({ kind: "success", message: "Slider converted to absolute" });
+      }
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [postLiveEditMode]);
+
+  useEffect(() => {
+    function handleHeroConvert(event: Event) {
+      const blockId = (event as CustomEvent<{ blockId?: string }>).detail?.blockId;
+      if (!blockId) return;
+      try {
+        iframeRef.current?.contentWindow?.postMessage(
+          { type: "hero-slider-convert-to-absolute", blockId },
+          "*",
+        );
+        setBanner({ kind: "success", message: "Measuring slider positions..." });
+      } catch {
+        setBanner({ kind: "error", message: "Preview is not ready" });
+      }
+    }
+    window.addEventListener("hero-slider-convert-to-absolute", handleHeroConvert);
+    return () => window.removeEventListener("hero-slider-convert-to-absolute", handleHeroConvert);
+  }, []);
 
   // Reset iframe height when preview source changes so stale size doesn't flash
   useEffect(() => { setIframeHeight(1200); }, [previewSrc]);

@@ -44,6 +44,7 @@ export type ElementStyle = {
   pb?: string;   // padding-bottom
   x?: string;    // legacy drag offset folded into ml during absolute migration
   y?: string;    // legacy drag offset folded into mt during absolute migration
+  w?: string;    // absolute rendered width captured from the live preview
   align?: "left" | "center" | "right";   // text-align + align-self
   size?: string;  // font-size override
   typo?: TypoClass; // typography class from design system

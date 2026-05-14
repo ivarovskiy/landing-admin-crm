@@ -15,6 +15,7 @@ import { NewStudentMemoV1Form } from "./new-student-memo-v1-form";
 export type PageLite = { id: string; slug: string; parentId?: string | null };
 
 export type BlockFormProps = {
+  blockId?: string;
   value: any;
   onChange: (next: any) => void;
   viewMode: "desktop" | "ipadPro" | "mobile";

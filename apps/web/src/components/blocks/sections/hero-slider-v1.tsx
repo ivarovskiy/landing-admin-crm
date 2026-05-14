@@ -26,6 +26,7 @@ type ElementStyle = {
   pb?: string;
   x?: string;
   y?: string;
+  w?: string;
   align?: "left" | "center" | "right";
   size?: string;
   typo?: string; // typography class from design system
@@ -256,6 +257,7 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.C
   if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
   if (es?.pt) s.paddingTop = resolveDesignViewportUnits(es.pt)!;
   if (es?.pb) s.paddingBottom = resolveDesignViewportUnits(es.pb)!;
+  if (es?.w) s.width = resolveDesignViewportUnits(es.w)!;
   return s as React.CSSProperties;
 }
 
@@ -457,6 +459,46 @@ export function HeroSliderV1({
     const nextSlides = rawSlides.map((slide, index) => index === rawSlideIndex ? nextSlide : slide);
     onChange?.({ ...(data ?? {}), slides: nextSlides });
   };
+
+  useEffect(() => {
+    if (!editMode || !onChange) return;
+    const commitChange = onChange;
+
+    function handleMessage(e: MessageEvent) {
+      if (e.data?.type !== "hero-slider-convert-to-absolute") return;
+      const requestedBlockId = e.data?.blockId;
+      const section = sectionRef.current;
+      const blockEl = section?.closest<HTMLElement>("[data-block-id]");
+      const blockId = blockEl?.dataset.blockId;
+      if (requestedBlockId && blockId && requestedBlockId !== blockId) return;
+      if (!section) return;
+
+      requestAnimationFrame(() => {
+        const nextSlides = rawSlides.map((slide) => slide);
+        let changed = false;
+
+        for (const { slide, index: rawIndex } of visibleSlides) {
+          const realIndex = visibleSlides.findIndex((item) => item.index === rawIndex);
+          const slideEl = section.querySelector<HTMLElement>(
+            `#${cssEscapeIdent(`${carouselId}-slide-${realIndex}`)}`,
+          );
+          if (!slideEl) continue;
+          nextSlides[rawIndex] = measureSlideToAbsolute(slide, slideEl, viewportProfile);
+          changed = true;
+        }
+
+        if (!changed) return;
+        const nextData = { ...(data ?? {}), slides: nextSlides };
+        commitChange(nextData);
+        if (typeof window !== "undefined" && window !== window.parent) {
+          window.parent.postMessage({ type: "hero-slider-absolute-converted", blockId }, "*");
+        }
+      });
+    }
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [carouselId, data, editMode, onChange, rawSlides, visibleSlides, viewportProfile]);
 
   // Per-slide autoplay timer, re-armed on every active change so user
   // interaction (clicks / drag / arrow keys) restarts the countdown instead
@@ -1261,6 +1303,53 @@ function setSlideElementProfileStyle(
   });
 }
 
+function cssEscapeIdent(value: string): string {
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+    return CSS.escape(value);
+  }
+  return value.replace(/["\\]/g, "\\$&");
+}
+
+function measureSlideToAbsolute(
+  slide: Slide,
+  slideEl: HTMLElement,
+  profile?: HeroViewportProfileKey | null,
+): Slide {
+  const copyMain = slideEl.querySelector<HTMLElement>(".hero-slide__copy-main");
+  if (!copyMain) return { ...slide, positioningMode: "absolute" };
+
+  const copyRect = copyMain.getBoundingClientRect();
+  let next: Slide = { ...slide, positioningMode: "absolute" };
+
+  for (const key of buildSlideOrderedKeys(slide)) {
+    const el = copyMain.querySelector<HTMLElement>(`[data-hs-draggable="${cssEscapeIdent(key)}"]`);
+    const currentStyle = getSlideElementStyle(next, key);
+    if (!el || !currentStyle) continue;
+
+    const rect = el.getBoundingClientRect();
+    const patch: ElementStyleProfile = {
+      ...currentStyle,
+      mt: `${Math.round(rect.top - copyRect.top)}px`,
+      ml: `${Math.round(rect.left - copyRect.left)}px`,
+      w: `${Math.round(rect.width)}px`,
+      x: undefined,
+      y: undefined,
+    };
+    const basePatch = Object.fromEntries(
+      Object.entries(patch).filter(([field]) => field !== "viewportProfiles"),
+    ) as ElementStyleProfile;
+    next = setSlideElementStyle(next, key, {
+      ...currentStyle,
+      ...basePatch,
+    });
+    if (profile) {
+      next = setSlideElementProfileStyle(next, key, profile, basePatch);
+    }
+  }
+
+  return next;
+}
+
 function getSlideViewportProfileKeys(slide: Slide): HeroViewportProfileKey[] {
   const profiles = new Set<HeroViewportProfileKey>();
   for (const key of buildSlideOrderedKeys(slide)) {
@@ -1697,6 +1786,7 @@ function CopyStack({
             data-hs-draggable="kicker"
             style={s}
             data-el={`slide-${slideIndex}-kicker`}
+            {...(canDragPosition ? dragHandleProps("kicker") : {})}
           >
             {!isLocked && canDragPosition && <DragHandle {...dragHandleProps("kicker")} />}
             <TipTapInline value={kicker} onChange={canDragPosition ? undefined : (html) => onSlideChange({ ...slide, kicker: html })} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} />
@@ -1724,6 +1814,7 @@ function CopyStack({
               className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
               data-hs-draggable="title"
               style={titleStyle}
+              {...(canDragPosition ? dragHandleProps("title") : {})}
             >
               {!isTitleLocked && canDragPosition && <DragHandle {...dragHandleProps("title")} />}
               <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} shadowContent={renderRichText(title)}>
@@ -1738,6 +1829,7 @@ function CopyStack({
             className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
             data-hs-draggable="title"
             style={titleStyle}
+            {...(canDragPosition ? dragHandleProps("title") : {})}
           >
             {!isTitleLocked && canDragPosition && <DragHandle {...dragHandleProps("title")} />}
             <p className={titleClass} data-el={`slide-${slideIndex}-title`}>
@@ -1772,6 +1864,7 @@ function CopyStack({
             data-hs-draggable="subtitle"
             style={s}
             data-el={`slide-${slideIndex}-subtitle`}
+            {...(canDragPosition ? dragHandleProps("subtitle") : {})}
           >
             {!isLocked && canDragPosition && <DragHandle {...dragHandleProps("subtitle")} />}
             <TipTapInline value={subtitle} onChange={canDragPosition ? undefined : (html) => onSlideChange({ ...slide, subtitle: html })} typoClass={typo} typoOptions={TYPO_PRESETS} />
@@ -1797,6 +1890,7 @@ function CopyStack({
             data-hs-draggable="body"
             style={s}
             data-el={`slide-${slideIndex}-body`}
+            {...(canDragPosition ? dragHandleProps("body") : {})}
           >
             {!isLocked && canDragPosition && <DragHandle {...dragHandleProps("body")} />}
             <TipTapInline value={body} onChange={canDragPosition ? undefined : (html) => onSlideChange({ ...slide, body: html })} typoClass={typo} typoOptions={TYPO_PRESETS} showWordCount />
@@ -1823,6 +1917,7 @@ function CopyStack({
             data-hs-draggable="quote"
             style={s}
             data-el={`slide-${slideIndex}-quote`}
+            {...(canDragPosition ? dragHandleProps("quote") : {})}
           >
             {!isLocked && canDragPosition && <DragHandle {...dragHandleProps("quote")} />}
             <TipTapInline value={quote} onChange={canDragPosition ? undefined : (html) => onSlideChange({ ...slide, quote: html })} typoClass={typo} typoOptions={TYPO_PRESETS} />
@@ -1909,6 +2004,7 @@ function ExtraElement({
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
           data-hs-draggable={extraKey}
           style={style}
+          {...(dragMode && dragHandleProps ? dragHandleProps(extraKey) : {})}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} shadowContent={renderRichText(extra.text)}>
@@ -1937,6 +2033,7 @@ function ExtraElement({
           data-hs-draggable={extraKey}
           style={style}
           data-el={slotId}
+          {...(dragMode && dragHandleProps ? dragHandleProps(extraKey) : {})}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <Kicker><TipTapInline value={extra.text} onChange={updateText ?? undefined} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} /></Kicker>
@@ -1964,6 +2061,7 @@ function ExtraElement({
           className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
           data-hs-draggable={extraKey}
           style={style}
+          {...(dragMode && dragHandleProps ? dragHandleProps(extraKey) : {})}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} shadowContent={renderRichText(extra.text)}>
@@ -1992,6 +2090,7 @@ function ExtraElement({
         data-hs-draggable={extraKey}
         style={style}
         data-el={slotId}
+        {...(dragMode && dragHandleProps ? dragHandleProps(extraKey) : {})}
       >
         {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
         <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} />

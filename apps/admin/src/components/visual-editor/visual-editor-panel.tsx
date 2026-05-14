@@ -31,6 +31,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
  * - `onElementSelect` — called when user selects an element in this panel
  */
 export function VisualEditorPanel({
+  blockId,
   type,
   variant,
   draft,
@@ -38,6 +39,7 @@ export function VisualEditorPanel({
   externalSelectedElementId,
   onElementSelect,
 }: {
+  blockId?: string;
   type: string;
   variant: string;
   draft: any;
@@ -77,6 +79,13 @@ export function VisualEditorPanel({
     onChange(newData);
   }
 
+  function requestHeroAbsoluteConversion() {
+    if (!blockId) return;
+    window.dispatchEvent(new CustomEvent("hero-slider-convert-to-absolute", {
+      detail: { blockId },
+    }));
+  }
+
   // Show element inspector for selected element
   if (selected) {
     return (
@@ -102,6 +111,20 @@ export function VisualEditorPanel({
   // Elements list
   return (
     <div className="p-2.5">
+      {type === "hero" && variant === "slider-v1" && (
+        <div className="mb-2 rounded-md border border-red-500/40 bg-red-500/10 p-2">
+          <button
+            type="button"
+            onClick={requestHeroAbsoluteConversion}
+            className="w-full rounded-md bg-red-600 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-white shadow-sm hover:bg-red-700"
+          >
+            Перенести на absolute
+          </button>
+          <p className="mt-1.5 text-[10px] leading-snug text-red-700">
+            Бере реальні координати з live preview і вмикає незалежний drag.
+          </p>
+        </div>
+      )}
       <div className="mb-2 flex items-center justify-between px-1">
         <span className="text-[10px] font-semibold uppercase text-muted-foreground">
           Elements

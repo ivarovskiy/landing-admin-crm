@@ -153,6 +153,7 @@ export function BlockEditPanel({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {mode === "visual" && hasVisual ? (
           <VisualEditorPanel
+            blockId={blockId}
             type={type}
             variant={variant}
             draft={draft}
@@ -162,7 +163,7 @@ export function BlockEditPanel({
           />
         ) : Form ? (
           <div className="p-3">
-            <Form value={draft} onChange={setDraft} viewMode={viewMode} allPages={allPages} />
+            <Form blockId={blockId} value={draft} onChange={setDraft} viewMode={viewMode} allPages={allPages} />
           </div>
         ) : null}
       </div>
