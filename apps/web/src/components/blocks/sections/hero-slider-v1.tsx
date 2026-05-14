@@ -1304,6 +1304,20 @@ function migrateSlideToAbsolute(slide: Slide): Slide {
   return { ...result, positioningMode: "absolute" as const };
 }
 
+/**
+ * Route to the right positioning style depending on context:
+ * - absolute slides (already migrated): position:absolute top/left in all modes
+ * - legacy slides in edit mode: height:0 + transform (matches flow visual, no cascade during drag)
+ * - legacy slides in view mode: margin-based flow (live site)
+ */
+function posStyle(
+  slide: Slide, key: string, es?: ElementStyle, isEdit?: boolean,
+): React.CSSProperties | undefined {
+  if (slide.positioningMode === "absolute") return absPositionStyle(slide, key, es);
+  if (isEdit) return absElStyle(es, getPrecedingMt(slide, key));
+  return elStyle(es) ?? undefined;
+}
+
 const DRAG_HANDLE_STYLE: React.CSSProperties = {
   position: "absolute",
   top: 2,
@@ -1653,7 +1667,7 @@ function CopyStack({
     if (key === "kicker" && kicker) {
       const es = mergeElementStyle(slide.kickerStyle, viewportProfile);
       const typo = es?.typo;
-      const s = (onSlideChange || slide.positioningMode === "absolute") ? absPositionStyle(slide, "kicker", es) : elStyle(es);
+      const s = posStyle(slide, "kicker", es, !!onSlideChange);
       if (onSlideChange) {
         const isLocked = !!es?.locked;
         return (
@@ -1678,7 +1692,7 @@ function CopyStack({
     if (key === "title" && title) {
       const titleEs = mergeElementStyle(slide.titleStyle, viewportProfile);
       const titleTypo = titleEs?.typo;
-      const titleStyle = (onSlideChange || slide.positioningMode === "absolute") ? absPositionStyle(slide, "title", titleEs) : elStyle(titleEs);
+      const titleStyle = posStyle(slide, "title", titleEs, !!onSlideChange);
       const titleClass = cn("hero-slide__title", titleTypo);
       const isTitleStamp = !titleTypo || titleTypo === "typo-content-header" || titleTypo === "typo-homepage-header" || titleTypo === "typo-subtitle";
       if (onSlideChange) {
@@ -1728,7 +1742,7 @@ function CopyStack({
     if (key === "subtitle" && subtitle) {
       const es = mergeElementStyle(slide.subtitleStyle, viewportProfile);
       const typo = es?.typo;
-      const s = (onSlideChange || slide.positioningMode === "absolute") ? absPositionStyle(slide, "subtitle", es) : elStyle(es);
+      const s = posStyle(slide, "subtitle", es, !!onSlideChange);
       if (onSlideChange) {
         const isLocked = !!es?.locked;
         return (
@@ -1753,7 +1767,7 @@ function CopyStack({
     if (key === "body" && body) {
       const es = mergeElementStyle(slide.bodyStyle, viewportProfile);
       const typo = es?.typo;
-      const s = (onSlideChange || slide.positioningMode === "absolute") ? absPositionStyle(slide, "body", es) : elStyle(es);
+      const s = posStyle(slide, "body", es, !!onSlideChange);
       if (onSlideChange) {
         const isLocked = !!es?.locked;
         return (
@@ -1778,7 +1792,7 @@ function CopyStack({
     if (key === "quote" && quote) {
       const es = mergeElementStyle(slide.quoteStyle, viewportProfile);
       const typo = es?.typo;
-      const s = (onSlideChange || slide.positioningMode === "absolute") ? absPositionStyle(slide, "quote", es) : elStyle(es);
+      const s = posStyle(slide, "quote", es, !!onSlideChange);
       const cls = cn("hero-slide__quote", typo);
       if (onSlideChange) {
         const isLocked = !!es?.locked;
@@ -1855,8 +1869,7 @@ function ExtraElement({
   const resolvedStyle = mergeElementStyle(extra.style, viewportProfile);
   const extraKey = extra.id ?? "";
   const inEditMode = !!(onSlideChange && slide);
-  const useAbsPos = inEditMode || slide?.positioningMode === "absolute";
-  const style = (useAbsPos && slide) ? absPositionStyle(slide, extraKey, resolvedStyle) : elStyle(resolvedStyle);
+  const style = slide ? posStyle(slide, extraKey, resolvedStyle, inEditMode) : elStyle(resolvedStyle);
   const typo = resolvedStyle?.typo;
   const slotId = `slide-${slideIndex}-extra-${extraIndex}`;
   const isLocked = !!resolvedStyle?.locked;
