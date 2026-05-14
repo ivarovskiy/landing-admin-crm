@@ -789,7 +789,7 @@ function StyleGuidelineOverlay({
   }
 
   // Group 3 — Inner offsets from measured photo boundaries (layout px)
-  if (config.showPhotoInnerOffsets !== false && mediaRect && imgSide !== "none") {
+  if (config.showPhotoInnerOffsets !== false && mediaRect) {
     const iol = config.photoInnerOffsetLeft ?? 0;
     const ior = config.photoInnerOffsetRight ?? 0;
     if (iol > 0) {
@@ -805,8 +805,7 @@ function StyleGuidelineOverlay({
   }
 
   // Group 4 — Photo top/bottom horizontal continuation (layout px)
-  // Skipped for full-image slides: photo fills entire slide, edges are meaningless.
-  if (config.showPhotoEdges !== false && mediaRect && imgSide !== "none") {
+  if (config.showPhotoEdges !== false && mediaRect) {
     lines.push({ key: "pe-t", label: lbl(), type: "horizontal",
       pos: `${mediaRect.top}px`,    color: SG_COLORS.photoEdge, group: "photo-edge" });
     lines.push({ key: "pe-b", label: lbl(), type: "horizontal",
@@ -814,7 +813,7 @@ function StyleGuidelineOverlay({
   }
 
   // Group 5 — Italic lower-limit line (design-canvas px from bottom → %)
-  if (config.showItalicLimit !== false) {
+  if (config.showItalicLimit !== false && imgSide !== "none") {
     const offset = config.italicLimitOffset ?? italicFallbackOffset;
     if (offset != null && offset > 0) {
       lines.push({ key: "italic", label: lbl(), type: "horizontal",
