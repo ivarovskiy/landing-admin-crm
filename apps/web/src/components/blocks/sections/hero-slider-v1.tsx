@@ -1726,7 +1726,7 @@ function CopyStack({
       const es = mergeElementStyle(slide.kickerStyle, viewportProfile);
       const typo = es?.typo;
       const s = posStyle(slide, "kicker", es, !!onSlideChange);
-      if (onSlideChange) {
+      if (onSlideChange && slide.positioningMode === "absolute") {
         const isLocked = !!es?.locked;
         return (
           <div
@@ -1742,7 +1742,7 @@ function CopyStack({
         );
       }
       return (
-        <div key="kicker" {...editableProps("kicker", typo || undefined)} style={s} data-el={`slide-${slideIndex}-kicker`}>
+        <div key="kicker" {...editableProps("kicker", typo || undefined)} style={s} data-el={`slide-${slideIndex}-kicker`} data-hs-draggable={onSlideChange ? "kicker" : undefined}>
           <SlideKicker text={kicker} />
         </div>
       );
@@ -1753,7 +1753,7 @@ function CopyStack({
       const titleStyle = posStyle(slide, "title", titleEs, !!onSlideChange);
       const titleClass = cn("hero-slide__title", titleTypo);
       const isTitleStamp = !titleTypo || titleTypo === "typo-content-header" || titleTypo === "typo-homepage-header" || titleTypo === "typo-subtitle";
-      if (onSlideChange) {
+      if (onSlideChange && slide.positioningMode === "absolute") {
         const isTitleLocked = !!titleEs?.locked;
         if (isTitleStamp) {
           return (
@@ -1786,13 +1786,13 @@ function CopyStack({
       }
       if (isTitleStamp) {
         return (
-          <OutlineStampText key="title" {...editableProps("title", titleClass)} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={titleStyle}>
+          <OutlineStampText key="title" {...editableProps("title", titleClass)} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={titleStyle} data-hs-draggable={onSlideChange ? "title" : undefined}>
             {renderRichText(title)}
           </OutlineStampText>
         );
       }
       return (
-        <div key="title" {...editableProps("title", titleClass)} data-el={`slide-${slideIndex}-title`} style={titleStyle}>
+        <div key="title" {...editableProps("title", titleClass)} data-el={`slide-${slideIndex}-title`} style={titleStyle} data-hs-draggable={onSlideChange ? "title" : undefined}>
           {renderRichText(title)}
         </div>
       );
@@ -1801,7 +1801,7 @@ function CopyStack({
       const es = mergeElementStyle(slide.subtitleStyle, viewportProfile);
       const typo = es?.typo;
       const s = posStyle(slide, "subtitle", es, !!onSlideChange);
-      if (onSlideChange) {
+      if (onSlideChange && slide.positioningMode === "absolute") {
         const isLocked = !!es?.locked;
         return (
           <div
@@ -1817,7 +1817,7 @@ function CopyStack({
         );
       }
       return (
-        <div key="subtitle" {...editableProps("subtitle", typo || undefined)} style={s} data-el={`slide-${slideIndex}-subtitle`}>
+        <div key="subtitle" {...editableProps("subtitle", typo || undefined)} style={s} data-el={`slide-${slideIndex}-subtitle`} data-hs-draggable={onSlideChange ? "subtitle" : undefined}>
           <SlideSubtitle text={subtitle} variant={slide?.subtitleVariant} slotId={`slide-${slideIndex}-subtitle`} />
         </div>
       );
@@ -1826,7 +1826,7 @@ function CopyStack({
       const es = mergeElementStyle(slide.bodyStyle, viewportProfile);
       const typo = es?.typo;
       const s = posStyle(slide, "body", es, !!onSlideChange);
-      if (onSlideChange) {
+      if (onSlideChange && slide.positioningMode === "absolute") {
         const isLocked = !!es?.locked;
         return (
           <div
@@ -1842,7 +1842,7 @@ function CopyStack({
         );
       }
       return (
-        <div key="body" {...editableProps("body", typo || undefined)} style={s} data-el={`slide-${slideIndex}-body`}>
+        <div key="body" {...editableProps("body", typo || undefined)} style={s} data-el={`slide-${slideIndex}-body`} data-hs-draggable={onSlideChange ? "body" : undefined}>
           <SlideBody text={body} variant={slide?.bodyVariant} />
         </div>
       );
@@ -1852,7 +1852,7 @@ function CopyStack({
       const typo = es?.typo;
       const s = posStyle(slide, "quote", es, !!onSlideChange);
       const cls = cn("hero-slide__quote", typo);
-      if (onSlideChange) {
+      if (onSlideChange && slide.positioningMode === "absolute") {
         const isLocked = !!es?.locked;
         return (
           <div
@@ -1868,7 +1868,7 @@ function CopyStack({
         );
       }
       return (
-        <div key="quote" {...editableProps("quote", cls)} style={s} data-el={`slide-${slideIndex}-quote`}>
+        <div key="quote" {...editableProps("quote", cls)} style={s} data-el={`slide-${slideIndex}-quote`} data-hs-draggable={onSlideChange ? "quote" : undefined}>
           {renderRichText(quote)}
         </div>
       );
@@ -1926,7 +1926,7 @@ function ExtraElement({
 }) {
   const resolvedStyle = mergeElementStyle(extra.style, viewportProfile);
   const extraKey = extra.id ?? "";
-  const inEditMode = !!(onSlideChange && slide);
+  const inEditMode = !!(onSlideChange && slide && slide.positioningMode === "absolute");
   const style = slide ? posStyle(slide, extraKey, resolvedStyle, inEditMode) : elStyle(resolvedStyle);
   const typo = resolvedStyle?.typo;
   const slotId = `slide-${slideIndex}-extra-${extraIndex}`;
@@ -1960,6 +1960,7 @@ function ExtraElement({
         data-el={slotId}
         stamp={stampForTypo(typo)}
         style={style}
+        data-hs-draggable={onSlideChange ? extraKey : undefined}
       >
         {renderRichText(extra.text)}
       </OutlineStampText>
@@ -1985,6 +1986,7 @@ function ExtraElement({
         {...(editableProps?.(extraKey, typo || undefined) ?? { className: typo || undefined })}
         style={style}
         data-el={slotId}
+        data-hs-draggable={onSlideChange ? extraKey : undefined}
       >
         <Kicker>{renderRichText(extra.text)}</Kicker>
       </div>
@@ -2015,6 +2017,7 @@ function ExtraElement({
         data-el={slotId}
         stamp={stampForTypo(typo)}
         style={style}
+        data-hs-draggable={onSlideChange ? extraKey : undefined}
       >
         {renderRichText(extra.text)}
       </OutlineStampText>
@@ -2040,6 +2043,7 @@ function ExtraElement({
       {...(editableProps?.(extraKey, cls) ?? { className: cls })}
       style={style}
       data-el={slotId}
+      data-hs-draggable={onSlideChange ? extraKey : undefined}
     >
       {renderRichText(extra.text)}
     </div>
