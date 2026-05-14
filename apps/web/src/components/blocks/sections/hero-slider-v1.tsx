@@ -789,7 +789,7 @@ function StyleGuidelineOverlay({
   }
 
   // Group 3 — Inner offsets from measured photo boundaries (layout px)
-  if (config.showPhotoInnerOffsets !== false && mediaRect) {
+  if (config.showPhotoInnerOffsets !== false && mediaRect && imgSide !== "none") {
     const iol = config.photoInnerOffsetLeft ?? 0;
     const ior = config.photoInnerOffsetRight ?? 0;
     if (iol > 0) {
@@ -805,7 +805,8 @@ function StyleGuidelineOverlay({
   }
 
   // Group 4 — Photo top/bottom horizontal continuation (layout px)
-  if (config.showPhotoEdges !== false && mediaRect) {
+  // Skipped for full-image slides: photo fills entire slide, edges are meaningless.
+  if (config.showPhotoEdges !== false && mediaRect && imgSide !== "none") {
     lines.push({ key: "pe-t", label: lbl(), type: "horizontal",
       pos: `${mediaRect.top}px`,    color: SG_COLORS.photoEdge, group: "photo-edge" });
     lines.push({ key: "pe-b", label: lbl(), type: "horizontal",
