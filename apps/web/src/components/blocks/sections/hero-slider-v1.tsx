@@ -26,6 +26,7 @@ type ElementStyle = {
   pb?: string;
   x?: string;
   y?: string;
+  w?: string;
   align?: "left" | "center" | "right";
   size?: string;
   typo?: string; // typography class from design system
@@ -1109,19 +1110,19 @@ function HeroSlide({
       if (!slideEl) return;
       const blockEl = slideEl.closest<HTMLElement>("[data-block-id]");
       if (blockEl?.dataset.blockId !== event.data?.blockId) return;
-      onSlideChange(measureSlideToAbsolute(slideEl, slide));
+      onSlideChange(measureSlideToAbsolute(slideEl, slide, viewportProfile));
       if (window !== window.parent) {
         window.parent.postMessage({ type: "hero-slider-absolute-converted" }, "*");
       }
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [editMode, onSlideChange, slide]);
+  }, [editMode, onSlideChange, slide, viewportProfile]);
 
   const mediaPrimary = (
     <MediaFrame media={slide.media} className="hero-slide__media-box" slotId={`slide-${i}-media`} priority={i === 0} />
   );
-  const { editableProps, dragHandleProps } = useSlideElementEditor(slide, editMode, onSlideChange, dragMode);
+  const { editableProps, dragHandleProps } = useSlideElementEditor(slide, editMode, onSlideChange, dragMode, viewportProfile);
 
   const standardCopy = (
     <CopyStack
@@ -1212,6 +1213,29 @@ function setSlideElementStyle(slide: Slide, key: string, style: ElementStyle): S
   };
 }
 
+function setSlideElementViewportStyle(
+  slide: Slide,
+  key: string,
+  profile: HeroViewportProfileKey | null | undefined,
+  patch: ElementStyleProfile,
+): Slide {
+  if (!profile) return setSlideElementStyle(slide, key, {
+    ...(getSlideElementStyle(slide, key) ?? {}),
+    ...patch,
+  });
+  const current = getSlideElementStyle(slide, key) ?? {};
+  return setSlideElementStyle(slide, key, {
+    ...current,
+    viewportProfiles: {
+      ...(current.viewportProfiles ?? {}),
+      [profile]: {
+        ...(current.viewportProfiles?.[profile] ?? {}),
+        ...patch,
+      },
+    },
+  });
+}
+
 /** Canonical ordered key list for a slide, respecting elementOrder overrides. */
 function buildSlideOrderedKeys(slide: Slide): string[] {
   const extras = Array.isArray(slide.extras) ? slide.extras : [];
@@ -1296,6 +1320,7 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.C
   if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
   if (es?.pt) s.paddingTop = resolveDesignViewportUnits(es.pt)!;
   if (es?.pb) s.paddingBottom = resolveDesignViewportUnits(es.pb)!;
+  if (es?.w) s.width = resolveDesignViewportUnits(es.w)!;
   return s as React.CSSProperties;
 }
 
@@ -1328,7 +1353,11 @@ function migrateSlideToAbsolute(slide: Slide): Slide {
 /** Measures actual DOM positions of each draggable element relative to copy-main
  *  and stores them as absolute mt/ml, clearing x/y offsets.
  *  Used by the "Перенести на absolute" button which needs pixel-accurate positions. */
-function measureSlideToAbsolute(slideEl: HTMLElement, slide: Slide): Slide {
+function measureSlideToAbsolute(
+  slideEl: HTMLElement,
+  slide: Slide,
+  viewportProfile?: HeroViewportProfileKey | null,
+): Slide {
   const copyMain = slideEl.querySelector<HTMLElement>(".hero-slide__copy-main");
   if (!copyMain) return migrateSlideToAbsolute(slide);
   const copyRect = copyMain.getBoundingClientRect();
@@ -1345,10 +1374,10 @@ function measureSlideToAbsolute(slideEl: HTMLElement, slide: Slide): Slide {
     const elRect = el.getBoundingClientRect();
     const mt = Math.round((elRect.top - copyRect.top) / scale);
     const ml = Math.round((elRect.left - copyRect.left) / scale);
-    result = setSlideElementStyle(result, k, {
-      ...currentStyle,
+    result = setSlideElementViewportStyle(result, k, viewportProfile, {
       mt: mt !== 0 ? `${mt}px` : undefined,
       ml: ml !== 0 ? `${ml}px` : undefined,
+      w: `${Math.round(elRect.width / scale)}px`,
       x: undefined,
       y: undefined,
     });
@@ -1398,6 +1427,7 @@ function useSlideElementEditor(
   editMode: boolean,
   onSlideChange?: (next: Slide) => void,
   dragMode = true,
+  viewportProfile?: HeroViewportProfileKey | null,
 ) {
   type GroupStart = { tx: number; ty: number; el: HTMLElement };
   const dragRef = useRef<{
@@ -1494,11 +1524,10 @@ function useSlideElementEditor(
             if (!allGroupKeys.has(k)) continue;
             const gs = d.groupStarts.get(k);
             if (gs) { gs.el.style.transform = ""; }
-            const ms = getSlideElementStyle(migratedSlide, k) ?? {};
+            const ms = mergeElementStyle(getSlideElementStyle(migratedSlide, k), viewportProfile) ?? {};
             const mOldMl = parseFloat(ms.ml ?? "0") || 0;
             const mOldMt = parseFloat(ms.mt ?? "0") || 0;
-            updated = setSlideElementStyle(updated, k, {
-              ...ms,
+            updated = setSlideElementViewportStyle(updated, k, viewportProfile, {
               ml: (mOldMl + dx) !== 0 ? `${mOldMl + dx}px` : undefined,
               mt: (mOldMt + dy) !== 0 ? `${mOldMt + dy}px` : undefined,
               x: undefined, y: undefined,
@@ -1506,11 +1535,10 @@ function useSlideElementEditor(
           }
           onSlideChange(updated);
         } else {
-          const style = getSlideElementStyle(migratedSlide, key) ?? {};
+          const style = mergeElementStyle(getSlideElementStyle(migratedSlide, key), viewportProfile) ?? {};
           const oldMl = parseFloat(style.ml ?? "0") || 0;
           const oldMt = parseFloat(style.mt ?? "0") || 0;
-          onSlideChange(setSlideElementStyle(migratedSlide, key, {
-            ...style,
+          onSlideChange(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
             ml: (oldMl + dx) !== 0 ? `${oldMl + dx}px` : undefined,
             mt: (oldMt + dy) !== 0 ? `${oldMt + dy}px` : undefined,
             x: undefined, y: undefined,
@@ -1623,16 +1651,14 @@ function useSlideElementEditor(
         const dy = Math.round((e.clientY - d.startY) / d.scale);
         if (d.mode === "resize") {
           const nextSize = Math.max(6, Math.round(d.startSize + (dx + dy) / 2));
-          const currentStyle = getSlideElementStyle(slide, key) ?? {};
-          onSlideChange(setSlideElementStyle(slide, key, { ...currentStyle, size: `${nextSize}px` }));
+          onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, { size: `${nextSize}px` }));
           return;
         }
         const migratedSlide = migrateSlideToAbsolute(slide);
-        const style = getSlideElementStyle(migratedSlide, key) ?? {};
+        const style = mergeElementStyle(getSlideElementStyle(migratedSlide, key), viewportProfile) ?? {};
         const oldMl = parseFloat(style.ml ?? "0") || 0;
         const oldMt = parseFloat(style.mt ?? "0") || 0;
-        onSlideChange(setSlideElementStyle(migratedSlide, key, {
-          ...style,
+        onSlideChange(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
           ml: (oldMl + dx) !== 0 ? `${oldMl + dx}px` : undefined,
           mt: (oldMt + dy) !== 0 ? `${oldMt + dy}px` : undefined,
           x: undefined, y: undefined,
@@ -1658,13 +1684,12 @@ function useSlideElementEditor(
         e.stopPropagation();
         const step = e.shiftKey ? 10 : 1;
         const migratedSlide = migrateSlideToAbsolute(slide);
-        const currentStyle = getSlideElementStyle(migratedSlide, key) ?? {};
+        const currentStyle = mergeElementStyle(getSlideElementStyle(migratedSlide, key), viewportProfile) ?? {};
         const currentMl = parseFloat(currentStyle.ml ?? "0") || 0;
         const currentMt = parseFloat(currentStyle.mt ?? "0") || 0;
         const nextMl = Math.round(currentMl + delta[0] * step);
         const nextMt = Math.round(currentMt + delta[1] * step);
-        onSlideChange(setSlideElementStyle(migratedSlide, key, {
-          ...currentStyle,
+        onSlideChange(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
           ml: nextMl !== 0 ? `${nextMl}px` : undefined,
           mt: nextMt !== 0 ? `${nextMt}px` : undefined,
           x: undefined, y: undefined,
