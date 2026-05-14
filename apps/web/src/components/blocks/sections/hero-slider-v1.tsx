@@ -1822,10 +1822,28 @@ function CopyStack({
         );
       }
       if (isTitleStamp) {
+        if (!onSlideChange && slide.positioningMode === "absolute") {
+          return (
+            <div key="title" style={titleStyle} data-hs-draggable={undefined}>
+              <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)}>
+                {renderRichText(title)}
+              </OutlineStampText>
+            </div>
+          );
+        }
         return (
           <OutlineStampText key="title" className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={titleStyle} data-hs-draggable={onSlideChange ? "title" : undefined}>
             {renderRichText(title)}
           </OutlineStampText>
+        );
+      }
+      if (!onSlideChange && slide.positioningMode === "absolute") {
+        return (
+          <div key="title" style={titleStyle} data-hs-draggable={undefined}>
+            <div className={titleClass} data-el={`slide-${slideIndex}-title`} style={textContentStyle(titleEs)}>
+              {renderRichText(title)}
+            </div>
+          </div>
         );
       }
       return (
@@ -1991,6 +2009,20 @@ function ExtraElement({
         </div>
       );
     }
+    if (!onSlideChange && slide?.positioningMode === "absolute") {
+      return (
+        <div style={style}>
+          <OutlineStampText
+            className={cls}
+            data-el={slotId}
+            stamp={stampForTypo(typo)}
+            style={textContentStyle(resolvedStyle)}
+          >
+            {renderRichText(extra.text)}
+          </OutlineStampText>
+        </div>
+      );
+    }
     return (
       <OutlineStampText
         className={cls}
@@ -2044,6 +2076,20 @@ function ExtraElement({
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
             <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} />
+          </OutlineStampText>
+        </div>
+      );
+    }
+    if (!onSlideChange && slide?.positioningMode === "absolute") {
+      return (
+        <div style={style}>
+          <OutlineStampText
+            className={cls}
+            data-el={slotId}
+            stamp={stampForTypo(typo)}
+            style={textContentStyle(resolvedStyle)}
+          >
+            {renderRichText(extra.text)}
           </OutlineStampText>
         </div>
       );
