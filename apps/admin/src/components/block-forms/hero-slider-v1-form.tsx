@@ -217,7 +217,7 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
   const requestAbsoluteConversion = (slideIndex: number) => {
     if (blockId) {
       window.dispatchEvent(new CustomEvent("hero-slider-convert-to-absolute", {
-        detail: { blockId },
+        detail: { blockId, slideIndex },
       }));
       return;
     }

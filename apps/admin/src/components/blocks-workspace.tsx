@@ -626,11 +626,12 @@ export function BlocksWorkspace({
 
   useEffect(() => {
     function handleHeroConvert(event: Event) {
-      const blockId = (event as CustomEvent<{ blockId?: string }>).detail?.blockId;
+      const detail = (event as CustomEvent<{ blockId?: string; slideIndex?: number }>).detail;
+      const blockId = detail?.blockId;
       if (!blockId) return;
       try {
         iframeRef.current?.contentWindow?.postMessage(
-          { type: "hero-slider-convert-to-absolute", blockId },
+          { type: "hero-slider-convert-to-absolute", blockId, slideIndex: detail?.slideIndex },
           "*",
         );
         setBanner({ kind: "success", message: "Measuring slider positions..." });
