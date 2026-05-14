@@ -1953,7 +1953,7 @@ function CopyStack({
           editableProps={editableProps}
           dragHandleProps={dragHandleProps}
           dragMode={dragMode}
-          slide={onSlideChange ? slide : undefined}
+          slide={slide}
           onSlideChange={onSlideChange}
         />
       );
