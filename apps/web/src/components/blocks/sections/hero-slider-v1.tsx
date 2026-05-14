@@ -1097,6 +1097,27 @@ function HeroSlide({
       } as React.CSSProperties)
     : undefined;
 
+  // Drag handles only appear for migrated slides — legacy slides use flow layout until button click
+  const effectiveDragMode = dragMode && slide.positioningMode === "absolute";
+
+  // Listen for "Перенести на absolute" button postMessage from admin
+  useEffect(() => {
+    if (!editMode || !onSlideChange) return;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type !== "hero-slider-convert-to-absolute") return;
+      const slideEl = slideRef.current;
+      if (!slideEl) return;
+      const blockEl = slideEl.closest<HTMLElement>("[data-block-id]");
+      if (blockEl?.dataset.blockId !== event.data?.blockId) return;
+      onSlideChange(measureSlideToAbsolute(slideEl, slide));
+      if (window !== window.parent) {
+        window.parent.postMessage({ type: "hero-slider-absolute-converted" }, "*");
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [editMode, onSlideChange, slide]);
+
   const mediaPrimary = (
     <MediaFrame media={slide.media} className="hero-slide__media-box" slotId={`slide-${i}-media`} priority={i === 0} />
   );
@@ -1110,7 +1131,7 @@ function HeroSlide({
       viewportProfile={viewportProfile}
       editableProps={editableProps}
       dragHandleProps={dragHandleProps}
-      dragMode={dragMode}
+      dragMode={effectiveDragMode}
       onSlideChange={editMode ? onSlideChange : undefined}
     />
   );
@@ -1304,17 +1325,46 @@ function migrateSlideToAbsolute(slide: Slide): Slide {
   return { ...result, positioningMode: "absolute" as const };
 }
 
+/** Measures actual DOM positions of each draggable element relative to copy-main
+ *  and stores them as absolute mt/ml, clearing x/y offsets.
+ *  Used by the "Перенести на absolute" button which needs pixel-accurate positions. */
+function measureSlideToAbsolute(slideEl: HTMLElement, slide: Slide): Slide {
+  const copyMain = slideEl.querySelector<HTMLElement>(".hero-slide__copy-main");
+  if (!copyMain) return migrateSlideToAbsolute(slide);
+  const copyRect = copyMain.getBoundingClientRect();
+  if (!copyRect.width) return migrateSlideToAbsolute(slide);
+  const scale = copyRect.width / copyMain.offsetWidth || 1;
+  let result: Slide = { ...slide };
+  for (const k of buildSlideOrderedKeys(slide)) {
+    const el = slideEl.querySelector<HTMLElement>(`[data-hs-draggable="${CSS.escape(k)}"]`);
+    const currentStyle = getSlideElementStyle(slide, k) ?? {};
+    if (!el) {
+      result = setSlideElementStyle(result, k, { ...currentStyle, x: undefined, y: undefined });
+      continue;
+    }
+    const elRect = el.getBoundingClientRect();
+    const mt = Math.round((elRect.top - copyRect.top) / scale);
+    const ml = Math.round((elRect.left - copyRect.left) / scale);
+    result = setSlideElementStyle(result, k, {
+      ...currentStyle,
+      mt: mt !== 0 ? `${mt}px` : undefined,
+      ml: ml !== 0 ? `${ml}px` : undefined,
+      x: undefined,
+      y: undefined,
+    });
+  }
+  return { ...result, positioningMode: "absolute" as const };
+}
+
 /**
  * Route to the right positioning style depending on context:
- * - absolute slides (already migrated): position:absolute top/left in all modes
- * - legacy slides in edit mode: height:0 + transform (matches flow visual, no cascade during drag)
- * - legacy slides in view mode: margin-based flow (live site)
+ * - absolute slides (already migrated): position:absolute top/left in all contexts
+ * - legacy slides: margin-based flow (same as live site) — migrate via "Перенести на absolute" button
  */
 function posStyle(
-  slide: Slide, key: string, es?: ElementStyle, isEdit?: boolean,
+  slide: Slide, key: string, es?: ElementStyle, _isEdit?: boolean,
 ): React.CSSProperties | undefined {
   if (slide.positioningMode === "absolute") return absPositionStyle(slide, key, es);
-  if (isEdit) return absElStyle(es, getPrecedingMt(slide, key));
   return elStyle(es) ?? undefined;
 }
 
@@ -1371,6 +1421,7 @@ function useSlideElementEditor(
 
     return {
       onPointerDown: (e) => {
+        if (slide.positioningMode !== "absolute") return;
         if (e.pointerType === "mouse" && e.button !== 0) return;
         e.preventDefault();
         e.stopPropagation();
@@ -1501,19 +1552,25 @@ function useSlideElementEditor(
         const el = e.currentTarget as HTMLElement;
         const rect = el.getBoundingClientRect();
         const isResize = e.clientX >= rect.right - 16 && e.clientY >= rect.bottom - 16;
-        const slideEl = el.closest(".hero-slide") as HTMLElement | null;
+
+        // Send element-clicked for admin panel selection regardless of mode
         const blockEl = el.closest<HTMLElement>("[data-block-id]");
         const blockId = blockEl?.dataset.blockId;
         const elementId = el.dataset.el;
+        if (blockId && elementId && window !== window.parent) {
+          window.parent.postMessage({ type: "element-clicked", blockId, elementId }, "*");
+        }
+
+        // Block move drag on legacy slides — only resize is allowed without migration
+        if (!isResize && slide.positioningMode !== "absolute") return;
+
+        const slideEl = el.closest(".hero-slide") as HTMLElement | null;
         const scale = slideEl ? slideEl.getBoundingClientRect().width / slideEl.offsetWidth || 1 : 1;
         const computed = getComputedStyle(el);
         const matrix = new DOMMatrix(computed.transform === "none" ? "" : computed.transform);
 
         el.setPointerCapture(e.pointerId);
         el.classList.add(isResize ? "hero-slide__editable--resizing" : "hero-slide__editable--dragging");
-        if (blockId && elementId && window !== window.parent) {
-          window.parent.postMessage({ type: "element-clicked", blockId, elementId }, "*");
-        }
 
         dragRef.current = {
           key,
@@ -1585,6 +1642,7 @@ function useSlideElementEditor(
         el.style.fontSize = `${d.startSize}px`;
       },
       onKeyDown: (e) => {
+        if (slide.positioningMode !== "absolute") return;
         const deltaByKey: Record<string, [number, number]> = {
           ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
         };
