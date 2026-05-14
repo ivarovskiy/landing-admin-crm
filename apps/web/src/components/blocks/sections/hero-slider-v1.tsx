@@ -902,33 +902,40 @@ function StyleGuidelineOverlay({
   const allLines = [...lines, ...centerLines];
   if (allLines.length === 0) return null;
 
+  // Boundary lines span the full slide (no clip); everything else is clipped to text area.
+  const boundaryLines = allLines.filter((l) => l.group === "slide-boundary");
+  const clippedLines  = allLines.filter((l) => l.group !== "slide-boundary");
+
+  const renderLine = (line: GuideLineDef) =>
+    line.type === "vertical" ? (
+      <div
+        key={line.key}
+        className="hero-slide__guide hero-slide__guide--vertical hero-slide__guide--style"
+        style={{ left: line.pos, "--sg-color": line.color } as React.CSSProperties}
+        data-sg-group={line.group}
+      >
+        <span className="hero-slide__guide-label">{line.label}</span>
+      </div>
+    ) : (
+      <div
+        key={line.key}
+        className="hero-slide__guide hero-slide__guide--horizontal hero-slide__guide--style"
+        style={{ top: line.pos, "--sg-color": line.color } as React.CSSProperties}
+        data-sg-group={line.group}
+      >
+        <span className="hero-slide__guide-label hero-slide__guide-label--h">{line.label}</span>
+      </div>
+    );
+
   return (
-    <div
-      className="hero-slide__guides"
-      aria-hidden="true"
-      data-sg="1"
-      style={clipPath ? { clipPath } : undefined}
-    >
-      {allLines.map((line) =>
-        line.type === "vertical" ? (
-          <div
-            key={line.key}
-            className="hero-slide__guide hero-slide__guide--vertical hero-slide__guide--style"
-            style={{ left: line.pos, "--sg-color": line.color } as React.CSSProperties}
-            data-sg-group={line.group}
-          >
-            <span className="hero-slide__guide-label">{line.label}</span>
-          </div>
-        ) : (
-          <div
-            key={line.key}
-            className="hero-slide__guide hero-slide__guide--horizontal hero-slide__guide--style"
-            style={{ top: line.pos, "--sg-color": line.color } as React.CSSProperties}
-            data-sg-group={line.group}
-          >
-            <span className="hero-slide__guide-label hero-slide__guide-label--h">{line.label}</span>
-          </div>
-        )
+    <div className="hero-slide__guides" aria-hidden="true" data-sg="1">
+      {/* Slide boundary lines — full width, no clipping */}
+      {boundaryLines.map(renderLine)}
+      {/* All other lines — clipped to text area only */}
+      {clippedLines.length > 0 && (
+        <div style={{ position: "absolute", inset: 0, clipPath: clipPath ?? undefined }}>
+          {clippedLines.map(renderLine)}
+        </div>
       )}
     </div>
   );
