@@ -414,22 +414,18 @@ export function newSlide(preset: PresetKey = "2"): Slide {
   };
 }
 
-// ─── Per-font optional padding offsets ───────────────────────────────────────
+// ─── Per-font bottom offset (configured in Typography admin settings) ─────────
 
-export type TypoOffsetConfig = {
-  paddingLeft?: string;
-  paddingRight?: string;
-  paddingTop?: string;
-  paddingBottom?: string;
-};
+/**
+ * Fonts that have a bottom offset configured in Typography settings.
+ * Add a key here when you configure bottomOffset for that font in admin.
+ * The actual value lives in Typography settings → bottomOffset field.
+ */
+const TYPO_OFFSET_FONTS = new Set([
+  "typo-content-header",
+]);
 
-/** Only fonts listed here expose the "Apply offset" toggle in the admin form. */
-export const TYPO_OFFSET_MAP: Partial<Record<string, TypoOffsetConfig>> = {
-  "typo-content-header": { paddingLeft: "20px" },
-  // "typo-homepage-header": TBD with client
-};
-
-export function getTypoOffset(typoClass?: string): TypoOffsetConfig | undefined {
-  if (!typoClass) return undefined;
-  return TYPO_OFFSET_MAP[typoClass];
+/** Returns true when this font has a bottom offset configured in Typography settings. */
+export function getTypoOffset(typoClass?: string): boolean {
+  return !!typoClass && TYPO_OFFSET_FONTS.has(typoClass);
 }

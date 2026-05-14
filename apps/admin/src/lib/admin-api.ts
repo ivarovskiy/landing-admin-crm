@@ -132,6 +132,7 @@ export type SiteTextMetrics = {
   fontSize?: string;
   lineHeight?: string;
   letterSpacing?: string;
+  bottomOffset?: string;
 }
 
 export type SiteTypographyViewportProfileKey =

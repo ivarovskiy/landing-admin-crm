@@ -73,6 +73,7 @@ export type TextMetricsSettings = {
   fontSize?: string;
   lineHeight?: string;
   letterSpacing?: string;
+  bottomOffset?: string;
 };
 
 export type TypographyViewportProfileKey =

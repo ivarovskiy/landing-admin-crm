@@ -10,20 +10,15 @@ export const TYPO_PRESETS: { value: string; label: string }[] = [
   { value: "typo-body-text", label: "Column Text (20px)" },
 ];
 
-export type TypoOffsetConfig = {
-  paddingLeft?: string;
-  paddingRight?: string;
-  paddingTop?: string;
-  paddingBottom?: string;
-};
-
-/** Per-font optional padding offsets. Only fonts listed here expose the "Apply offset" toggle. */
-export const TYPO_OFFSET_MAP: Partial<Record<string, TypoOffsetConfig>> = {
-  "typo-content-header": { paddingLeft: "20px" },
-  // "typo-homepage-header": TBD with client
-};
-
-export function getTypoOffset(typoClass?: string): TypoOffsetConfig | undefined {
-  if (!typoClass) return undefined;
-  return TYPO_OFFSET_MAP[typoClass];
+/**
+ * Returns the configured bottom offset for a font, or undefined if none set.
+ * Reads the CSS variable `--{typoClass}-bottom-offset` from the root element
+ * (set by layout.tsx from Typography admin settings). Client-side only.
+ */
+export function getTypoOffset(typoClass?: string): string | undefined {
+  if (!typoClass || typeof window === "undefined") return undefined;
+  const val = getComputedStyle(document.documentElement)
+    .getPropertyValue(`--${typoClass}-bottom-offset`)
+    .trim();
+  return val || undefined;
 }

@@ -273,11 +273,8 @@ function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
   if (es.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
   if (es.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
   if (es.useFontOffset && es.typo) {
-    const offset = getTypoOffset(es.typo);
-    if (offset?.paddingLeft) s.paddingLeft = offset.paddingLeft;
-    if (offset?.paddingRight) s.paddingRight = offset.paddingRight;
-    if (offset?.paddingTop) s.paddingTop = offset.paddingTop;
-    if (offset?.paddingBottom) s.paddingBottom = offset.paddingBottom;
+    const offsetVal = getTypoOffset(es.typo);
+    if (offsetVal) s.paddingBottom = offsetVal;
   }
   return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
 }
@@ -1515,11 +1512,8 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.C
   if (es?.pt) s.paddingTop = resolveDesignViewportUnits(es.pt)!;
   if (es?.pb) s.paddingBottom = resolveDesignViewportUnits(es.pb)!;
   if (es?.useFontOffset && es?.typo) {
-    const offset = getTypoOffset(es.typo);
-    if (offset?.paddingLeft) s.paddingLeft = offset.paddingLeft;
-    if (offset?.paddingRight) s.paddingRight = offset.paddingRight;
-    if (offset?.paddingTop) s.paddingTop = offset.paddingTop;
-    if (offset?.paddingBottom) s.paddingBottom = offset.paddingBottom;
+    const offsetVal = getTypoOffset(es.typo);
+    if (offsetVal) s.paddingBottom = offsetVal;
   }
   return s as React.CSSProperties;
 }

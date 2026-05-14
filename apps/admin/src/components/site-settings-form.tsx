@@ -418,7 +418,7 @@ function TextMetricCard({
 }) {
   const patch = (key: keyof SiteTextMetrics, v: string | undefined) => {
     const next = { ...(value ?? {}), [key]: v };
-    if (!next.fontSize && !next.lineHeight && !next.letterSpacing) {
+    if (!next.fontSize && !next.lineHeight && !next.letterSpacing && !next.bottomOffset) {
       onChange(undefined);
     } else {
       onChange(next);
@@ -434,7 +434,7 @@ function TextMetricCard({
           <p className="text-[10px] text-[oklch(0.5_0_0)] mt-0.5 leading-snug">{description}</p>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <MetricInput
           label="Size"
           value={value?.fontSize}
@@ -452,6 +452,12 @@ function TextMetricCard({
           value={value?.letterSpacing}
           placeholder={defaults.letterSpacing}
           onChange={(v) => patch("letterSpacing", v)}
+        />
+        <MetricInput
+          label="Offset"
+          value={value?.bottomOffset}
+          placeholder="0"
+          onChange={(v) => patch("bottomOffset", v)}
         />
       </div>
     </div>

@@ -103,6 +103,7 @@ function applyTextMetrics(
   if (metrics.fontSize) style[`--${prefix}-font-size`] = metrics.fontSize;
   if (metrics.lineHeight) style[`--${prefix}-line-height`] = metrics.lineHeight;
   if (metrics.letterSpacing) style[`--${prefix}-letter-spacing`] = metrics.letterSpacing;
+  if (metrics.bottomOffset) style[`--${prefix}-bottom-offset`] = metrics.bottomOffset;
 }
 
 const TEXT_METRIC_CSS_FIELDS: {
