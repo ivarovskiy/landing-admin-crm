@@ -483,8 +483,8 @@ export function HeroSliderV1({
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.pointerType === "mouse" && (e as any).button !== 0) return;
-    // In edit mode the slide itself must not swipe — element drag handles stopPropagation themselves
-    if (editMode) return;
+    // In edit mode, block swipe only when pointer lands on an interactive/draggable element
+    if (editMode && (e.target as HTMLElement).closest(".hero-slide__editable, [contenteditable]")) return;
     if ((e.target as HTMLElement).closest("a, button, [contenteditable]")) return;
 
     setPaused(true);
@@ -1546,8 +1546,6 @@ function useSlideElementEditor(
       "aria-label": "Drag to position slide element. Drag the bottom-right handle to resize.",
       onPointerDown: (e) => {
         if (e.pointerType === "mouse" && e.button !== 0) return;
-        e.preventDefault();
-        e.stopPropagation();
 
         const el = e.currentTarget as HTMLElement;
         const rect = el.getBoundingClientRect();
@@ -1561,8 +1559,11 @@ function useSlideElementEditor(
           window.parent.postMessage({ type: "element-clicked", blockId, elementId }, "*");
         }
 
-        // Block move drag on legacy slides — only resize is allowed without migration
+        // Legacy slides: no drag, let event bubble so slider can swipe
         if (!isResize && slide.positioningMode !== "absolute") return;
+
+        e.preventDefault();
+        e.stopPropagation();
 
         const slideEl = el.closest(".hero-slide") as HTMLElement | null;
         const scale = slideEl ? slideEl.getBoundingClientRect().width / slideEl.offsetWidth || 1 : 1;
