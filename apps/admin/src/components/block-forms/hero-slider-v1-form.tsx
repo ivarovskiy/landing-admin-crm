@@ -497,6 +497,21 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
                     />
                   </InspectorField>
                 )}
+                <InspectorToggle
+                  label="Vertical center of text area"
+                  checked={!!sg.showTextCenterV}
+                  onChange={(v) => setSg(["showTextCenterV"], v || undefined)}
+                />
+                <InspectorToggle
+                  label="Horizontal center of text area"
+                  checked={!!sg.showTextCenterH}
+                  onChange={(v) => setSg(["showTextCenterH"], v || undefined)}
+                />
+                <InspectorToggle
+                  label="🩵 Gap between media and text"
+                  checked={!!sg.showMediaGap}
+                  onChange={(v) => setSg(["showMediaGap"], v || undefined)}
+                />
               </>
             );
           })()}

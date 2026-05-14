@@ -92,6 +92,9 @@ export type StyleGuidelinesConfig = {
   showItalicLimit?: boolean;        // group 5: italic text lower-limit horizontal line
   italicLimitOffset?: number;       // px from bottom (design-canvas px, 574 basis); falls back to canvasGuidelines.italicBaselineOffset
   extras?: StyleExtraGuideline[];   // group 6: up to 4–6 additional named guidelines
+  showTextCenterV?: boolean;        // vertical center of text area (vertical line)
+  showTextCenterH?: boolean;        // horizontal center of text area (horizontal line)
+  showMediaGap?: boolean;           // vertical line at text column inner edge (gap boundary)
 };
 
 /** Canvas guideline offsets stored at block level (shared across all slides) */

@@ -144,6 +144,9 @@ type StyleGuidelinesConfig = {
   showItalicLimit?: boolean;
   italicLimitOffset?: number;
   extras?: StyleExtraGuideline[];
+  showTextCenterV?: boolean;
+  showTextCenterH?: boolean;
+  showMediaGap?: boolean;           // vertical line at text column inner edge (gap boundary)
 };
 
 type CanvasGuidelines = {
@@ -724,6 +727,7 @@ export function HeroSliderV1({
 type MediaRect = {
   left: number; right: number; top: number; bottom: number;
   height: number; stretchTop: number; stretchBottom: number;
+  textColFace?: number; // inner edge of text column facing the media (layout px)
 };
 
 type GuideLineDef = {
@@ -742,16 +746,20 @@ const SG_COLORS = {
   photoEdge:   "rgba(30, 7, 86, 0.9)",  // 🟣 photo top/bottom continuation
   italic:      "rgba(6, 70, 153, 0.9)",  // 🟡 italic lower limit
   extra:       "rgba(100, 116, 139, 0.85)",// ⚫ style extras
+  center:      "rgba(11, 96, 14, 0.85)", // 🟡 text area center guides
+  gap:         "rgba(14, 111, 100, 0.9)", // 🩵 text column inner edge (gap boundary)
 } as const;
 
 function StyleGuidelineOverlay({
   config,
   mediaRect,
   italicFallbackOffset,
+  imgSide,
 }: {
   config: StyleGuidelinesConfig;
   mediaRect: MediaRect | null;
   italicFallbackOffset?: number;
+  imgSide: "left" | "right" | "none";
 }) {
   const lines: GuideLineDef[] = [];
   let labelIdx = 1;
@@ -847,11 +855,61 @@ function StyleGuidelineOverlay({
     });
   });
 
-  if (lines.length === 0) return null;
+  // Clip-path: restrict the entire overlay to the text area only
+  let clipPath: string | undefined;
+  if (mediaRect) {
+    if (imgSide === "left") {
+      // image on left → text area is right of photo
+      clipPath = `inset(0 0 0 ${mediaRect.right}px)`;
+    } else if (imgSide === "right") {
+      // image on right → text area is left of photo
+      clipPath = `inset(0 calc(100% - ${mediaRect.left}px) 0 0)`;
+    }
+  }
+
+  // Gap guide — vertical line at text column inner edge (where the gap ends on the text side)
+  if (config.showMediaGap && mediaRect?.textColFace != null) {
+    lines.push({
+      key: "gap-edge",
+      label: lbl(),
+      type: "vertical",
+      pos: `${mediaRect.textColFace}px`,
+      color: SG_COLORS.gap,
+      group: "media-gap",
+    });
+  }
+
+  // Center lines — positioned in slide space, visible only inside clipped text area
+  const centerLines: GuideLineDef[] = [];
+  if (config.showTextCenterV) {
+    let pos: string;
+    if (mediaRect && imgSide === "left") {
+      // text area: mediaRect.right … 100%, center = (mediaRect.right + W) / 2
+      // In CSS: calc(50% + ${mediaRect.right / 2}px)
+      pos = `calc(50% + ${mediaRect.right / 2}px)`;
+    } else if (mediaRect && imgSide === "right") {
+      // text area: 0 … mediaRect.left, center = mediaRect.left / 2
+      pos = `${mediaRect.left / 2}px`;
+    } else {
+      pos = "50%";
+    }
+    centerLines.push({ key: "tc-v", label: lbl(), type: "vertical", pos, color: SG_COLORS.center, group: "text-center" });
+  }
+  if (config.showTextCenterH) {
+    centerLines.push({ key: "tc-h", label: lbl(), type: "horizontal", pos: "50%", color: SG_COLORS.center, group: "text-center" });
+  }
+
+  const allLines = [...lines, ...centerLines];
+  if (allLines.length === 0) return null;
 
   return (
-    <div className="hero-slide__guides" aria-hidden="true" data-sg="1">
-      {lines.map((line) =>
+    <div
+      className="hero-slide__guides"
+      aria-hidden="true"
+      data-sg="1"
+      style={clipPath ? { clipPath } : undefined}
+    >
+      {allLines.map((line) =>
         line.type === "vertical" ? (
           <div
             key={line.key}
@@ -954,6 +1012,13 @@ function HeroSlide({
           const tc = textCol?.getBoundingClientRect();
           const refTop = tc?.top ?? sr.top;
           const refBottom = tc?.bottom ?? sr.bottom;
+          const side = imageSide(template);
+          let textColFace: number | undefined;
+          if (tc) {
+            textColFace = side === "left"
+              ? (tc.left - sr.left) / scale
+              : (tc.right - sr.left) / scale;
+          }
           const next: MediaRect = {
             left: (mr.left - sr.left) / scale,
             right: (mr.right - sr.left) / scale,
@@ -962,13 +1027,15 @@ function HeroSlide({
             height: sr.height / scale,
             stretchTop: Math.max(0, (mr.top - refTop) / scale),
             stretchBottom: Math.max(0, (refBottom - mr.bottom) / scale),
+            textColFace,
           };
           // Skip state update if nothing changed to avoid ResizeObserver feedback loop.
           setMediaRect((prev) =>
             prev &&
             prev.left === next.left && prev.right === next.right &&
             prev.top === next.top && prev.bottom === next.bottom &&
-            prev.stretchTop === next.stretchTop && prev.stretchBottom === next.stretchBottom
+            prev.stretchTop === next.stretchTop && prev.stretchBottom === next.stretchBottom &&
+            prev.textColFace === next.textColFace
               ? prev
               : next
           );
@@ -1211,6 +1278,7 @@ function HeroSlide({
       config={canvasGuidelines?.styleGuidelines ?? {}}
       mediaRect={mediaRect}
       italicFallbackOffset={canvasGuidelines?.italicBaselineOffset}
+      imgSide={imageSide(template)}
     />
   ) : null;
 
