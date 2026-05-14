@@ -1109,7 +1109,6 @@ function HeroSlide({
       if (!slideEl) return;
       const blockEl = slideEl.closest<HTMLElement>("[data-block-id]");
       if (blockEl?.dataset.blockId !== event.data?.blockId) return;
-      if (event.data?.slideIndex !== undefined && event.data.slideIndex !== i) return;
       onSlideChange(measureSlideToAbsolute(slideEl, slide));
       if (window !== window.parent) {
         window.parent.postMessage({ type: "hero-slider-absolute-converted" }, "*");
@@ -1563,8 +1562,13 @@ function useSlideElementEditor(
         // Legacy slides: no drag, let event bubble so slider can swipe
         if (!isResize && slide.positioningMode !== "absolute") return;
 
-        e.preventDefault();
+        // Always stop slider from swiping on absolute elements
         e.stopPropagation();
+
+        // Text-edit mode (canvas drag off, not resize): let default through so TipTap gets focus
+        if (!isResize && !dragMode) return;
+
+        e.preventDefault();
 
         const slideEl = el.closest(".hero-slide") as HTMLElement | null;
         const scale = slideEl ? slideEl.getBoundingClientRect().width / slideEl.offsetWidth || 1 : 1;
@@ -1733,7 +1737,7 @@ function CopyStack({
         return (
           <div
             key="kicker"
-            className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
+            {...editableProps("kicker", cn(isLocked && "hero-slide__editable--locked", typo || undefined))}
             data-hs-draggable="kicker"
             style={s}
             data-el={`slide-${slideIndex}-kicker`}
@@ -1761,7 +1765,7 @@ function CopyStack({
           return (
             <div
               key="title"
-              className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
+              {...editableProps("title", isTitleLocked ? "hero-slide__editable--locked" : undefined)}
               data-hs-draggable="title"
               style={titleStyle}
             >
@@ -1775,7 +1779,7 @@ function CopyStack({
         return (
           <div
             key="title"
-            className={cn("hero-slide__editable", isTitleLocked && "hero-slide__editable--locked")}
+            {...editableProps("title", isTitleLocked ? "hero-slide__editable--locked" : undefined)}
             data-hs-draggable="title"
             style={titleStyle}
           >
@@ -1808,7 +1812,7 @@ function CopyStack({
         return (
           <div
             key="subtitle"
-            className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
+            {...editableProps("subtitle", cn(isLocked && "hero-slide__editable--locked", typo || undefined))}
             data-hs-draggable="subtitle"
             style={s}
             data-el={`slide-${slideIndex}-subtitle`}
@@ -1833,7 +1837,7 @@ function CopyStack({
         return (
           <div
             key="body"
-            className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
+            {...editableProps("body", cn(isLocked && "hero-slide__editable--locked", typo || undefined))}
             data-hs-draggable="body"
             style={s}
             data-el={`slide-${slideIndex}-body`}
@@ -1859,7 +1863,7 @@ function CopyStack({
         return (
           <div
             key="quote"
-            className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls)}
+            {...editableProps("quote", cn(isLocked && "hero-slide__editable--locked", cls))}
             data-hs-draggable="quote"
             style={s}
             data-el={`slide-${slideIndex}-quote`}
@@ -1945,7 +1949,7 @@ function ExtraElement({
     if (inEditMode) {
       return (
         <div
-          className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
+          {...(editableProps?.(extraKey, isLocked ? "hero-slide__editable--locked" : undefined) ?? { className: cn("hero-slide__editable", isLocked && "hero-slide__editable--locked") })}
           data-hs-draggable={extraKey}
           style={style}
         >
@@ -1973,7 +1977,7 @@ function ExtraElement({
     if (inEditMode) {
       return (
         <div
-          className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined)}
+          {...(editableProps?.(extraKey, cn(isLocked && "hero-slide__editable--locked", typo || undefined)) ?? { className: cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined) })}
           data-hs-draggable={extraKey}
           style={style}
           data-el={slotId}
@@ -2002,7 +2006,7 @@ function ExtraElement({
     if (inEditMode) {
       return (
         <div
-          className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked")}
+          {...(editableProps?.(extraKey, isLocked ? "hero-slide__editable--locked" : undefined) ?? { className: cn("hero-slide__editable", isLocked && "hero-slide__editable--locked") })}
           data-hs-draggable={extraKey}
           style={style}
         >
@@ -2030,7 +2034,7 @@ function ExtraElement({
   if (inEditMode) {
     return (
       <div
-        className={cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls)}
+        {...(editableProps?.(extraKey, cn(isLocked && "hero-slide__editable--locked", cls)) ?? { className: cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", cls) })}
         data-hs-draggable={extraKey}
         style={style}
         data-el={slotId}
