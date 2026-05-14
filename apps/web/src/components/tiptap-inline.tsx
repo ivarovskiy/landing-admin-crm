@@ -111,6 +111,10 @@ type FloatingToolbarProps = {
   onFontOffset?: () => void;
   /** When true, the font offset button is shown in the toolbar. */
   fontOffsetAvailable?: boolean;
+  /** Called when the user picks an alignment — propagates to the element level (not just paragraph). */
+  onElementAlignChange?: (align: "left" | "center" | "right") => void;
+  /** Current element-level alignment (controls active state for align buttons). */
+  elementAlign?: "left" | "center" | "right";
 };
 
 function Btn({
@@ -193,11 +197,14 @@ function FloatingToolbar({
   fontOffsetActive,
   onFontOffset,
   fontOffsetAvailable,
+  onElementAlignChange,
+  elementAlign,
 }: FloatingToolbarProps) {
   if (!state) return null;
 
+  const showAlignButtons = state.multiline || !!onElementAlignChange;
   // 2-row height for multiline (lists + alignment + blockquote wrap), 1-row for single-line
-  const toolbarH = state.multiline ? 84 : 44;
+  const toolbarH = state.multiline ? 84 : showAlignButtons ? 56 : 44;
   const gap = 8;
   const rawTop = state.rect.top - toolbarH - gap;
   const top = Math.max(8, rawTop);
@@ -289,13 +296,25 @@ function FloatingToolbar({
 
       <Sep />
 
-      {/* Text alignment — only for multiline fields */}
-      {state.multiline && (
+      {/* Text alignment — always shown when onElementAlignChange is provided (element-level),
+          or for multiline fields (paragraph-level). Justify only for multiline. */}
+      {showAlignButtons && (
         <>
-          <Btn label="≡L" title="Align left" active={state.alignLeft} handler={onAlignLeft} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
-          <Btn label="≡C" title="Align center" active={state.alignCenter} handler={onAlignCenter} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
-          <Btn label="≡R" title="Align right" active={state.alignRight} handler={onAlignRight} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
-          <Btn label="≡J" title="Justify" active={state.alignJustify} handler={onAlignJustify} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+          <Btn label="≡L" title="Align left"
+            active={onElementAlignChange ? (elementAlign ?? "left") === "left" : state.alignLeft}
+            handler={() => { onAlignLeft(); onElementAlignChange?.("left"); }}
+            style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+          <Btn label="≡C" title="Align center"
+            active={onElementAlignChange ? elementAlign === "center" : state.alignCenter}
+            handler={() => { onAlignCenter(); onElementAlignChange?.("center"); }}
+            style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+          <Btn label="≡R" title="Align right"
+            active={onElementAlignChange ? elementAlign === "right" : state.alignRight}
+            handler={() => { onAlignRight(); onElementAlignChange?.("right"); }}
+            style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+          {state.multiline && (
+            <Btn label="≡J" title="Justify" active={state.alignJustify} handler={onAlignJustify} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+          )}
           <Sep />
         </>
       )}
@@ -375,6 +394,8 @@ export function TipTapInline({
   fontOffsetEnabled,
   onFontOffsetToggle,
   currentFontHasOffset,
+  onElementAlignChange,
+  elementAlign,
 }: {
   value: string;
   onChange?: (html: string) => void;
@@ -399,6 +420,10 @@ export function TipTapInline({
   onFontOffsetToggle?: () => void;
   /** When true, the font offset button is shown in the toolbar. */
   currentFontHasOffset?: boolean;
+  /** Called when the user picks an alignment — propagates to element-level positioning. */
+  onElementAlignChange?: (align: "left" | "center" | "right") => void;
+  /** Current element-level alignment (for active state in toolbar). */
+  elementAlign?: "left" | "center" | "right";
 }) {
   const [toolbarState, setToolbarState] = useState<ToolbarState>(null);
   const isSettingContent = useRef(false);
@@ -684,6 +709,8 @@ export function TipTapInline({
         fontOffsetAvailable={currentFontHasOffset}
         fontOffsetActive={fontOffsetEnabled}
         onFontOffset={onFontOffsetToggle}
+        onElementAlignChange={onElementAlignChange}
+        elementAlign={elementAlign}
       />
       <EditorContent editor={editor} className={className} />
       {multiline && showWordCount && (
