@@ -26,7 +26,6 @@ type ElementStyle = {
   pb?: string;
   x?: string;
   y?: string;
-  w?: string;
   align?: "left" | "center" | "right";
   size?: string;
   typo?: string; // typography class from design system
@@ -1219,13 +1218,14 @@ function setSlideElementViewportStyle(
   profile: HeroViewportProfileKey | null | undefined,
   patch: ElementStyleProfile,
 ): Slide {
-  if (!profile) return setSlideElementStyle(slide, key, {
-    ...(getSlideElementStyle(slide, key) ?? {}),
-    ...patch,
-  });
   const current = getSlideElementStyle(slide, key) ?? {};
-  return setSlideElementStyle(slide, key, {
+  const baseNext: ElementStyle = {
     ...current,
+    ...patch,
+  };
+  if (!profile) return setSlideElementStyle(slide, key, baseNext);
+  return setSlideElementStyle(slide, key, {
+    ...baseNext,
     viewportProfiles: {
       ...(current.viewportProfiles ?? {}),
       [profile]: {
@@ -1320,7 +1320,6 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.C
   if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
   if (es?.pt) s.paddingTop = resolveDesignViewportUnits(es.pt)!;
   if (es?.pb) s.paddingBottom = resolveDesignViewportUnits(es.pb)!;
-  if (es?.w) s.width = resolveDesignViewportUnits(es.w)!;
   return s as React.CSSProperties;
 }
 
@@ -1377,7 +1376,6 @@ function measureSlideToAbsolute(
     result = setSlideElementViewportStyle(result, k, viewportProfile, {
       mt: mt !== 0 ? `${mt}px` : undefined,
       ml: ml !== 0 ? `${ml}px` : undefined,
-      w: `${Math.round(elRect.width / scale)}px`,
       x: undefined,
       y: undefined,
     });
