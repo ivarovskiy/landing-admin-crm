@@ -1323,6 +1323,14 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.C
   return s as React.CSSProperties;
 }
 
+function textContentStyle(es?: ElementStyle): React.CSSProperties | undefined {
+  if (!es) return undefined;
+  const s: Record<string, string> = {};
+  if (es.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
+  if (es.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
+  return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
+}
+
 /** Converts a legacy flow slide to absolute positioning on first drag.
  *  Each element's new mt = old mt + y + getPrecedingMt (= its absolute Y from top of copy-main).
  *  Idempotent: if positioningMode is already "absolute", returns slide unchanged. */
@@ -1793,7 +1801,7 @@ function CopyStack({
               style={titleStyle}
             >
               {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
-              <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} shadowContent={renderRichText(title)}>
+              <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)} shadowContent={renderRichText(title)}>
                 <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} />
               </OutlineStampText>
             </div>
@@ -1807,7 +1815,7 @@ function CopyStack({
             style={titleStyle}
           >
             {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
-            <p className={titleClass} data-el={`slide-${slideIndex}-title`}>
+            <p className={titleClass} data-el={`slide-${slideIndex}-title`} style={textContentStyle(titleEs)}>
               <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} />
             </p>
           </div>
@@ -1977,7 +1985,7 @@ function ExtraElement({
           style={style}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
-          <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} shadowContent={renderRichText(extra.text)}>
+          <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
             <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} />
           </OutlineStampText>
         </div>
@@ -2034,7 +2042,7 @@ function ExtraElement({
           style={style}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
-          <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} shadowContent={renderRichText(extra.text)}>
+          <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
             <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} />
           </OutlineStampText>
         </div>
