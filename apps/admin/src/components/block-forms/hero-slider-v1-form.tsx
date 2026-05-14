@@ -9,6 +9,7 @@ import {
   setGroupLock,
   getSlideText as getTextLocal,
   getSlideStyle,
+  migrateSlideToAbsolute,
 } from "./slide-layout-utils";
 import {
   BlockLayoutSection,
@@ -467,6 +468,7 @@ function SlideEditor({
   const mobile = s?.layout?.mobile ?? {};
   const template = s?.template ?? "copy-left-image-right";
   const tuningScopeLabel = tuningScope === "ipadPro" ? "iPad Pro overrides" : "Desktop/default";
+  const isAbsoluteSlide = s?.positioningMode === "absolute";
 
   return (
     <div className="rounded-md border bg-muted/10">
@@ -543,10 +545,24 @@ function SlideEditor({
       {/* Canvas editor — shown independently of collapsed state */}
       {showCanvas && (
         <div className="border-t px-2 py-2">
+          {!isAbsoluteSlide && (
+            <div className="mb-2 rounded-md border border-red-500/40 bg-red-500/10 p-2">
+              <button
+                type="button"
+                className="w-full rounded-md bg-red-600 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-sm hover:bg-red-700"
+                onClick={() => onChange(migrateSlideToAbsolute(s))}
+              >
+                Перенести на absolute
+              </button>
+              <p className="mt-1.5 text-[10px] leading-snug text-red-700">
+                Конвертує поточні каскадні відступи у незалежні top/left координати для drag.
+              </p>
+            </div>
+          )}
           <SlideCanvas
             slide={s}
             tuningScope={tuningScope}
-            enableDrag={enableCanvasDrag}
+            enableDrag={enableCanvasDrag && isAbsoluteSlide}
             onChange={onChange}
             gapOffset={canvasGuidelines.gapOffset}
             baselineOffset={canvasGuidelines.baselineOffset}
@@ -556,6 +572,25 @@ function SlideEditor({
       )}
 
       {!collapsed && <div className="p-2 space-y-2">
+        {!isAbsoluteSlide ? (
+          <div className="rounded-md border border-red-500/40 bg-red-500/10 p-2">
+            <button
+              type="button"
+              className="w-full rounded-md bg-red-600 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-sm hover:bg-red-700"
+              onClick={() => onChange(migrateSlideToAbsolute(s))}
+            >
+              Перенести на absolute
+            </button>
+            <p className="mt-1.5 text-[10px] leading-snug text-red-700">
+              Старі слайди лишаються у flow, щоб вигляд збігався з сайтом. Натисни перед незалежним drag.
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5 text-[10px] font-medium text-emerald-700">
+            <Check className="h-3 w-3" /> Absolute positioning enabled
+          </div>
+        )}
+
         {/* Preset — applies full clean slide from Figma design */}
         <InspectorField label="Preset" stacked>
           <InspectorSelect

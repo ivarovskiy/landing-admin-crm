@@ -3,7 +3,13 @@
  * No React or DOM dependencies — safe to import in tests and in form components.
  */
 
-import type { Slide, ElementStyle, SlideExtra } from "./hero-slider-presets";
+import type {
+  Slide,
+  ElementStyle,
+  ElementStyleProfile,
+  HeroViewportProfileKey,
+  SlideExtra,
+} from "./hero-slider-presets";
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -31,6 +37,46 @@ export function getSlideStyle(slide: Slide, key: string): ElementStyle | undefin
   return slide.extras?.find((e) => e.id === key)?.style;
 }
 
+export function setSlideStyle(slide: Slide, key: string, style: ElementStyle): Slide {
+  if (key === "title") return { ...slide, titleStyle: style };
+  if (key === "subtitle") return { ...slide, subtitleStyle: style };
+  if (key === "kicker") return { ...slide, kickerStyle: style };
+  if (key === "body") return { ...slide, bodyStyle: style };
+  if (key === "quote") return { ...slide, quoteStyle: style };
+  const extras = Array.isArray(slide.extras) ? slide.extras : [];
+  return { ...slide, extras: extras.map((e) => e.id === key ? { ...e, style } : e) };
+}
+
+function getEffectiveSlideStyle(
+  slide: Slide,
+  key: string,
+  profile?: HeroViewportProfileKey,
+): ElementStyle | undefined {
+  const base = getSlideStyle(slide, key);
+  if (!base || !profile) return base;
+  const profileStyle = base.viewportProfiles?.[profile];
+  return profileStyle ? { ...base, ...profileStyle } : base;
+}
+
+function setSlideProfileStyle(
+  slide: Slide,
+  key: string,
+  profile: HeroViewportProfileKey,
+  patch: ElementStyleProfile,
+): Slide {
+  const base = getSlideStyle(slide, key) ?? {};
+  return setSlideStyle(slide, key, {
+    ...base,
+    viewportProfiles: {
+      ...(base.viewportProfiles ?? {}),
+      [profile]: {
+        ...(base.viewportProfiles?.[profile] ?? {}),
+        ...patch,
+      },
+    },
+  });
+}
+
 /** Returns the ordered list of visible element keys for a slide. */
 export function getOrderedKeys(slide: Slide): string[] {
   const extras = Array.isArray(slide.extras) ? slide.extras : [];
@@ -49,6 +95,68 @@ export function getOrderedKeys(slide: Slide): string[] {
     ...stored.filter((k) => allSet.has(k) && !used.has(k) && (used.add(k), true)),
     ...all.filter((k) => !used.has(k)),
   ];
+}
+
+function getViewportProfileKeys(slide: Slide): HeroViewportProfileKey[] {
+  const profiles = new Set<HeroViewportProfileKey>();
+  for (const key of getOrderedKeys(slide)) {
+    if (getSlideStyle(slide, key)?.viewportProfiles?.ipadPro) profiles.add("ipadPro");
+  }
+  return [...profiles];
+}
+
+function getPrecedingMt(slide: Slide, targetKey: string, profile?: HeroViewportProfileKey): number {
+  let sum = 0;
+  for (const key of getOrderedKeys(slide)) {
+    if (key === targetKey) break;
+    sum += parsePx(getEffectiveSlideStyle(slide, key, profile)?.mt);
+  }
+  return sum;
+}
+
+function toAbsoluteStyle(
+  slide: Slide,
+  key: string,
+  style: ElementStyle,
+  profile?: HeroViewportProfileKey,
+): ElementStyleProfile {
+  const rest = Object.fromEntries(
+    Object.entries(style).filter(([key]) => key !== "viewportProfiles"),
+  ) as ElementStyleProfile;
+  const nextMt = Math.round(parsePx(style.mt) + parsePx(style.y) + getPrecedingMt(slide, key, profile));
+  const nextMl = Math.round(parsePx(style.ml) + parsePx(style.x));
+  return {
+    ...rest,
+    mt: nextMt !== 0 ? `${nextMt}px` : undefined,
+    ml: nextMl !== 0 ? `${nextMl}px` : undefined,
+    x: undefined,
+    y: undefined,
+  };
+}
+
+export function migrateSlideToAbsolute(slide: Slide): Slide {
+  if (slide.positioningMode === "absolute") return slide;
+  const source = slide;
+  let result = { ...slide };
+
+  for (const key of getOrderedKeys(source)) {
+    const style = getEffectiveSlideStyle(source, key);
+    if (!style) continue;
+    result = setSlideStyle(result, key, {
+      ...(getSlideStyle(result, key) ?? {}),
+      ...toAbsoluteStyle(source, key, style),
+    });
+  }
+
+  for (const profile of getViewportProfileKeys(source)) {
+    for (const key of getOrderedKeys(source)) {
+      const style = getEffectiveSlideStyle(source, key, profile);
+      if (!style) continue;
+      result = setSlideProfileStyle(result, key, profile, toAbsoluteStyle(source, key, style, profile));
+    }
+  }
+
+  return { ...result, positioningMode: "absolute" };
 }
 
 // ─── Lock helpers ─────────────────────────────────────────────────────────────

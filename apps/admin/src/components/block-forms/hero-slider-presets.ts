@@ -42,6 +42,8 @@ export type ElementStyle = {
   mr?: string;   // margin-right
   pt?: string;   // padding-top
   pb?: string;   // padding-bottom
+  x?: string;    // legacy drag offset folded into ml during absolute migration
+  y?: string;    // legacy drag offset folded into mt during absolute migration
   align?: "left" | "center" | "right";   // text-align + align-self
   size?: string;  // font-size override
   typo?: TypoClass; // typography class from design system
@@ -148,6 +150,8 @@ export type Slide = {
       desktop?: HeroDesktopLayout;
     }>>;
   };
+  /** undefined/"flow" keeps legacy cascade margins; "absolute" stores independent mt/ml coordinates. */
+  positioningMode?: "flow" | "absolute";
 };
 
 export const TEMPLATE_OPTIONS: { value: SlideTemplate; label: string }[] = [
@@ -231,9 +235,9 @@ function media(alt: string, aspect: string, fit: ObjectFit = "cover"): SlideMedi
 
 /** Fields allowed per template — everything else gets removed on switch */
 export const TEMPLATE_FIELDS: Record<SlideTemplate, (keyof Slide)[]> = {
-  "image-left-copy-right":  ["template", "quote", "kicker", "title", "subtitle", "body", "bodyVariant", "cta", "media", "quoteStyle", "kickerStyle", "titleStyle", "subtitleStyle", "bodyStyle", "ctaStyle", "layout"],
-  "copy-left-image-right":  ["template", "quote", "kicker", "title", "subtitle", "body", "bodyVariant", "cta", "media", "quoteStyle", "kickerStyle", "titleStyle", "subtitleStyle", "bodyStyle", "ctaStyle", "layout"],
-  "full-image":             ["template", "media", "layout"],
+  "image-left-copy-right":  ["template", "quote", "kicker", "title", "subtitle", "body", "bodyVariant", "cta", "media", "extras", "elementOrder", "quoteStyle", "kickerStyle", "titleStyle", "subtitleStyle", "bodyStyle", "ctaStyle", "layout", "positioningMode"],
+  "copy-left-image-right":  ["template", "quote", "kicker", "title", "subtitle", "body", "bodyVariant", "cta", "media", "extras", "elementOrder", "quoteStyle", "kickerStyle", "titleStyle", "subtitleStyle", "bodyStyle", "ctaStyle", "layout", "positioningMode"],
+  "full-image":             ["template", "media", "layout", "positioningMode"],
 };
 
 /** Get preset by Figma slide number */
