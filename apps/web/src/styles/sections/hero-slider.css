@@ -180,8 +180,6 @@
 .hero-slide__editable {
   position: relative;
   cursor: grab;
-  outline: 1px solid color-mix(in srgb, var(--color-primary, #ff2b57) 70%, transparent);
-  outline-offset: 3px;
   touch-action: none;
   align-self: stretch;
 }
@@ -190,7 +188,6 @@
 .hero-slide__editable:focus-visible,
 .hero-slide__editable--dragging {
   z-index: 5;
-  outline-color: color-mix(in srgb, var(--color-primary, #ff2b57) 90%, white 10%);
 }
 
 .hero-slide__editable:active,
@@ -201,34 +198,20 @@
 .hero-slide__editable--resizing {
   z-index: 5;
   cursor: nwse-resize;
-  outline-color: color-mix(in srgb, var(--color-primary, #ff2b57) 90%, white 10%);
 }
 
 .hero-slide__editable::after {
-  content: "";
-  position: absolute;
-  inset: -7px;
-  border: 1px dashed color-mix(in srgb, var(--color-primary, #ff2b57) 45%, transparent);
-  pointer-events: none;
+  content: none;
 }
 
 .hero-slide__editable::before {
-  content: "";
-  position: absolute;
-  right: -8px;
-  bottom: -8px;
-  width: 7px;
-  height: 7px;
-  border: 1px solid color-mix(in srgb, var(--color-primary, #ff2b57) 75%, transparent);
-  background: color-mix(in srgb, var(--color-primary, #ff2b57) 30%, white 70%);
-  pointer-events: none;
+  content: none;
 }
 
 .hero-slide__editable:hover::before,
 .hero-slide__editable:focus-visible::before,
 .hero-slide__editable--resizing::before {
-  background: color-mix(in srgb, var(--color-primary, #ff2b57) 72%, white 28%);
-  border-color: color-mix(in srgb, var(--color-primary, #ff2b57) 95%, transparent);
+  content: none;
 }
 
 /* When copy-main contains a list body — anchor content to bottom */

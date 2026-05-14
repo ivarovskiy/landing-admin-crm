@@ -1326,7 +1326,19 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.C
 function textContentStyle(es?: ElementStyle): React.CSSProperties | undefined {
   if (!es) return undefined;
   const s: Record<string, string> = {};
-  if (es.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
+  if (es.size) {
+    const fontSize = resolveDesignViewportUnits(es.size)!;
+    const sizePx = parseFloat(fontSize);
+    s.fontSize = fontSize;
+    if (Number.isFinite(sizePx) && fontSize.endsWith("px")) {
+      const ratio =
+        es.typo === "typo-homepage-header" ? 126 / 104 :
+        es.typo === "typo-subtitle" ? 60 / 47 :
+        es.typo === "typo-hero-title" ? 0.92 :
+        86 / 78;
+      s.lineHeight = `${Math.round(sizePx * ratio)}px`;
+    }
+  }
   if (es.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
   return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
 }
