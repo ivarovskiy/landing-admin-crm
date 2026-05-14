@@ -105,6 +105,12 @@ type FloatingToolbarProps = {
   onTypoChange?: (cls: string) => void;
   /** When provided, shown as the selected value in the typo dropdown (external state). */
   currentTypoClass?: string;
+  /** Whether the font offset is currently applied to this block. */
+  fontOffsetActive?: boolean;
+  /** Called when user toggles the font offset button. Applies to the whole block, not inline. */
+  onFontOffset?: () => void;
+  /** When true, the font offset button is shown in the toolbar. */
+  fontOffsetAvailable?: boolean;
 };
 
 function Btn({
@@ -184,6 +190,9 @@ function FloatingToolbar({
   typoOptions,
   onTypoChange,
   currentTypoClass,
+  fontOffsetActive,
+  onFontOffset,
+  fontOffsetAvailable,
 }: FloatingToolbarProps) {
   if (!state) return null;
 
@@ -312,6 +321,14 @@ function FloatingToolbar({
 
       {/* Thin space (U+2009) — narrow typographic space */}
       <Btn label="½·" title="Insert thin space (½ пробілу, U+2009)" active={false} handler={onThinSpace} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+
+      {/* Font offset toggle — whole-block padding, only for fonts with configured offset */}
+      {fontOffsetAvailable && onFontOffset && (
+        <>
+          <Sep />
+          <Btn label="↤" title="Apply font offset to this block" active={!!fontOffsetActive} handler={onFontOffset} style={{ fontSize: 13 }} />
+        </>
+      )}
     </div>,
     document.body,
   );
@@ -355,6 +372,9 @@ export function TipTapInline({
   onTypoChange,
   currentTypoClass,
   showWordCount = false,
+  fontOffsetEnabled,
+  onFontOffsetToggle,
+  currentFontHasOffset,
 }: {
   value: string;
   onChange?: (html: string) => void;
@@ -373,6 +393,12 @@ export function TipTapInline({
   currentTypoClass?: string;
   /** Show word count below the editor (opt-in, default false). */
   showWordCount?: boolean;
+  /** Whether the font offset is currently applied to this whole block. */
+  fontOffsetEnabled?: boolean;
+  /** Toggle the font offset on this block (fires externally; does not modify inline marks). */
+  onFontOffsetToggle?: () => void;
+  /** When true, the font offset button is shown in the toolbar. */
+  currentFontHasOffset?: boolean;
 }) {
   const [toolbarState, setToolbarState] = useState<ToolbarState>(null);
   const isSettingContent = useRef(false);
@@ -655,6 +681,9 @@ export function TipTapInline({
         onIndent={() => editor?.chain().focus().sinkListItem("listItem").run()}
         onOutdent={() => editor?.chain().focus().liftListItem("listItem").run()}
         onThinSpace={handleThinSpace}
+        fontOffsetAvailable={currentFontHasOffset}
+        fontOffsetActive={fontOffsetEnabled}
+        onFontOffset={onFontOffsetToggle}
       />
       <EditorContent editor={editor} className={className} />
       {multiline && showWordCount && (

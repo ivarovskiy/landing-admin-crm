@@ -5,7 +5,7 @@ import { Container, Hairline, Kicker, OutlineStampText, STAMP_TITLE, STAMP_SECTI
 import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { TipTapInline, renderRichText } from "@/components/rich-text";
-import { TYPO_PRESETS } from "@/lib/typo-presets";
+import { TYPO_PRESETS, getTypoOffset } from "@/lib/typo-presets";
 
 type SlideTemplate =
   | "image-left-copy-right"
@@ -32,6 +32,7 @@ type ElementStyle = {
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
   locked?: boolean; // prevents drag/resize in preview and canvas
   groupId?: string; // group identifier for moving elements together
+  useFontOffset?: boolean; // opt-in per-font padding offset (see getTypoOffset)
   viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
 };
 
@@ -271,6 +272,13 @@ function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
   }
   if (es.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
   if (es.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
+  if (es.useFontOffset && es.typo) {
+    const offset = getTypoOffset(es.typo);
+    if (offset?.paddingLeft) s.paddingLeft = offset.paddingLeft;
+    if (offset?.paddingRight) s.paddingRight = offset.paddingRight;
+    if (offset?.paddingTop) s.paddingTop = offset.paddingTop;
+    if (offset?.paddingBottom) s.paddingBottom = offset.paddingBottom;
+  }
   return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
 }
 
@@ -733,9 +741,9 @@ type GuideLineDef = {
 const SG_COLORS = {
   boundary:    "rgba(239, 68, 68, 0.9)",   // 🔴 slide edges
   photoMargin: "rgba(59, 130, 246, 0.9)",  // 🔵 photo placement margins
-  photoInner:  "rgba(16, 185, 129, 0.9)",  // 🟢 inner offsets from photo bounds
-  photoEdge:   "rgba(139, 92, 246, 0.9)",  // 🟣 photo top/bottom continuation
-  italic:      "rgba(245, 158, 11, 0.9)",  // 🟡 italic lower limit
+  photoInner:  "rgba(8, 60, 43, 0.9)",  // 🟢 inner offsets from photo bounds
+  photoEdge:   "rgba(30, 7, 86, 0.9)",  // 🟣 photo top/bottom continuation
+  italic:      "rgba(6, 70, 153, 0.9)",  // 🟡 italic lower limit
   extra:       "rgba(100, 116, 139, 0.85)",// ⚫ style extras
 } as const;
 
@@ -1506,6 +1514,13 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.C
   if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
   if (es?.pt) s.paddingTop = resolveDesignViewportUnits(es.pt)!;
   if (es?.pb) s.paddingBottom = resolveDesignViewportUnits(es.pb)!;
+  if (es?.useFontOffset && es?.typo) {
+    const offset = getTypoOffset(es.typo);
+    if (offset?.paddingLeft) s.paddingLeft = offset.paddingLeft;
+    if (offset?.paddingRight) s.paddingRight = offset.paddingRight;
+    if (offset?.paddingTop) s.paddingTop = offset.paddingTop;
+    if (offset?.paddingBottom) s.paddingBottom = offset.paddingBottom;
+  }
   return s as React.CSSProperties;
 }
 
@@ -1972,7 +1987,7 @@ function CopyStack({
             data-el={`slide-${slideIndex}-kicker`}
           >
             {!isLocked && dragMode && <DragHandle {...dragHandleProps("kicker")} />}
-            <TipTapInline value={kicker} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, kicker: html })} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} />
+            <TipTapInline value={kicker} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, kicker: html })} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, kickerStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} />
           </div>
         );
       }
@@ -2000,7 +2015,7 @@ function CopyStack({
             >
               {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
               <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)} shadowContent={renderRichText(title)}>
-                <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} />
+                <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} />
               </OutlineStampText>
             </div>
           );
@@ -2014,7 +2029,7 @@ function CopyStack({
           >
             {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
             <p className={titleClass} data-el={`slide-${slideIndex}-title`} style={textContentStyle(titleEs)}>
-              <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} />
+              <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} />
             </p>
           </div>
         );
@@ -2065,7 +2080,7 @@ function CopyStack({
             data-el={`slide-${slideIndex}-subtitle`}
           >
             {!isLocked && dragMode && <DragHandle {...dragHandleProps("subtitle")} />}
-            <TipTapInline value={subtitle} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, subtitle: html })} typoClass={typo} typoOptions={TYPO_PRESETS} />
+            <TipTapInline value={subtitle} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, subtitle: html })} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, subtitleStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} />
           </div>
         );
       }
@@ -2090,7 +2105,7 @@ function CopyStack({
             data-el={`slide-${slideIndex}-body`}
           >
             {!isLocked && dragMode && <DragHandle {...dragHandleProps("body")} />}
-            <TipTapInline value={body} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, body: html })} typoClass={typo} typoOptions={TYPO_PRESETS} showWordCount />
+            <TipTapInline value={body} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, body: html })} typoClass={typo} typoOptions={TYPO_PRESETS} showWordCount fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, bodyStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} />
           </div>
         );
       }
@@ -2116,7 +2131,7 @@ function CopyStack({
             data-el={`slide-${slideIndex}-quote`}
           >
             {!isLocked && dragMode && <DragHandle {...dragHandleProps("quote")} />}
-            <TipTapInline value={quote} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, quote: html })} typoClass={typo} typoOptions={TYPO_PRESETS} />
+            <TipTapInline value={quote} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, quote: html })} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, quoteStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} />
           </div>
         );
       }
@@ -2190,6 +2205,14 @@ function ExtraElement({
         onSlideChange!({ ...slide!, extras: extras.map(e => e.id === extra.id ? { ...e, text: html } : e) });
       }
     : null;
+  const extraFontOffsetEnabled = !!extra.style?.useFontOffset;
+  const extraFontHasOffset = !!getTypoOffset(typo);
+  const onExtraFontOffsetToggle = !dragMode && inEditMode
+    ? () => {
+        const extras = Array.isArray(slide!.extras) ? slide!.extras : [];
+        onSlideChange!({ ...slide!, extras: extras.map(e => e.id === extra.id ? { ...e, style: { ...(e.style ?? {}), useFontOffset: !e.style?.useFontOffset } } : e) });
+      }
+    : undefined;
 
   if (extra.kind === "stamp") {
     const cls = cn("hero-slide__title", typo);
@@ -2202,7 +2225,7 @@ function ExtraElement({
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
-            <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} />
+            <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} />
           </OutlineStampText>
         </div>
       );
@@ -2244,7 +2267,7 @@ function ExtraElement({
           data-el={slotId}
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
-          <Kicker><TipTapInline value={extra.text} onChange={updateText ?? undefined} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} /></Kicker>
+          <Kicker><TipTapInline value={extra.text} onChange={updateText ?? undefined} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} /></Kicker>
         </div>
       );
     }
@@ -2273,7 +2296,7 @@ function ExtraElement({
         >
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
-            <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} />
+            <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} />
           </OutlineStampText>
         </div>
       );
@@ -2315,7 +2338,7 @@ function ExtraElement({
         data-el={slotId}
       >
         {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
-        <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} />
+        <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} />
       </div>
     );
   }

@@ -67,6 +67,7 @@ import {
   BODY_VARIANT_OPTIONS,
   presetSlide,
   newSlide,
+  getTypoOffset,
 } from "./hero-slider-presets";
 
 const ELEMENT_ALIGN_OPTIONS = [
@@ -1110,6 +1111,13 @@ function ElementStyleEditor({
         checked={!!(style?.locked)}
         onChange={(v) => onChange({ ...(style ?? {}), locked: v || undefined })}
       />
+      {showTypo && !!getTypoOffset(s.typo) && (
+        <InspectorToggle
+          label="Apply font offset"
+          checked={!!(style?.useFontOffset)}
+          onChange={(v) => onChange({ ...(style ?? {}), useFontOffset: v || undefined })}
+        />
+      )}
     </div>
   );
 }

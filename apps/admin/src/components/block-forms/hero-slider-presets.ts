@@ -52,6 +52,7 @@ export type ElementStyle = {
   snapToBaseline?: boolean; // lock Y to the canvas baseline guideline
   locked?: boolean;         // prevent position/size changes in canvas and preview
   groupId?: string;         // group identifier — used for bulk lock/unlock in the form
+  useFontOffset?: boolean;  // opt-in per-font padding offset (see getTypoOffset)
   viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
 };
 
@@ -411,4 +412,24 @@ export function newSlide(preset: PresetKey = "2"): Slide {
     id: crypto?.randomUUID?.() ?? `slide-${Date.now()}`,
     ...presetSlide(preset),
   };
+}
+
+// ─── Per-font optional padding offsets ───────────────────────────────────────
+
+export type TypoOffsetConfig = {
+  paddingLeft?: string;
+  paddingRight?: string;
+  paddingTop?: string;
+  paddingBottom?: string;
+};
+
+/** Only fonts listed here expose the "Apply offset" toggle in the admin form. */
+export const TYPO_OFFSET_MAP: Partial<Record<string, TypoOffsetConfig>> = {
+  "typo-content-header": { paddingLeft: "20px" },
+  // "typo-homepage-header": TBD with client
+};
+
+export function getTypoOffset(typoClass?: string): TypoOffsetConfig | undefined {
+  if (!typoClass) return undefined;
+  return TYPO_OFFSET_MAP[typoClass];
 }
