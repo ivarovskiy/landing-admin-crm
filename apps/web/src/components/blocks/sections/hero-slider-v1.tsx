@@ -98,6 +98,7 @@ type Slide = {
   subtitleStyle?: ElementStyle;
   bodyStyle?: ElementStyle;
   ctaStyle?: ElementStyle;
+  positioningMode?: "absolute"; // undefined = legacy flow, "absolute" = independent canvas
   layout?: {
     desktop?: HeroDesktopLayout;
     mobile?: {
@@ -1253,6 +1254,56 @@ function preserveVisualPositions(
   return result;
 }
 
+/** Edit-mode positioning: position:absolute so elements are independent (no cascade).
+ *  For legacy slides (no positioningMode) adds getPrecedingMt so visual matches live flow. */
+function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.CSSProperties {
+  const mtPx = parseFloat(resolveDesignViewportUnits(es?.mt) ?? "0") || 0;
+  const mlPx = parseFloat(resolveDesignViewportUnits(es?.ml) ?? "0") || 0;
+  const xPx  = parseFloat(resolveDesignViewportUnits(es?.x)  ?? "0") || 0;
+  const yPx  = parseFloat(resolveDesignViewportUnits(es?.y)  ?? "0") || 0;
+  const top  = slide.positioningMode === "absolute"
+    ? mtPx + yPx
+    : mtPx + yPx + getPrecedingMt(slide, key);
+  const left = mlPx + xPx;
+  const s: Record<string, string> = {
+    position: "absolute",
+    top: `${top}px`,
+    left: `${left}px`,
+  };
+  if (es?.align) s.textAlign = es.align;
+  if (es?.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
+  if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
+  if (es?.pt) s.paddingTop = resolveDesignViewportUnits(es.pt)!;
+  if (es?.pb) s.paddingBottom = resolveDesignViewportUnits(es.pb)!;
+  return s as React.CSSProperties;
+}
+
+/** Converts a legacy flow slide to absolute positioning on first drag.
+ *  Each element's new mt = old mt + y + getPrecedingMt (= its absolute Y from top of copy-main).
+ *  Idempotent: if positioningMode is already "absolute", returns slide unchanged. */
+function migrateSlideToAbsolute(slide: Slide): Slide {
+  if (slide.positioningMode === "absolute") return slide;
+  let result = { ...slide };
+  for (const k of buildSlideOrderedKeys(slide)) {
+    const es = getSlideElementStyle(slide, k);
+    if (!es) continue;
+    const mtPx = parseFloat(resolveDesignViewportUnits(es.mt) ?? "0") || 0;
+    const yPx  = parseFloat(resolveDesignViewportUnits(es.y)  ?? "0") || 0;
+    const mlPx = parseFloat(resolveDesignViewportUnits(es.ml) ?? "0") || 0;
+    const xPx  = parseFloat(resolveDesignViewportUnits(es.x)  ?? "0") || 0;
+    const newMt = Math.round(mtPx + yPx + getPrecedingMt(slide, k));
+    const newMl = Math.round(mlPx + xPx);
+    result = setSlideElementStyle(result, k, {
+      ...es,
+      mt: newMt !== 0 ? `${newMt}px` : undefined,
+      ml: newMl !== 0 ? `${newMl}px` : undefined,
+      x: undefined,
+      y: undefined,
+    });
+  }
+  return { ...result, positioningMode: "absolute" as const };
+}
+
 const DRAG_HANDLE_STYLE: React.CSSProperties = {
   position: "absolute",
   top: 2,
@@ -1364,93 +1415,41 @@ function useSlideElementEditor(
         const d = dragRef.current;
         dragRef.current = null;
         const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hs-draggable]");
-        if (el) el.classList.remove("hero-slide__editable--dragging");
+        if (el) { el.classList.remove("hero-slide__editable--dragging"); el.style.transform = ""; }
         if (!d || d.key !== key || !d.moved) return;
         e.stopPropagation();
-        const dx = (e.clientX - d.startX) / d.scale;
-        const dy = (e.clientY - d.startY) / d.scale;
-        // newTx/newTy = final transform offset (includes any existing x/y value)
-        const newTx = Math.round(d.startTx + dx);
-        const newTy = Math.round(d.startTy + dy);
-        const style = getSlideElementStyle(slide, key) ?? {};
-        const oldMl = parseFloat(style.ml ?? "0") || 0;
-        const oldMt = parseFloat(style.mt ?? "0") || 0;
-        // Fold startTx (existing x) into ml, add drag delta; same for mt
-        const newMlVal = oldMl + newTx;
-        const newMtVal = oldMt + newTy;
-        const deltaMt = newMtVal - oldMt; // = startTy + dy
+        const dx = Math.round((e.clientX - d.startX) / d.scale);
+        const dy = Math.round((e.clientY - d.startY) / d.scale);
+        const migratedSlide = migrateSlideToAbsolute(slide);
 
         if (d.groupStarts && d.groupStarts.size > 0) {
-          // Delta-based group drag: each member moves by the same visual delta.
-          // Members BEFORE the primary key in flow order: add full mt delta.
-          // Members AFTER: flow cascade from primary already carries them down;
-          // only fold their own x into ml and add dx.
-          const orderedKeys = buildSlideOrderedKeys(slide);
           const allGroupKeys = new Set([key, ...d.groupStarts.keys()]);
-          let updated = slide;
-          let primaryApplied = false;
-          for (const k of orderedKeys) {
+          let updated = migratedSlide;
+          for (const k of buildSlideOrderedKeys(migratedSlide)) {
             if (!allGroupKeys.has(k)) continue;
-            const ms = getSlideElementStyle(slide, k) ?? {};
+            const gs = d.groupStarts.get(k);
+            if (gs) { gs.el.style.transform = ""; }
+            const ms = getSlideElementStyle(migratedSlide, k) ?? {};
             const mOldMl = parseFloat(ms.ml ?? "0") || 0;
             const mOldMt = parseFloat(ms.mt ?? "0") || 0;
-            if (k === key) {
-              primaryApplied = true;
-              updated = setSlideElementStyle(updated, k, {
-                ...ms,
-                ml: newMlVal !== 0 ? `${newMlVal}px` : undefined,
-                mt: newMtVal !== 0 ? `${newMtVal}px` : undefined,
-                x: undefined, y: undefined,
-              });
-            } else {
-              const { tx: mTx, ty: mTy } = d.groupStarts!.get(k)!;
-              const newMlM = Math.round(mOldMl + mTx + dx);
-              if (!primaryApplied) {
-                // Before primary: full delta (no cascade yet)
-                const newMtM = Math.round(mOldMt + mTy + dy);
-                updated = setSlideElementStyle(updated, k, {
-                  ...ms,
-                  ml: newMlM !== 0 ? `${newMlM}px` : undefined,
-                  mt: newMtM !== 0 ? `${newMtM}px` : undefined,
-                  x: undefined, y: undefined,
-                });
-              } else {
-                // After primary: cascade handles Y, just fold x into ml + add dx
-                const newMtM = Math.round(mOldMt + mTy); // fold y only, no extra dy
-                updated = setSlideElementStyle(updated, k, {
-                  ...ms,
-                  ml: newMlM !== 0 ? `${newMlM}px` : undefined,
-                  mt: newMtM !== 0 ? `${newMtM}px` : undefined,
-                  x: undefined, y: undefined,
-                });
-              }
-            }
+            updated = setSlideElementStyle(updated, k, {
+              ...ms,
+              ml: (mOldMl + dx) !== 0 ? `${mOldMl + dx}px` : undefined,
+              mt: (mOldMt + dy) !== 0 ? `${mOldMt + dy}px` : undefined,
+              x: undefined, y: undefined,
+            });
           }
           onSlideChange(updated);
         } else {
-          let updated = setSlideElementStyle(slide, key, {
+          const style = getSlideElementStyle(migratedSlide, key) ?? {};
+          const oldMl = parseFloat(style.ml ?? "0") || 0;
+          const oldMt = parseFloat(style.mt ?? "0") || 0;
+          onSlideChange(setSlideElementStyle(migratedSlide, key, {
             ...style,
-            ml: newMlVal !== 0 ? `${newMlVal}px` : undefined,
-            mt: newMtVal !== 0 ? `${newMtVal}px` : undefined,
+            ml: (oldMl + dx) !== 0 ? `${oldMl + dx}px` : undefined,
+            mt: (oldMt + dy) !== 0 ? `${oldMt + dy}px` : undefined,
             x: undefined, y: undefined,
-          });
-          // Compensate locked elements below key so they stay in place
-          if (deltaMt !== 0) {
-            let pastKey = false;
-            for (const k of buildSlideOrderedKeys(slide)) {
-              if (k === key) { pastKey = true; continue; }
-              if (!pastKey) continue;
-              const ks = getSlideElementStyle(updated, k);
-              if (!ks?.locked) continue;
-              const kOldMt = parseFloat(ks.mt ?? "0") || 0;
-              const kNewMt = kOldMt - deltaMt;
-              updated = setSlideElementStyle(updated, k, {
-                ...ks,
-                mt: kNewMt !== 0 ? `${kNewMt}px` : undefined,
-              });
-            }
-          }
-          onSlideChange(updated);
+          }));
         }
       },
       onPointerCancel: (e) => {
@@ -1540,51 +1539,27 @@ function useSlideElementEditor(
         dragRef.current = null;
         const el = e.currentTarget as HTMLElement;
         el.classList.remove("hero-slide__editable--dragging", "hero-slide__editable--resizing");
+        el.style.transform = "";
         if (!d || d.key !== key || !d.moved) return;
         e.stopPropagation();
-
-        const dx = (e.clientX - d.startX) / d.scale;
-        const dy = (e.clientY - d.startY) / d.scale;
-        const currentStyle = getSlideElementStyle(slide, key) ?? {};
-
+        const dx = Math.round((e.clientX - d.startX) / d.scale);
+        const dy = Math.round((e.clientY - d.startY) / d.scale);
         if (d.mode === "resize") {
           const nextSize = Math.max(6, Math.round(d.startSize + (dx + dy) / 2));
-          onSlideChange(setSlideElementStyle(slide, key, {
-            ...currentStyle,
-            size: `${nextSize}px`,
-          }));
+          const currentStyle = getSlideElementStyle(slide, key) ?? {};
+          onSlideChange(setSlideElementStyle(slide, key, { ...currentStyle, size: `${nextSize}px` }));
           return;
         }
-
-        const newTx = Math.round(d.startTx + dx);
-        const newTy = Math.round(d.startTy + dy);
-        const oldMl = parseFloat(currentStyle.ml ?? "0") || 0;
-        const oldMt = parseFloat(currentStyle.mt ?? "0") || 0;
-        const newMlVal = oldMl + newTx;
-        const newMtVal = oldMt + newTy;
-        const deltaMt = newMtVal - oldMt;
-        let updated = setSlideElementStyle(slide, key, {
-          ...currentStyle,
-          ml: newMlVal !== 0 ? `${newMlVal}px` : undefined,
-          mt: newMtVal !== 0 ? `${newMtVal}px` : undefined,
+        const migratedSlide = migrateSlideToAbsolute(slide);
+        const style = getSlideElementStyle(migratedSlide, key) ?? {};
+        const oldMl = parseFloat(style.ml ?? "0") || 0;
+        const oldMt = parseFloat(style.mt ?? "0") || 0;
+        onSlideChange(setSlideElementStyle(migratedSlide, key, {
+          ...style,
+          ml: (oldMl + dx) !== 0 ? `${oldMl + dx}px` : undefined,
+          mt: (oldMt + dy) !== 0 ? `${oldMt + dy}px` : undefined,
           x: undefined, y: undefined,
-        });
-        if (deltaMt !== 0) {
-          let pastKey = false;
-          for (const k of buildSlideOrderedKeys(slide)) {
-            if (k === key) { pastKey = true; continue; }
-            if (!pastKey) continue;
-            const ks = getSlideElementStyle(updated, k);
-            if (!ks?.locked) continue;
-            const kOldMt = parseFloat(ks.mt ?? "0") || 0;
-            const kNewMt = kOldMt - deltaMt;
-            updated = setSlideElementStyle(updated, k, {
-              ...ks,
-              mt: kNewMt !== 0 ? `${kNewMt}px` : undefined,
-            });
-          }
-        }
-        onSlideChange(updated);
+        }));
       },
       onPointerCancel: (e) => {
         const d = dragRef.current;
@@ -1592,52 +1567,30 @@ function useSlideElementEditor(
         if (!d || d.key !== key) return;
         const el = e.currentTarget as HTMLElement;
         el.classList.remove("hero-slide__editable--dragging", "hero-slide__editable--resizing");
-        el.style.transform = (d.startTx || d.startTy)
-          ? `translate(${d.startTx}px, ${d.startTy}px)`
-          : "";
+        el.style.transform = "";
         el.style.fontSize = `${d.startSize}px`;
       },
       onKeyDown: (e) => {
         const deltaByKey: Record<string, [number, number]> = {
-          ArrowLeft: [-1, 0],
-          ArrowRight: [1, 0],
-          ArrowUp: [0, -1],
-          ArrowDown: [0, 1],
+          ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
         };
         const delta = deltaByKey[e.key];
         if (!delta) return;
         e.preventDefault();
         e.stopPropagation();
         const step = e.shiftKey ? 10 : 1;
-        const currentStyle = getSlideElementStyle(slide, key) ?? {};
+        const migratedSlide = migrateSlideToAbsolute(slide);
+        const currentStyle = getSlideElementStyle(migratedSlide, key) ?? {};
         const currentMl = parseFloat(currentStyle.ml ?? "0") || 0;
         const currentMt = parseFloat(currentStyle.mt ?? "0") || 0;
         const nextMl = Math.round(currentMl + delta[0] * step);
         const nextMt = Math.round(currentMt + delta[1] * step);
-        const deltaMt = nextMt - currentMt;
-        let updated = setSlideElementStyle(slide, key, {
+        onSlideChange(setSlideElementStyle(migratedSlide, key, {
           ...currentStyle,
-          ml: nextMl ? `${nextMl}px` : undefined,
-          mt: nextMt ? `${nextMt}px` : undefined,
-          x: undefined,
-          y: undefined,
-        });
-        if (deltaMt !== 0) {
-          let pastKey = false;
-          for (const k of buildSlideOrderedKeys(slide)) {
-            if (k === key) { pastKey = true; continue; }
-            if (!pastKey) continue;
-            const ks = getSlideElementStyle(updated, k);
-            if (!ks?.locked) continue;
-            const kOldMt = parseFloat(ks.mt ?? "0") || 0;
-            const kNewMt = kOldMt - deltaMt;
-            updated = setSlideElementStyle(updated, k, {
-              ...ks,
-              mt: kNewMt !== 0 ? `${kNewMt}px` : undefined,
-            });
-          }
-        }
-        onSlideChange(updated);
+          ml: nextMl !== 0 ? `${nextMl}px` : undefined,
+          mt: nextMt !== 0 ? `${nextMt}px` : undefined,
+          x: undefined, y: undefined,
+        }));
       },
     };
   }
@@ -1700,7 +1653,7 @@ function CopyStack({
     if (key === "kicker" && kicker) {
       const es = mergeElementStyle(slide.kickerStyle, viewportProfile);
       const typo = es?.typo;
-      const s = elStyle(es);
+      const s = (onSlideChange || slide.positioningMode === "absolute") ? absPositionStyle(slide, "kicker", es) : elStyle(es);
       if (onSlideChange) {
         const isLocked = !!es?.locked;
         return (
@@ -1725,7 +1678,7 @@ function CopyStack({
     if (key === "title" && title) {
       const titleEs = mergeElementStyle(slide.titleStyle, viewportProfile);
       const titleTypo = titleEs?.typo;
-      const titleStyle = elStyle(titleEs);
+      const titleStyle = (onSlideChange || slide.positioningMode === "absolute") ? absPositionStyle(slide, "title", titleEs) : elStyle(titleEs);
       const titleClass = cn("hero-slide__title", titleTypo);
       const isTitleStamp = !titleTypo || titleTypo === "typo-content-header" || titleTypo === "typo-homepage-header" || titleTypo === "typo-subtitle";
       if (onSlideChange) {
@@ -1775,7 +1728,7 @@ function CopyStack({
     if (key === "subtitle" && subtitle) {
       const es = mergeElementStyle(slide.subtitleStyle, viewportProfile);
       const typo = es?.typo;
-      const s = elStyle(es);
+      const s = (onSlideChange || slide.positioningMode === "absolute") ? absPositionStyle(slide, "subtitle", es) : elStyle(es);
       if (onSlideChange) {
         const isLocked = !!es?.locked;
         return (
@@ -1800,7 +1753,7 @@ function CopyStack({
     if (key === "body" && body) {
       const es = mergeElementStyle(slide.bodyStyle, viewportProfile);
       const typo = es?.typo;
-      const s = elStyle(es);
+      const s = (onSlideChange || slide.positioningMode === "absolute") ? absPositionStyle(slide, "body", es) : elStyle(es);
       if (onSlideChange) {
         const isLocked = !!es?.locked;
         return (
@@ -1825,7 +1778,7 @@ function CopyStack({
     if (key === "quote" && quote) {
       const es = mergeElementStyle(slide.quoteStyle, viewportProfile);
       const typo = es?.typo;
-      const s = elStyle(es);
+      const s = (onSlideChange || slide.positioningMode === "absolute") ? absPositionStyle(slide, "quote", es) : elStyle(es);
       const cls = cn("hero-slide__quote", typo);
       if (onSlideChange) {
         const isLocked = !!es?.locked;
@@ -1900,13 +1853,13 @@ function ExtraElement({
   onSlideChange?: (next: Slide) => void;
 }) {
   const resolvedStyle = mergeElementStyle(extra.style, viewportProfile);
-  const style = elStyle(resolvedStyle);
+  const extraKey = extra.id ?? "";
+  const inEditMode = !!(onSlideChange && slide);
+  const useAbsPos = inEditMode || slide?.positioningMode === "absolute";
+  const style = (useAbsPos && slide) ? absPositionStyle(slide, extraKey, resolvedStyle) : elStyle(resolvedStyle);
   const typo = resolvedStyle?.typo;
   const slotId = `slide-${slideIndex}-extra-${extraIndex}`;
-  const extraKey = extra.id ?? "";
   const isLocked = !!resolvedStyle?.locked;
-
-  const inEditMode = !!(onSlideChange && slide);
   const updateText = !dragMode && inEditMode
     ? (html: string) => {
         const extras = Array.isArray(slide!.extras) ? slide!.extras : [];
