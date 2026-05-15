@@ -1236,6 +1236,23 @@ function TextElementsEditor({
     new Set(getAllStyles().map(st => st.groupId).filter((g): g is string => !!g))
   );
 
+  const getGroupKeys = (groupId: string): string[] => {
+    const keys: string[] = [];
+    if (s.titleStyle?.groupId === groupId) keys.push("title");
+    if (s.subtitleStyle?.groupId === groupId) keys.push("subtitle");
+    if (s.kickerStyle?.groupId === groupId) keys.push("kicker");
+    if (s.bodyStyle?.groupId === groupId) keys.push("body");
+    if (s.quoteStyle?.groupId === groupId) keys.push("quote");
+    extras.forEach(e => { if (e.style?.groupId === groupId) keys.push(e.id!); });
+    return keys;
+  };
+
+  const handleGroupAlign = (groupId: string, align: "left" | "center" | "right" | undefined) => {
+    let updated = s;
+    for (const key of getGroupKeys(groupId)) updated = applyStylePatch(updated, key, { align });
+    onChange(updated);
+  };
+
   // ── Select mode helpers ──────────────────────────────────────────────
 
   const exitSelectMode = () => { setSelectMode(false); setSelectedKeys(new Set()); };
@@ -1384,40 +1401,63 @@ function TextElementsEditor({
             const groupStyles = getAllStyles().filter(st => st.groupId === gid);
             const allLocked = groupStyles.every(st => st.locked);
             const anyLocked = groupStyles.some(st => st.locked);
+            const groupAligns = groupStyles.map(st => st.align ?? "left");
+            const commonAlign = groupAligns.every(a => a === groupAligns[0]) ? groupAligns[0] : undefined;
             return (
-              <div key={gid} className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground truncate max-w-[100px]">
-                  #{gid}{" "}
-                  <span className="text-[9px] text-muted-foreground/40">({groupStyles.length})</span>
-                </span>
+              <div key={gid} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground truncate max-w-[100px]">
+                    #{gid}{" "}
+                    <span className="text-[9px] text-muted-foreground/40">({groupStyles.length})</span>
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {anyLocked && !allLocked && (
+                      <span className="text-[9px] text-amber-500">partial</span>
+                    )}
+                    <button
+                      type="button"
+                      title={allLocked ? "Unlock group" : "Lock group"}
+                      onClick={() => onChange(setGroupLock(s, gid, !allLocked))}
+                      className={[
+                        "flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium border",
+                        allLocked
+                          ? "border-amber-400/50 text-amber-500 hover:text-amber-400"
+                          : "border-border/60 text-muted-foreground hover:text-foreground",
+                      ].join(" ")}
+                    >
+                      {allLocked
+                        ? <><Unlock className="h-2.5 w-2.5" /> Unlock</>
+                        : <><Lock className="h-2.5 w-2.5" /> Lock</>
+                      }
+                    </button>
+                    <button
+                      type="button"
+                      title="Remove group"
+                      onClick={() => handleRemoveGroup(gid)}
+                      className="text-[12px] leading-none text-muted-foreground/40 hover:text-red-400 px-1 py-0.5 rounded"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
                 <div className="flex items-center gap-1">
-                  {anyLocked && !allLocked && (
-                    <span className="text-[9px] text-amber-500">partial</span>
-                  )}
-                  <button
-                    type="button"
-                    title={allLocked ? "Unlock group" : "Lock group"}
-                    onClick={() => onChange(setGroupLock(s, gid, !allLocked))}
-                    className={[
-                      "flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium border",
-                      allLocked
-                        ? "border-amber-400/50 text-amber-500 hover:text-amber-400"
-                        : "border-border/60 text-muted-foreground hover:text-foreground",
-                    ].join(" ")}
-                  >
-                    {allLocked
-                      ? <><Unlock className="h-2.5 w-2.5" /> Unlock</>
-                      : <><Lock className="h-2.5 w-2.5" /> Lock</>
-                    }
-                  </button>
-                  <button
-                    type="button"
-                    title="Remove group"
-                    onClick={() => handleRemoveGroup(gid)}
-                    className="text-[12px] leading-none text-muted-foreground/40 hover:text-red-400 px-1 py-0.5 rounded"
-                  >
-                    ×
-                  </button>
+                  <span className="text-[9px] text-muted-foreground/50 mr-0.5">Align</span>
+                  {(["left", "center", "right"] as const).map((a) => (
+                    <button
+                      key={a}
+                      type="button"
+                      title={`Align ${a}`}
+                      onClick={() => handleGroupAlign(gid, commonAlign === a ? undefined : a)}
+                      className={[
+                        "text-[10px] font-mono px-1.5 py-0.5 rounded border transition-colors",
+                        commonAlign === a
+                          ? "border-primary/50 bg-primary/10 text-primary"
+                          : "border-border/50 text-muted-foreground hover:text-foreground hover:border-border",
+                      ].join(" ")}
+                    >
+                      {a === "left" ? "≡L" : a === "center" ? "≡C" : "≡R"}
+                    </button>
+                  ))}
                 </div>
               </div>
             );
