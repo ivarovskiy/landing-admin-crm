@@ -1486,8 +1486,9 @@ function TextElementCard({
   const rawText = isExtra ? (extra?.text ?? "") : getTextLocal(s, elementKey);
   const canSplit = rawText.includes("\n") && rawText.split("\n").filter(l => l.trim()).length >= 2;
 
-  const label = isExtra
-    ? (extra.text ? stripHtml(extra.text).split("\n")[0].slice(0, 30) || "Extra" : "Extra")
+  const textForLabel = isExtra ? (extra?.text ?? "") : rawText;
+  const label = textForLabel
+    ? stripHtml(textForLabel).split("\n")[0].slice(0, 30) || (FIXED_ELEMENT_LABELS[elementKey] ?? elementKey)
     : (FIXED_ELEMENT_LABELS[elementKey] ?? elementKey);
 
   return (

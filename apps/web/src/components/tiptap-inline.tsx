@@ -434,6 +434,8 @@ export function TipTapInline({
   const suppressHideUntil = useRef(0);
   // Capture typoClass at mount so migration runs exactly once
   const initialTypoRef = useRef(typoClass);
+  // Track external typoClass changes to update marks when inspector changes the block typo
+  const prevTypoClassRef = useRef(typoClass);
 
   const isEditable = !!onChange;
 
@@ -524,6 +526,23 @@ export function TipTapInline({
     editor.view.dispatch(tr);
     isSettingContent.current = false;
   }, [editor]); // intentionally [editor] only — migration runs once on mount
+
+  // When the external typoClass prop changes (e.g. inspector changes the block typo),
+  // replace all typo marks in the document and fire onChange so the stored HTML is updated.
+  useEffect(() => {
+    if (!editor) return;
+    if (typoClass === prevTypoClassRef.current) return;
+    prevTypoClassRef.current = typoClass;
+    const markType = editor.schema.marks.typoClass;
+    if (!markType) return;
+    const size = editor.state.doc.content.size;
+    if (size <= 0) return;
+    const { tr } = editor.state;
+    tr.removeMark(0, size, markType);
+    if (typoClass) tr.addMark(0, size, markType.create({ class: typoClass }));
+    editor.view.dispatch(tr);
+    // onChange fires via onUpdate so stored HTML is updated with new marks
+  }, [editor, typoClass]);
 
   // Computes and sets toolbar state from current editor selection.
   // Only called after selection settles (keyboard nav or pointerup).
