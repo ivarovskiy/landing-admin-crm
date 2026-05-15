@@ -111,8 +111,9 @@ type FloatingToolbarProps = {
   onFontOffset?: () => void;
   /** When true, the font offset button is shown in the toolbar. */
   fontOffsetAvailable?: boolean;
-  /** Called when the user picks an alignment — propagates to the element level (not just paragraph). */
-  onElementAlignChange?: (align: "left" | "center" | "right") => void;
+  /** Called when the user picks an alignment — propagates to the element level (not just paragraph).
+   *  undefined = reset (no explicit alignment). */
+  onElementAlignChange?: (align: "left" | "center" | "right" | undefined) => void;
   /** Current element-level alignment (controls active state for align buttons). */
   elementAlign?: "left" | "center" | "right";
 };
@@ -301,16 +302,16 @@ function FloatingToolbar({
       {showAlignButtons && (
         <>
           <Btn label="≡L" title="Align left"
-            active={onElementAlignChange ? (elementAlign ?? "left") === "left" : state.alignLeft}
-            handler={() => { onAlignLeft(); onElementAlignChange?.("left"); }}
+            active={onElementAlignChange ? elementAlign === "left" : state.alignLeft}
+            handler={onAlignLeft}
             style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
           <Btn label="≡C" title="Align center"
             active={onElementAlignChange ? elementAlign === "center" : state.alignCenter}
-            handler={() => { onAlignCenter(); onElementAlignChange?.("center"); }}
+            handler={onAlignCenter}
             style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
           <Btn label="≡R" title="Align right"
             active={onElementAlignChange ? elementAlign === "right" : state.alignRight}
-            handler={() => { onAlignRight(); onElementAlignChange?.("right"); }}
+            handler={onAlignRight}
             style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
           {state.multiline && (
             <Btn label="≡J" title="Justify" active={state.alignJustify} handler={onAlignJustify} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
@@ -390,6 +391,7 @@ export function TipTapInline({
   typoOptions,
   onTypoChange,
   currentTypoClass,
+  onElementTypoChange,
   showWordCount = false,
   fontOffsetEnabled,
   onFontOffsetToggle,
@@ -412,6 +414,10 @@ export function TipTapInline({
   onTypoChange?: (cls: string) => void;
   /** Selected value shown in the typo dropdown when using external state. */
   currentTypoClass?: string;
+  /** When provided, the typo dropdown propagates changes to the element-level typo
+   *  (ElementStyle.typo) instead of applying inline marks. ElementStyle.typo drives
+   *  marks via typoClass prop + useEffect, making it the single source of truth. */
+  onElementTypoChange?: (cls: string) => void;
   /** Show word count below the editor (opt-in, default false). */
   showWordCount?: boolean;
   /** Whether the font offset is currently applied to this whole block. */
@@ -420,8 +426,9 @@ export function TipTapInline({
   onFontOffsetToggle?: () => void;
   /** When true, the font offset button is shown in the toolbar. */
   currentFontHasOffset?: boolean;
-  /** Called when the user picks an alignment — propagates to element-level positioning. */
-  onElementAlignChange?: (align: "left" | "center" | "right") => void;
+  /** Called when the user picks an alignment — propagates to element-level positioning.
+   *  undefined = reset (no explicit alignment). */
+  onElementAlignChange?: (align: "left" | "center" | "right" | undefined) => void;
   /** Current element-level alignment (for active state in toolbar). */
   elementAlign?: "left" | "center" | "right";
 }) {
@@ -712,16 +719,37 @@ export function TipTapInline({
         onCase={handleCycleCase}
         onBulletList={() => editor?.chain().focus().toggleBulletList().run()}
         onOrderedList={() => editor?.chain().focus().toggleOrderedList().run()}
-        onAlignLeft={() => editor?.chain().focus().setTextAlign("left").run()}
-        onAlignCenter={() => editor?.chain().focus().setTextAlign("center").run()}
-        onAlignRight={() => editor?.chain().focus().setTextAlign("right").run()}
+        onAlignLeft={() => {
+          if (onElementAlignChange) {
+            editor?.chain().focus().unsetTextAlign().run();
+            onElementAlignChange(elementAlign === "left" ? undefined : "left");
+          } else {
+            editor?.chain().focus().setTextAlign("left").run();
+          }
+        }}
+        onAlignCenter={() => {
+          if (onElementAlignChange) {
+            editor?.chain().focus().unsetTextAlign().run();
+            onElementAlignChange(elementAlign === "center" ? undefined : "center");
+          } else {
+            editor?.chain().focus().setTextAlign("center").run();
+          }
+        }}
+        onAlignRight={() => {
+          if (onElementAlignChange) {
+            editor?.chain().focus().unsetTextAlign().run();
+            onElementAlignChange(elementAlign === "right" ? undefined : "right");
+          } else {
+            editor?.chain().focus().setTextAlign("right").run();
+          }
+        }}
         onAlignJustify={() => editor?.chain().focus().setTextAlign("justify").run()}
         onBlockquote={() => editor?.chain().focus().toggleBlockquote().run()}
         onHR={() => editor?.chain().focus().setHorizontalRule().run()}
         onClearFormat={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
         typoOptions={typoOptions}
-        onTypoChange={onTypoChange ?? (typoOptions ? handleApplyTypo : undefined)}
-        currentTypoClass={currentTypoClass}
+        onTypoChange={onTypoChange ?? (onElementTypoChange ?? (typoOptions ? handleApplyTypo : undefined))}
+        currentTypoClass={onElementTypoChange ? (typoClass ?? currentTypoClass) : currentTypoClass}
         onIndent={() => editor?.chain().focus().sinkListItem("listItem").run()}
         onOutdent={() => editor?.chain().focus().liftListItem("listItem").run()}
         onThinSpace={handleThinSpace}

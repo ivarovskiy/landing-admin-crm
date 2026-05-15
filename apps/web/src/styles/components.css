@@ -579,7 +579,9 @@
   outline: none;
   caret-color: rgb(99, 102, 241);
   min-width: min-content;
-  width: 100%;
+  /* width: 100% causes circular dependency in shrink-to-fit positioned elements
+     (position:absolute, no explicit width) — text breaks mid-word.
+     Block elements fill their containing block with width:auto anyway. */
 }
 
 /* keep paragraph margins consistent with surrounding text */
