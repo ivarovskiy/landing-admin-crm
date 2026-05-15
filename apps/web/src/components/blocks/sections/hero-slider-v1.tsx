@@ -33,6 +33,7 @@ type ElementStyle = {
   locked?: boolean; // prevents drag/resize in preview and canvas
   hidden?: boolean; // hide this element without deleting it
   groupId?: string; // group identifier for moving elements together
+  alignMode?: "1" | "2" | "3" | "4"; // centering reference field (used when align === "center")
   useFontOffset?: boolean; // opt-in per-font padding offset (see getTypoOffset)
   viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
 };
@@ -73,6 +74,7 @@ type HeroDesktopLayout = {
   mediaAlign?: "start" | "center" | "end" | "stretch";
   textAlignFullWidth?: boolean;
   dragIgnoreGap?: boolean;
+  outerPadding?: string;   // symmetric outer padding used for centering mode math (modes 2 & 4)
 };
 
 type Slide = {
@@ -361,6 +363,7 @@ function slideStyle(slide: Slide, profile?: HeroViewportProfileKey | null): Reac
     const map = { start: "flex-start", center: "center", end: "flex-end", stretch: "stretch" } as const;
     style["--hs-media-align"] = map[desktop.mediaAlign];
   }
+  if (desktop.outerPadding) style["--hs-outer-padding"] = resolveDesignViewportUnits(desktop.outerPadding)!;
 
   return style as React.CSSProperties;
 }
@@ -1581,7 +1584,17 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.C
   const s: Record<string, string> = { position: "absolute", top: `${top}px` };
 
   if (es?.align === "center") {
-    s.left = "50%";
+    const desktop = mergeDesktopLayout(slide);
+    const gapPx = parseFloat(resolveDesignViewportUnits(desktop.gap) ?? "0") || 0;
+    const outerPadPx = parseFloat(resolveDesignViewportUnits(desktop.outerPadding) ?? "0") || 0;
+    const side = imageSide(resolveTemplate(slide));
+    const dir = side === "right" ? 1 : side === "left" ? -1 : 0;
+    let offsetPx = 0;
+    if (es.alignMode === "1") offsetPx = dir * gapPx / 2;
+    else if (es.alignMode === "2") offsetPx = dir * (outerPadPx + gapPx) / 2;
+    else if (es.alignMode === "4") offsetPx = dir * outerPadPx / 2;
+    // mode "3" and default: offsetPx = 0
+    s.left = offsetPx ? `calc(50% + ${offsetPx}px)` : "50%";
     s.transform = "translateX(-50%)";
     s.textAlign = "center";
   } else if (es?.align === "right") {

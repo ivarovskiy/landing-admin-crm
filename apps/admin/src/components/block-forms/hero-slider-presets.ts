@@ -53,6 +53,7 @@ export type ElementStyle = {
   locked?: boolean;         // prevent position/size changes in canvas and preview
   hidden?: boolean;         // hide this element without deleting it
   groupId?: string;         // group identifier — used for bulk lock/unlock in the form
+  alignMode?: "1" | "2" | "3" | "4"; // centering reference field (used when align === "center")
   useFontOffset?: boolean;  // opt-in per-font padding offset (see getTypoOffset)
   viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
 };
@@ -136,6 +137,7 @@ export type HeroDesktopLayout = {
   textAlignFullWidth?: boolean;
   dragIgnoreGap?: boolean;
   imageSide?: "left" | "right";
+  outerPadding?: string;   // symmetric outer padding used for centering mode math (modes 2 & 4)
 };
 
 export type Slide = {

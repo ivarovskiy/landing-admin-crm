@@ -857,6 +857,13 @@ function SlideEditor({
                 placeholder={desktopFallback.gap ?? "42px"}
               />
             </InspectorField>
+            <InspectorField label="Outer padding" hint="Symmetric outer padding used for centering modes 2 & 4">
+              <InspectorInput
+                value={desktop?.outerPadding ?? ""}
+                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { outerPadding: v || undefined }))}
+                placeholder={desktopFallback.outerPadding ?? "0px"}
+              />
+            </InspectorField>
             <InspectorField label="Media padding">
               <InspectorInput
                 value={desktop?.mediaPadding ?? ""}
@@ -1114,6 +1121,23 @@ function ElementStyleEditor({
           />
         </div>
       </div>
+      {s.align === "center" && (
+        <div>
+          <div className="text-[11px] text-muted-foreground mb-0.5">Center mode</div>
+          <div className="flex gap-1">
+            {(["1", "2", "3", "4"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => patch("alignMode", s.alignMode === m ? "" : m)}
+                className={`flex-1 rounded text-[11px] py-0.5 border transition-colors ${s.alignMode === m ? "bg-primary text-primary-foreground border-primary" : "bg-transparent text-muted-foreground border-border hover:border-foreground/40"}`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {showSnap && tuningScope === "default" && (
         <InspectorToggle
           label="Snap to baseline"
@@ -1250,6 +1274,12 @@ function TextElementsEditor({
   const handleGroupAlign = (groupId: string, align: "left" | "center" | "right" | undefined) => {
     let updated = s;
     for (const key of getGroupKeys(groupId)) updated = applyStylePatch(updated, key, { align });
+    onChange(updated);
+  };
+
+  const handleGroupAlignMode = (groupId: string, mode: "1" | "2" | "3" | "4" | undefined) => {
+    let updated = s;
+    for (const key of getGroupKeys(groupId)) updated = applyStylePatch(updated, key, { alignMode: mode });
     onChange(updated);
   };
 
@@ -1403,6 +1433,8 @@ function TextElementsEditor({
             const anyLocked = groupStyles.some(st => st.locked);
             const groupAligns = groupStyles.map(st => st.align ?? "left");
             const commonAlign = groupAligns.every(a => a === groupAligns[0]) ? groupAligns[0] : undefined;
+            const groupModes = groupStyles.map(st => st.alignMode ?? "");
+            const commonAlignMode = groupModes.every(m => m === groupModes[0]) ? groupModes[0] as ("1" | "2" | "3" | "4" | "") : "";
             return (
               <div key={gid} className="space-y-1">
                 <div className="flex items-center justify-between">
@@ -1459,6 +1491,27 @@ function TextElementsEditor({
                     </button>
                   ))}
                 </div>
+                {commonAlign === "center" && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] text-muted-foreground/50 mr-0.5">Mode</span>
+                    {(["1", "2", "3", "4"] as const).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        title={`Center mode ${m}`}
+                        onClick={() => handleGroupAlignMode(gid, commonAlignMode === m ? undefined : m)}
+                        className={[
+                          "text-[10px] font-mono px-1.5 py-0.5 rounded border transition-colors",
+                          commonAlignMode === m
+                            ? "border-primary/50 bg-primary/10 text-primary"
+                            : "border-border/50 text-muted-foreground hover:text-foreground hover:border-border",
+                        ].join(" ")}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
