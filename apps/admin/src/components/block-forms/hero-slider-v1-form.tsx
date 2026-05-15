@@ -1675,28 +1675,28 @@ function TextElementCard({
         <div className="px-2 pb-2 pt-1 space-y-1.5 border-t">
           {elementKey === "kicker" && (
             <>
-              <InspectorTextarea value={s.kicker ?? ""} onChange={(v) => onChange({ ...s, kicker: v })} rows={2} />
+              <InspectorTextarea value={stripHtml(s.kicker ?? "")} onChange={(v) => onChange({ ...s, kicker: `<p>${v.replace(/\n+/g, "</p><p>")}</p>` })} rows={2} />
               <IconInsertBar value={s.kicker ?? ""} onChange={(v) => onChange({ ...s, kicker: v })} />
               <ElementStyleEditor label="" style={s.kickerStyle} onChange={(es) => onChange({ ...s, kickerStyle: es })} showTypo showSnap tuningScope={tuningScope} />
             </>
           )}
           {elementKey === "title" && (
             <>
-              <InspectorTextarea value={s.title ?? ""} onChange={(v) => onChange({ ...s, title: v })} rows={2} />
+              <InspectorTextarea value={stripHtml(s.title ?? "")} onChange={(v) => onChange({ ...s, title: `<p>${v.replace(/\n+/g, "</p><p>")}</p>` })} rows={2} />
               <IconInsertBar value={s.title ?? ""} onChange={(v) => onChange({ ...s, title: v })} />
               <ElementStyleEditor label="" style={s.titleStyle} onChange={(es) => onChange({ ...s, titleStyle: es })} showTypo showSnap tuningScope={tuningScope} />
             </>
           )}
           {elementKey === "subtitle" && (
             <>
-              <InspectorTextarea value={s.subtitle ?? ""} onChange={(v) => onChange({ ...s, subtitle: v })} rows={2} />
+              <InspectorTextarea value={stripHtml(s.subtitle ?? "")} onChange={(v) => onChange({ ...s, subtitle: `<p>${v.replace(/\n+/g, "</p><p>")}</p>` })} rows={2} />
               <IconInsertBar value={s.subtitle ?? ""} onChange={(v) => onChange({ ...s, subtitle: v })} />
               <ElementStyleEditor label="" style={s.subtitleStyle} onChange={(es) => onChange({ ...s, subtitleStyle: es })} showTypo showSnap tuningScope={tuningScope} />
             </>
           )}
           {elementKey === "body" && (
             <>
-              <InspectorTextarea value={s.body ?? ""} onChange={(v) => onChange({ ...s, body: v })} rows={4} />
+              <InspectorTextarea value={stripHtml(s.body ?? "")} onChange={(v) => onChange({ ...s, body: `<p>${v.replace(/\n+/g, "</p><p>")}</p>` })} rows={4} />
               <IconInsertBar value={s.body ?? ""} onChange={(v) => onChange({ ...s, body: v })} />
               <div>
                 <div className="mb-0.5 text-[9px] text-muted-foreground">Variant</div>
@@ -1711,7 +1711,7 @@ function TextElementCard({
           )}
           {elementKey === "quote" && (
             <>
-              <InspectorTextarea value={s.quote ?? ""} onChange={(v) => onChange({ ...s, quote: v })} rows={2} />
+              <InspectorTextarea value={stripHtml(s.quote ?? "")} onChange={(v) => onChange({ ...s, quote: `<p>${v.replace(/\n+/g, "</p><p>")}</p>` })} rows={2} />
               <IconInsertBar value={s.quote ?? ""} onChange={(v) => onChange({ ...s, quote: v })} />
               <ElementStyleEditor label="" style={s.quoteStyle} onChange={(es) => onChange({ ...s, quoteStyle: es })} showTypo showSnap tuningScope={tuningScope} />
             </>

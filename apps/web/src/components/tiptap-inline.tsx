@@ -510,29 +510,31 @@ export function TipTapInline({
     immediatelyRender: false,
   });
 
-  // Migration: on editor mount, if a typoClass is set and the content has no
-  // existing TypoMarks, apply the class as a mark to all text. This ensures
-  // old content (stored before marks were introduced) renders consistently in
-  // edit mode. Suppressed via isSettingContent so onChange doesn't fire.
+  // Migration: on editor mount, ensure all text uses the element-level typoClass.
+  // Fixes stale inline marks (e.g. marks left from a previous typo class) and
+  // migrates old content that has no marks yet. Suppressed via isSettingContent
+  // so onChange doesn't fire (this is a display fix, not a content edit).
   useEffect(() => {
     if (!editor || !initialTypoRef.current) return;
-    let hasMark = false;
-    editor.state.doc.descendants((node) => {
-      if (!hasMark && node.isText && node.marks.some((m) => m.type.name === "typoClass")) {
-        hasMark = true;
-      }
-    });
-    if (hasMark) return;
     const markType = editor.schema.marks.typoClass;
     if (!markType) return;
     const size = editor.state.doc.content.size;
     if (size <= 0) return;
+    // Check if every text node already has the correct mark — skip if already in sync
+    let mismatch = false;
+    editor.state.doc.descendants((node) => {
+      if (mismatch || !node.isText) return;
+      const mark = node.marks.find((m) => m.type.name === "typoClass");
+      if (!mark || mark.attrs.class !== initialTypoRef.current) mismatch = true;
+    });
+    if (!mismatch) return;
     const { tr } = editor.state;
+    tr.removeMark(0, size, markType);
     tr.addMark(0, size, markType.create({ class: initialTypoRef.current }));
     isSettingContent.current = true;
     editor.view.dispatch(tr);
     isSettingContent.current = false;
-  }, [editor]); // intentionally [editor] only — migration runs once on mount
+  }, [editor]); // intentionally [editor] only — runs once on mount
 
   // When the external typoClass prop changes (e.g. inspector changes the block typo),
   // replace all typo marks in the document and fire onChange so the stored HTML is updated.

@@ -1597,6 +1597,7 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.C
     s.left = offsetPx ? `calc(50% + ${offsetPx}px)` : "50%";
     s.transform = "translateX(-50%)";
     s.textAlign = "center";
+    s.width = "max-content"; // prevent shrink-to-fit left edge from wrapping text
   } else if (es?.align === "right") {
     s.left = "0";
     s.right = "0";
@@ -1821,11 +1822,39 @@ function useSlideElementEditor(
         const d = dragRef.current;
         dragRef.current = null;
         const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hs-draggable]");
-        if (el) { el.classList.remove("hero-slide__editable--dragging"); el.style.transform = ""; }
-        if (!d || d.key !== key || !d.moved) return;
+        if (!d || d.key !== key || !d.moved) {
+          if (el) { el.classList.remove("hero-slide__editable--dragging"); el.style.transform = ""; }
+          return;
+        }
         e.stopPropagation();
         const dx = Math.round((e.clientX - d.startX) / d.scale);
         const dy = Math.round((e.clientY - d.startY) / d.scale);
+
+        // Gather DOM measurements for snap-aligned elements BEFORE resetting transforms
+        const slideEl = el?.closest(".hero-slide") as HTMLElement | null;
+        const copyMain = slideEl?.querySelector<HTMLElement>(".hero-slide__copy-main");
+        const copyRect = copyMain?.getBoundingClientRect();
+        const sc = copyRect && copyMain ? copyRect.width / copyMain.offsetWidth || 1 : 1;
+        const measureEl = (memberEl: HTMLElement, memberKey: string): { ml: number; mt: number; clear: boolean } => {
+          const memberSnap = getSlideElementStyle(slide, memberKey)?.align;
+          const clear = memberSnap === "center" || memberSnap === "right";
+          if (clear && copyRect && memberEl) {
+            const er = memberEl.getBoundingClientRect();
+            return { ml: Math.round((er.left - copyRect.left) / sc), mt: Math.round((er.top - copyRect.top) / sc), clear };
+          }
+          return { ml: 0, mt: 0, clear: false };
+        };
+
+        // Leader key measurement
+        const leaderMeasure = el ? measureEl(el, key) : { ml: 0, mt: 0, clear: false };
+        // Group members measurement
+        const memberMeasures = new Map<string, { ml: number; mt: number; clear: boolean }>();
+        d.groupStarts?.forEach(({ el: gEl }, k) => { memberMeasures.set(k, measureEl(gEl, k)); });
+
+        // Reset transforms
+        if (el) { el.classList.remove("hero-slide__editable--dragging"); el.style.transform = ""; }
+        d.groupStarts?.forEach(({ el: gEl }) => { gEl.style.transform = ""; });
+
         const migratedSlide = migrateSlideToAbsolute(slide);
 
         if (d.groupStarts && d.groupStarts.size > 0) {
@@ -1833,26 +1862,41 @@ function useSlideElementEditor(
           let updated = migratedSlide;
           for (const k of buildSlideOrderedKeys(migratedSlide)) {
             if (!allGroupKeys.has(k)) continue;
-            const gs = d.groupStarts.get(k);
-            if (gs) { gs.el.style.transform = ""; }
-            const ms = mergeElementStyle(getSlideElementStyle(migratedSlide, k), viewportProfile) ?? {};
-            const mOldMl = parseFloat(ms.ml ?? "0") || 0;
-            const mOldMt = parseFloat(ms.mt ?? "0") || 0;
+            const m = k === key ? leaderMeasure : memberMeasures.get(k);
+            let newMl: number;
+            let newMt: number;
+            if (m?.clear) {
+              newMl = m.ml;
+              newMt = m.mt;
+            } else {
+              const ms = mergeElementStyle(getSlideElementStyle(migratedSlide, k), viewportProfile) ?? {};
+              newMl = (parseFloat(ms.ml ?? "0") || 0) + dx;
+              newMt = (parseFloat(ms.mt ?? "0") || 0) + dy;
+            }
             updated = setSlideElementViewportStyle(updated, k, viewportProfile, {
-              ml: (mOldMl + dx) !== 0 ? `${mOldMl + dx}px` : undefined,
-              mt: (mOldMt + dy) !== 0 ? `${mOldMt + dy}px` : undefined,
+              ml: newMl !== 0 ? `${newMl}px` : undefined,
+              mt: newMt !== 0 ? `${newMt}px` : undefined,
               x: undefined, y: undefined,
+              ...(m?.clear ? { align: undefined } : {}),
             });
           }
           onSlideChange(updated);
         } else {
-          const style = mergeElementStyle(getSlideElementStyle(migratedSlide, key), viewportProfile) ?? {};
-          const oldMl = parseFloat(style.ml ?? "0") || 0;
-          const oldMt = parseFloat(style.mt ?? "0") || 0;
+          let newMl: number;
+          let newMt: number;
+          if (leaderMeasure.clear) {
+            newMl = leaderMeasure.ml;
+            newMt = leaderMeasure.mt;
+          } else {
+            const style = mergeElementStyle(getSlideElementStyle(migratedSlide, key), viewportProfile) ?? {};
+            newMl = (parseFloat(style.ml ?? "0") || 0) + dx;
+            newMt = (parseFloat(style.mt ?? "0") || 0) + dy;
+          }
           onSlideChange(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
-            ml: (oldMl + dx) !== 0 ? `${oldMl + dx}px` : undefined,
-            mt: (oldMt + dy) !== 0 ? `${oldMt + dy}px` : undefined,
+            ml: newMl !== 0 ? `${newMl}px` : undefined,
+            mt: newMt !== 0 ? `${newMt}px` : undefined,
             x: undefined, y: undefined,
+            ...(leaderMeasure.clear ? { align: undefined } : {}),
           }));
         }
       },
@@ -1977,24 +2021,50 @@ function useSlideElementEditor(
         dragRef.current = null;
         const el = e.currentTarget as HTMLElement;
         el.classList.remove("hero-slide__editable--dragging", "hero-slide__editable--resizing");
-        el.style.transform = "";
-        if (!d || d.key !== key || !d.moved) return;
+        if (!d || d.key !== key || !d.moved) { el.style.transform = ""; return; }
         e.stopPropagation();
         const dx = Math.round((e.clientX - d.startX) / d.scale);
         const dy = Math.round((e.clientY - d.startY) / d.scale);
         if (d.mode === "resize") {
+          el.style.transform = "";
           const nextSize = Math.max(6, Math.round(d.startSize + (dx + dy) / 2));
           onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, { size: `${nextSize}px` }));
           return;
         }
+        // For snap-aligned elements (center/right), measure from DOM while transform is still live
+        // so the element lands exactly where the user dropped it, then clear the snap.
+        const snapAlign = getSlideElementStyle(slide, key)?.align;
+        const isSnap = snapAlign === "center" || snapAlign === "right";
+        let measuredMl: number | null = null;
+        let measuredMt: number | null = null;
+        if (isSnap) {
+          const slideEl = el.closest(".hero-slide") as HTMLElement | null;
+          const copyMain = slideEl?.querySelector<HTMLElement>(".hero-slide__copy-main");
+          if (copyMain) {
+            const sc = copyMain.getBoundingClientRect().width / copyMain.offsetWidth || 1;
+            const cr = copyMain.getBoundingClientRect();
+            const er = el.getBoundingClientRect();
+            measuredMl = Math.round((er.left - cr.left) / sc);
+            measuredMt = Math.round((er.top - cr.top) / sc);
+          }
+        }
+        el.style.transform = "";
         const migratedSlide = migrateSlideToAbsolute(slide);
-        const style = mergeElementStyle(getSlideElementStyle(migratedSlide, key), viewportProfile) ?? {};
-        const oldMl = parseFloat(style.ml ?? "0") || 0;
-        const oldMt = parseFloat(style.mt ?? "0") || 0;
+        let newMl: number;
+        let newMt: number;
+        if (isSnap && measuredMl !== null && measuredMt !== null) {
+          newMl = measuredMl;
+          newMt = measuredMt;
+        } else {
+          const style = mergeElementStyle(getSlideElementStyle(migratedSlide, key), viewportProfile) ?? {};
+          newMl = (parseFloat(style.ml ?? "0") || 0) + dx;
+          newMt = (parseFloat(style.mt ?? "0") || 0) + dy;
+        }
         onSlideChange(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
-          ml: (oldMl + dx) !== 0 ? `${oldMl + dx}px` : undefined,
-          mt: (oldMt + dy) !== 0 ? `${oldMt + dy}px` : undefined,
+          ml: newMl !== 0 ? `${newMl}px` : undefined,
+          mt: newMt !== 0 ? `${newMt}px` : undefined,
           x: undefined, y: undefined,
+          ...(isSnap ? { align: undefined } : {}),
         }));
       },
       onPointerCancel: (e) => {
@@ -2022,10 +2092,15 @@ function useSlideElementEditor(
         const currentMt = parseFloat(currentStyle.mt ?? "0") || 0;
         const nextMl = Math.round(currentMl + delta[0] * step);
         const nextMt = Math.round(currentMt + delta[1] * step);
+        // Horizontal arrow keys release center/right snap so ml takes effect
+        const isHorizontal = delta[0] !== 0;
+        const snapAlign = currentStyle.align;
+        const clearAlign = isHorizontal && (snapAlign === "center" || snapAlign === "right");
         onSlideChange(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
           ml: nextMl !== 0 ? `${nextMl}px` : undefined,
           mt: nextMt !== 0 ? `${nextMt}px` : undefined,
           x: undefined, y: undefined,
+          ...(clearAlign ? { align: undefined } : {}),
         }));
       },
     };
