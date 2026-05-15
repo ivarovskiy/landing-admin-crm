@@ -1312,6 +1312,19 @@ function TextElementsEditor({
           onChange={onChange}
           onMove={(dir) => moveElement(idx, dir)}
           onRemove={extraKeys.includes(key) ? () => removeExtra(key) : undefined}
+          onDuplicate={extraKeys.includes(key) ? () => {
+            const extra = extras.find(e => e.id === key)!;
+            const newId = crypto?.randomUUID?.() ?? `ex-${Date.now()}`;
+            const newExtra: SlideExtra = { ...extra, id: newId };
+            const insertAt = orderedKeys.indexOf(key) + 1;
+            const newOrder = [...orderedKeys.slice(0, insertAt), newId, ...orderedKeys.slice(insertAt)];
+            onChange({ ...s, extras: [...extras, newExtra], elementOrder: newOrder });
+          } : undefined}
+          onToggleHidden={() => {
+            const es = getSlideStyle(s, key);
+            onChange(applyStylePatch(s, key, { hidden: es?.hidden ? undefined : true }));
+          }}
+          isHidden={!!(getSlideStyle(s, key)?.hidden)}
           selectMode={selectMode}
           isSelected={selectedKeys.has(key)}
           onToggleSelect={() => toggleSelect(key)}
@@ -1415,6 +1428,20 @@ function TextElementsEditor({
   );
 }
 
+function stripHtml(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function TextElementCard({
   elementKey,
   slide: s,
@@ -1424,6 +1451,9 @@ function TextElementCard({
   onChange,
   onMove,
   onRemove,
+  onDuplicate,
+  onToggleHidden,
+  isHidden = false,
   selectMode = false,
   isSelected = false,
   onToggleSelect,
@@ -1436,6 +1466,9 @@ function TextElementCard({
   onChange: (next: Slide) => void;
   onMove: (dir: "up" | "down") => void;
   onRemove?: () => void;
+  onDuplicate?: () => void;
+  onToggleHidden?: () => void;
+  isHidden?: boolean;
   selectMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
@@ -1454,13 +1487,14 @@ function TextElementCard({
   const canSplit = rawText.includes("\n") && rawText.split("\n").filter(l => l.trim()).length >= 2;
 
   const label = isExtra
-    ? `Extra${extra.text ? ": " + extra.text.split("\n")[0].slice(0, 22) : ""}`
+    ? (extra.text ? stripHtml(extra.text).split("\n")[0].slice(0, 30) || "Extra" : "Extra")
     : (FIXED_ELEMENT_LABELS[elementKey] ?? elementKey);
 
   return (
     <div className={[
       "rounded border",
       isSelected ? "bg-primary/5 border-primary/30" : "bg-muted/5",
+      isHidden ? "opacity-50" : "",
     ].join(" ")}>
       <div
         className="flex items-center gap-1.5 px-2 py-1 cursor-pointer select-none min-h-[36px]"
@@ -1510,6 +1544,26 @@ function TextElementCard({
             >
               <ChevronDown className="h-3 w-3" />
             </button>
+            {onToggleHidden && (
+              <button
+                type="button"
+                title={isHidden ? "Show element" : "Hide element"}
+                onClick={() => onToggleHidden()}
+                className={isHidden ? "text-primary p-0.5" : "text-muted-foreground hover:text-foreground p-0.5"}
+              >
+                {isHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+              </button>
+            )}
+            {onDuplicate && (
+              <button
+                type="button"
+                title="Duplicate element"
+                onClick={() => onDuplicate()}
+                className="text-muted-foreground hover:text-foreground p-0.5"
+              >
+                <Copy className="h-3 w-3" />
+              </button>
+            )}
             {onRemove && (
               <button
                 type="button"
@@ -1578,7 +1632,12 @@ function TextElementCard({
                   options={EXTRA_KIND_OPTIONS}
                 />
               </div>
-              <InspectorTextarea value={extra.text} onChange={(v) => updateExtra({ text: v })} rows={2} placeholder="Text content..." />
+              <InspectorTextarea
+                value={stripHtml(extra.text)}
+                onChange={(v) => updateExtra({ text: `<p>${v.replace(/\n+/g, "</p><p>")}</p>` })}
+                rows={2}
+                placeholder="Text content..."
+              />
               <ElementStyleEditor label="" style={extra.style} tuningScope={tuningScope} onChange={(es) => updateExtra({ style: es })} showTypo showSnap />
             </>
           )}

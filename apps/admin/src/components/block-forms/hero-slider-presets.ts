@@ -51,6 +51,7 @@ export type ElementStyle = {
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
   snapToBaseline?: boolean; // lock Y to the canvas baseline guideline
   locked?: boolean;         // prevent position/size changes in canvas and preview
+  hidden?: boolean;         // hide this element without deleting it
   groupId?: string;         // group identifier — used for bulk lock/unlock in the form
   useFontOffset?: boolean;  // opt-in per-font padding offset (see getTypoOffset)
   viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;

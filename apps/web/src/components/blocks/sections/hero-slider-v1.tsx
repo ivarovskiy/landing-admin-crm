@@ -31,6 +31,7 @@ type ElementStyle = {
   typo?: string; // typography class from design system
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
   locked?: boolean; // prevents drag/resize in preview and canvas
+  hidden?: boolean; // hide this element without deleting it
   groupId?: string; // group identifier for moving elements together
   useFontOffset?: boolean; // opt-in per-font padding offset (see getTypoOffset)
   viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
@@ -1579,11 +1580,14 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.C
   const left = mlPx + xPx;
   const s: Record<string, string> = { position: "absolute", top: `${top}px` };
 
-  // center/right: span full container width so textAlign is relative to text column, not content box
-  if (es?.align === "center" || es?.align === "right") {
+  if (es?.align === "center") {
+    s.left = "50%";
+    s.transform = "translateX(-50%)";
+    s.textAlign = "center";
+  } else if (es?.align === "right") {
     s.left = "0";
     s.right = "0";
-    s.textAlign = es.align;
+    s.textAlign = "right";
   } else {
     s.left = `${left}px`;
     if (es?.align) s.textAlign = es.align;
@@ -1859,7 +1863,29 @@ function useSlideElementEditor(
   function editableProps(key: string, className?: string): React.HTMLAttributes<HTMLElement> {
     if (!editMode || !onSlideChange) return { className };
     const elStyle = getSlideElementStyle(slide, key);
-    if (elStyle?.locked) return { className: cn(className, "hero-slide__editable hero-slide__editable--locked") };
+    if (elStyle?.locked) {
+      return {
+        className: cn(className, "hero-slide__editable hero-slide__editable--locked"),
+        ...(dragMode ? {
+          onPointerDown: (e: React.PointerEvent<HTMLElement>) => {
+            e.stopPropagation();
+            const el = e.currentTarget as HTMLElement;
+            el.querySelectorAll("[data-hs-lock-flash]").forEach(n => n.remove());
+            const flash = document.createElement("span");
+            flash.setAttribute("data-hs-lock-flash", "1");
+            flash.textContent = "🔒";
+            Object.assign(flash.style, {
+              position: "absolute", top: "2px", right: "2px",
+              background: "rgba(239,68,68,0.85)", borderRadius: "3px",
+              padding: "2px 4px", fontSize: "12px", zIndex: "200",
+              pointerEvents: "none", lineHeight: "1", transition: "opacity 0.3s",
+            });
+            el.appendChild(flash);
+            setTimeout(() => { flash.style.opacity = "0"; setTimeout(() => flash.remove(), 300); }, 1200);
+          },
+        } : {}),
+      };
+    }
 
     return {
       className: cn(className, "hero-slide__editable"),
@@ -2055,6 +2081,7 @@ function CopyStack({
   function renderElement(key: string) {
     if (key === "kicker" && kicker) {
       const es = mergeElementStyle(slide.kickerStyle, viewportProfile);
+      if (es?.hidden) return null;
       const typo = es?.typo;
       const s = posStyle(slide, "kicker", es, !!onSlideChange);
       if (onSlideChange && slide.positioningMode === "absolute") {
@@ -2067,7 +2094,6 @@ function CopyStack({
             style={s}
             data-el={`slide-${slideIndex}-kicker`}
           >
-            {!isLocked && dragMode && <DragHandle {...dragHandleProps("kicker")} />}
             <TipTapInline value={kicker} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, kicker: html })} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, kickerStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("kicker", es)} elementAlign={es?.align} />
           </div>
         );
@@ -2080,6 +2106,7 @@ function CopyStack({
     }
     if (key === "title" && title) {
       const titleEs = mergeElementStyle(slide.titleStyle, viewportProfile);
+      if (titleEs?.hidden) return null;
       const titleTypo = titleEs?.typo;
       const titleStyle = posStyle(slide, "title", titleEs, !!onSlideChange);
       const titleClass = cn("hero-slide__title", titleTypo);
@@ -2094,7 +2121,6 @@ function CopyStack({
               data-hs-draggable="title"
               style={titleStyle}
             >
-              {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
               <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)} shadowContent={renderRichText(title)}>
                 <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title", titleEs)} elementAlign={titleEs?.align} />
               </OutlineStampText>
@@ -2148,6 +2174,7 @@ function CopyStack({
     }
     if (key === "subtitle" && subtitle) {
       const es = mergeElementStyle(slide.subtitleStyle, viewportProfile);
+      if (es?.hidden) return null;
       const typo = es?.typo;
       const s = posStyle(slide, "subtitle", es, !!onSlideChange);
       if (onSlideChange && slide.positioningMode === "absolute") {
@@ -2160,7 +2187,6 @@ function CopyStack({
             style={s}
             data-el={`slide-${slideIndex}-subtitle`}
           >
-            {!isLocked && dragMode && <DragHandle {...dragHandleProps("subtitle")} />}
             <TipTapInline value={subtitle} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, subtitle: html })} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, subtitleStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("subtitle", es)} elementAlign={es?.align} />
           </div>
         );
@@ -2173,6 +2199,7 @@ function CopyStack({
     }
     if (key === "body" && body) {
       const es = mergeElementStyle(slide.bodyStyle, viewportProfile);
+      if (es?.hidden) return null;
       const typo = es?.typo;
       const s = posStyle(slide, "body", es, !!onSlideChange);
       if (onSlideChange && slide.positioningMode === "absolute") {
@@ -2185,7 +2212,6 @@ function CopyStack({
             style={s}
             data-el={`slide-${slideIndex}-body`}
           >
-            {!isLocked && dragMode && <DragHandle {...dragHandleProps("body")} />}
             <TipTapInline value={body} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, body: html })} typoClass={typo} typoOptions={TYPO_PRESETS} showWordCount fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, bodyStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("body", es)} elementAlign={es?.align} />
           </div>
         );
@@ -2198,6 +2224,7 @@ function CopyStack({
     }
     if (key === "quote" && quote) {
       const es = mergeElementStyle(slide.quoteStyle, viewportProfile);
+      if (es?.hidden) return null;
       const typo = es?.typo;
       const s = posStyle(slide, "quote", es, !!onSlideChange);
       const cls = cn("hero-slide__quote", typo);
@@ -2211,7 +2238,6 @@ function CopyStack({
             style={s}
             data-el={`slide-${slideIndex}-quote`}
           >
-            {!isLocked && dragMode && <DragHandle {...dragHandleProps("quote")} />}
             <TipTapInline value={quote} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, quote: html })} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, quoteStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("quote", es)} elementAlign={es?.align} />
           </div>
         );
@@ -2274,6 +2300,7 @@ function ExtraElement({
   onSlideChange?: (next: Slide) => void;
 }) {
   const resolvedStyle = mergeElementStyle(extra.style, viewportProfile);
+  if (resolvedStyle?.hidden) return null;
   const extraKey = extra.id ?? "";
   const inEditMode = !!(onSlideChange && slide && slide.positioningMode === "absolute");
   const style = slide ? posStyle(slide, extraKey, resolvedStyle, inEditMode) : elStyle(resolvedStyle);
@@ -2310,7 +2337,6 @@ function ExtraElement({
           data-hs-draggable={extraKey}
           style={style}
         >
-          {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
             <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={resolvedStyle?.align} />
           </OutlineStampText>
@@ -2353,7 +2379,6 @@ function ExtraElement({
           style={style}
           data-el={slotId}
         >
-          {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <Kicker><TipTapInline value={extra.text} onChange={updateText ?? undefined} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={resolvedStyle?.align} /></Kicker>
         </div>
       );
@@ -2381,7 +2406,6 @@ function ExtraElement({
           data-hs-draggable={extraKey}
           style={style}
         >
-          {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
             <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={resolvedStyle?.align} />
           </OutlineStampText>
