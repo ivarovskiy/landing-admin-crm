@@ -11,15 +11,18 @@ import {
 } from "react";
 
 type Overrides = Record<string, any>;
+export type ToolboxState = { text: boolean; drag: boolean; guides: boolean };
 type LivePreviewValue = {
   overrides: Overrides;
   editMode: boolean;
+  toolboxState: ToolboxState;
   updateBlock: (blockId: string, data: any) => void;
 };
 
 const LivePreviewContext = createContext<LivePreviewValue>({
   overrides: {},
   editMode: false,
+  toolboxState: { text: false, drag: false, guides: false },
   updateBlock: () => {},
 });
 
@@ -29,13 +32,14 @@ export function useLiveBlock(blockId: string, serverData: any): any {
 }
 
 export function useLivePreviewEdit() {
-  const { editMode, updateBlock } = useContext(LivePreviewContext);
-  return { editMode, updateBlock };
+  const { editMode, toolboxState, updateBlock } = useContext(LivePreviewContext);
+  return { editMode, toolboxState, updateBlock };
 }
 
 export function LivePreviewProvider({ children }: { children: ReactNode }) {
   const [overrides, setOverrides] = useState<Overrides>({});
   const [editMode, setEditMode] = useState(false);
+  const [toolboxState, setToolboxState] = useState<ToolboxState>({ text: false, drag: false, guides: false });
 
   useEffect(() => {
     const isPreview = window !== window.parent;
@@ -48,6 +52,13 @@ export function LivePreviewProvider({ children }: { children: ReactNode }) {
       }
       if (type === "set-live-edit-mode") {
         setEditMode(e.data?.enabled === true);
+      }
+      if (type === "set-toolbox-state") {
+        setToolboxState({
+          text: e.data?.text === true,
+          drag: e.data?.drag === true,
+          guides: e.data?.guides === true,
+        });
       }
     }
 
@@ -83,8 +94,8 @@ export function LivePreviewProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ overrides, editMode, updateBlock }),
-    [editMode, overrides, updateBlock],
+    () => ({ overrides, editMode, toolboxState, updateBlock }),
+    [editMode, toolboxState, overrides, updateBlock],
   );
 
   return (

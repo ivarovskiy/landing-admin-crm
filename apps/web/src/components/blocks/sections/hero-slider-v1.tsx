@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { TipTapInline, renderRichText } from "@/components/rich-text";
 import { TYPO_PRESETS, getTypoOffset } from "@/lib/typo-presets";
+import { useLivePreviewEdit } from "@/components/live-preview-provider";
 
 type SlideTemplate =
   | "image-left-copy-right"
@@ -434,13 +435,14 @@ export function HeroSliderV1({
   const showMediaEdgeGuides = options?.showMediaEdgeGuides === true;
   const viewportProfile = useHeroViewportProfile();
 
-  // Toolbox local state — independent of inspector/options, off by default.
-  // editMode prop = "admin context active". toolboxTextEdit/toolboxDrag = explicit on/off.
-  const [toolboxTextEdit, setToolboxTextEdit] = useState(false);
-  const [toolboxDrag, setToolboxDrag] = useState(false);
-  const [toolboxGuides, setToolboxGuides] = useState(false);
+  // Toolbox state comes from the admin toolbar via postMessage → LivePreviewContext.
+  // When not in admin preview (editMode=false), all are false.
+  const { toolboxState } = useLivePreviewEdit();
+  const toolboxTextEdit = editMode && toolboxState.text;
+  const toolboxDrag     = editMode && toolboxState.drag;
+  const toolboxGuides   = editMode && toolboxState.guides;
 
-  // effective values wired to toolbox state (when in admin context)
+  // effective values gated by toolbox
   const effectiveEditMode = editMode && (toolboxTextEdit || toolboxDrag);
   const effectiveDragMode = toolboxDrag;
 
@@ -756,112 +758,7 @@ export function HeroSliderV1({
           }}
         />
       )}
-      {/* Floating edit-mode toolbox — quick-access text / drag / guides toggles */}
-      {editMode && (
-        <CanvasToolbox
-          textEditOn={toolboxTextEdit}
-          dragOn={toolboxDrag}
-          guidesOn={toolboxGuides}
-          onTextEditToggle={() => setToolboxTextEdit((v) => !v)}
-          onDragToggle={() => setToolboxDrag((v) => !v)}
-          onGuidesToggle={() => setToolboxGuides((v) => !v)}
-        />
-      )}
     </section>
-  );
-}
-
-// ─── Canvas toolbox ───────────────────────────────────────────────────────────
-// Floating quick-access panel shown in edit mode. Provides drag toggle and
-// guideline on/off without opening the inspector. Fine settings stay in admin.
-
-function CanvasToolbox({
-  textEditOn,
-  dragOn,
-  guidesOn,
-  onTextEditToggle,
-  onDragToggle,
-  onGuidesToggle,
-}: {
-  textEditOn: boolean;
-  dragOn: boolean;
-  guidesOn: boolean;
-  onTextEditToggle: () => void;
-  onDragToggle: () => void;
-  onGuidesToggle: () => void;
-}) {
-  const btnStyle = (active: boolean): React.CSSProperties => ({
-    border: `1px solid ${active ? "rgba(96,165,250,0.8)" : "rgba(255,255,255,0.2)"}`,
-    background: active ? "rgba(96,165,250,0.18)" : "transparent",
-    borderRadius: 4,
-    padding: "3px 7px",
-    cursor: "pointer",
-    color: active ? "#93c5fd" : "rgba(255,255,255,0.55)",
-    fontSize: 11,
-    fontFamily: "monospace",
-    lineHeight: 1,
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    userSelect: "none" as const,
-  });
-
-  return (
-    <div
-      aria-label="Canvas toolbox"
-      style={{
-        position: "fixed",
-        top: 8,
-        right: 12,
-        zIndex: 9999,
-        display: "flex",
-        gap: 4,
-        background: "rgba(12,14,20,0.78)",
-        borderRadius: 6,
-        padding: "5px 7px",
-        backdropFilter: "blur(6px)",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.45)",
-      }}
-    >
-      {/* Text editing toggle */}
-      <button
-        type="button"
-        title={textEditOn ? "Text editing on — click to disable" : "Text editing off — click to enable"}
-        style={btnStyle(textEditOn)}
-        onClick={onTextEditToggle}
-      >
-        <svg width="11" height="12" viewBox="0 0 11 12" fill="currentColor" aria-hidden>
-          <path d="M0 2h11v1.5H6.5V10h-2V3.5H0V2z"/>
-        </svg>
-        Text
-      </button>
-      {/* Drag toggle */}
-      <button
-        type="button"
-        title={dragOn ? "Drag enabled — click to disable" : "Drag disabled — click to enable"}
-        style={btnStyle(dragOn)}
-        onClick={onDragToggle}
-      >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden>
-          <path d="M6 0l1.5 2.5h-3L6 0zm0 12L4.5 9.5h3L6 12zM0 6l2.5-1.5v3L0 6zm12 0L9.5 7.5v-3L12 6zM5 5h2v2H5V5z"/>
-        </svg>
-        Drag
-      </button>
-      {/* Guidelines master toggle */}
-      <button
-        type="button"
-        title={guidesOn ? "Guides on — click to hide all" : "Guides off — click to show all"}
-        style={btnStyle(guidesOn)}
-        onClick={onGuidesToggle}
-      >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
-          <rect x="1" y="1" width="10" height="10" rx="1"/>
-          <line x1="6" y1="1" x2="6" y2="11"/>
-          <line x1="1" y1="6" x2="11" y2="6"/>
-        </svg>
-        Guides
-      </button>
-    </div>
   );
 }
 

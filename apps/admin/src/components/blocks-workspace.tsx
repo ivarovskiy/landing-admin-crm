@@ -40,6 +40,8 @@ import {
   Settings,
   Keyboard,
   MoreHorizontal,
+  Move,
+  Grid3X3,
 } from "lucide-react";
 
 /* ================================================================
@@ -184,6 +186,11 @@ export function BlocksWorkspace({
   // Preview mode — hides all panels, toolbar; canvas only
   const [previewMode, setPreviewMode] = useState(false);
 
+  // Toolbox state — quick toggles sent to iframe via postMessage
+  const [toolboxText, setToolboxText] = useState(false);
+  const [toolboxDrag, setToolboxDrag] = useState(false);
+  const [toolboxGuides, setToolboxGuides] = useState(false);
+
   // Page settings floating panel
   const [showPageSettings, setShowPageSettings] = useState(false);
 
@@ -267,6 +274,16 @@ export function BlocksWorkspace({
       );
     } catch { /* cross-origin */ }
   }, [previewMode]);
+
+  // Sync toolbox toggles to iframe
+  useEffect(() => {
+    try {
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: "set-toolbox-state", text: toolboxText, drag: toolboxDrag, guides: toolboxGuides },
+        "*",
+      );
+    } catch { /* cross-origin */ }
+  }, [toolboxText, toolboxDrag, toolboxGuides]);
 
   const availableWidth = canvasWidth > 0 ? canvasWidth - CANVAS_PADDING * 2 : 1440;
 
@@ -614,17 +631,25 @@ export function BlocksWorkspace({
     postLiveEditMode();
   }, [postLiveEditMode, previewSrc]);
 
-  // Re-send edit mode when iframe signals it finished hydrating (fixes intermittent activation)
+  // Re-send edit mode + toolbox state when iframe signals it finished hydrating
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
-      if (e.data?.type === "iframe-ready") postLiveEditMode();
+      if (e.data?.type === "iframe-ready") {
+        postLiveEditMode();
+        try {
+          iframeRef.current?.contentWindow?.postMessage(
+            { type: "set-toolbox-state", text: toolboxText, drag: toolboxDrag, guides: toolboxGuides },
+            "*",
+          );
+        } catch { /* cross-origin */ }
+      }
       if (e.data?.type === "hero-slider-absolute-converted") {
         setBanner({ kind: "success", message: "Slider converted to absolute" });
       }
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [postLiveEditMode]);
+  }, [postLiveEditMode, toolboxText, toolboxDrag, toolboxGuides]);
 
   useEffect(() => {
     function handleHeroConvert(event: Event) {
@@ -738,6 +763,24 @@ export function BlocksWorkspace({
                 {VIEWPORT_PRESETS[mode].label}
               </TToolBtn>
             ))}
+          </div>
+
+          <div className="h-5 w-px bg-border" />
+
+          {/* Canvas toolbox — quick toggles for content-maker tasks */}
+          <div className="flex rounded-lg border border-border/50 bg-muted/40 p-0.5">
+            <TToolBtn label="Text editing" active={toolboxText} onClick={() => setToolboxText((v) => !v)}>
+              <Type className="h-4 w-4" />
+              Text
+            </TToolBtn>
+            <TToolBtn label="Drag elements" active={toolboxDrag} onClick={() => setToolboxDrag((v) => !v)}>
+              <Move className="h-4 w-4" />
+              Drag
+            </TToolBtn>
+            <TToolBtn label="Show guidelines" active={toolboxGuides} onClick={() => setToolboxGuides((v) => !v)}>
+              <Grid3X3 className="h-4 w-4" />
+              Guides
+            </TToolBtn>
           </div>
 
           <div className="h-5 w-px bg-border" />
