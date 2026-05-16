@@ -122,6 +122,10 @@ type ClassicGridSettings = {
   showVerticalCenter?: boolean;
   showHorizontalCenter?: boolean;
   color?: string;
+  marginPercent?: number;
+  showMarginLines?: boolean;
+  linkCenterToAlign?: boolean;           // link vertical center line to an alignMode formula
+  centerAlignMode?: "1" | "2" | "3" | "4"; // which alignMode offset to use for the center line
 };
 
 type StyleExtraGuideline = {
@@ -158,6 +162,10 @@ type CanvasGuidelines = {
   italicBaselineOffset?: number; // px from bottom in design canvas
   classicGrid?: ClassicGridSettings;
   styleGuidelines?: StyleGuidelinesConfig;
+  globalVerticalGuide?: string;      // CSS `left` value — rendered at page level (position:fixed)
+  globalVerticalGuideColor?: string;
+  sliderHorizontalGuide?: string;    // CSS `top` value — full-slider-width horizontal line
+  sliderHorizontalGuideColor?: string;
 };
 
 /** Design canvas height used in the admin mini-canvas — offsets are relative to this. */
@@ -423,6 +431,7 @@ export function HeroSliderV1({
   const showLayoutGuides = options?.showLayoutGuides === true;
   const layoutGuideBottomOffset = options?.layoutGuideBottomOffset as string | undefined;
   const showStyleGuides = options?.showStyleGuides === true;
+  const showMediaEdgeGuides = options?.showMediaEdgeGuides === true;
   const viewportProfile = useHeroViewportProfile();
 
   // Real slide currently displayed (for dots / aria / live preview)
@@ -672,6 +681,7 @@ export function HeroSliderV1({
                     showLayoutGuides={showLayoutGuides}
                     layoutGuideBottomOffset={layoutGuideBottomOffset}
                     showStyleGuides={showStyleGuides}
+                    showMediaEdgeGuides={showMediaEdgeGuides}
                     canvasGuidelines={canvasGuidelines}
                     viewportProfile={viewportProfile}
                   />
@@ -720,7 +730,123 @@ export function HeroSliderV1({
           </div>
         ) : null}
       </Container>
+      {/* Full-page-height vertical guideline — position:fixed escapes slider clip/overflow */}
+      {canvasGuidelines.globalVerticalGuide && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: 0, bottom: 0,
+            left: canvasGuidelines.globalVerticalGuide,
+            width: 1,
+            background: canvasGuidelines.globalVerticalGuideColor ?? "rgba(255,100,180,0.8)",
+            zIndex: 9998,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      {/* Floating edit-mode toolbox — quick-access drag + guidelines toggles */}
+      {editMode && onChange && (
+        <CanvasToolbox
+          options={options}
+          onOptionsChange={(nextOptions) => onChange({ ...data, options: nextOptions })}
+        />
+      )}
     </section>
+  );
+}
+
+// ─── Canvas toolbox ───────────────────────────────────────────────────────────
+// Floating quick-access panel shown in edit mode. Provides drag toggle and
+// guideline on/off without opening the inspector. Fine settings stay in admin.
+
+function CanvasToolbox({
+  options,
+  onOptionsChange,
+}: {
+  options: Record<string, unknown>;
+  onOptionsChange: (next: Record<string, unknown>) => void;
+}) {
+  const dragEnabled = options?.enableCanvasDrag !== false;
+  const guidesOn    = options?.showGuides === true;
+  const mediaGuides = options?.showMediaEdgeGuides === true;
+
+  const btnStyle = (active: boolean): React.CSSProperties => ({
+    border: `1px solid ${active ? "rgba(96,165,250,0.8)" : "rgba(255,255,255,0.2)"}`,
+    background: active ? "rgba(96,165,250,0.18)" : "transparent",
+    borderRadius: 4,
+    padding: "3px 7px",
+    cursor: "pointer",
+    color: active ? "#93c5fd" : "rgba(255,255,255,0.55)",
+    fontSize: 11,
+    fontFamily: "monospace",
+    lineHeight: 1,
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    userSelect: "none" as const,
+  });
+
+  return (
+    <div
+      aria-label="Canvas toolbox"
+      style={{
+        position: "fixed",
+        top: 8,
+        right: 12,
+        zIndex: 9999,
+        display: "flex",
+        gap: 4,
+        background: "rgba(12,14,20,0.78)",
+        borderRadius: 6,
+        padding: "5px 7px",
+        backdropFilter: "blur(6px)",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.45)",
+      }}
+    >
+      {/* Drag toggle */}
+      <button
+        type="button"
+        title={dragEnabled ? "Drag enabled — click to disable" : "Drag disabled — click to enable"}
+        style={btnStyle(dragEnabled)}
+        onClick={() => onOptionsChange({ ...options, enableCanvasDrag: dragEnabled ? false : undefined })}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden>
+          <path d="M6 0l1.5 2.5h-3L6 0zm0 12L4.5 9.5h3L6 12zM0 6l2.5-1.5v3L0 6zm12 0L9.5 7.5v-3L12 6zM5 5h2v2H5V5z"/>
+        </svg>
+        Drag
+      </button>
+      {/* Guide lines toggle */}
+      <button
+        type="button"
+        title={guidesOn ? "Media guides on — click to hide" : "Media guides off — click to show"}
+        style={btnStyle(guidesOn)}
+        onClick={() => onOptionsChange({ ...options, showGuides: guidesOn ? undefined : true })}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
+          <rect x="1" y="1" width="10" height="10" rx="1"/>
+          <line x1="6" y1="1" x2="6" y2="11"/>
+          <line x1="1" y1="6" x2="11" y2="6"/>
+        </svg>
+        Guides
+      </button>
+      {/* Media edge guides toggle */}
+      <button
+        type="button"
+        title={mediaGuides ? "Media edge guides on — click to hide" : "Media edge guides off — click to show"}
+        style={btnStyle(mediaGuides)}
+        onClick={() => onOptionsChange({ ...options, showMediaEdgeGuides: mediaGuides ? undefined : true })}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
+          <rect x="2" y="2" width="8" height="8" rx="0.5"/>
+          <line x1="5" y1="2" x2="5" y2="4"/>
+          <line x1="7" y1="2" x2="7" y2="4"/>
+          <line x1="5" y1="8" x2="5" y2="10"/>
+          <line x1="7" y1="8" x2="7" y2="10"/>
+        </svg>
+        Media
+      </button>
+    </div>
   );
 }
 
@@ -960,6 +1086,7 @@ function HeroSlide({
   showLayoutGuides = false,
   layoutGuideBottomOffset,
   showStyleGuides = false,
+  showMediaEdgeGuides = false,
   canvasGuidelines,
   viewportProfile,
 }: {
@@ -976,6 +1103,7 @@ function HeroSlide({
   showLayoutGuides?: boolean;
   layoutGuideBottomOffset?: string;
   showStyleGuides?: boolean;
+  showMediaEdgeGuides?: boolean;
   canvasGuidelines?: CanvasGuidelines;
   viewportProfile?: HeroViewportProfileKey | null;
 }) {
@@ -998,7 +1126,7 @@ function HeroSlide({
   type LayoutGuideLines = { gapX?: number; bottomY?: number };
   const [layoutGuideLines, setLayoutGuideLines] = useState<LayoutGuideLines>({});
   // Measurement is needed for guides and for media-aligned text stretching.
-  const measureNeeded = showGuides || showElementGuides || stretchToMedia || showCompositionGuides || showLayoutGuides || showStyleGuides;
+  const measureNeeded = showGuides || showElementGuides || stretchToMedia || showCompositionGuides || showLayoutGuides || showStyleGuides || showMediaEdgeGuides;
 
   useLayoutEffect(() => {
     if (!measureNeeded) {
@@ -1207,21 +1335,33 @@ function HeroSlide({
     !!(canvasGuidelines?.baselineOffset) ||
     !!(canvasGuidelines?.italicBaselineOffset);
 
-  const canvasOverlay = (hasClassicGrid || hasFigmaGuidelines) ? (
+  const hasSliderHGuide = !!(canvasGuidelines?.sliderHorizontalGuide);
+  const canvasOverlay = (hasClassicGrid || hasFigmaGuidelines || hasSliderHGuide) ? (
     <div className="hero-slide__guides" aria-hidden="true">
       {hasClassicGrid && (() => {
         const cols = Math.max(1, classicGrid!.columns ?? 6);
         const rows = Math.max(1, classicGrid!.rows ?? 4);
         const lineColor = classicGrid!.color ?? "rgba(100,149,237,0.45)";
         const centerColor = "rgba(72,199,72,0.75)";
+        const marginPct = classicGrid!.marginPercent ?? 0;
+        const usable = 100 - 2 * marginPct;
         return (
           <>
-            {/* Column dividers */}
+            {/* Outer margin lines */}
+            {classicGrid!.showMarginLines && marginPct > 0 && (
+              <>
+                <div className="hero-slide__guide hero-slide__guide--vertical"
+                  style={{ left: `${marginPct}%`, background: centerColor, opacity: 1 }} />
+                <div className="hero-slide__guide hero-slide__guide--vertical"
+                  style={{ left: `${100 - marginPct}%`, background: centerColor, opacity: 1 }} />
+              </>
+            )}
+            {/* Column dividers (within margins) */}
             {Array.from({ length: cols - 1 }, (_, k) => (
               <div
                 key={`cg-col-${k}`}
                 className="hero-slide__guide hero-slide__guide--vertical"
-                style={{ left: `${(k + 1) / cols * 100}%`, background: lineColor, opacity: 1 }}
+                style={{ left: `${marginPct + usable * (k + 1) / cols}%`, background: lineColor, opacity: 1 }}
               />
             ))}
             {/* Row dividers */}
@@ -1232,13 +1372,28 @@ function HeroSlide({
                 style={{ top: `${(k + 1) / rows * 100}%`, background: lineColor, opacity: 1 }}
               />
             ))}
-            {/* Vertical center line */}
-            {classicGrid!.showVerticalCenter && (
-              <div
-                className="hero-slide__guide hero-slide__guide--vertical"
-                style={{ left: "50%", background: centerColor, opacity: 1 }}
-              />
-            )}
+            {/* Vertical center line — optionally linked to an alignMode offset */}
+            {classicGrid!.showVerticalCenter && (() => {
+              let centerLeft = "50%";
+              if (classicGrid!.linkCenterToAlign && classicGrid!.centerAlignMode) {
+                const gapPx = parseFloat(resolveDesignViewportUnits(desktopLayout.gap) ?? "0") || 0;
+                const outerPadPx = parseFloat(resolveDesignViewportUnits(desktopLayout.outerPadding) ?? "0") || 0;
+                const side = imageSide(template);
+                const dir = side === "right" ? 1 : side === "left" ? -1 : 0;
+                let offsetPx = 0;
+                if (classicGrid!.centerAlignMode === "1") offsetPx = dir * gapPx / 2;
+                else if (classicGrid!.centerAlignMode === "2") offsetPx = dir * (outerPadPx + gapPx) / 2;
+                else if (classicGrid!.centerAlignMode === "4") offsetPx = dir * outerPadPx / 2;
+                // mode "3" stays at 0
+                if (offsetPx) centerLeft = `calc(50% + ${offsetPx}px)`;
+              }
+              return (
+                <div
+                  className="hero-slide__guide hero-slide__guide--vertical"
+                  style={{ left: centerLeft, background: centerColor, opacity: 1 }}
+                />
+              );
+            })()}
             {/* Horizontal center line */}
             {classicGrid!.showHorizontalCenter && (
               <div
@@ -1282,6 +1437,18 @@ function HeroSlide({
           }}
         />
       )}
+      {/* Full-slider-width horizontal guideline */}
+      {hasSliderHGuide && (
+        <div
+          className="hero-slide__guide hero-slide__guide--horizontal"
+          style={{
+            top: canvasGuidelines!.sliderHorizontalGuide!,
+            left: 0, right: 0,
+            background: canvasGuidelines!.sliderHorizontalGuideColor ?? "rgba(255,100,180,0.8)",
+            opacity: 1,
+          }}
+        />
+      )}
     </div>
   ) : null;
 
@@ -1295,12 +1462,14 @@ function HeroSlide({
   ) : null;
 
   const hasMediaGuides = showGuides && mediaRect;
+  const hasMediaEdgeGuidesActive = showMediaEdgeGuides && mediaRect;
   const hasElementGuides = showElementGuides && elementRects.length > 0;
   const hasCompGuides = showCompositionGuides && compGuides.length > 0;
   const hasLayoutGuides = showLayoutGuides && (layoutGuideLines.gapX !== undefined || layoutGuideLines.bottomY !== undefined);
   const compGuideColor = compositionGuideColor || "rgba(255, 6, 102, 0.8)"; // цвет guidlines
   const LAYOUT_GUIDE_COLOR = "#FF0066";
-  const guides = hasMediaGuides || hasElementGuides || hasCompGuides || hasLayoutGuides ? (
+  const MEDIA_EDGE_COLOR = "rgba(251,191,36,0.85)"; // amber — short bounded media edge lines
+  const guides = hasMediaGuides || hasMediaEdgeGuidesActive || hasElementGuides || hasCompGuides || hasLayoutGuides ? (
     <div className="hero-slide__guides" aria-hidden="true">
       {hasMediaGuides ? (
         <>
@@ -1310,6 +1479,25 @@ function HeroSlide({
           <div className="hero-slide__guide hero-slide__guide--horizontal" style={{ top: `${mediaRect!.bottom}px` }} />
         </>
       ) : null}
+      {/* Short media edge guides — bounded lines along each edge of the media element */}
+      {hasMediaEdgeGuidesActive ? (() => {
+        const mr = mediaRect!;
+        const mw = mr.right - mr.left;
+        const mh = mr.bottom - mr.top;
+        const S: React.CSSProperties = { position: "absolute", background: MEDIA_EDGE_COLOR, pointerEvents: "none" };
+        return (
+          <>
+            {/* Top edge — spans media width */}
+            <div style={{ ...S, top: mr.top, left: mr.left, width: mw, height: 1 }} />
+            {/* Bottom edge — spans media width */}
+            <div style={{ ...S, top: mr.bottom, left: mr.left, width: mw, height: 1 }} />
+            {/* Left edge — spans media height */}
+            <div style={{ ...S, left: mr.left, top: mr.top, width: 1, height: mh }} />
+            {/* Right edge — spans media height */}
+            <div style={{ ...S, left: mr.right, top: mr.top, width: 1, height: mh }} />
+          </>
+        );
+      })() : null}
       {hasElementGuides
         ? elementRects.map((r, idx) => (
             <React.Fragment key={`${r.key}-${idx}`}>
@@ -1983,6 +2171,25 @@ function useSlideElementEditor(
         el.setPointerCapture(e.pointerId);
         el.classList.add(isResize ? "hero-slide__editable--resizing" : "hero-slide__editable--dragging");
 
+        // Collect group-member starting transforms (same as dragHandleProps)
+        let groupStarts: Map<string, GroupStart> | undefined;
+        if (!isResize) {
+          const groupId = getSlideElementStyle(slide, key)?.groupId;
+          if (groupId && slideEl) {
+            groupStarts = new Map();
+            slideEl.querySelectorAll<HTMLElement>("[data-hs-draggable]").forEach((member) => {
+              if (member === el) return;
+              const memberKey = member.dataset.hsDraggable ?? "";
+              if (!memberKey) return;
+              const ms = getSlideElementStyle(slide, memberKey);
+              if (ms?.groupId !== groupId || ms.locked) return;
+              const mc = getComputedStyle(member);
+              const mm = new DOMMatrix(mc.transform === "none" ? "" : mc.transform);
+              groupStarts!.set(memberKey, { tx: mm.m41 || 0, ty: mm.m42 || 0, el: member });
+            });
+          }
+        }
+
         dragRef.current = {
           key,
           mode: isResize ? "resize" : "move",
@@ -1993,6 +2200,7 @@ function useSlideElementEditor(
           startSize: parseFloat(computed.fontSize || "0") || 16,
           scale,
           moved: false,
+          groupStarts,
         };
       },
       onPointerMove: (e) => {
@@ -2015,6 +2223,10 @@ function useSlideElementEditor(
         const newTx = Math.round(d.startTx + dx);
         const newTy = Math.round(d.startTy + dy);
         el.style.transform = `translate(${newTx}px, ${newTy}px)`;
+        // Move group members in sync
+        d.groupStarts?.forEach(({ tx, ty, el: gEl }) => {
+          gEl.style.transform = `translate(${Math.round(tx + dx)}px, ${Math.round(ty + dy)}px)`;
+        });
       },
       onPointerUp: (e) => {
         const d = dragRef.current;
@@ -2031,41 +2243,63 @@ function useSlideElementEditor(
           onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, { size: `${nextSize}px` }));
           return;
         }
-        // For snap-aligned elements (center/right), measure from DOM while transform is still live
-        // so the element lands exactly where the user dropped it, then clear the snap.
-        const snapAlign = getSlideElementStyle(slide, key)?.align;
-        const isSnap = snapAlign === "center" || snapAlign === "right";
-        let measuredMl: number | null = null;
-        let measuredMt: number | null = null;
-        if (isSnap) {
-          const slideEl = el.closest(".hero-slide") as HTMLElement | null;
-          const copyMain = slideEl?.querySelector<HTMLElement>(".hero-slide__copy-main");
-          if (copyMain) {
-            const sc = copyMain.getBoundingClientRect().width / copyMain.offsetWidth || 1;
-            const cr = copyMain.getBoundingClientRect();
-            const er = el.getBoundingClientRect();
-            measuredMl = Math.round((er.left - cr.left) / sc);
-            measuredMt = Math.round((er.top - cr.top) / sc);
+        // Measure snap-aligned elements from DOM before resetting transforms
+        const slideEl2 = el.closest(".hero-slide") as HTMLElement | null;
+        const copyMain2 = slideEl2?.querySelector<HTMLElement>(".hero-slide__copy-main");
+        const copyRect2 = copyMain2?.getBoundingClientRect();
+        const sc2 = copyRect2 && copyMain2 ? copyRect2.width / copyMain2.offsetWidth || 1 : 1;
+        const measureEl2 = (memberEl: HTMLElement, memberKey: string) => {
+          const memberSnap = getSlideElementStyle(slide, memberKey)?.align;
+          const clear = memberSnap === "center" || memberSnap === "right";
+          if (clear && copyRect2) {
+            const er = memberEl.getBoundingClientRect();
+            return { ml: Math.round((er.left - copyRect2.left) / sc2), mt: Math.round((er.top - copyRect2.top) / sc2), clear };
           }
-        }
+          return { ml: 0, mt: 0, clear: false };
+        };
+        const leaderM = measureEl2(el, key);
+        const memberMs = new Map<string, { ml: number; mt: number; clear: boolean }>();
+        d.groupStarts?.forEach(({ el: gEl }, k) => memberMs.set(k, measureEl2(gEl, k)));
+        // Reset transforms
         el.style.transform = "";
+        d.groupStarts?.forEach(({ el: gEl }) => { gEl.style.transform = ""; });
         const migratedSlide = migrateSlideToAbsolute(slide);
-        let newMl: number;
-        let newMt: number;
-        if (isSnap && measuredMl !== null && measuredMt !== null) {
-          newMl = measuredMl;
-          newMt = measuredMt;
+        if (d.groupStarts && d.groupStarts.size > 0) {
+          const allGroupKeys = new Set([key, ...d.groupStarts.keys()]);
+          let updated = migratedSlide;
+          for (const k of buildSlideOrderedKeys(migratedSlide)) {
+            if (!allGroupKeys.has(k)) continue;
+            const m = k === key ? leaderM : memberMs.get(k);
+            let newMl: number, newMt: number;
+            if (m?.clear) { newMl = m.ml; newMt = m.mt; }
+            else {
+              const ms = mergeElementStyle(getSlideElementStyle(migratedSlide, k), viewportProfile) ?? {};
+              newMl = (parseFloat(ms.ml ?? "0") || 0) + dx;
+              newMt = (parseFloat(ms.mt ?? "0") || 0) + dy;
+            }
+            updated = setSlideElementViewportStyle(updated, k, viewportProfile, {
+              ml: newMl !== 0 ? `${newMl}px` : undefined,
+              mt: newMt !== 0 ? `${newMt}px` : undefined,
+              x: undefined, y: undefined,
+              ...(m?.clear ? { align: undefined } : {}),
+            });
+          }
+          onSlideChange(updated);
         } else {
-          const style = mergeElementStyle(getSlideElementStyle(migratedSlide, key), viewportProfile) ?? {};
-          newMl = (parseFloat(style.ml ?? "0") || 0) + dx;
-          newMt = (parseFloat(style.mt ?? "0") || 0) + dy;
+          let newMl: number, newMt: number;
+          if (leaderM.clear) { newMl = leaderM.ml; newMt = leaderM.mt; }
+          else {
+            const style = mergeElementStyle(getSlideElementStyle(migratedSlide, key), viewportProfile) ?? {};
+            newMl = (parseFloat(style.ml ?? "0") || 0) + dx;
+            newMt = (parseFloat(style.mt ?? "0") || 0) + dy;
+          }
+          onSlideChange(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
+            ml: newMl !== 0 ? `${newMl}px` : undefined,
+            mt: newMt !== 0 ? `${newMt}px` : undefined,
+            x: undefined, y: undefined,
+            ...(leaderM.clear ? { align: undefined } : {}),
+          }));
         }
-        onSlideChange(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
-          ml: newMl !== 0 ? `${newMl}px` : undefined,
-          mt: newMt !== 0 ? `${newMt}px` : undefined,
-          x: undefined, y: undefined,
-          ...(isSnap ? { align: undefined } : {}),
-        }));
       },
       onPointerCancel: (e) => {
         const d = dragRef.current;
@@ -2075,6 +2309,9 @@ function useSlideElementEditor(
         el.classList.remove("hero-slide__editable--dragging", "hero-slide__editable--resizing");
         el.style.transform = "";
         el.style.fontSize = `${d.startSize}px`;
+        d.groupStarts?.forEach(({ tx, ty, el: gEl }) => {
+          gEl.style.transform = (tx || ty) ? `translate(${tx}px, ${ty}px)` : "";
+        });
       },
       onKeyDown: (e) => {
         if (slide.positioningMode !== "absolute") return;

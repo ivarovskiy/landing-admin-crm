@@ -270,6 +270,11 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
           onChange={(v) => set(["options", "showElementGuides"], v || undefined)}
         />
         <InspectorToggle
+          label="Media edge guides"
+          checked={!!options?.showMediaEdgeGuides}
+          onChange={(v) => set(["options", "showMediaEdgeGuides"], v || undefined)}
+        />
+        <InspectorToggle
           label="Canvas drag editing"
           checked={enableCanvasDrag}
           onChange={(v) => set(["options", "enableCanvasDrag"], v === false ? false : undefined)}
@@ -388,6 +393,30 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
                 checked={!!(canvasGuidelines.classicGrid?.showVerticalCenter)}
                 onChange={(v) => set(["canvasGuidelines", "classicGrid", "showVerticalCenter"], v || undefined)}
               />
+              {canvasGuidelines.classicGrid?.showVerticalCenter && (
+                <>
+                  <InspectorToggle
+                    label="Link center to alignMode"
+                    checked={!!(canvasGuidelines.classicGrid?.linkCenterToAlign)}
+                    onChange={(v) => set(["canvasGuidelines", "classicGrid", "linkCenterToAlign"], v || undefined)}
+                  />
+                  {canvasGuidelines.classicGrid?.linkCenterToAlign && (
+                    <InspectorField label="AlignMode" hint="1–4: which centering formula to use">
+                      <InspectorSelect
+                        value={canvasGuidelines.classicGrid?.centerAlignMode ?? ""}
+                        onChange={(v) => set(["canvasGuidelines", "classicGrid", "centerAlignMode"], v || undefined)}
+                        options={[
+                          { value: "", label: "— select —" },
+                          { value: "1", label: "1 — gap/2" },
+                          { value: "2", label: "2 — (outerPad+gap)/2" },
+                          { value: "3", label: "3 — center (no offset)" },
+                          { value: "4", label: "4 — outerPad/2" },
+                        ]}
+                      />
+                    </InspectorField>
+                  )}
+                </>
+              )}
               <InspectorToggle
                 label="Show horizontal center line"
                 checked={!!(canvasGuidelines.classicGrid?.showHorizontalCenter)}
@@ -400,8 +429,59 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
                   placeholder="rgba(100,149,237,0.35)"
                 />
               </InspectorField>
+              <InspectorField label="Outer margin %" hint="Columns inset from each side (e.g. 8 = 8% margin)">
+                <InspectorNumber
+                  value={canvasGuidelines.classicGrid?.marginPercent ?? undefined}
+                  onChange={(v) => set(["canvasGuidelines", "classicGrid", "marginPercent"], v ?? undefined)}
+                  placeholder="0"
+                />
+              </InspectorField>
+              <InspectorToggle
+                label="Show margin edge lines"
+                checked={!!(canvasGuidelines.classicGrid?.showMarginLines)}
+                onChange={(v) => set(["canvasGuidelines", "classicGrid", "showMarginLines"], v || undefined)}
+              />
             </>
           )}
+        </InspectorSection>
+
+        {/* Custom guide lines — full-page vertical & full-slider horizontal */}
+        <InspectorSection
+          title="Custom Guide Lines"
+          icon={<Grid className="h-3 w-3" />}
+          defaultOpen={false}
+        >
+          <p className="text-[10px] text-muted-foreground/70 mb-1">
+            Optional single-line guides. Vertical spans the full page height; horizontal spans the full slider width.
+          </p>
+          <InspectorField label="Vertical line position" hint="CSS left value, e.g. 50%, 720px">
+            <InspectorInput
+              value={canvasGuidelines.globalVerticalGuide ?? ""}
+              onChange={(v) => set(["canvasGuidelines", "globalVerticalGuide"], v || undefined)}
+              placeholder="e.g. 50%"
+            />
+          </InspectorField>
+          <InspectorField label="Vertical line color">
+            <InspectorInput
+              value={canvasGuidelines.globalVerticalGuideColor ?? ""}
+              onChange={(v) => set(["canvasGuidelines", "globalVerticalGuideColor"], v || undefined)}
+              placeholder="rgba(255,100,180,0.8)"
+            />
+          </InspectorField>
+          <InspectorField label="Horizontal line position" hint="CSS top value within slider, e.g. 50%, 200px">
+            <InspectorInput
+              value={canvasGuidelines.sliderHorizontalGuide ?? ""}
+              onChange={(v) => set(["canvasGuidelines", "sliderHorizontalGuide"], v || undefined)}
+              placeholder="e.g. 50%"
+            />
+          </InspectorField>
+          <InspectorField label="Horizontal line color">
+            <InspectorInput
+              value={canvasGuidelines.sliderHorizontalGuideColor ?? ""}
+              onChange={(v) => set(["canvasGuidelines", "sliderHorizontalGuideColor"], v || undefined)}
+              placeholder="rgba(255,100,180,0.8)"
+            />
+          </InspectorField>
         </InspectorSection>
 
         {/* Stylistic guidelines overlay */}

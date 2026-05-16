@@ -66,6 +66,10 @@ export type ClassicGridSettings = {
   showVerticalCenter?: boolean; // render a bright center-vertical line
   showHorizontalCenter?: boolean; // render a bright center-horizontal line
   color?: string;               // optional CSS color for column/row lines
+  marginPercent?: number;       // outer horizontal margin as % of width (insets column grid)
+  showMarginLines?: boolean;    // draw outer margin edge lines
+  linkCenterToAlign?: boolean;           // link vertical center line to an alignMode formula
+  centerAlignMode?: "1" | "2" | "3" | "4"; // which alignMode offset to use for the center line
 };
 
 /** One configurable guideline inside the stylistic overlay. */
@@ -106,6 +110,10 @@ export type CanvasGuidelines = {
   italicBaselineOffset?: number; // px from bottom — lowest allowed italic design-element guide
   classicGrid?: ClassicGridSettings; // classic configurable design grid
   styleGuidelines?: StyleGuidelinesConfig; // stylistic layout guideline overlay
+  globalVerticalGuide?: string;      // CSS `left` value for a full-page-height vertical line
+  globalVerticalGuideColor?: string;
+  sliderHorizontalGuide?: string;    // CSS `top` value for a full-slider-width horizontal line
+  sliderHorizontalGuideColor?: string;
 };
 
 export type ElementStyleProfile = Omit<ElementStyle, "viewportProfiles">;
