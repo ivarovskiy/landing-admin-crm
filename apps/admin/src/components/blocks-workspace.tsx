@@ -597,7 +597,9 @@ export function BlocksWorkspace({
   }, [pageId, refreshKey, viewMode]);
 
   const effectiveOptions = activeDraftOptions ?? active?.data?.options ?? {};
-  const liveEditEnabled = !!active && !previewMode;
+  // Edit mode is always on in admin workspace (not tied to right-panel open/close).
+  // Preview mode (canvas-only) is the only state that disables editing.
+  const liveEditEnabled = !previewMode;
 
   const postLiveEditMode = useCallback(() => {
     try {

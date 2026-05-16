@@ -434,6 +434,16 @@ export function HeroSliderV1({
   const showMediaEdgeGuides = options?.showMediaEdgeGuides === true;
   const viewportProfile = useHeroViewportProfile();
 
+  // Toolbox local state — independent of inspector/options, off by default.
+  // editMode prop = "admin context active". toolboxTextEdit/toolboxDrag = explicit on/off.
+  const [toolboxTextEdit, setToolboxTextEdit] = useState(false);
+  const [toolboxDrag, setToolboxDrag] = useState(false);
+  const [toolboxGuides, setToolboxGuides] = useState(false);
+
+  // effective values wired to toolbox state (when in admin context)
+  const effectiveEditMode = editMode && (toolboxTextEdit || toolboxDrag);
+  const effectiveDragMode = toolboxDrag;
+
   // Real slide currently displayed (for dots / aria / live preview)
   const active = hasLoop
     ? ((trackIndex - 1) % count + count) % count
@@ -671,18 +681,19 @@ export function HeroSliderV1({
                     slide={s}
                     isDragging={!!drag.current?.moved}
                     slideIndex={realIndex}
-                    editMode={editMode && !isClone && realIndex === active}
-                    dragMode={options?.enableCanvasDrag !== false}
+                    editMode={effectiveEditMode && !isClone && realIndex === active}
+                    adminMode={editMode && !isClone && realIndex === active}
+                    dragMode={effectiveDragMode}
                     onSlideChange={(nextSlide) => updateSlide(rawSlideIndex, nextSlide)}
-                    showGuides={showGuides}
-                    showElementGuides={showElementGuides}
-                    showCompositionGuides={showCompositionGuides}
+                    showGuides={toolboxGuides && showGuides}
+                    showElementGuides={toolboxGuides && showElementGuides}
+                    showCompositionGuides={toolboxGuides && showCompositionGuides}
                     compositionGuideColor={compositionGuideColor}
-                    showLayoutGuides={showLayoutGuides}
+                    showLayoutGuides={toolboxGuides && showLayoutGuides}
                     layoutGuideBottomOffset={layoutGuideBottomOffset}
-                    showStyleGuides={showStyleGuides}
-                    showMediaEdgeGuides={showMediaEdgeGuides}
-                    canvasGuidelines={canvasGuidelines}
+                    showStyleGuides={toolboxGuides && showStyleGuides}
+                    showMediaEdgeGuides={toolboxGuides && showMediaEdgeGuides}
+                    canvasGuidelines={toolboxGuides ? canvasGuidelines : undefined}
                     viewportProfile={viewportProfile}
                   />
                 </div>
@@ -731,7 +742,7 @@ export function HeroSliderV1({
         ) : null}
       </Container>
       {/* Full-page-height vertical guideline — position:fixed escapes slider clip/overflow */}
-      {canvasGuidelines.globalVerticalGuide && (
+      {toolboxGuides && canvasGuidelines.globalVerticalGuide && (
         <div
           aria-hidden="true"
           style={{
@@ -745,11 +756,15 @@ export function HeroSliderV1({
           }}
         />
       )}
-      {/* Floating edit-mode toolbox — quick-access drag + guidelines toggles */}
-      {editMode && onChange && (
+      {/* Floating edit-mode toolbox — quick-access text / drag / guides toggles */}
+      {editMode && (
         <CanvasToolbox
-          options={options}
-          onOptionsChange={(nextOptions) => onChange({ ...data, options: nextOptions })}
+          textEditOn={toolboxTextEdit}
+          dragOn={toolboxDrag}
+          guidesOn={toolboxGuides}
+          onTextEditToggle={() => setToolboxTextEdit((v) => !v)}
+          onDragToggle={() => setToolboxDrag((v) => !v)}
+          onGuidesToggle={() => setToolboxGuides((v) => !v)}
         />
       )}
     </section>
@@ -761,16 +776,20 @@ export function HeroSliderV1({
 // guideline on/off without opening the inspector. Fine settings stay in admin.
 
 function CanvasToolbox({
-  options,
-  onOptionsChange,
+  textEditOn,
+  dragOn,
+  guidesOn,
+  onTextEditToggle,
+  onDragToggle,
+  onGuidesToggle,
 }: {
-  options: Record<string, unknown>;
-  onOptionsChange: (next: Record<string, unknown>) => void;
+  textEditOn: boolean;
+  dragOn: boolean;
+  guidesOn: boolean;
+  onTextEditToggle: () => void;
+  onDragToggle: () => void;
+  onGuidesToggle: () => void;
 }) {
-  const dragEnabled = options?.enableCanvasDrag !== false;
-  const guidesOn    = options?.showGuides === true;
-  const mediaGuides = options?.showMediaEdgeGuides === true;
-
   const btnStyle = (active: boolean): React.CSSProperties => ({
     border: `1px solid ${active ? "rgba(96,165,250,0.8)" : "rgba(255,255,255,0.2)"}`,
     background: active ? "rgba(96,165,250,0.18)" : "transparent",
@@ -804,24 +823,36 @@ function CanvasToolbox({
         boxShadow: "0 2px 8px rgba(0,0,0,0.45)",
       }}
     >
+      {/* Text editing toggle */}
+      <button
+        type="button"
+        title={textEditOn ? "Text editing on — click to disable" : "Text editing off — click to enable"}
+        style={btnStyle(textEditOn)}
+        onClick={onTextEditToggle}
+      >
+        <svg width="11" height="12" viewBox="0 0 11 12" fill="currentColor" aria-hidden>
+          <path d="M0 2h11v1.5H6.5V10h-2V3.5H0V2z"/>
+        </svg>
+        Text
+      </button>
       {/* Drag toggle */}
       <button
         type="button"
-        title={dragEnabled ? "Drag enabled — click to disable" : "Drag disabled — click to enable"}
-        style={btnStyle(dragEnabled)}
-        onClick={() => onOptionsChange({ ...options, enableCanvasDrag: dragEnabled ? false : undefined })}
+        title={dragOn ? "Drag enabled — click to disable" : "Drag disabled — click to enable"}
+        style={btnStyle(dragOn)}
+        onClick={onDragToggle}
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden>
           <path d="M6 0l1.5 2.5h-3L6 0zm0 12L4.5 9.5h3L6 12zM0 6l2.5-1.5v3L0 6zm12 0L9.5 7.5v-3L12 6zM5 5h2v2H5V5z"/>
         </svg>
         Drag
       </button>
-      {/* Guide lines toggle */}
+      {/* Guidelines master toggle */}
       <button
         type="button"
-        title={guidesOn ? "Media guides on — click to hide" : "Media guides off — click to show"}
+        title={guidesOn ? "Guides on — click to hide all" : "Guides off — click to show all"}
         style={btnStyle(guidesOn)}
-        onClick={() => onOptionsChange({ ...options, showGuides: guidesOn ? undefined : true })}
+        onClick={onGuidesToggle}
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
           <rect x="1" y="1" width="10" height="10" rx="1"/>
@@ -829,22 +860,6 @@ function CanvasToolbox({
           <line x1="1" y1="6" x2="11" y2="6"/>
         </svg>
         Guides
-      </button>
-      {/* Media edge guides toggle */}
-      <button
-        type="button"
-        title={mediaGuides ? "Media edge guides on — click to hide" : "Media edge guides off — click to show"}
-        style={btnStyle(mediaGuides)}
-        onClick={() => onOptionsChange({ ...options, showMediaEdgeGuides: mediaGuides ? undefined : true })}
-      >
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
-          <rect x="2" y="2" width="8" height="8" rx="0.5"/>
-          <line x1="5" y1="2" x2="5" y2="4"/>
-          <line x1="7" y1="2" x2="7" y2="4"/>
-          <line x1="5" y1="8" x2="5" y2="10"/>
-          <line x1="7" y1="8" x2="7" y2="10"/>
-        </svg>
-        Media
       </button>
     </div>
   );
@@ -1077,6 +1092,7 @@ function HeroSlide({
   isDragging,
   slideIndex: i,
   editMode = false,
+  adminMode = false,
   dragMode = true,
   onSlideChange,
   showGuides = false,
@@ -1094,6 +1110,8 @@ function HeroSlide({
   isDragging: boolean;
   slideIndex: number;
   editMode?: boolean;
+  /** adminMode = slide is active in admin even when toolbox text/drag are off */
+  adminMode?: boolean;
   dragMode?: boolean;
   onSlideChange?: (next: Slide) => void;
   showGuides?: boolean;
@@ -1557,9 +1575,10 @@ function HeroSlide({
   // Drag handles only appear for migrated slides — legacy slides use flow layout until button click
   const effectiveDragMode = dragMode && slide.positioningMode === "absolute";
 
-  // Listen for "Перенести на absolute" button postMessage from admin
+  // Listen for "Перенести на absolute" button postMessage from admin.
+  // Uses adminMode (not editMode) so it works even when toolbox text/drag are off.
   useEffect(() => {
-    if (!editMode || !onSlideChange) return;
+    if (!adminMode || !onSlideChange) return;
     const handler = (event: MessageEvent) => {
       if (event.data?.type !== "hero-slider-convert-to-absolute") return;
       const slideEl = slideRef.current;
@@ -1573,7 +1592,7 @@ function HeroSlide({
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [editMode, onSlideChange, slide, viewportProfile]);
+  }, [adminMode, onSlideChange, slide, viewportProfile]);
 
   const mediaPrimary = (
     <MediaFrame media={slide.media} className="hero-slide__media-box" slotId={`slide-${i}-media`} priority={i === 0} />
