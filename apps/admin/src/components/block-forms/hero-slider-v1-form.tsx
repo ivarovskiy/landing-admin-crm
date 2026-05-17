@@ -701,7 +701,7 @@ function SlideEditor({
           "text-[11px] font-semibold text-muted-foreground truncate max-w-[160px]",
           s?.hidden ? "line-through" : "",
         ].filter(Boolean).join(" ")}>
-          {collapsed ? "▸" : "▾"} {idx + 1}. {s?.title?.split("\n")[0] || template}
+          {collapsed ? "▸" : "▾"} {idx + 1}. {s?.name || s?.title?.split("\n")[0] || template}
         </span>
         <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
           <button
@@ -808,13 +808,22 @@ function SlideEditor({
           </div>
         )}
 
+        {/* Slide name — admin-only label, not rendered on site */}
+        <InspectorField label="Slide name">
+          <InspectorInput
+            value={s?.name ?? ""}
+            onChange={(v) => onChange({ ...s, name: v || undefined })}
+            placeholder={s?.title?.split("\n")[0] || template}
+          />
+        </InspectorField>
+
         {/* Preset — applies full clean slide from Figma design */}
         <InspectorField label="Preset" stacked>
           <InspectorSelect
             value=""
             onChange={(v) => {
               const preset = presetSlide(v as PresetKey);
-              onChange({ id: s.id, ...preset } as Slide);
+              onChange({ id: s.id, name: s.name, ...preset } as Slide);
             }}
             options={[{ value: "", label: "Select preset..." }, ...PRESET_OPTIONS]}
           />

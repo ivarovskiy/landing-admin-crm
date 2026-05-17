@@ -152,6 +152,8 @@ export type HeroDesktopLayout = {
 
 export type Slide = {
   id?: string;
+  /** Display name shown in the admin slide list — admin-only, not rendered on site */
+  name?: string;
   template?: SlideTemplate;
   /** Hide this slide from the carousel without deleting it (admin-only state) */
   hidden?: boolean;
