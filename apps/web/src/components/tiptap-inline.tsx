@@ -744,7 +744,10 @@ export function TipTapInline({
         onOrderedList={() => editor?.chain().focus().toggleOrderedList().run()}
         onAlignLeft={() => {
           if (onElementAlignChange) {
+            // Suppress onChange so the stale HTML doesn't race with the element-level align update
+            isSettingContent.current = true;
             editor?.chain().focus().unsetTextAlign().run();
+            isSettingContent.current = false;
             onElementAlignChange(elementAlign === "left" ? undefined : "left");
           } else {
             editor?.chain().focus().setTextAlign("left").run();
@@ -752,7 +755,9 @@ export function TipTapInline({
         }}
         onAlignCenter={() => {
           if (onElementAlignChange) {
+            isSettingContent.current = true;
             editor?.chain().focus().unsetTextAlign().run();
+            isSettingContent.current = false;
             onElementAlignChange(elementAlign === "center" ? undefined : "center");
           } else {
             editor?.chain().focus().setTextAlign("center").run();
@@ -760,7 +765,9 @@ export function TipTapInline({
         }}
         onAlignRight={() => {
           if (onElementAlignChange) {
+            isSettingContent.current = true;
             editor?.chain().focus().unsetTextAlign().run();
+            isSettingContent.current = false;
             onElementAlignChange(elementAlign === "right" ? undefined : "right");
           } else {
             editor?.chain().focus().setTextAlign("right").run();

@@ -1536,8 +1536,8 @@ function TextElementsEditor({
             const groupStyles = getAllStyles().filter(st => st.groupId === gid);
             const allLocked = groupStyles.every(st => st.locked);
             const anyLocked = groupStyles.some(st => st.locked);
-            const groupAligns = groupStyles.map(st => st.align ?? "left");
-            const commonAlign = groupAligns.every(a => a === groupAligns[0]) ? groupAligns[0] : undefined;
+            const groupAligns = groupStyles.map(st => st.align);
+            const commonAlign = groupAligns.length > 0 && groupAligns.every(a => a === groupAligns[0]) ? groupAligns[0] : undefined;
             const groupModes = groupStyles.map(st => st.alignMode ?? "");
             const commonAlignMode = groupModes.every(m => m === groupModes[0]) ? groupModes[0] as ("1" | "2" | "3" | "4" | "") : "";
             return (

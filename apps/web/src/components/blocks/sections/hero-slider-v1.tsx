@@ -1385,7 +1385,21 @@ function HeroSlide({
   const compGuideColor = compositionGuideColor || "rgba(255, 6, 102, 0.8)";
   const LAYOUT_GUIDE_COLOR = "#FF0066";
   const MEDIA_EDGE_COLOR = "rgba(251,191,36,0.85)"; // amber
-  const guides = hasMediaGuides || hasMediaEdgeGuidesActive || hasElementGuides || hasCompGuides || hasLayoutGuides ? (
+
+  // Media edge guides rendered separately at the highest z-index so the image cannot cover them.
+  const mediaEdgeGuides = hasMediaEdgeGuidesActive ? (() => {
+    const mr = mediaRect!;
+    const h = mr.bottom - mr.top;
+    const base: React.CSSProperties = { position: "absolute", background: MEDIA_EDGE_COLOR, pointerEvents: "none", zIndex: 100 };
+    return (
+      <>
+        <div style={{ ...base, top: mr.top, left: mr.left,  width: 1, height: h }} />
+        <div style={{ ...base, top: mr.top, left: mr.right, width: 1, height: h }} />
+      </>
+    );
+  })() : null;
+
+  const guides = hasMediaGuides || hasElementGuides || hasCompGuides || hasLayoutGuides ? (
     <div className="hero-slide__guides" aria-hidden="true">
       {hasMediaGuides ? (
         <>
@@ -1395,18 +1409,6 @@ function HeroSlide({
           <div className="hero-slide__guide hero-slide__guide--horizontal" style={{ top: `${mediaRect!.bottom}px` }} />
         </>
       ) : null}
-      {/* Media edge guides — 2 short vertical lines at left/right image edges */}
-      {hasMediaEdgeGuidesActive ? (() => {
-        const mr = mediaRect!;
-        const S: React.CSSProperties = { position: "absolute", background: MEDIA_EDGE_COLOR, pointerEvents: "none" };
-        const h = mr.bottom - mr.top;
-        return (
-          <>
-            <div style={{ ...S, top: mr.top, left: mr.left,  width: 1, height: h }} />
-            <div style={{ ...S, top: mr.top, left: mr.right, width: 1, height: h }} />
-          </>
-        );
-      })() : null}
       {hasElementGuides
         ? elementRects.map((r, idx) => (
             <React.Fragment key={`${r.key}-${idx}`}>
@@ -1533,6 +1535,19 @@ function HeroSlide({
     <MediaFrame media={slide.media} className="hero-slide__media-box" slotId={`slide-${i}-media`} priority={i === 0} />
   );
 
+  const _imgSide = imageSide(template);
+  const _slideWidthPx = slideRef.current?.offsetWidth;
+  const columnCenterX = (mediaRect && _slideWidthPx && _imgSide !== "none")
+    ? computeColumnCenterX(
+        3,
+        _imgSide === "right" ? mediaRect.left : mediaRect.right,
+        mediaRect.textColFace ?? (_imgSide === "right" ? mediaRect.left : mediaRect.right),
+        13,
+        _slideWidthPx,
+        _imgSide,
+      )
+    : undefined;
+
   const standardCopy = (
     <CopyStack
       slide={slide}
@@ -1544,6 +1559,7 @@ function HeroSlide({
       widthResizeHandleProps={effectiveDragMode ? widthResizeHandleProps : undefined}
       dragMode={effectiveDragMode}
       onSlideChange={editMode ? onSlideChange : undefined}
+      columnCenterX={columnCenterX}
     />
   );
 
@@ -1564,6 +1580,7 @@ function HeroSlide({
         {canvasOverlay}
         {guides}
         {styleGuidelineOverlay}
+        {mediaEdgeGuides}
       </div>
     );
   }
@@ -1581,6 +1598,7 @@ function HeroSlide({
       {canvasOverlay}
       {guides}
       {styleGuidelineOverlay}
+      {mediaEdgeGuides}
 
       {cta?.href && cta?.enabled !== false ? (
         <a
@@ -1714,7 +1732,7 @@ function preserveVisualPositions(
 
 /** Edit-mode positioning: position:absolute so elements are independent (no cascade).
  *  For legacy slides (no positioningMode) adds getPrecedingMt so visual matches live flow. */
-function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.CSSProperties {
+function absPositionStyle(slide: Slide, key: string, es?: ElementStyle, columnCenterX?: number): React.CSSProperties {
   const mtPx = parseFloat(resolveDesignViewportUnits(es?.mt) ?? "0") || 0;
   const mlPx = parseFloat(resolveDesignViewportUnits(es?.ml) ?? "0") || 0;
   const xPx  = parseFloat(resolveDesignViewportUnits(es?.x)  ?? "0") || 0;
@@ -1726,17 +1744,22 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.C
   const s: Record<string, string> = { position: "absolute", top: `${top}px` };
 
   if (es?.align === "center") {
-    const desktop = mergeDesktopLayout(slide);
-    const gapPx = parseFloat(resolveDesignViewportUnits(desktop.gap) ?? "0") || 0;
-    const outerPadPx = parseFloat(resolveDesignViewportUnits(desktop.outerPadding) ?? "0") || 0;
-    const side = imageSide(resolveTemplate(slide));
-    const dir = side === "right" ? 1 : side === "left" ? -1 : 0;
-    let offsetPx = 0;
-    if (es.alignMode === "1") offsetPx = dir * gapPx / 2;
-    else if (es.alignMode === "2") offsetPx = dir * (outerPadPx + gapPx) / 2;
-    else if (es.alignMode === "4") offsetPx = dir * outerPadPx / 2;
-    // mode "3" and default: offsetPx = 0
-    s.left = offsetPx ? `calc(50% + ${offsetPx}px)` : "50%";
+    if (columnCenterX != null) {
+      // DOM-measured text-column center — exact, matches Canvas center vertical guideline.
+      s.left = `${columnCenterX}px`;
+    } else {
+      // Fallback: formula-based approximation when DOM measurement is unavailable.
+      const desktop = mergeDesktopLayout(slide);
+      const gapPx = parseFloat(resolveDesignViewportUnits(desktop.gap) ?? "0") || 0;
+      const outerPadPx = parseFloat(resolveDesignViewportUnits(desktop.outerPadding) ?? "0") || 0;
+      const side = imageSide(resolveTemplate(slide));
+      const dir = side === "right" ? 1 : side === "left" ? -1 : 0;
+      let offsetPx = 0;
+      if (es.alignMode === "1") offsetPx = dir * gapPx / 2;
+      else if (es.alignMode === "2") offsetPx = dir * (outerPadPx + gapPx) / 2;
+      else if (es.alignMode === "4") offsetPx = dir * outerPadPx / 2;
+      s.left = offsetPx ? `calc(50% + ${offsetPx}px)` : "50%";
+    }
     s.transform = "translateX(-50%)";
     s.textAlign = "center";
     s.width = "max-content"; // prevent shrink-to-fit left edge from wrapping text
@@ -1846,9 +1869,9 @@ function measureSlideToAbsolute(
  * - legacy slides: margin-based flow (same as live site) — migrate via "Перенести на absolute" button
  */
 function posStyle(
-  slide: Slide, key: string, es?: ElementStyle, _isEdit?: boolean,
+  slide: Slide, key: string, es?: ElementStyle, _isEdit?: boolean, columnCenterX?: number,
 ): React.CSSProperties | undefined {
-  if (slide.positioningMode === "absolute") return absPositionStyle(slide, key, es);
+  if (slide.positioningMode === "absolute") return absPositionStyle(slide, key, es, columnCenterX);
   return elStyle(es) ?? undefined;
 }
 
@@ -2406,6 +2429,7 @@ function CopyStack({
   widthResizeHandleProps,
   dragMode = true,
   onSlideChange,
+  columnCenterX,
 }: {
   slide: Slide;
   slideIndex: number;
@@ -2416,6 +2440,7 @@ function CopyStack({
   widthResizeHandleProps?: (key: string) => React.HTMLAttributes<HTMLElement>;
   dragMode?: boolean;
   onSlideChange?: (next: Slide) => void;
+  columnCenterX?: number;
 }) {
   const kicker = slide?.kicker;
   const quote = slide?.quote;
@@ -2466,7 +2491,7 @@ function CopyStack({
       const es = mergeElementStyle(slide.kickerStyle, viewportProfile);
       if (es?.hidden) return null;
       const typo = es?.typo;
-      const s = posStyle(slide, "kicker", es, !!onSlideChange);
+      const s = posStyle(slide, "kicker", es, !!onSlideChange, columnCenterX);
       if (onSlideChange && slide.positioningMode === "absolute") {
         const isLocked = !!es?.locked;
         return (
@@ -2492,7 +2517,7 @@ function CopyStack({
       const titleEs = mergeElementStyle(slide.titleStyle, viewportProfile);
       if (titleEs?.hidden) return null;
       const titleTypo = titleEs?.typo;
-      const titleStyle = posStyle(slide, "title", titleEs, !!onSlideChange);
+      const titleStyle = posStyle(slide, "title", titleEs, !!onSlideChange, columnCenterX);
       const titleClass = cn("hero-slide__title", titleTypo);
       const isTitleStamp = !titleTypo || titleTypo === "typo-content-header" || titleTypo === "typo-homepage-header" || titleTypo === "typo-subtitle";
       if (onSlideChange && slide.positioningMode === "absolute") {
@@ -2562,7 +2587,7 @@ function CopyStack({
       const es = mergeElementStyle(slide.subtitleStyle, viewportProfile);
       if (es?.hidden) return null;
       const typo = es?.typo;
-      const s = posStyle(slide, "subtitle", es, !!onSlideChange);
+      const s = posStyle(slide, "subtitle", es, !!onSlideChange, columnCenterX);
       if (onSlideChange && slide.positioningMode === "absolute") {
         const isLocked = !!es?.locked;
         return (
@@ -2588,7 +2613,7 @@ function CopyStack({
       const es = mergeElementStyle(slide.bodyStyle, viewportProfile);
       if (es?.hidden) return null;
       const typo = es?.typo;
-      const s = posStyle(slide, "body", es, !!onSlideChange);
+      const s = posStyle(slide, "body", es, !!onSlideChange, columnCenterX);
       if (onSlideChange && slide.positioningMode === "absolute") {
         const isLocked = !!es?.locked;
         return (
@@ -2614,7 +2639,7 @@ function CopyStack({
       const es = mergeElementStyle(slide.quoteStyle, viewportProfile);
       if (es?.hidden) return null;
       const typo = es?.typo;
-      const s = posStyle(slide, "quote", es, !!onSlideChange);
+      const s = posStyle(slide, "quote", es, !!onSlideChange, columnCenterX);
       const cls = cn("hero-slide__quote", typo);
       if (onSlideChange && slide.positioningMode === "absolute") {
         const isLocked = !!es?.locked;
@@ -2653,6 +2678,7 @@ function CopyStack({
           dragMode={dragMode}
           slide={slide}
           onSlideChange={onSlideChange}
+          columnCenterX={columnCenterX}
         />
       );
     }
@@ -2679,6 +2705,7 @@ function ExtraElement({
   dragMode = true,
   slide,
   onSlideChange,
+  columnCenterX,
 }: {
   extra: SlideExtra;
   slideIndex: number;
@@ -2690,12 +2717,13 @@ function ExtraElement({
   dragMode?: boolean;
   slide?: Slide;
   onSlideChange?: (next: Slide) => void;
+  columnCenterX?: number;
 }) {
   const resolvedStyle = mergeElementStyle(extra.style, viewportProfile);
   if (resolvedStyle?.hidden) return null;
   const extraKey = extra.id ?? "";
   const inEditMode = !!(onSlideChange && slide && slide.positioningMode === "absolute");
-  const style = slide ? posStyle(slide, extraKey, resolvedStyle, inEditMode) : elStyle(resolvedStyle);
+  const style = slide ? posStyle(slide, extraKey, resolvedStyle, inEditMode, columnCenterX) : elStyle(resolvedStyle);
   const typo = resolvedStyle?.typo;
   const slotId = `slide-${slideIndex}-extra-${extraIndex}`;
   const isLocked = !!resolvedStyle?.locked;
