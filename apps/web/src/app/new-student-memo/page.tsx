@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 
 export default async function NewStudentMemoPage() {
   const [pageRes, settingsRes] = await Promise.all([
-    getPublicPage("new-student-memo", "uk"),
+    getPublicPage("new-student-memo"),
     getSiteSettings(),
   ]);
 

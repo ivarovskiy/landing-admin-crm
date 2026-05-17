@@ -9,7 +9,7 @@ export default async function SlugPage({ params }: { params: Promise<{ slug: str
   if (slug === "home") notFound();
 
   const [pageRes, settingsRes] = await Promise.all([
-    getPublicPage(slug, "uk"),
+    getPublicPage(slug),
     getSiteSettings(),
   ]);
 

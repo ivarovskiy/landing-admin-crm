@@ -10,12 +10,8 @@ export class PublicPagesController {
   @Get(':slug')
   async getPublishedPage(
     @Param('slug') slug: string,
-    @Query('locale') locale?: string,
   ) {
-    const page = await this.pages.getPublishedPage({
-      slug,
-      locale: locale ?? 'uk',
-    });
+    const page = await this.pages.getPublishedPage({ slug });
 
     const theme = await this.pages.getActiveTheme();
 

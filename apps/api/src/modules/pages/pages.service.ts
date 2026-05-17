@@ -42,11 +42,11 @@ export class PagesService {
     return { page, theme }
   }
 
-  async getPublishedPage(params: { slug: string; locale: string }) {
-    const { slug, locale } = params;
+  async getPublishedPage(params: { slug: string }) {
+    const { slug } = params;
 
     const page = await this.prisma.page.findFirst({
-      where: { slug, locale, status: 'published' },
+      where: { slug, status: 'published' },
       include: BLOCKS_INCLUDE,
     });
 

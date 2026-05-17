@@ -26,7 +26,7 @@ function Offline({ error }: { error: any }) {
 
 export default async function Home() {
   const [pageRes, settingsRes] = await Promise.all([
-    getPublicPage("home", "uk"),
+    getPublicPage("home"),
     getSiteSettings(),
   ]);
 
