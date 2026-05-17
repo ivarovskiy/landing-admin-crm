@@ -12,13 +12,13 @@
 
 .tb__kicker {
   font-family: var(--font-maru);
-  font-size: clamp(11px, 1.2vw, 13px);
+  font-size: 22px;
   font-weight: 600;
   letter-spacing: 0.12em;
   margin-right: -0.12em;
   text-transform: uppercase;
   color: var(--color-primary);
-  margin-bottom: 12px;
+  /* margin-bottom: 12px; */
   max-width: 100%;
 }
 
@@ -36,7 +36,7 @@
 }
 
 .tb__body {
-  font-size: clamp(14px, 1.4vw, 16px);
+  font-size: 20px;
   line-height: 1.7;
   color: var(--color-text, currentColor);
   max-width: 72ch;

@@ -109,7 +109,7 @@ export function ContentSection({
                 })
               }
               options={[
-                { value: "asset", label: "Asset name" },
+                { value: "asset", label: "Image File" },
                 { value: "url", label: "URL" },
               ]}
             />

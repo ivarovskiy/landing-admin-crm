@@ -41,7 +41,7 @@ export function LogoField({
           onChange(k === "asset" ? { kind: "asset", name: "" } : { kind: "url", src: "", alt: "" });
         }}
         options={[
-          { value: "asset", label: "Asset name" },
+          { value: "asset", label: "Image File" },
           { value: "url", label: "URL" },
         ]}
       />

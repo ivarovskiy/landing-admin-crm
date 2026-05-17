@@ -217,7 +217,7 @@ export function HeaderV1Form({ value, onChange, allPages }: BlockFormProps) {
     <div>
       {/* ===== Desktop General ===== */}
       <InspectorSection title="Desktop" icon={<Monitor className="h-3 w-3" />}>
-        <InspectorField label="Brand name">
+        <InspectorField label="Logo name">
           <InspectorInput
             value={brand?.label ?? ""}
             onChange={(v) => set(["brand", "label"], v)}
@@ -225,7 +225,7 @@ export function HeaderV1Form({ value, onChange, allPages }: BlockFormProps) {
           />
         </InspectorField>
 
-        <InspectorField label="Brand href">
+        <InspectorField label="Logo link">
           <PageHrefInput
             hrefValue={brand?.href ?? ""}
             noLink={!!brand?.noLink}
@@ -236,7 +236,7 @@ export function HeaderV1Form({ value, onChange, allPages }: BlockFormProps) {
           />
         </InspectorField>
 
-        <InspectorField label="Logo" stacked>
+        <InspectorField label="Choose Logo" stacked>
           <LogoField
             value={desktopLogo}
             onChange={(next) => set(["desktop", "logo"], next)}
@@ -354,7 +354,7 @@ export function HeaderV1Form({ value, onChange, allPages }: BlockFormProps) {
 
       {/* ===== Mobile Masthead ===== */}
       <InspectorSection title="Mobile Masthead" defaultOpen={false}>
-        <InspectorField label="Logo" stacked>
+        <InspectorField label="Choose Logo" stacked>
           <LogoField
             value={mastheadLogo}
             onChange={(next) => set(["mobile", "masthead", "logo"], next)}
