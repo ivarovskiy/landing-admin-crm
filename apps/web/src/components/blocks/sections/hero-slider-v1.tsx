@@ -1393,9 +1393,9 @@ function HeroSlide({
     const base: React.CSSProperties = { position: "absolute", background: MEDIA_EDGE_COLOR, pointerEvents: "none", zIndex: 100 };
     return (
       <>
-        <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: 0, left: mr.left - 1,  width: 1, height: mr.top }} />
-        <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: 0, left: mr.right - 1, width: 1, height: mr.top }} />
-        <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: mr.bottom, left: mr.left - 1,  width: 1, height: mr.bottom }} />
+        <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: 0, left: mr.left,  width: 1, height: mr.top }} />
+        {/* <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: 0, left: mr.right - 1, width: 1, height: mr.top }} />
+        <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: mr.bottom, left: mr.left,  width: 1, height: mr.bottom }} /> */}
         <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: mr.bottom, left: mr.right - 1, width: 1, height: mr.bottom }} />
       </>
     );
