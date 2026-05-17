@@ -433,7 +433,7 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
             <InspectorInput
               value={canvasGuidelines.globalVerticalGuideColor ?? ""}
               onChange={(v) => set(["canvasGuidelines", "globalVerticalGuideColor"], v || undefined)}
-              placeholder="rgba(255,100,180,0.8)"
+              placeholder="rgba(239, 68, 68, 0.9)"
             />
           </InspectorField>
           <InspectorField label="Horizontal line position" hint="CSS top value within slider, e.g. 50%, 200px">
@@ -447,7 +447,7 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
             <InspectorInput
               value={canvasGuidelines.sliderHorizontalGuideColor ?? ""}
               onChange={(v) => set(["canvasGuidelines", "sliderHorizontalGuideColor"], v || undefined)}
-              placeholder="rgba(255,100,180,0.8)"
+              placeholder="rgba(239, 68, 68, 0.9)"
             />
           </InspectorField>
         </InspectorSection>
