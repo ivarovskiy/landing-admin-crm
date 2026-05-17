@@ -1393,10 +1393,10 @@ function HeroSlide({
     const base: React.CSSProperties = { position: "absolute", background: MEDIA_EDGE_COLOR, pointerEvents: "none", zIndex: 100 };
     return (
       <>
-        <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: 0, left: mr.left,  width: 1, height: mr.top }} />
-        {/* <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: 0, left: mr.right - 1, width: 1, height: mr.top }} />
-        <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: mr.bottom, left: mr.left,  width: 1, height: mr.bottom }} /> */}
-        <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: mr.bottom, left: mr.right - 1, width: 1, height: mr.bottom }} />
+        <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: 0, left: mr.left,  width: 0.5, height: mr.top }} />
+        <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: 0, left: mr.right - 1, width: 0.5, height: mr.top }} />
+        <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: mr.bottom, left: mr.left,  width: 0.5, height: mr.bottom }} />
+        <div className="hero-slide__guide hero-slide__guide--vertical" style={{ ...base, top: mr.bottom, left: mr.right - 1, width: 0.5, height: mr.bottom }} />
       </>
     );
   })() : null;
@@ -1538,22 +1538,30 @@ function HeroSlide({
   );
 
   const _imgSide = imageSide(template);
-  const _slideWidthPx = slideRef.current?.offsetWidth;
+  // columnCenterX: center of the text column in copy-main coordinates (layout px).
+  // Measured directly from DOM so it works regardless of whether guides/mediaRect are active.
   const columnCenterX = (() => {
-    if (!mediaRect || !_slideWidthPx || _imgSide === "none" || !slideRef.current) return undefined;
-    const rawCenter = computeColumnCenterX(
-      3,
-      _imgSide === "right" ? mediaRect.left : mediaRect.right,
-      mediaRect.textColFace ?? (_imgSide === "right" ? mediaRect.left : mediaRect.right),
-      13,
-      _slideWidthPx,
-      _imgSide,
-    );
-    const copyMain = slideRef.current.querySelector<HTMLElement>(".hero-slide__copy-main");
+    if (_imgSide === "none" || !slideRef.current) return undefined;
+    const slideEl = slideRef.current;
+    const sr = slideEl.getBoundingClientRect();
+    if (!sr.width) return undefined;
+    const scale = sr.width / slideEl.offsetWidth || 1;
+    const slideWidthPx = slideEl.offsetWidth;
+    const outerMarginPx = 13;
+    const textCol = slideEl.querySelector<HTMLElement>(".hero-slide__text-col");
+    const tc = textCol?.getBoundingClientRect();
+    if (!tc) return undefined;
+    let rawCenter: number;
+    if (_imgSide === "right") {
+      const gapBoundaryPx = (tc.right - sr.left) / scale;
+      rawCenter = (outerMarginPx + gapBoundaryPx) / 2;
+    } else {
+      const gapBoundaryPx = (tc.left - sr.left) / scale;
+      rawCenter = (gapBoundaryPx + (slideWidthPx - outerMarginPx)) / 2;
+    }
+    const copyMain = slideEl.querySelector<HTMLElement>(".hero-slide__copy-main");
     if (!copyMain) return rawCenter;
-    const sr = slideRef.current.getBoundingClientRect();
     const cr = copyMain.getBoundingClientRect();
-    const scale = sr.width / slideRef.current.offsetWidth || 1;
     return rawCenter - (cr.left - sr.left) / scale;
   })();
 
