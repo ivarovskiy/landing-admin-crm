@@ -1270,6 +1270,38 @@ function applyStylePatch(slide: Slide, key: string, patch: Partial<ElementStyle>
   };
 }
 
+/** Like applyStylePatch but also writes patch into the given viewport profile so viewport overrides don't win. */
+function applyStylePatchViewport(
+  slide: Slide,
+  key: string,
+  patch: Partial<ElementStyle>,
+  viewMode: "desktop" | "ipadPro" | "mobile",
+): Slide {
+  const profile = viewMode === "ipadPro" ? "ipadPro" : null;
+  let updated = applyStylePatch(slide, key, patch);
+  if (!profile) return updated;
+  const rawStyle = (
+    key === "title" ? updated.titleStyle :
+    key === "subtitle" ? updated.subtitleStyle :
+    key === "kicker" ? updated.kickerStyle :
+    key === "body" ? updated.bodyStyle :
+    key === "quote" ? updated.quoteStyle :
+    (Array.isArray(updated.extras) ? updated.extras : []).find(e => e.id === key)?.style
+  ) as ElementStyle | undefined;
+  if (!rawStyle) return updated;
+  const withProfile = {
+    ...rawStyle,
+    viewportProfiles: {
+      ...(rawStyle.viewportProfiles ?? {}),
+      [profile]: {
+        ...((rawStyle.viewportProfiles as any)?.[profile] ?? {}),
+        ...patch,
+      },
+    },
+  } as ElementStyle;
+  return applyStylePatch(updated, key, withProfile);
+}
+
 /* ------------------------------------------------------------------ */
 /*  TextElementsEditor — unified reorderable list of all text elements */
 /* ------------------------------------------------------------------ */
@@ -1376,15 +1408,17 @@ function TextElementsEditor({
     return keys;
   };
 
+  const vMode = tuningScope === "ipadPro" ? "ipadPro" as const : "desktop" as const;
+
   const handleGroupAlign = (groupId: string, align: "left" | "center" | "right" | undefined) => {
     let updated = s;
-    for (const key of getGroupKeys(groupId)) updated = applyStylePatch(updated, key, { align });
+    for (const key of getGroupKeys(groupId)) updated = applyStylePatchViewport(updated, key, { align }, vMode);
     onChange(updated);
   };
 
   const handleGroupAlignMode = (groupId: string, mode: "1" | "2" | "3" | "4" | undefined) => {
     let updated = s;
-    for (const key of getGroupKeys(groupId)) updated = applyStylePatch(updated, key, { alignMode: mode });
+    for (const key of getGroupKeys(groupId)) updated = applyStylePatchViewport(updated, key, { alignMode: mode }, vMode);
     onChange(updated);
   };
 

@@ -2497,15 +2497,15 @@ function CopyStack({
   }
 
   const makeAlignChange = (!dragMode && onSlideChange)
-    ? (key: string, es: ElementStyle | undefined) =>
+    ? (key: string, _es: ElementStyle | undefined) =>
         (align: "left" | "center" | "right" | undefined) =>
-          onSlideChange(setSlideElementStyle(slide, key, { ...(es ?? {}), align }))
+          onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, { align }))
     : null;
 
   const makeTypoChange = (!dragMode && onSlideChange)
-    ? (key: string, es: ElementStyle | undefined) =>
+    ? (key: string, _es: ElementStyle | undefined) =>
         (typo: string) =>
-          onSlideChange(setSlideElementStyle(slide, key, { ...(es ?? {}), typo: typo || undefined }))
+          onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, { typo: typo || undefined }))
     : null;
 
   function renderElement(key: string) {
@@ -2765,14 +2765,12 @@ function ExtraElement({
     : undefined;
   const onExtraAlignChange = !dragMode && inEditMode
     ? (align: "left" | "center" | "right" | undefined) => {
-        const extras = Array.isArray(slide!.extras) ? slide!.extras : [];
-        onSlideChange!({ ...slide!, extras: extras.map(e => e.id === extra.id ? { ...e, style: { ...(e.style ?? {}), align } } : e) });
+        onSlideChange!(setSlideElementViewportStyle(slide!, extra.id!, viewportProfile, { align }));
       }
     : undefined;
   const onExtraTypoChange = !dragMode && inEditMode
     ? (cls: string) => {
-        const extras = Array.isArray(slide!.extras) ? slide!.extras : [];
-        onSlideChange!({ ...slide!, extras: extras.map(e => e.id === extra.id ? { ...e, style: { ...(e.style ?? {}), typo: cls || undefined } } : e) });
+        onSlideChange!(setSlideElementViewportStyle(slide!, extra.id!, viewportProfile, { typo: cls || undefined }));
       }
     : undefined;
 

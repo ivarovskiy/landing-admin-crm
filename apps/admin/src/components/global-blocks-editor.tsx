@@ -160,23 +160,24 @@ function ScopePicker({
   return (
     <div className="rounded-xl border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] p-4 space-y-1.5">
       <label className="text-[10px] font-semibold uppercase tracking-wider text-[oklch(0.5_0_0)]">
-        Scope
+        Choose website
       </label>
       <select
         value={scope ?? "site"}
         onChange={(e) => onChange(e.target.value)}
         className="w-full h-8 rounded-md bg-[oklch(1_0_0/6%)] border border-[oklch(1_0_0/10%)] px-2 text-xs text-[oklch(0.88_0_0)] focus:outline-none focus:border-[oklch(0.58_0.22_25)]"
       >
-        <option value="site">🌐 Site default (fallback)</option>
+        <option value="site">🌐 Unattached Pages</option>
         {topLevel.map((p) => (
           <option key={p.id} value={p.id}>
-            /{p.slug}
+            {/* /{p.slug} */}
+            {p.slug === "sdc-ballet" && " (Simply Dance)"}
+            {p.slug === "ibc-ballet" && " (IBC Ballet)"}
           </option>
         ))}
       </select>
       <p className="text-[10px] text-[oklch(0.5_0_0)] leading-tight pt-1">
-        Pick a top-level page to edit its own header/footer. Any page in its subtree
-        inherits these unless it has its own scope defined.
+        Choose Website name from Dropdown Menu to edit its respective Top Menu and/or Footer.
       </p>
     </div>
   )
