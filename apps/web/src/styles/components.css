@@ -584,6 +584,24 @@
      Block elements fill their containing block with width:auto anyway. */
 }
 
+/* Tiptap inserts its own contenteditable wrapper and paragraphs. In hero text
+   edit mode those nodes must visually inherit the element-level typography
+   class (`typo-subtitle`, `typo-content-header`, etc.), including custom local
+   font families and stroke settings. */
+[data-tiptap-content="true"],
+[data-tiptap-content="true"] p {
+  font-family: inherit;
+  font-size: inherit;
+  font-style: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-transform: inherit;
+  paint-order: inherit;
+  -webkit-text-stroke: inherit;
+}
+
 /* keep paragraph margins consistent with surrounding text */
 [data-tiptap-content="true"] p {
   margin: 0;

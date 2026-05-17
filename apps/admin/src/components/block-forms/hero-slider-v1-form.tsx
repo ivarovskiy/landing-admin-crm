@@ -587,7 +587,7 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
                     <InspectorField label="Center mode" hint="Which zone to bisect: 1=slide↔media, 2=margin↔media, 3=margin↔gap, 4=slide↔gap">
                       <select
                         className="w-full h-7 rounded border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                        value={sg.columnCenterMode ?? 1}
+                        value={sg.columnCenterMode ?? 4}
                         onChange={(e) => setSg(["columnCenterMode"], Number(e.target.value) as 1 | 2 | 3 | 4)}
                       >
                         <option value={1}>1 — slide edge ↔ media (no gap)</option>
@@ -1149,7 +1149,7 @@ function ElementStyleEditor({
     const align = (v || undefined) as ElementStyleProfile["align"] | undefined;
     onChange(updateScopedElementStyle(style, tuningScope, {
       align,
-      alignMode: align === "center" ? (s.alignMode ?? "1") : undefined,
+      alignMode: align === "center" ? (s.alignMode ?? "4") : undefined,
     }));
   };
 
@@ -1431,7 +1431,7 @@ function TextElementsEditor({
       const currentMode = getScopedElementStyle(getSlideStyle(updated, key), tuningScope).alignMode;
       updated = applyStylePatchViewport(updated, key, {
         align,
-        alignMode: align === "center" ? (currentMode ?? "1") : undefined,
+        alignMode: align === "center" ? (currentMode ?? "4") : undefined,
       }, vMode);
     }
     onChange(updated);

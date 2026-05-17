@@ -445,7 +445,6 @@ export function TipTapInline({
   const prevTypoClassRef = useRef(typoClass);
   // Stable ref so effects can read the current value without being in deps
   const onElementTypoChangeRef = useRef(onElementTypoChange);
-  onElementTypoChangeRef.current = onElementTypoChange;
 
   const isEditable = !!onChange;
 
@@ -513,9 +512,14 @@ export function TipTapInline({
     immediatelyRender: false,
   });
 
+  useEffect(() => {
+    onElementTypoChangeRef.current = onElementTypoChange;
+  }, [onElementTypoChange]);
+
   // Migration: on editor mount, ensure typo marks are consistent with the current mode.
-  // - External typo mode (onElementTypoChange provided): strip all inline marks so the
-  //   outer element's CSS class is the sole source of styling (prevents CSS collision).
+  // - External typo mode (onElementTypoChange provided): first promote legacy
+  //   inline typo marks to ElementStyle.typo, then strip marks once the outer
+  //   element's CSS class can safely drive styling.
   // - Internal typo mode: apply element-level typoClass mark to all text if any mismatch.
   useEffect(() => {
     if (!editor) return;
@@ -525,6 +529,12 @@ export function TipTapInline({
     if (size <= 0) return;
 
     if (onElementTypoChangeRef.current) {
+      const inlineTypo = getDocTypo(editor);
+      if (!initialTypoRef.current && inlineTypo) {
+        onElementTypoChangeRef.current(inlineTypo);
+        return;
+      }
+
       // External typo mode — strip any residual inline marks and persist clean HTML.
       let hasMarks = false;
       editor.state.doc.descendants((node) => {
@@ -665,7 +675,7 @@ export function TipTapInline({
     if (!editor) return;
     if (editor.isEditable !== isEditable) {
       editor.setEditable(isEditable);
-      if (!isEditable) setToolbarState(null);
+      if (!isEditable) queueMicrotask(() => setToolbarState(null));
     }
   }, [editor, isEditable]);
 
@@ -714,13 +724,11 @@ export function TipTapInline({
     const { tr } = editor.state;
     if (cls) {
       const mark = markType.create({ class: cls });
-      hasSelection
-        ? tr.addMark(from, to, mark)
-        : tr.addMark(0, editor.state.doc.content.size, mark);
+      if (hasSelection) tr.addMark(from, to, mark);
+      else tr.addMark(0, editor.state.doc.content.size, mark);
     } else {
-      hasSelection
-        ? tr.removeMark(from, to, markType)
-        : tr.removeMark(0, editor.state.doc.content.size, markType);
+      if (hasSelection) tr.removeMark(from, to, markType);
+      else tr.removeMark(0, editor.state.doc.content.size, markType);
     }
     editor.view.dispatch(tr);
     editor.commands.focus();

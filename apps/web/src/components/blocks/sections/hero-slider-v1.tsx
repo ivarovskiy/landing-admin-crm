@@ -157,7 +157,7 @@ type StyleGuidelinesConfig = {
   showMediaGap?: boolean;             // vertical line at text column inner edge (gap boundary)
   showMediaEdgeGuides?: boolean;      // inner edge: vertical line; outer edge: vertical + horizontal lines
   showColumnCenter?: boolean;         // single DOM-measured text-zone center line (modes 1–4)
-  columnCenterMode?: 1 | 2 | 3 | 4;  // which zone pair to bisect (default 1)
+  columnCenterMode?: 1 | 2 | 3 | 4;  // which zone pair to bisect (default 4)
   columnCenterOuterMarginPx?: number; // outer text margin in layout px (default 13)
 };
 
@@ -175,23 +175,66 @@ type CanvasGuidelines = {
 
 type ColumnCenterContext = {
   centers: Record<ColumnCenterMode, number>;
+  zones: Record<ColumnCenterMode, ColumnAlignZone>;
+};
+
+type ColumnAlignZone = {
+  left: number;
+  width: number;
 };
 
 function sameColumnCenterContext(a?: ColumnCenterContext, b?: ColumnCenterContext) {
   if (!a || !b) return a === b;
+  if (!a.zones || !b.zones) return false;
   return a.centers[1] === b.centers[1] &&
     a.centers[2] === b.centers[2] &&
     a.centers[3] === b.centers[3] &&
-    a.centers[4] === b.centers[4];
+    a.centers[4] === b.centers[4] &&
+    a.zones[1].left === b.zones[1].left &&
+    a.zones[1].width === b.zones[1].width &&
+    a.zones[2].left === b.zones[2].left &&
+    a.zones[2].width === b.zones[2].width &&
+    a.zones[3].left === b.zones[3].left &&
+    a.zones[3].width === b.zones[3].width &&
+    a.zones[4].left === b.zones[4].left &&
+    a.zones[4].width === b.zones[4].width;
 }
 
 function getElementCenterMode(mode?: ElementStyle["alignMode"]): ColumnCenterMode {
   if (mode === "1" || mode === "2" || mode === "3" || mode === "4") {
     return Number(mode) as ColumnCenterMode;
   }
-  // Back-compat: older centered elements did not store alignMode and behaved like
-  // the margin-to-gap center in measured layouts.
-  return 3;
+  // Default to the same text canvas used by left/right alignment:
+  // slide edge to gap boundary.
+  return 4;
+}
+
+function computeColumnAlignZone(
+  mode: ColumnCenterMode,
+  mediaEdgePx: number,
+  gapBoundaryPx: number,
+  outerMarginPx: number,
+  slideWidthPx: number,
+  imgSide: "left" | "right",
+  copyLeftPx: number,
+): ColumnAlignZone {
+  let left: number;
+  let right: number;
+
+  if (imgSide === "right") {
+    left = mode === 2 || mode === 3 ? outerMarginPx : 0;
+    right = mode === 3 || mode === 4 ? gapBoundaryPx : mediaEdgePx;
+  } else {
+    left = mode === 3 || mode === 4 ? gapBoundaryPx : mediaEdgePx;
+    right = mode === 2 || mode === 3 ? slideWidthPx - outerMarginPx : slideWidthPx;
+  }
+
+  const zoneLeft = Math.min(left, right);
+  const zoneRight = Math.max(left, right);
+  return {
+    left: zoneLeft - copyLeftPx,
+    width: Math.max(0, zoneRight - zoneLeft),
+  };
 }
 
 /** Design canvas height used in the admin mini-canvas — offsets are relative to this. */
@@ -976,7 +1019,7 @@ function StyleGuidelineOverlay({
 
   // Column center — DOM-measured, single line, 4 modes (text zone only, not media)
   if (config.showColumnCenter && mediaRect && imgSide !== "none" && slideWidthPx) {
-    const mode = (config.columnCenterMode ?? 1) as 1 | 2 | 3 | 4;
+    const mode = (config.columnCenterMode ?? 4) as 1 | 2 | 3 | 4;
     const outerMargin = config.columnCenterOuterMarginPx ?? 13;
     const mediaEdge = imgSide === "right" ? mediaRect.left : mediaRect.right;
     const gapBoundary = mediaRect.textColFace ?? mediaEdge;
@@ -1155,12 +1198,20 @@ function HeroSlide({
             const gapBoundary = next.textColFace ?? mediaEdge;
             const center = (mode: ColumnCenterMode) =>
               computeColumnCenterX(mode, mediaEdge, gapBoundary, outerMarginPx, slideEl.offsetWidth, side) - copyLeft;
+            const zone = (mode: ColumnCenterMode) =>
+              computeColumnAlignZone(mode, mediaEdge, gapBoundary, outerMarginPx, slideEl.offsetWidth, side, copyLeft);
             const nextContext: ColumnCenterContext = {
               centers: {
                 1: center(1),
                 2: center(2),
                 3: center(3),
                 4: center(4),
+              },
+              zones: {
+                1: zone(1),
+                2: zone(2),
+                3: zone(3),
+                4: zone(4),
               },
             };
             setColumnCenterContext((prev) => sameColumnCenterContext(prev, nextContext) ? prev : nextContext);
@@ -1798,35 +1849,45 @@ function absPositionStyle(
     : mtPx + yPx + getPrecedingMt(slide, key);
   const left = mlPx + xPx;
   const s: Record<string, string> = { position: "absolute", top: `${top}px` };
+  const explicitWidth = es?.width ? resolveDesignViewportUnits(es.width) : undefined;
 
   if (es?.align === "center") {
     const centerMode = getElementCenterMode(es.alignMode);
-    if (columnCenterContext) {
-      // DOM-measured text-zone center, converted to copy-main coordinates.
-      s.left = `${columnCenterContext.centers[centerMode]}px`;
+    const zone = columnCenterContext?.zones?.[centerMode];
+    if (zone) {
+      if (explicitWidth) {
+        s.left = `${trimNumber(zone.left + zone.width / 2)}px`;
+        s.transform = "translateX(-50%)";
+        s.width = explicitWidth;
+      } else {
+        s.left = `${zone.left}px`;
+        s.width = `${zone.width}px`;
+      }
+    } else if (explicitWidth) {
+      s.left = "50%";
+      s.transform = "translateX(-50%)";
+      s.width = explicitWidth;
     } else {
-      // Fallback: formula-based approximation when DOM measurement is unavailable.
-      const desktop = mergeDesktopLayout(slide);
-      const gapPx = parseDesignPx(desktop.gap);
-      const outerPadPx = parseDesignPx(desktop.outerPadding, 13);
-      const side = imageSide(resolveTemplate(slide));
-      const dir = side === "right" ? 1 : side === "left" ? -1 : 0;
-      let offsetPx = 0;
-      if (centerMode === 1) offsetPx = dir * gapPx / 2;
-      else if (centerMode === 2) offsetPx = dir * (outerPadPx + gapPx) / 2;
-      else if (centerMode === 4) offsetPx = dir * outerPadPx / 2;
-      s.left = offsetPx ? `calc(50% + ${offsetPx}px)` : "50%";
+      s.left = "0";
+      s.right = "0";
     }
-    s.transform = "translateX(-50%)";
     s.textAlign = "center";
-    s.width = "max-content"; // prevent shrink-to-fit left edge from wrapping text
   } else if (es?.align === "right") {
-    s.left = "0";
-    s.right = "0";
+    if (explicitWidth) {
+      s.right = "0";
+      s.width = explicitWidth;
+    } else {
+      s.left = "0";
+      s.right = "0";
+    }
     s.textAlign = "right";
+  } else if (es?.align === "left") {
+    s.left = "0";
+    if (explicitWidth) s.width = explicitWidth;
+    else s.right = "0";
+    s.textAlign = "left";
   } else {
     s.left = `${left}px`;
-    if (es?.align) s.textAlign = es.align;
   }
   if (es?.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
   if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
@@ -1836,7 +1897,7 @@ function absPositionStyle(
     const offsetVal = getTypoOffset(es.typo);
     if (offsetVal) s.paddingBottom = offsetVal;
   }
-  if (es?.width && es?.align !== "right") s.width = es.width;
+  if (explicitWidth && !es?.align) s.width = explicitWidth;
   return s as React.CSSProperties;
 }
 
@@ -2545,7 +2606,7 @@ function CopyStack({
         (align: "left" | "center" | "right" | undefined) =>
           onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, {
             align,
-            alignMode: align === "center" ? (_es?.alignMode ?? "1") : undefined,
+            alignMode: align === "center" ? (_es?.alignMode ?? "4") : undefined,
           }))
     : null;
 
@@ -2814,7 +2875,7 @@ function ExtraElement({
     ? (align: "left" | "center" | "right" | undefined) => {
         onSlideChange!(setSlideElementViewportStyle(slide!, extra.id!, viewportProfile, {
           align,
-          alignMode: align === "center" ? (resolvedStyle?.alignMode ?? "1") : undefined,
+          alignMode: align === "center" ? (resolvedStyle?.alignMode ?? "4") : undefined,
         }));
       }
     : undefined;
