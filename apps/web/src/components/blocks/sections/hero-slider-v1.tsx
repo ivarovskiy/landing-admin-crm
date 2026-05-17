@@ -1172,7 +1172,10 @@ function HeroSlide({
           const tc = textCol?.getBoundingClientRect();
           const refTop = tc?.top ?? sr.top;
           const refBottom = tc?.bottom ?? sr.bottom;
-          const side = imageSide(template);
+          const templateSide = imageSide(template);
+          const side = tc
+            ? mr.left >= tc.right ? "right" : mr.right <= tc.left ? "left" : templateSide
+            : templateSide;
           let textColFace: number | undefined;
           if (tc) {
             textColFace = side === "left"
