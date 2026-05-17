@@ -266,7 +266,7 @@ function CanvasItem({
   const borderClass = isLocked
     ? "border-amber-400/50 opacity-70"
     : isSelected
-      ? "border-blue-400 shadow-[0_0_0_1px_rgba(96,165,250,0.5)]"
+      ? "border-sky-400 shadow-[0_0_0_1px_rgba(56,189,248,0.4)]"
       : "border-primary/30 hover:border-primary/70";
 
   return (
@@ -497,7 +497,7 @@ export function SlideCanvas({
           {gapOffset != null && gapOffset > 0 && (
             <div
               className="absolute left-0 right-0 pointer-events-none"
-              style={{ top: gapOffset, borderTop: "1.5px dashed rgba(245,158,11,0.75)", zIndex: 3 }}
+              style={{ top: gapOffset, borderTop: "1px solid rgba(245,158,11,0.75)", zIndex: 3 }}
             >
               <span className="absolute left-1 -top-3 text-[7px] font-medium" style={{ color: "rgba(245,158,11,0.9)" }}>gap {gapOffset}px</span>
             </div>
@@ -507,7 +507,7 @@ export function SlideCanvas({
           {baselineOffset != null && baselineOffset > 0 && (
             <div
               className="absolute left-0 right-0 pointer-events-none"
-              style={{ top: REF_H - baselineOffset, borderTop: "1.5px dashed rgba(139,92,246,0.75)", zIndex: 3 }}
+              style={{ top: REF_H - baselineOffset, borderTop: "1px solid rgba(139,92,246,0.75)", zIndex: 3 }}
             >
               <span className="absolute left-1 -top-3 text-[7px] font-medium" style={{ color: "rgba(139,92,246,0.9)" }}>baseline {baselineOffset}px</span>
             </div>
@@ -517,7 +517,7 @@ export function SlideCanvas({
           {italicBaselineOffset != null && italicBaselineOffset > 0 && (
             <div
               className="absolute left-0 right-0 pointer-events-none"
-              style={{ top: REF_H - italicBaselineOffset, borderTop: "1.5px dashed rgba(20,184,166,0.8)", zIndex: 3 }}
+              style={{ top: REF_H - italicBaselineOffset, borderTop: "1px solid rgba(20,184,166,0.8)", zIndex: 3 }}
             >
               <span className="absolute right-1 -top-3 text-[7px] font-medium" style={{ color: "rgba(20,184,166,0.95)" }}>italic min {italicBaselineOffset}px</span>
             </div>

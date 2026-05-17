@@ -788,7 +788,7 @@ type GuideLineDef = {
 
 const SG_COLORS = {
   boundary:    "rgba(239, 68, 68, 0.9)",   // 🔴 slide edges
-  photoMargin: "rgba(59, 130, 246, 0.9)",  // 🔵 photo placement margins
+  photoMargin: "rgba(56, 189, 248, 0.9)",  // 🩵 photo placement margins
   photoInner:  "rgba(8, 60, 43, 0.9)",  // 🟢 inner offsets from photo bounds
   photoEdge:   "rgba(30, 7, 86, 0.9)",  // 🟣 photo top/bottom continuation
   italic:      "rgba(6, 70, 153, 0.9)",  // 🟡 italic lower limit
@@ -1277,7 +1277,7 @@ function HeroSlide({
       {hasClassicGrid && (() => {
         const cols = Math.max(1, classicGrid!.columns ?? 6);
         const rows = Math.max(1, classicGrid!.rows ?? 4);
-        const lineColor = classicGrid!.color ?? "rgba(100,149,237,0.45)";
+        const lineColor = classicGrid!.color ?? "rgba(56,189,248,0.45)";
         const centerColor = "rgba(72,199,72,0.75)";
         const marginPct = ((classicGrid!.marginPx ?? 0) / DESIGN_WIDTH_PX) * 100;
         const usable = 100 - 2 * marginPct;
