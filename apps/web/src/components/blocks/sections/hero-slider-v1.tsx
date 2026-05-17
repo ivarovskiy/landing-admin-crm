@@ -121,15 +121,11 @@ type ClassicGridSettings = {
   enabled?: boolean;
   columns?: number;
   rows?: number;
-  showVerticalCenter?: boolean;
+  showVerticalCenter?: boolean; // 2 DOM-measured lines: text-zone center + media center
   showHorizontalCenter?: boolean;
   color?: string;
   marginPx?: number;
   showMarginLines?: boolean;
-  linkCenterToAlign?: boolean;           // link vertical center line to an alignMode formula
-  centerAlignMode?: "1" | "2" | "3" | "4"; // which alignMode offset to use for the center line
-  linkGapPx?: number;           // override gap (design px) for center line formula
-  linkOuterPaddingPx?: number;  // override outer padding (design px) for center line formula
 };
 
 type StyleExtraGuideline = {
@@ -158,6 +154,7 @@ type StyleGuidelinesConfig = {
   showTextCenterV?: boolean;
   showTextCenterH?: boolean;
   showMediaGap?: boolean;           // vertical line at text column inner edge (gap boundary)
+  showMediaEdgeGuides?: boolean;    // tick lines from each media face toward slide boundaries
 };
 
 type CanvasGuidelines = {
@@ -435,7 +432,8 @@ export function HeroSliderV1({
   const showLayoutGuides = options?.showLayoutGuides === true;
   const layoutGuideBottomOffset = options?.layoutGuideBottomOffset as string | undefined;
   const showStyleGuides = options?.showStyleGuides === true;
-  const showMediaEdgeGuides = options?.showMediaEdgeGuides === true;
+  // showMediaEdgeGuides moved to canvasGuidelines.styleGuidelines; keep options fallback
+  const showMediaEdgeGuides = !!(canvasGuidelines?.styleGuidelines?.showMediaEdgeGuides || options?.showMediaEdgeGuides);
   const viewportProfile = useHeroViewportProfile();
 
   // Toolbox state comes from the admin toolbar via postMessage → LivePreviewContext.
@@ -1044,7 +1042,7 @@ function HeroSlide({
   type LayoutGuideLines = { gapX?: number; bottomY?: number };
   const [layoutGuideLines, setLayoutGuideLines] = useState<LayoutGuideLines>({});
   // Measurement is needed for guides and for media-aligned text stretching.
-  const measureNeeded = showGuides || showElementGuides || stretchToMedia || showCompositionGuides || showLayoutGuides || showStyleGuides || showMediaEdgeGuides;
+  const measureNeeded = showGuides || showElementGuides || stretchToMedia || showCompositionGuides || showLayoutGuides || showStyleGuides || showMediaEdgeGuides || !!(canvasGuidelines?.classicGrid?.showVerticalCenter);
 
   useLayoutEffect(() => {
     if (!measureNeeded) {
@@ -1290,32 +1288,7 @@ function HeroSlide({
                 style={{ top: `${(k + 1) / rows * 100}%`, background: lineColor, opacity: 1 }}
               />
             ))}
-            {/* Vertical center line — optionally linked to an alignMode offset */}
-            {classicGrid!.showVerticalCenter && (() => {
-              let centerLeft = "50%";
-              if (classicGrid!.linkCenterToAlign && classicGrid!.centerAlignMode) {
-                const gapPx = classicGrid!.linkGapPx !== undefined
-                  ? classicGrid!.linkGapPx
-                  : parseFloat(resolveDesignViewportUnits(desktopLayout.gap) ?? "0") || 0;
-                const outerPadPx = classicGrid!.linkOuterPaddingPx !== undefined
-                  ? classicGrid!.linkOuterPaddingPx
-                  : parseFloat(resolveDesignViewportUnits(desktopLayout.outerPadding) ?? "0") || 0;
-                const side = imageSide(template);
-                const dir = side === "right" ? 1 : side === "left" ? -1 : 0;
-                let offsetPx = 0;
-                if (classicGrid!.centerAlignMode === "1") offsetPx = dir * gapPx / 2;
-                else if (classicGrid!.centerAlignMode === "2") offsetPx = dir * (outerPadPx + gapPx) / 2;
-                else if (classicGrid!.centerAlignMode === "4") offsetPx = dir * outerPadPx / 2;
-                // mode "3" stays at 0
-                if (offsetPx) centerLeft = `calc(50% + ${offsetPx}px)`;
-              }
-              return (
-                <div
-                  className="hero-slide__guide hero-slide__guide--vertical"
-                  style={{ left: centerLeft, background: centerColor, opacity: 1 }}
-                />
-              );
-            })()}
+            {/* Vertical column centers — rendered in the DOM-measurement guides section below */}
             {/* Horizontal center line */}
             {classicGrid!.showHorizontalCenter && (
               <div
@@ -1388,10 +1361,12 @@ function HeroSlide({
   const hasElementGuides = showElementGuides && elementRects.length > 0;
   const hasCompGuides = showCompositionGuides && compGuides.length > 0;
   const hasLayoutGuides = showLayoutGuides && (layoutGuideLines.gapX !== undefined || layoutGuideLines.bottomY !== undefined);
-  const compGuideColor = compositionGuideColor || "rgba(255, 6, 102, 0.8)"; // цвет guidlines
+  const hasClassicColumnCenters = !!(canvasGuidelines?.classicGrid?.showVerticalCenter) && !!mediaRect && imageSide(template) !== "none";
+  const compGuideColor = compositionGuideColor || "rgba(255, 6, 102, 0.8)";
   const LAYOUT_GUIDE_COLOR = "#FF0066";
-  const MEDIA_EDGE_COLOR = "rgba(251,191,36,0.85)"; // amber — short bounded media edge lines
-  const guides = hasMediaGuides || hasMediaEdgeGuidesActive || hasElementGuides || hasCompGuides || hasLayoutGuides ? (
+  const MEDIA_EDGE_COLOR = "rgba(251,191,36,0.85)"; // amber
+  const COLUMN_CENTER_COLOR = "rgba(72,199,72,0.85)"; // green
+  const guides = hasMediaGuides || hasMediaEdgeGuidesActive || hasElementGuides || hasCompGuides || hasLayoutGuides || hasClassicColumnCenters ? (
     <div className="hero-slide__guides" aria-hidden="true">
       {hasMediaGuides ? (
         <>
@@ -1401,22 +1376,46 @@ function HeroSlide({
           <div className="hero-slide__guide hero-slide__guide--horizontal" style={{ top: `${mediaRect!.bottom}px` }} />
         </>
       ) : null}
-      {/* Short media edge guides — bounded lines along each edge of the media element */}
+      {/* Media edge tick guides — lines from each media face toward the slide boundary */}
       {hasMediaEdgeGuidesActive ? (() => {
         const mr = mediaRect!;
-        const mw = mr.right - mr.left;
-        const mh = mr.bottom - mr.top;
+        const slideW = slideRef.current?.offsetWidth ?? mr.right + 1;
+        const slideH = mr.height;
+        const medianX = (mr.left + mr.right) / 2;
+        const medianY = (mr.top + mr.bottom) / 2;
         const S: React.CSSProperties = { position: "absolute", background: MEDIA_EDGE_COLOR, pointerEvents: "none" };
         return (
           <>
-            {/* Top edge — spans media width */}
-            <div style={{ ...S, top: mr.top, left: mr.left, width: mw, height: 1 }} />
-            {/* Bottom edge — spans media width */}
-            <div style={{ ...S, top: mr.bottom, left: mr.left, width: mw, height: 1 }} />
-            {/* Left edge — spans media height */}
-            <div style={{ ...S, left: mr.left, top: mr.top, width: 1, height: mh }} />
-            {/* Right edge — spans media height */}
-            <div style={{ ...S, left: mr.right, top: mr.top, width: 1, height: mh }} />
+            {/* Left: slide-left → media-left, at media vertical center */}
+            {mr.left > 1 && <div style={{ ...S, top: medianY, left: 0, width: mr.left, height: 1 }} />}
+            {/* Right: media-right → slide-right, at media vertical center */}
+            {slideW - mr.right > 1 && <div style={{ ...S, top: medianY, left: mr.right, width: slideW - mr.right, height: 1 }} />}
+            {/* Top: slide-top → media-top, at media horizontal center */}
+            {mr.top > 1 && <div style={{ ...S, left: medianX, top: 0, width: 1, height: mr.top }} />}
+            {/* Bottom: media-bottom → slide-bottom, at media horizontal center */}
+            {slideH - mr.bottom > 1 && <div style={{ ...S, left: medianX, top: mr.bottom, width: 1, height: slideH - mr.bottom }} />}
+          </>
+        );
+      })() : null}
+      {/* DOM-measured column center lines — 1 for text zone, 1 for media zone */}
+      {hasClassicColumnCenters ? (() => {
+        const mr = mediaRect!;
+        const slideW = slideRef.current?.offsetWidth ?? mr.right + 1;
+        const imgS = imageSide(template);
+        let textCenter: number, mediaCenter: number;
+        if (imgS === "right") {
+          textCenter  = mr.left / 2;
+          mediaCenter = (mr.left + mr.right) / 2;
+        } else {
+          textCenter  = (mr.right + slideW) / 2;
+          mediaCenter = mr.right / 2;
+        }
+        return (
+          <>
+            <div className="hero-slide__guide hero-slide__guide--vertical"
+              style={{ left: `${textCenter}px`, background: COLUMN_CENTER_COLOR, opacity: 1 }} />
+            <div className="hero-slide__guide hero-slide__guide--vertical"
+              style={{ left: `${mediaCenter}px`, background: COLUMN_CENTER_COLOR, opacity: 0.6 }} />
           </>
         );
       })() : null}
@@ -1498,14 +1497,44 @@ function HeroSlide({
         }
       }
       if (type === "scale-font-to-width") {
-        const lw = lastWidthResizeRef.current;
-        if (!lw || lw.orig === 0) return;
-        const ratio = lw.curr / lw.orig;
-        const es = getSlideElementStyle(slide, lw.key);
+        const elementId = event.data?.elementId as string | undefined;
+        const slideEl = slideRef.current;
+        if (!slideEl || !elementId) return;
+
+        // Find element in this slide by data-el attribute
+        const dataEl = slideEl.querySelector<HTMLElement>(`[data-el="${CSS.escape(elementId)}"]`);
+        if (!dataEl) return;
+
+        // Walk up to the draggable wrapper to get the element key
+        const draggable = dataEl.closest<HTMLElement>("[data-hs-draggable]");
+        if (!draggable) return;
+        const key = draggable.dataset.hsDraggable;
+        if (!key) return;
+
+        const es = mergeElementStyle(getSlideElementStyle(slide, key), viewportProfile);
+        const explicitWidthStr = es?.width;
+        if (!explicitWidthStr) return; // no explicit width — nothing to scale
+
+        const explicitWidth = parseFloat(explicitWidthStr);
+        if (!explicitWidth || explicitWidth <= 0) return;
+
+        // Measure natural width by temporarily removing the inline width override
+        const savedWidth = draggable.style.width;
+        draggable.style.width = "";
+        const naturalWidth = draggable.offsetWidth;
+        draggable.style.width = savedWidth;
+
+        if (!naturalWidth || naturalWidth <= 0 || naturalWidth === explicitWidth) return;
+
+        const ratio = explicitWidth / naturalWidth;
         const currentSizePx = parseFloat(resolveDesignViewportUnits(es?.size) ?? "16") || 16;
         const newSizePx = Math.round(currentSizePx * ratio);
-        onSlideChange(setSlideElementViewportStyle(slide, lw.key, viewportProfile, { size: `${newSizePx}px` }));
-        lastWidthResizeRef.current = null;
+
+        // Scale font and clear explicit width in one update so Reset reverts both
+        onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, {
+          size: `${newSizePx}px`,
+          width: undefined,
+        }));
       }
     };
     window.addEventListener("message", handler);

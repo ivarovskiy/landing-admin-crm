@@ -270,11 +270,6 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
           onChange={(v) => set(["options", "showElementGuides"], v || undefined)}
         />
         <InspectorToggle
-          label="Media edge guides"
-          checked={!!options?.showMediaEdgeGuides}
-          onChange={(v) => set(["options", "showMediaEdgeGuides"], v || undefined)}
-        />
-        <InspectorToggle
           label="Canvas drag editing"
           checked={enableCanvasDrag}
           onChange={(v) => set(["options", "enableCanvasDrag"], v === false ? false : undefined)}
@@ -389,52 +384,10 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
                 </InspectorField>
               </div>
               <InspectorToggle
-                label="Show vertical center line"
+                label="Show column centers (2 lines from media)"
                 checked={!!(canvasGuidelines.classicGrid?.showVerticalCenter)}
                 onChange={(v) => set(["canvasGuidelines", "classicGrid", "showVerticalCenter"], v || undefined)}
               />
-              {canvasGuidelines.classicGrid?.showVerticalCenter && (
-                <>
-                  <InspectorToggle
-                    label="Link center to alignMode"
-                    checked={!!(canvasGuidelines.classicGrid?.linkCenterToAlign)}
-                    onChange={(v) => set(["canvasGuidelines", "classicGrid", "linkCenterToAlign"], v || undefined)}
-                  />
-                  {canvasGuidelines.classicGrid?.linkCenterToAlign && (
-                    <>
-                      <InspectorField label="AlignMode" hint="1–4: which centering formula to use">
-                        <InspectorSelect
-                          value={canvasGuidelines.classicGrid?.centerAlignMode ?? ""}
-                          onChange={(v) => set(["canvasGuidelines", "classicGrid", "centerAlignMode"], v || undefined)}
-                          options={[
-                            { value: "", label: "— select —" },
-                            { value: "1", label: "1 — gap/2" },
-                            { value: "2", label: "2 — (outerPad+gap)/2" },
-                            { value: "3", label: "3 — center (no offset)" },
-                            { value: "4", label: "4 — outerPad/2" },
-                          ]}
-                        />
-                      </InspectorField>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <InspectorField label="Gap override (px)" hint="Design-canvas gap px for formula (overrides slide value)">
-                          <InspectorNumber
-                            value={canvasGuidelines.classicGrid?.linkGapPx ?? undefined}
-                            onChange={(v) => set(["canvasGuidelines", "classicGrid", "linkGapPx"], v ?? undefined)}
-                            placeholder="e.g. 80"
-                          />
-                        </InspectorField>
-                        <InspectorField label="OuterPad override (px)" hint="Design-canvas outer padding px (overrides slide value)">
-                          <InspectorNumber
-                            value={canvasGuidelines.classicGrid?.linkOuterPaddingPx ?? undefined}
-                            onChange={(v) => set(["canvasGuidelines", "classicGrid", "linkOuterPaddingPx"], v ?? undefined)}
-                            placeholder="e.g. 200"
-                          />
-                        </InspectorField>
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
               <InspectorToggle
                 label="Show horizontal center line"
                 checked={!!(canvasGuidelines.classicGrid?.showHorizontalCenter)}
@@ -458,11 +411,6 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
                 label="Show margin edge lines"
                 checked={!!(canvasGuidelines.classicGrid?.showMarginLines)}
                 onChange={(v) => set(["canvasGuidelines", "classicGrid", "showMarginLines"], v || undefined)}
-              />
-              <InspectorToggle
-                label="Media edge guides"
-                checked={!!options?.showMediaEdgeGuides}
-                onChange={(v) => set(["options", "showMediaEdgeGuides"], v || undefined)}
               />
             </>
           )}
@@ -614,6 +562,11 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
                   label="🩵 Gap between media and text"
                   checked={!!sg.showMediaGap}
                   onChange={(v) => setSg(["showMediaGap"], v || undefined)}
+                />
+                <InspectorToggle
+                  label="🟡 Media edge guides (ticks to boundary)"
+                  checked={!!sg.showMediaEdgeGuides}
+                  onChange={(v) => setSg(["showMediaEdgeGuides"], v || undefined)}
                 />
               </>
             );

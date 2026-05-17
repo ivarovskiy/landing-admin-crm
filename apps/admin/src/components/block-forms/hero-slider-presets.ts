@@ -63,15 +63,11 @@ export type ClassicGridSettings = {
   enabled?: boolean;
   columns?: number;             // number of vertical column divisions (default 6)
   rows?: number;                // number of horizontal row divisions (default 4)
-  showVerticalCenter?: boolean; // render a bright center-vertical line
+  showVerticalCenter?: boolean; // render 2 DOM-measured center lines (text-zone + media-zone)
   showHorizontalCenter?: boolean; // render a bright center-horizontal line
   color?: string;               // optional CSS color for column/row lines
   marginPx?: number;            // outer horizontal margin in design-canvas px (1440 basis)
   showMarginLines?: boolean;    // draw outer margin edge lines
-  linkCenterToAlign?: boolean;           // link vertical center line to an alignMode formula
-  centerAlignMode?: "1" | "2" | "3" | "4"; // which alignMode offset to use for the center line
-  linkGapPx?: number;           // override gap (design px) for center line formula
-  linkOuterPaddingPx?: number;  // override outer padding (design px) for center line formula
 };
 
 /** One configurable guideline inside the stylistic overlay. */
@@ -103,6 +99,7 @@ export type StyleGuidelinesConfig = {
   showTextCenterV?: boolean;        // vertical center of text area (vertical line)
   showTextCenterH?: boolean;        // horizontal center of text area (horizontal line)
   showMediaGap?: boolean;           // vertical line at text column inner edge (gap boundary)
+  showMediaEdgeGuides?: boolean;    // tick lines from each media face toward slide boundaries
 };
 
 /** Canvas guideline offsets stored at block level (shared across all slides) */
