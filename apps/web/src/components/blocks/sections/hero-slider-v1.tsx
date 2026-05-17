@@ -36,6 +36,7 @@ type ElementStyle = {
   groupId?: string; // group identifier for moving elements together
   alignMode?: "1" | "2" | "3" | "4"; // centering reference field (used when align === "center")
   useFontOffset?: boolean; // opt-in per-font padding offset (see getTypoOffset)
+  width?: string; // explicit width override for the element (e.g. "400px")
   viewportProfiles?: Partial<Record<HeroViewportProfileKey, ElementStyleProfile>>;
 };
 
@@ -123,10 +124,12 @@ type ClassicGridSettings = {
   showVerticalCenter?: boolean;
   showHorizontalCenter?: boolean;
   color?: string;
-  marginPercent?: number;
+  marginPx?: number;
   showMarginLines?: boolean;
   linkCenterToAlign?: boolean;           // link vertical center line to an alignMode formula
   centerAlignMode?: "1" | "2" | "3" | "4"; // which alignMode offset to use for the center line
+  linkGapPx?: number;           // override gap (design px) for center line formula
+  linkOuterPaddingPx?: number;  // override outer padding (design px) for center line formula
 };
 
 type StyleExtraGuideline = {
@@ -1258,7 +1261,7 @@ function HeroSlide({
         const rows = Math.max(1, classicGrid!.rows ?? 4);
         const lineColor = classicGrid!.color ?? "rgba(100,149,237,0.45)";
         const centerColor = "rgba(72,199,72,0.75)";
-        const marginPct = classicGrid!.marginPercent ?? 0;
+        const marginPct = ((classicGrid!.marginPx ?? 0) / DESIGN_WIDTH_PX) * 100;
         const usable = 100 - 2 * marginPct;
         return (
           <>
@@ -1291,8 +1294,12 @@ function HeroSlide({
             {classicGrid!.showVerticalCenter && (() => {
               let centerLeft = "50%";
               if (classicGrid!.linkCenterToAlign && classicGrid!.centerAlignMode) {
-                const gapPx = parseFloat(resolveDesignViewportUnits(desktopLayout.gap) ?? "0") || 0;
-                const outerPadPx = parseFloat(resolveDesignViewportUnits(desktopLayout.outerPadding) ?? "0") || 0;
+                const gapPx = classicGrid!.linkGapPx !== undefined
+                  ? classicGrid!.linkGapPx
+                  : parseFloat(resolveDesignViewportUnits(desktopLayout.gap) ?? "0") || 0;
+                const outerPadPx = classicGrid!.linkOuterPaddingPx !== undefined
+                  ? classicGrid!.linkOuterPaddingPx
+                  : parseFloat(resolveDesignViewportUnits(desktopLayout.outerPadding) ?? "0") || 0;
                 const side = imageSide(template);
                 const dir = side === "right" ? 1 : side === "left" ? -1 : 0;
                 let offsetPx = 0;
@@ -1472,29 +1479,42 @@ function HeroSlide({
   // Drag handles only appear for migrated slides — legacy slides use flow layout until button click
   const effectiveDragMode = dragMode && slide.positioningMode === "absolute";
 
-  // Listen for "Перенести на absolute" button postMessage from admin.
+  const { editableProps, dragHandleProps, widthResizeHandleProps, lastWidthResizeRef } = useSlideElementEditor(slide, editMode, onSlideChange, dragMode, viewportProfile);
+
+  // Listen for admin postMessages that require slide state access.
   // Uses adminMode (not editMode) so it works even when toolbox text/drag are off.
   useEffect(() => {
     if (!adminMode || !onSlideChange) return;
     const handler = (event: MessageEvent) => {
-      if (event.data?.type !== "hero-slider-convert-to-absolute") return;
-      const slideEl = slideRef.current;
-      if (!slideEl) return;
-      const blockEl = slideEl.closest<HTMLElement>("[data-block-id]");
-      if (blockEl?.dataset.blockId !== event.data?.blockId) return;
-      onSlideChange(measureSlideToAbsolute(slideEl, slide, viewportProfile));
-      if (window !== window.parent) {
-        window.parent.postMessage({ type: "hero-slider-absolute-converted" }, "*");
+      const type = event.data?.type;
+      if (type === "hero-slider-convert-to-absolute") {
+        const slideEl = slideRef.current;
+        if (!slideEl) return;
+        const blockEl = slideEl.closest<HTMLElement>("[data-block-id]");
+        if (blockEl?.dataset.blockId !== event.data?.blockId) return;
+        onSlideChange(measureSlideToAbsolute(slideEl, slide, viewportProfile));
+        if (window !== window.parent) {
+          window.parent.postMessage({ type: "hero-slider-absolute-converted" }, "*");
+        }
+      }
+      if (type === "scale-font-to-width") {
+        const lw = lastWidthResizeRef.current;
+        if (!lw || lw.orig === 0) return;
+        const ratio = lw.curr / lw.orig;
+        const es = getSlideElementStyle(slide, lw.key);
+        const currentSizePx = parseFloat(resolveDesignViewportUnits(es?.size) ?? "16") || 16;
+        const newSizePx = Math.round(currentSizePx * ratio);
+        onSlideChange(setSlideElementViewportStyle(slide, lw.key, viewportProfile, { size: `${newSizePx}px` }));
+        lastWidthResizeRef.current = null;
       }
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [adminMode, onSlideChange, slide, viewportProfile]);
+  }, [adminMode, onSlideChange, slide, viewportProfile, lastWidthResizeRef]);
 
   const mediaPrimary = (
     <MediaFrame media={slide.media} className="hero-slide__media-box" slotId={`slide-${i}-media`} priority={i === 0} />
   );
-  const { editableProps, dragHandleProps } = useSlideElementEditor(slide, editMode, onSlideChange, dragMode, viewportProfile);
 
   const standardCopy = (
     <CopyStack
@@ -1504,6 +1524,7 @@ function HeroSlide({
       viewportProfile={viewportProfile}
       editableProps={editableProps}
       dragHandleProps={dragHandleProps}
+      widthResizeHandleProps={effectiveDragMode ? widthResizeHandleProps : undefined}
       dragMode={effectiveDragMode}
       onSlideChange={editMode ? onSlideChange : undefined}
     />
@@ -1718,6 +1739,7 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle): React.C
     const offsetVal = getTypoOffset(es.typo);
     if (offsetVal) s.paddingBottom = offsetVal;
   }
+  if (es?.width) s.width = es.width;
   return s as React.CSSProperties;
 }
 
@@ -1838,6 +1860,31 @@ function DragHandle(props: React.HTMLAttributes<HTMLSpanElement>) {
   return <span style={DRAG_HANDLE_STYLE} title="Drag to move" {...props}>⠿</span>;
 }
 
+const WIDTH_RESIZE_HANDLE_STYLE: React.CSSProperties = {
+  position: "absolute",
+  bottom: 2,
+  left: 2,
+  width: 16,
+  height: 16,
+  cursor: "ew-resize",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "rgba(34,197,94,0.8)",
+  borderRadius: 3,
+  color: "rgba(255,255,255,0.9)",
+  fontSize: 10,
+  zIndex: 100,
+  touchAction: "none",
+  userSelect: "none",
+  lineHeight: 1,
+  flexShrink: 0,
+};
+
+function WidthResizeHandle(props: React.HTMLAttributes<HTMLSpanElement>) {
+  return <span style={WIDTH_RESIZE_HANDLE_STYLE} title="Drag to resize width" {...props}>↔</span>;
+}
+
 function useSlideElementEditor(
   slide: Slide,
   editMode: boolean,
@@ -1848,16 +1895,18 @@ function useSlideElementEditor(
   type GroupStart = { tx: number; ty: number; el: HTMLElement };
   const dragRef = useRef<{
     key: string;
-    mode: "move" | "resize";
+    mode: "move" | "resize" | "width-resize";
     startX: number;
     startY: number;
     startTx: number;
     startTy: number;
     startSize: number;
+    startWidth: number;
     scale: number;
     moved: boolean;
     groupStarts?: Map<string, GroupStart>;
   } | null>(null);
+  const lastWidthResizeRef = useRef<{ key: string; orig: number; curr: number } | null>(null);
 
   // Props for a dedicated drag handle child — applies transform to closest [data-hs-draggable]
   function dragHandleProps(key: string): React.HTMLAttributes<HTMLElement> {
@@ -1903,6 +1952,7 @@ function useSlideElementEditor(
           startX: e.clientX, startY: e.clientY,
           startTx: matrix.m41 || 0, startTy: matrix.m42 || 0,
           startSize: parseFloat(computed.fontSize || "0") || 16,
+          startWidth: 0,
           scale, moved: false, groupStarts,
         };
       },
@@ -2114,6 +2164,7 @@ function useSlideElementEditor(
           startTx: matrix.m41 || 0,
           startTy: matrix.m42 || 0,
           startSize: parseFloat(computed.fontSize || "0") || 16,
+          startWidth: el.offsetWidth,
           scale,
           moved: false,
           groupStarts,
@@ -2259,7 +2310,73 @@ function useSlideElementEditor(
     };
   }
 
-  return { editableProps, dragHandleProps };
+  // Width-resize handle props — lower-left corner handle that changes element width
+  function widthResizeHandleProps(key: string): React.HTMLAttributes<HTMLElement> {
+    if (!editMode || !onSlideChange || !dragMode) return {};
+    const currentStyle = getSlideElementStyle(slide, key);
+    if (currentStyle?.locked) return {};
+
+    return {
+      onPointerDown: (e) => {
+        if (slide.positioningMode !== "absolute") return;
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const handle = e.currentTarget as HTMLElement;
+        const el = handle.closest<HTMLElement>("[data-hs-draggable]");
+        if (!el) return;
+        const slideEl = el.closest(".hero-slide") as HTMLElement | null;
+        const scale = slideEl ? slideEl.getBoundingClientRect().width / slideEl.offsetWidth || 1 : 1;
+        handle.setPointerCapture(e.pointerId);
+        el.classList.add("hero-slide__editable--resizing");
+        dragRef.current = {
+          key, mode: "width-resize",
+          startX: e.clientX, startY: e.clientY,
+          startTx: 0, startTy: 0,
+          startSize: 0, startWidth: el.offsetWidth,
+          scale, moved: false,
+        };
+      },
+      onPointerMove: (e) => {
+        const d = dragRef.current;
+        if (!d || d.key !== key || d.mode !== "width-resize") return;
+        e.stopPropagation();
+        const dx = (e.clientX - d.startX) / d.scale;
+        if (Math.abs(dx) > 2) d.moved = true;
+        if (!d.moved) return;
+        const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hs-draggable]");
+        if (!el) return;
+        el.style.width = `${Math.max(50, Math.round(d.startWidth + dx))}px`;
+      },
+      onPointerUp: (e) => {
+        const d = dragRef.current;
+        dragRef.current = null;
+        const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hs-draggable]");
+        if (!d || d.key !== key || d.mode !== "width-resize") {
+          if (el) { el.classList.remove("hero-slide__editable--resizing"); el.style.width = ""; }
+          return;
+        }
+        e.stopPropagation();
+        if (el) { el.classList.remove("hero-slide__editable--resizing"); el.style.width = ""; }
+        if (!d.moved) return;
+        const dx = Math.round((e.clientX - d.startX) / d.scale);
+        const newWidth = Math.max(50, d.startWidth + dx);
+        lastWidthResizeRef.current = { key, orig: d.startWidth, curr: newWidth };
+        onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, { width: `${newWidth}px` }));
+      },
+      onPointerCancel: (e) => {
+        const d = dragRef.current;
+        dragRef.current = null;
+        if (!d || d.key !== key || d.mode !== "width-resize") return;
+        const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hs-draggable]");
+        if (!el) return;
+        el.classList.remove("hero-slide__editable--resizing");
+        el.style.width = "";
+      },
+    };
+  }
+
+  return { editableProps, dragHandleProps, widthResizeHandleProps, lastWidthResizeRef };
 }
 
 function CopyStack({
@@ -2269,6 +2386,7 @@ function CopyStack({
   viewportProfile,
   editableProps,
   dragHandleProps,
+  widthResizeHandleProps,
   dragMode = true,
   onSlideChange,
 }: {
@@ -2278,6 +2396,7 @@ function CopyStack({
   viewportProfile?: HeroViewportProfileKey | null;
   editableProps: (key: string, className?: string) => React.HTMLAttributes<HTMLElement>;
   dragHandleProps: (key: string) => React.HTMLAttributes<HTMLElement>;
+  widthResizeHandleProps?: (key: string) => React.HTMLAttributes<HTMLElement>;
   dragMode?: boolean;
   onSlideChange?: (next: Slide) => void;
 }) {
@@ -2341,6 +2460,7 @@ function CopyStack({
             style={s}
             data-el={`slide-${slideIndex}-kicker`}
           >
+            {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("kicker")} />}
             <TipTapInline value={kicker} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, kicker: html })} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, kickerStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("kicker", es)} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("kicker", es)} />
           </div>
         );
@@ -2368,6 +2488,7 @@ function CopyStack({
               data-hs-draggable="title"
               style={titleStyle}
             >
+              {!isTitleLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("title")} />}
               <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)} shadowContent={renderRichText(title)}>
                 <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title", titleEs)} elementAlign={titleEs?.align} onElementTypoChange={makeTypoChange?.("title", titleEs)} />
               </OutlineStampText>
@@ -2382,6 +2503,7 @@ function CopyStack({
             style={titleStyle}
           >
             {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
+            {!isTitleLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("title")} />}
             <p className={titleClass} data-el={`slide-${slideIndex}-title`} style={textContentStyle(titleEs)}>
               <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title", titleEs)} elementAlign={titleEs?.align} onElementTypoChange={makeTypoChange?.("title", titleEs)} />
             </p>
@@ -2434,6 +2556,7 @@ function CopyStack({
             style={s}
             data-el={`slide-${slideIndex}-subtitle`}
           >
+            {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("subtitle")} />}
             <TipTapInline value={subtitle} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, subtitle: html })} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, subtitleStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("subtitle", es)} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("subtitle", es)} />
           </div>
         );
@@ -2459,6 +2582,7 @@ function CopyStack({
             style={s}
             data-el={`slide-${slideIndex}-body`}
           >
+            {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("body")} />}
             <TipTapInline value={body} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, body: html })} typoClass={typo} typoOptions={TYPO_PRESETS} showWordCount fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, bodyStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("body", es)} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("body", es)} />
           </div>
         );
@@ -2485,6 +2609,7 @@ function CopyStack({
             style={s}
             data-el={`slide-${slideIndex}-quote`}
           >
+            {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("quote")} />}
             <TipTapInline value={quote} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, quote: html })} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, quoteStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("quote", es)} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("quote", es)} />
           </div>
         );
@@ -2507,6 +2632,7 @@ function CopyStack({
           viewportProfile={viewportProfile}
           editableProps={editableProps}
           dragHandleProps={dragHandleProps}
+          widthResizeHandleProps={widthResizeHandleProps}
           dragMode={dragMode}
           slide={slide}
           onSlideChange={onSlideChange}
@@ -2532,6 +2658,7 @@ function ExtraElement({
   viewportProfile,
   editableProps,
   dragHandleProps,
+  widthResizeHandleProps,
   dragMode = true,
   slide,
   onSlideChange,
@@ -2542,6 +2669,7 @@ function ExtraElement({
   viewportProfile?: HeroViewportProfileKey | null;
   editableProps?: (key: string, className?: string) => React.HTMLAttributes<HTMLElement>;
   dragHandleProps?: (key: string) => React.HTMLAttributes<HTMLElement>;
+  widthResizeHandleProps?: (key: string) => React.HTMLAttributes<HTMLElement>;
   dragMode?: boolean;
   slide?: Slide;
   onSlideChange?: (next: Slide) => void;
@@ -2702,6 +2830,7 @@ function ExtraElement({
         data-el={slotId}
       >
         {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
+        {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps(extraKey)} />}
         <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} />
       </div>
     );

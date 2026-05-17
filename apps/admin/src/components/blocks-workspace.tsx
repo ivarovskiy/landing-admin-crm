@@ -42,6 +42,7 @@ import {
   MoreHorizontal,
   Move,
   Grid3X3,
+  ArrowLeftRight,
 } from "lucide-react";
 
 /* ================================================================
@@ -782,6 +783,18 @@ export function BlocksWorkspace({
             <TToolBtn label="Show guidelines" active={toolboxGuides} onClick={() => setToolboxGuides((v) => !v)}>
               <Grid3X3 className="h-4 w-4" />
               Guides
+            </TToolBtn>
+            <TToolBtn
+              label="Scale font proportionally to last width resize"
+              active={false}
+              onClick={() => {
+                try {
+                  iframeRef.current?.contentWindow?.postMessage({ type: "scale-font-to-width" }, "*");
+                } catch { /* cross-origin */ }
+              }}
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+              Scale
             </TToolBtn>
           </div>
 

@@ -66,10 +66,12 @@ export type ClassicGridSettings = {
   showVerticalCenter?: boolean; // render a bright center-vertical line
   showHorizontalCenter?: boolean; // render a bright center-horizontal line
   color?: string;               // optional CSS color for column/row lines
-  marginPercent?: number;       // outer horizontal margin as % of width (insets column grid)
+  marginPx?: number;            // outer horizontal margin in design-canvas px (1440 basis)
   showMarginLines?: boolean;    // draw outer margin edge lines
   linkCenterToAlign?: boolean;           // link vertical center line to an alignMode formula
   centerAlignMode?: "1" | "2" | "3" | "4"; // which alignMode offset to use for the center line
+  linkGapPx?: number;           // override gap (design px) for center line formula
+  linkOuterPaddingPx?: number;  // override outer padding (design px) for center line formula
 };
 
 /** One configurable guideline inside the stylistic overlay. */
