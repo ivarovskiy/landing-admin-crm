@@ -105,12 +105,13 @@ export function BlockEditPanel({
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       router.refresh();
+      onBlockReset?.(blockId);
     } catch (e: any) {
       setError(e?.message ?? "Save failed");
     } finally {
       setSaving(false);
     }
-  }, [blockId, draft, router]);
+  }, [blockId, draft, router, onBlockReset]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
