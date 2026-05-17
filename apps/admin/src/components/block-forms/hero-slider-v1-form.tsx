@@ -556,7 +556,12 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
                   onChange={(v) => setSg(["showTextCenterH"], v || undefined)}
                 />
                 <InspectorToggle
-                  label="🩵 Gap between media and text"
+                  label={(() => {
+                    const t = slides[0]?.template ?? "copy-left-image-right";
+                    return t === "image-left-copy-right"
+                      ? "🩵 Right alignment for text"
+                      : "🩵 Left alignment for text";
+                  })()}
                   checked={!!sg.showMediaGap}
                   onChange={(v) => setSg(["showMediaGap"], v || undefined)}
                 />
