@@ -58,6 +58,9 @@ export function TextBlockV1({
     ? (field: keyof TextBlockV1Data, value: unknown) => onChange({ ...source, [field]: value })
     : null;
 
+  const hasContent = !!(d?.kicker || d?.heading || d?.body || d?.cta?.label);
+  if (!editMode && !hasContent) return null;
+
   const sectionStyle = {
     ...(d?.paddingTop ? { paddingTop: d.paddingTop } : {}),
     ...(d?.paddingBottom ? { paddingBottom: d.paddingBottom } : {}),
