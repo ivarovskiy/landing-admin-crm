@@ -178,11 +178,13 @@ export function BlocksWorkspace({
 
   // Element selection (for visual editor ↔ preview sync)
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-  const [externalDraftUpdate, setExternalDraftUpdate] = useState<{
-    blockId: string;
-    data: any;
-    version: number;
-  } | null>(null);
+
+  // Pending TipTap changes per block — keyed by blockId.
+  // Each entry is the latest un-saved data from live-block-change postMessage.
+  const [pendingDrafts, setPendingDrafts] = useState<Record<string, { data: any; version: number }>>({});
+
+  // Ref for activeId so the message handler always reads the current value (avoids stale closure).
+  const activeIdRef = useRef("");
 
   // Preview mode — hides all panels, toolbar; canvas only
   const [previewMode, setPreviewMode] = useState(false);
@@ -303,8 +305,9 @@ export function BlocksWorkspace({
   const artboardX = canvasWidth > 0 ? Math.round((canvasWidth - displayWidth) / 2) + panX : panX;
   const artboardY = CANVAS_PADDING + panY;
 
-  // Keep scaleRef current for stale-closure-free postMessage handlers
+  // Keep refs current for stale-closure-free postMessage handlers
   scaleRef.current = scale;
+  activeIdRef.current = activeId;
 
   /* ---------- effects ---------- */
 
@@ -354,11 +357,17 @@ export function BlocksWorkspace({
       }
 
       if (type === "live-block-change" && blockId && e.data?.data && sorted.some((b) => b.id === blockId)) {
-        setExternalDraftUpdate({
-          blockId,
-          data: e.data.data,
-          version: Date.now(),
-        });
+        const changeData = e.data.data;
+        setPendingDrafts((prev) => ({
+          ...prev,
+          [blockId]: { data: changeData, version: Date.now() },
+        }));
+        // Outside text-edit mode: auto-switch admin panel to the block being edited
+        // so the Save bar appears immediately without manual navigation.
+        if (!toolboxText && blockId !== activeIdRef.current) {
+          setActiveId(blockId);
+          setSelectedElementId(null);
+        }
       }
 
       // Navigate canvas to show the block: move artboard so block sits near top
@@ -989,6 +998,7 @@ export function BlocksWorkspace({
                     isFirst={idx === 0}
                     isLast={idx === filtered.length - 1}
                     viewportMode={viewportMode}
+                    isDirty={!!pendingDrafts[b.id]}
                     isDragging={dragId === b.id}
                     isDropTarget={dropIdx === idx && dragId !== b.id}
                     onSelect={() => { setActiveId(b.id); setSelectedElementId(null); }}
@@ -1170,7 +1180,11 @@ export function BlocksWorkspace({
                 viewMode={viewMode}
                 allPages={allPages}
                 externalSelectedElementId={selectedElementId}
-                externalDraftUpdate={externalDraftUpdate}
+                externalDraftUpdate={
+                  pendingDrafts[active.id]
+                    ? { blockId: active.id, ...pendingDrafts[active.id] }
+                    : null
+                }
                 onElementSelect={handleElementSelect}
                 onDraftChange={(blockId, data) => {
                   if (blockId === activeId) setActiveDraftOptions(data?.options ?? {});
@@ -1415,6 +1429,7 @@ function LayerItem({
   isLast,
   viewportMode,
   dimmed,
+  isDirty,
   isDragging,
   isDropTarget,
   onSelect,
@@ -1432,6 +1447,7 @@ function LayerItem({
   isLast: boolean;
   viewportMode: ViewportMode;
   dimmed?: boolean;
+  isDirty?: boolean;
   isDragging?: boolean;
   isDropTarget?: boolean;
   onSelect: () => void;
@@ -1488,13 +1504,18 @@ function LayerItem({
           {blockIcon(block.type)}
         </span>
 
-        <span
-          className={[
-            "flex-1 text-xs truncate",
-            isActive ? "font-semibold text-foreground" : "text-foreground/80",
-          ].join(" ")}
-        >
-          {label}
+        <span className="flex-1 flex items-center gap-1.5 min-w-0">
+          <span
+            className={[
+              "text-xs truncate",
+              isActive ? "font-semibold text-foreground" : "text-foreground/80",
+            ].join(" ")}
+          >
+            {label}
+          </span>
+          {isDirty && (
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" title="Unsaved changes" />
+          )}
         </span>
 
         {/* Visibility dots */}
