@@ -352,6 +352,7 @@ export function BlocksWorkspace({
 
       if (type === "block-clicked" && blockId && sorted.some((b) => b.id === blockId)) {
         if (previewMode) return; // preview mode — ignore selection, don't disturb iframe scroll
+        if (toolboxText) return; // text edit mode — don't switch active block or trigger scroll
         setActiveId(blockId);
         setSelectedElementId(null);
         canvasRef.current?.focus({ preventScroll: true });
@@ -362,6 +363,7 @@ export function BlocksWorkspace({
       }
 
       if (type === "element-clicked" && blockId && elementId && sorted.some((b) => b.id === blockId)) {
+        if (toolboxText) return; // text edit mode — don't switch active block or trigger scroll
         setActiveId(blockId);
         setSelectedElementId(elementId);
       }
@@ -383,7 +385,7 @@ export function BlocksWorkspace({
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [previewMode, sorted]);
+  }, [previewMode, sorted, toolboxText]);
 
   // H / V / Space tool shortcuts
   useEffect(() => {
