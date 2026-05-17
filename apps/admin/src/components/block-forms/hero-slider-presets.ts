@@ -99,7 +99,7 @@ export type StyleGuidelinesConfig = {
   showTextCenterV?: boolean;        // vertical center of full text area (legacy simple mode)
   showTextCenterH?: boolean;        // horizontal center of text area (horizontal line)
   showMediaGap?: boolean;           // vertical line at text column inner edge (gap boundary)
-  showMediaEdgeGuides?: boolean;    // 6 short tick lines around each media face
+  showMediaEdgeGuides?: boolean;    // inner edge: vertical line; outer edge: vertical + horizontal lines
   showColumnCenter?: boolean;       // single DOM-measured text-zone center line (modes 1–4)
   columnCenterMode?: 1 | 2 | 3 | 4; // which zone pair to bisect (default 1)
   columnCenterOuterMarginPx?: number; // outer text margin in layout px (default 13)

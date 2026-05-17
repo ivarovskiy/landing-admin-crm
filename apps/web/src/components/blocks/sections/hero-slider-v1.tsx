@@ -155,7 +155,7 @@ type StyleGuidelinesConfig = {
   showTextCenterV?: boolean;
   showTextCenterH?: boolean;
   showMediaGap?: boolean;             // vertical line at text column inner edge (gap boundary)
-  showMediaEdgeGuides?: boolean;      // 6 short tick lines around each media face
+  showMediaEdgeGuides?: boolean;      // inner edge: vertical line; outer edge: vertical + horizontal lines
   showColumnCenter?: boolean;         // single DOM-measured text-zone center line (modes 1–4)
   columnCenterMode?: 1 | 2 | 3 | 4;  // which zone pair to bisect (default 1)
   columnCenterOuterMarginPx?: number; // outer text margin in layout px (default 13)
@@ -1385,7 +1385,6 @@ function HeroSlide({
   const compGuideColor = compositionGuideColor || "rgba(255, 6, 102, 0.8)";
   const LAYOUT_GUIDE_COLOR = "#FF0066";
   const MEDIA_EDGE_COLOR = "rgba(251,191,36,0.85)"; // amber
-  const MEDIA_EDGE_TICK = 24; // px — length of each short tick
   const guides = hasMediaGuides || hasMediaEdgeGuidesActive || hasElementGuides || hasCompGuides || hasLayoutGuides ? (
     <div className="hero-slide__guides" aria-hidden="true">
       {hasMediaGuides ? (
@@ -1396,25 +1395,22 @@ function HeroSlide({
           <div className="hero-slide__guide hero-slide__guide--horizontal" style={{ top: `${mediaRect!.bottom}px` }} />
         </>
       ) : null}
-      {/* Media edge tick guides — 6 short ticks around each media face */}
+      {/* Media edge guides — inner edge: vertical line only; outer edge: vertical + horizontal */}
       {hasMediaEdgeGuidesActive ? (() => {
         const mr = mediaRect!;
-        const medianX = (mr.left + mr.right) / 2;
         const S: React.CSSProperties = { position: "absolute", background: MEDIA_EDGE_COLOR, pointerEvents: "none" };
+        const innerX = imgSide === "right" ? mr.left : mr.right;
+        const outerX = imgSide === "right" ? mr.right : mr.left;
         return (
           <>
-            {/* Top-left corner — going left */}
-            <div style={{ ...S, top: mr.top, left: mr.left - MEDIA_EDGE_TICK, width: MEDIA_EDGE_TICK, height: 1 }} />
-            {/* Bottom-left corner — going left */}
-            <div style={{ ...S, top: mr.bottom, left: mr.left - MEDIA_EDGE_TICK, width: MEDIA_EDGE_TICK, height: 1 }} />
-            {/* Top-right corner — going right */}
-            <div style={{ ...S, top: mr.top, left: mr.right, width: MEDIA_EDGE_TICK, height: 1 }} />
-            {/* Bottom-right corner — going right */}
-            <div style={{ ...S, top: mr.bottom, left: mr.right, width: MEDIA_EDGE_TICK, height: 1 }} />
-            {/* Top-center — going up */}
-            <div style={{ ...S, left: medianX, top: mr.top - MEDIA_EDGE_TICK, width: 1, height: MEDIA_EDGE_TICK }} />
-            {/* Bottom-center — going down */}
-            <div style={{ ...S, left: medianX, top: mr.bottom, width: 1, height: MEDIA_EDGE_TICK }} />
+            {/* Inner edge — vertical line only (text column boundary) */}
+            <div style={{ ...S, top: 0, bottom: 0, left: innerX, width: 1 }} />
+            {/* Outer edge — vertical line */}
+            <div style={{ ...S, top: 0, bottom: 0, left: outerX, width: 1 }} />
+            {/* Outer edge — horizontal top line */}
+            <div style={{ ...S, top: mr.top, left: 0, right: 0, height: 1 }} />
+            {/* Outer edge — horizontal bottom line */}
+            <div style={{ ...S, top: mr.bottom, left: 0, right: 0, height: 1 }} />
           </>
         );
       })() : null}

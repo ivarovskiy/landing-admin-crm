@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { BlockFormProps } from "./index";
 import { arr, moveAt, removeAt, setAt } from "@/lib/array";
 import { updatePath } from "@/lib/update-path";
@@ -30,10 +30,12 @@ import {
   Eye,
   EyeOff,
   Grid,
+  GripVertical,
   Image,
   LayoutTemplate,
   Layers,
   Lock,
+  MoreHorizontal,
   Plus,
   ScissorsLineDashed,
   SlidersHorizontal,
@@ -559,7 +561,7 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
                   onChange={(v) => setSg(["showMediaGap"], v || undefined)}
                 />
                 <InspectorToggle
-                  label="🟡 Media edge ticks (6 short ticks around media)"
+                  label="🟡 Media edge guides (inner: vertical / outer: vertical + horizontal)"
                   checked={!!sg.showMediaEdgeGuides}
                   onChange={(v) => setSg(["showMediaEdgeGuides"], v || undefined)}
                 />
@@ -1283,6 +1285,8 @@ function TextElementsEditor({
 }) {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const dragIdxRef = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const extras = Array.isArray(s?.extras) ? s.extras : [];
 
@@ -1307,6 +1311,14 @@ function TextElementsEditor({
     const next = [...orderedKeys];
     const target = dir === "up" ? idx - 1 : idx + 1;
     [next[idx], next[target]] = [next[target], next[idx]];
+    onChange({ ...s, elementOrder: next });
+  };
+
+  const reorderElement = (fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx) return;
+    const next = [...orderedKeys];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
     onChange({ ...s, elementOrder: next });
   };
 
@@ -1454,6 +1466,15 @@ function TextElementsEditor({
           selectMode={selectMode}
           isSelected={selectedKeys.has(key)}
           onToggleSelect={() => toggleSelect(key)}
+          isDragOver={dragOverIdx === idx}
+          onDragStart={() => { dragIdxRef.current = idx; }}
+          onDragOver={() => setDragOverIdx(idx)}
+          onDrop={() => {
+            if (dragIdxRef.current !== null) reorderElement(dragIdxRef.current, idx);
+            dragIdxRef.current = null;
+            setDragOverIdx(null);
+          }}
+          onDragEnd={() => { dragIdxRef.current = null; setDragOverIdx(null); }}
         />
       ))}
 
@@ -1629,6 +1650,11 @@ function TextElementCard({
   selectMode = false,
   isSelected = false,
   onToggleSelect,
+  isDragOver = false,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: {
   elementKey: string;
   slide: Slide;
@@ -1644,13 +1670,29 @@ function TextElementCard({
   selectMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
+  isDragOver?: boolean;
+  onDragStart?: () => void;
+  onDragOver?: () => void;
+  onDrop?: () => void;
+  onDragEnd?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const extras = Array.isArray(s?.extras) ? s.extras : [];
   const extra = extras.find(e => e.id === elementKey);
   const isExtra = !!extra;
   const elementStyle = getSlideStyle(s, elementKey);
   const groupId = elementStyle?.groupId;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handle(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [menuOpen]);
 
   const updateExtra = (patch: Partial<SlideExtra>) =>
     onChange({ ...s, extras: extras.map(e => e.id === elementKey ? { ...e, ...patch } : e) });
@@ -1664,15 +1706,35 @@ function TextElementCard({
     : (FIXED_ELEMENT_LABELS[elementKey] ?? elementKey);
 
   return (
-    <div className={[
-      "rounded border",
-      isSelected ? "bg-primary/5 border-primary/30" : "bg-muted/5",
-      isHidden ? "opacity-50" : "",
-    ].join(" ")}>
+    <div
+      className={[
+        "rounded border transition-colors",
+        isSelected ? "bg-primary/5 border-primary/30" : "bg-muted/5",
+        isHidden ? "opacity-50" : "",
+        isDragOver ? "border-primary/60 bg-primary/5" : "",
+      ].join(" ")}
+      draggable={!selectMode}
+      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart?.(); }}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; onDragOver?.(); }}
+      onDrop={(e) => { e.preventDefault(); onDrop?.(); }}
+      onDragEnd={onDragEnd}
+    >
       <div
-        className="flex items-center gap-1.5 px-2 py-1 cursor-pointer select-none min-h-[36px]"
+        className="flex items-center gap-1 px-1 py-1 cursor-pointer select-none min-h-[36px]"
         onClick={() => selectMode ? onToggleSelect?.() : setOpen(o => !o)}
       >
+        {/* Drag handle */}
+        {!selectMode && (
+          <div
+            className="flex-shrink-0 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing px-0.5"
+            onClick={e => e.stopPropagation()}
+            onMouseDown={e => e.stopPropagation()}
+          >
+            <GripVertical className="h-3.5 w-3.5" />
+          </div>
+        )}
+
+        {/* Checkbox (select mode) */}
         {selectMode && (
           <div className={[
             "flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center",
@@ -1681,6 +1743,8 @@ function TextElementCard({
             {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
           </div>
         )}
+
+        {/* Label */}
         <span className="text-[11px] font-semibold text-muted-foreground truncate flex-1">
           {!selectMode && (open ? "▾" : "▸")} {label}
           {groupId ? (
@@ -1689,62 +1753,77 @@ function TextElementCard({
             </span>
           ) : null}
         </span>
+
+        {/* 3-dot menu */}
         {!selectMode && (
-          <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
-            {canSplit && (
-              <button
-                type="button"
-                title="Split lines into independent elements"
-                onClick={() => onChange(splitTextElement(s, elementKey))}
-                className="flex items-center gap-0.5 text-[10px] text-primary hover:text-primary/80 p-0.5"
-              >
-                <ScissorsLineDashed className="h-3 w-3" />
-              </button>
-            )}
+          <div ref={menuRef} className="relative flex-shrink-0" onClick={e => e.stopPropagation()}>
             <button
               type="button"
-              onClick={() => onMove("up")}
-              disabled={index === 0}
-              className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
+              onClick={() => setMenuOpen(o => !o)}
+              className="flex items-center justify-center w-7 h-7 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
             >
-              <ChevronUp className="h-3 w-3" />
+              <MoreHorizontal className="h-4 w-4" />
             </button>
-            <button
-              type="button"
-              onClick={() => onMove("down")}
-              disabled={index === total - 1}
-              className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
-            >
-              <ChevronDown className="h-3 w-3" />
-            </button>
-            {onToggleHidden && (
-              <button
-                type="button"
-                title={isHidden ? "Show element" : "Hide element"}
-                onClick={() => onToggleHidden()}
-                className={isHidden ? "text-primary p-0.5" : "text-muted-foreground hover:text-foreground p-0.5"}
-              >
-                {isHidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-              </button>
-            )}
-            {onDuplicate && (
-              <button
-                type="button"
-                title="Duplicate element"
-                onClick={() => onDuplicate()}
-                className="text-muted-foreground hover:text-foreground p-0.5"
-              >
-                <Copy className="h-3 w-3" />
-              </button>
-            )}
-            {onRemove && (
-              <button
-                type="button"
-                onClick={onRemove}
-                className="text-muted-foreground hover:text-red-500 p-0.5"
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 min-w-[160px] rounded-md border border-border bg-popover shadow-md py-1 text-[12px]">
+                <button
+                  type="button"
+                  disabled={index === 0}
+                  onClick={() => { onMove("up"); setMenuOpen(false); }}
+                  className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronUp className="h-3.5 w-3.5" /> Move up
+                </button>
+                <button
+                  type="button"
+                  disabled={index === total - 1}
+                  onClick={() => { onMove("down"); setMenuOpen(false); }}
+                  className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronDown className="h-3.5 w-3.5" /> Move down
+                </button>
+                <div className="my-1 border-t border-border/50" />
+                {onToggleHidden && (
+                  <button
+                    type="button"
+                    onClick={() => { onToggleHidden(); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-muted"
+                  >
+                    {isHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                    {isHidden ? "Show" : "Hide"}
+                  </button>
+                )}
+                {onDuplicate && (
+                  <button
+                    type="button"
+                    onClick={() => { onDuplicate(); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-muted"
+                  >
+                    <Copy className="h-3.5 w-3.5" /> Duplicate
+                  </button>
+                )}
+                {canSplit && (
+                  <button
+                    type="button"
+                    onClick={() => { onChange(splitTextElement(s, elementKey)); setMenuOpen(false); }}
+                    className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-muted text-primary"
+                  >
+                    <ScissorsLineDashed className="h-3.5 w-3.5" /> Split lines
+                  </button>
+                )}
+                {onRemove && (
+                  <>
+                    <div className="my-1 border-t border-border/50" />
+                    <button
+                      type="button"
+                      onClick={() => { onRemove(); setMenuOpen(false); }}
+                      className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-red-50 text-red-500"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Delete
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </div>
         )}

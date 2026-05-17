@@ -443,6 +443,9 @@ export function TipTapInline({
   const initialTypoRef = useRef(typoClass);
   // Track external typoClass changes to update marks when inspector changes the block typo
   const prevTypoClassRef = useRef(typoClass);
+  // Stable ref so effects can read the current value without being in deps
+  const onElementTypoChangeRef = useRef(onElementTypoChange);
+  onElementTypoChangeRef.current = onElementTypoChange;
 
   const isEditable = !!onChange;
 
@@ -510,16 +513,32 @@ export function TipTapInline({
     immediatelyRender: false,
   });
 
-  // Migration: on editor mount, ensure all text uses the element-level typoClass.
-  // Fixes stale inline marks (e.g. marks left from a previous typo class) and
-  // migrates old content that has no marks yet. Suppressed via isSettingContent
-  // so onChange doesn't fire (this is a display fix, not a content edit).
+  // Migration: on editor mount, ensure typo marks are consistent with the current mode.
+  // - External typo mode (onElementTypoChange provided): strip all inline marks so the
+  //   outer element's CSS class is the sole source of styling (prevents CSS collision).
+  // - Internal typo mode: apply element-level typoClass mark to all text if any mismatch.
   useEffect(() => {
-    if (!editor || !initialTypoRef.current) return;
+    if (!editor) return;
     const markType = editor.schema.marks.typoClass;
     if (!markType) return;
     const size = editor.state.doc.content.size;
     if (size <= 0) return;
+
+    if (onElementTypoChangeRef.current) {
+      // External typo mode — strip any residual inline marks and persist clean HTML.
+      let hasMarks = false;
+      editor.state.doc.descendants((node) => {
+        if (!hasMarks && node.isText && node.marks.some((m) => m.type.name === "typoClass")) hasMarks = true;
+      });
+      if (!hasMarks) return;
+      const { tr } = editor.state;
+      tr.removeMark(0, size, markType);
+      editor.view.dispatch(tr);
+      // Allow onChange to fire so stored HTML is persisted without inline marks
+      return;
+    }
+
+    if (!initialTypoRef.current) return;
     // Check if every text node already has the correct mark — skip if already in sync
     let mismatch = false;
     editor.state.doc.descendants((node) => {
@@ -537,7 +556,8 @@ export function TipTapInline({
   }, [editor]); // intentionally [editor] only — runs once on mount
 
   // When the external typoClass prop changes (e.g. inspector changes the block typo),
-  // replace all typo marks in the document and fire onChange so the stored HTML is updated.
+  // strip all inline marks so the outer element's class drives the style (external mode),
+  // or replace all marks (internal mode). onChange fires so stored HTML is updated.
   useEffect(() => {
     if (!editor) return;
     if (typoClass === prevTypoClassRef.current) return;
@@ -548,9 +568,10 @@ export function TipTapInline({
     if (size <= 0) return;
     const { tr } = editor.state;
     tr.removeMark(0, size, markType);
-    if (typoClass) tr.addMark(0, size, markType.create({ class: typoClass }));
+    // Only re-add marks in internal mode; external mode uses outer element class
+    if (typoClass && !onElementTypoChangeRef.current) tr.addMark(0, size, markType.create({ class: typoClass }));
     editor.view.dispatch(tr);
-    // onChange fires via onUpdate so stored HTML is updated with new marks
+    // onChange fires via onUpdate so stored HTML is updated
   }, [editor, typoClass]);
 
   // Computes and sets toolbar state from current editor selection.

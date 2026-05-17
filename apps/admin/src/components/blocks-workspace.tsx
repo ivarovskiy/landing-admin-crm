@@ -363,9 +363,9 @@ export function BlocksWorkspace({
           [blockId]: { data: changeData, version: Date.now() },
         }));
         // Auto-switch admin panel to the block being edited so the Save bar appears.
+        // Don't clear selectedElementId — Scale button needs it.
         if (blockId !== activeIdRef.current) {
           setActiveId(blockId);
-          setSelectedElementId(null);
         }
       }
 
