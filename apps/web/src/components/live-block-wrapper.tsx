@@ -3,6 +3,9 @@
 import { blockRegistry } from "./blocks/registry";
 import { useLiveBlock, useLivePreviewEdit } from "./live-preview-provider";
 
+// Blocks that never receive inline editMode — no TipTap, no editable content.
+const TEXT_NOT_EDITABLE = new Set(["header:v1", "footer:v1"]);
+
 export function LiveBlockWrapper({
   blockId,
   blockKey,
@@ -18,12 +21,14 @@ export function LiveBlockWrapper({
   if (!Comp) return null;
 
   // Hero slider manages toolbox (text/drag/guides) internally — always gets editMode from context.
-  // All other blocks: editMode is gated by the toolbox Text button so text editing is always
-  // intentional and works across every block type on the page simultaneously.
+  // Header/footer have no editable text content — always false.
+  // All other blocks: gated by the toolbox Text button.
   const effectiveEditMode =
     blockKey === "hero:slider-v1"
       ? editMode
-      : toolboxState.text;
+      : TEXT_NOT_EDITABLE.has(blockKey)
+        ? false
+        : toolboxState.text;
 
   return (
     <Comp

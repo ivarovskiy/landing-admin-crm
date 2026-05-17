@@ -1,4 +1,6 @@
 import type React from "react";
+import { TipTapInline, renderRichText } from "@/components/rich-text";
+import { TYPO_PRESETS } from "@/lib/typo-presets";
 import { Container, OutlineStampText, STAMP_HERO_TITLE } from "@/components/landing/ui";
 import ParentPortalBtn from "@/assets/buttons/parent-portal.svg";
 import StudioDirectorBtn from "@/assets/buttons/studio-director.svg";
@@ -43,19 +45,39 @@ function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
   return Object.keys(s).length ? s : undefined;
 }
 
-export function DocHeaderV1({ data }: { data: any }) {
+export function DocHeaderV1({
+  data,
+  editMode,
+  onChange,
+}: {
+  data: any;
+  editMode?: boolean;
+  onChange?: (next: unknown) => void;
+}) {
   const d = data as DocHeaderV1Data;
   const hasCta = !!d?.cta?.href;
+
+  const update = editMode && onChange
+    ? (field: keyof DocHeaderV1Data, value: unknown) => onChange({ ...d, [field]: value })
+    : null;
 
   return (
     <section className="doc-header">
       <Container>
-        {d?.kicker ? (
+        {(d?.kicker || update) ? (
           <p
-            className={["doc-header__kicker", d.kickerStyle?.typo].filter(Boolean).join(" ")}
-            style={elStyle(d.kickerStyle)}
+            className={["doc-header__kicker", d?.kickerStyle?.typo].filter(Boolean).join(" ")}
+            style={elStyle(d?.kickerStyle)}
           >
-            {d.kicker}
+            {update ? (
+              <TipTapInline
+                value={d?.kicker ?? ""}
+                onChange={(html) => update("kicker", html)}
+                multiline={false}
+                typoClass={d?.kickerStyle?.typo}
+                typoOptions={TYPO_PRESETS}
+              />
+            ) : d.kicker}
           </p>
         ) : null}
 
@@ -65,25 +87,40 @@ export function DocHeaderV1({ data }: { data: any }) {
           style={d?.cta?.gap ? ({ "--doc-header-gap": d.cta.gap } as React.CSSProperties) : undefined}
         >
           <div className="doc-header__title-col">
-            {d?.title ? (
+            {(d?.title || update) ? (
               <OutlineStampText
                 as="h1"
                 stamp={STAMP_HERO_TITLE}
-                className={["doc-header__title", d.titleStyle?.typo].filter(Boolean).join(" ")}
-                style={elStyle(d.titleStyle)}
+                className={["doc-header__title", d?.titleStyle?.typo].filter(Boolean).join(" ")}
+                style={elStyle(d?.titleStyle)}
+                shadowContent={update ? renderRichText(d?.title ?? "") : undefined}
               >
-                {d.title}
+                {update ? (
+                  <TipTapInline
+                    value={d?.title ?? ""}
+                    onChange={(html) => update("title", html)}
+                    multiline={false}
+                    typoClass={d?.titleStyle?.typo}
+                    typoOptions={TYPO_PRESETS}
+                  />
+                ) : d.title}
               </OutlineStampText>
             ) : null}
 
-            {d?.subtitle ? (
+            {(d?.subtitle || update) ? (
               <p
-                className={["doc-header__subtitle", d.subtitleStyle?.typo]
-                  .filter(Boolean)
-                  .join(" ")}
-                style={elStyle(d.subtitleStyle)}
+                className={["doc-header__subtitle", d?.subtitleStyle?.typo].filter(Boolean).join(" ")}
+                style={elStyle(d?.subtitleStyle)}
               >
-                {d.subtitle}
+                {update ? (
+                  <TipTapInline
+                    value={d?.subtitle ?? ""}
+                    onChange={(html) => update("subtitle", html)}
+                    multiline={false}
+                    typoClass={d?.subtitleStyle?.typo}
+                    typoOptions={TYPO_PRESETS}
+                  />
+                ) : d.subtitle}
               </p>
             ) : null}
           </div>

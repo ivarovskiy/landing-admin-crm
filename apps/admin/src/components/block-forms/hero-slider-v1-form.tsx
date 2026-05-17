@@ -384,11 +384,6 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
                 </InspectorField>
               </div>
               <InspectorToggle
-                label="Show column centers (2 lines from media)"
-                checked={!!(canvasGuidelines.classicGrid?.showVerticalCenter)}
-                onChange={(v) => set(["canvasGuidelines", "classicGrid", "showVerticalCenter"], v || undefined)}
-              />
-              <InspectorToggle
                 label="Show horizontal center line"
                 checked={!!(canvasGuidelines.classicGrid?.showHorizontalCenter)}
                 onChange={(v) => set(["canvasGuidelines", "classicGrid", "showHorizontalCenter"], v || undefined)}
@@ -564,10 +559,38 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
                   onChange={(v) => setSg(["showMediaGap"], v || undefined)}
                 />
                 <InspectorToggle
-                  label="🟡 Media edge guides (ticks to boundary)"
+                  label="🟡 Media edge ticks (6 short ticks around media)"
                   checked={!!sg.showMediaEdgeGuides}
                   onChange={(v) => setSg(["showMediaEdgeGuides"], v || undefined)}
                 />
+                <InspectorToggle
+                  label="🟢 Column center line (text zone)"
+                  checked={!!sg.showColumnCenter}
+                  onChange={(v) => setSg(["showColumnCenter"], v || undefined)}
+                />
+                {!!sg.showColumnCenter && (
+                  <>
+                    <InspectorField label="Center mode" hint="Which zone to bisect: 1=slide↔media, 2=margin↔media, 3=margin↔gap, 4=slide↔gap">
+                      <select
+                        className="w-full h-7 rounded border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                        value={sg.columnCenterMode ?? 1}
+                        onChange={(e) => setSg(["columnCenterMode"], Number(e.target.value) as 1 | 2 | 3 | 4)}
+                      >
+                        <option value={1}>1 — slide edge ↔ media (no gap)</option>
+                        <option value={2}>2 — outer margin ↔ media (no gap)</option>
+                        <option value={3}>3 — outer margin ↔ gap boundary</option>
+                        <option value={4}>4 — slide edge ↔ gap boundary</option>
+                      </select>
+                    </InspectorField>
+                    <InspectorField label="Outer margin (layout px)" hint="Outer text zone margin in layout px (default 13)">
+                      <InspectorNumber
+                        value={sg.columnCenterOuterMarginPx ?? undefined}
+                        onChange={(v) => setSg(["columnCenterOuterMarginPx"], v ?? undefined)}
+                        placeholder="13"
+                      />
+                    </InspectorField>
+                  </>
+                )}
               </>
             );
           })()}

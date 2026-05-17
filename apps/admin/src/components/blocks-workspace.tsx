@@ -212,10 +212,6 @@ export function BlocksWorkspace({
   const [showMore, setShowMore] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
-  // Tracks whether the last activeId change came from a preview click (vs admin panel navigation).
-  // When true, scroll-to-block postMessage is suppressed so the preview doesn't jump.
-  const activeFromPreviewRef = useRef(false);
-
   // Canvas tool
   const [tool, setTool] = useState<"pointer" | "hand">("pointer");
   const [spaceHeld, setSpaceHeld] = useState(false);
@@ -334,27 +330,6 @@ export function BlocksWorkspace({
   // Reset draft options when active block changes
   useEffect(() => { setActiveDraftOptions(null); }, [activeId]);
 
-  // Scroll to active block in preview — only when selection comes from admin navigation,
-  // not from clicking inside the preview (which would cause an unwanted jump).
-  useEffect(() => {
-    if (!activeId || !iframeRef.current) return;
-    if (activeFromPreviewRef.current) {
-      activeFromPreviewRef.current = false;
-      return;
-    }
-    const timer = setTimeout(() => {
-      try {
-        iframeRef.current?.contentWindow?.postMessage(
-          { type: "scroll-to-block", blockId: activeId },
-          "*",
-        );
-      } catch {
-        /* cross-origin */
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [activeId, refreshKey]);
-
   // Listen for block-clicked / element-clicked / block-offset messages from preview iframe
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
@@ -363,7 +338,6 @@ export function BlocksWorkspace({
       if (type === "block-clicked" && blockId && sorted.some((b) => b.id === blockId)) {
         if (previewMode) return; // preview mode — ignore selection, don't disturb iframe scroll
         if (toolboxText) return; // text edit mode — don't switch active block or trigger scroll
-        activeFromPreviewRef.current = true; // suppress scroll-to-block for this selection
         setActiveId(blockId);
         setSelectedElementId(null);
         canvasRef.current?.focus({ preventScroll: true });

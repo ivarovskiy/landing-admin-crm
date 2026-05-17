@@ -1,3 +1,5 @@
+import { TipTapInline, renderRichText } from "@/components/rich-text";
+import { TYPO_PRESETS } from "@/lib/typo-presets";
 import { Container, OutlineStampText } from "@/components/landing/ui";
 import { MediaImage } from "@/components/media-image";
 import { cn } from "@/lib/cn";
@@ -63,9 +65,21 @@ function ScrapbookTile({
   );
 }
 
-export function ScrapbookV1({ data }: { data: any }) {
+export function ScrapbookV1({
+  data,
+  editMode,
+  onChange,
+}: {
+  data: any;
+  editMode?: boolean;
+  onChange?: (next: unknown) => void;
+}) {
   const title = data?.title ?? "SCRAPBOOK";
   const items = normalizeItems(data?.items);
+
+  const update = editMode && onChange
+    ? (field: string, value: unknown) => onChange({ ...data, [field]: value })
+    : null;
 
   return (
     <section className="scrapbook">
@@ -75,13 +89,28 @@ export function ScrapbookV1({ data }: { data: any }) {
             as="h2"
             className="scrapbook__title"
             data-el="title"
+            shadowContent={update ? renderRichText(title) : undefined}
           >
-            {title}
+            {update ? (
+              <TipTapInline
+                value={title}
+                onChange={(html) => update("title", html)}
+                multiline={false}
+                typoOptions={TYPO_PRESETS}
+              />
+            ) : title}
           </OutlineStampText>
 
-          {data?.subtitle && data?.showSubtitle !== false ? (
+          {(data?.subtitle && data?.showSubtitle !== false) || update ? (
             <p className="scrapbook__subtitle" data-el="subtitle">
-              {data.subtitle}
+              {update ? (
+                <TipTapInline
+                  value={data?.subtitle ?? ""}
+                  onChange={(html) => update("subtitle", html)}
+                  multiline={false}
+                  typoOptions={TYPO_PRESETS}
+                />
+              ) : data.subtitle}
             </p>
           ) : null}
         </div>

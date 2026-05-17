@@ -96,10 +96,13 @@ export type StyleGuidelinesConfig = {
   showItalicLimit?: boolean;        // group 5: italic text lower-limit horizontal line
   italicLimitOffset?: number;       // px from bottom (design-canvas px, 574 basis); falls back to canvasGuidelines.italicBaselineOffset
   extras?: StyleExtraGuideline[];   // group 6: up to 4–6 additional named guidelines
-  showTextCenterV?: boolean;        // vertical center of text area (vertical line)
+  showTextCenterV?: boolean;        // vertical center of full text area (legacy simple mode)
   showTextCenterH?: boolean;        // horizontal center of text area (horizontal line)
   showMediaGap?: boolean;           // vertical line at text column inner edge (gap boundary)
-  showMediaEdgeGuides?: boolean;    // tick lines from each media face toward slide boundaries
+  showMediaEdgeGuides?: boolean;    // 6 short tick lines around each media face
+  showColumnCenter?: boolean;       // single DOM-measured text-zone center line (modes 1–4)
+  columnCenterMode?: 1 | 2 | 3 | 4; // which zone pair to bisect (default 1)
+  columnCenterOuterMarginPx?: number; // outer text margin in layout px (default 13)
 };
 
 /** Canvas guideline offsets stored at block level (shared across all slides) */

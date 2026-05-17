@@ -1,3 +1,5 @@
+import { TipTapInline, renderRichText } from "@/components/rich-text";
+import { TYPO_PRESETS } from "@/lib/typo-presets";
 import { Container, Kicker, OutlineStampText, STAMP_SECTION_TITLE } from "@/components/landing/ui";
 import { Icon } from "@/components/landing/icons";
 import { normalizeTel } from "@/lib/section-utils";
@@ -5,7 +7,15 @@ import Image from "next/image";
 
 type Social = { icon?: "instagram" | "facebook"; href?: string; label?: string };
 
-export function StudioAddressV1({ data }: { data: any }) {
+export function StudioAddressV1({
+  data,
+  editMode,
+  onChange,
+}: {
+  data: any;
+  editMode?: boolean;
+  onChange?: (next: unknown) => void;
+}) {
   const title = data?.title ?? "STUDIO ADDRESS";
 
   const map = data?.map ?? {};
@@ -26,6 +36,15 @@ export function StudioAddressV1({ data }: { data: any }) {
   const hasImage = typeof map?.imageSrc === "string" && map.imageSrc.length > 0;
   const mapLink = typeof map?.linkUrl === "string" && map.linkUrl.length > 0 ? map.linkUrl : undefined;
 
+  const update = editMode && onChange
+    ? (field: string, value: unknown) => onChange({ ...data, [field]: value })
+    : null;
+
+  const updateLine = editMode && onChange
+    ? (arr: string[], key: string, idx: number, value: string) =>
+        onChange({ ...data, [key]: arr.map((l, i) => i === idx ? value : l) })
+    : null;
+
   return (
     <section className="studio-address-section">
       <Container>
@@ -34,13 +53,28 @@ export function StudioAddressV1({ data }: { data: any }) {
             className="studio-address__title"
             data-el="title"
             stamp={STAMP_SECTION_TITLE}
+            shadowContent={update ? renderRichText(title) : undefined}
           >
-            {title}
+            {update ? (
+              <TipTapInline
+                value={title}
+                onChange={(html) => update("title", html)}
+                multiline={false}
+                typoOptions={TYPO_PRESETS}
+              />
+            ) : title}
           </OutlineStampText>
 
-          {data?.subtitle && data?.showSubtitle !== false ? (
+          {(data?.subtitle && data?.showSubtitle !== false) || update ? (
             <p className="studio-address__subtitle" data-el="subtitle">
-              {data.subtitle}
+              {update ? (
+                <TipTapInline
+                  value={data?.subtitle ?? ""}
+                  onChange={(html) => update("subtitle", html)}
+                  multiline={false}
+                  typoOptions={TYPO_PRESETS}
+                />
+              ) : data.subtitle}
             </p>
           ) : null}
         </div>
@@ -89,7 +123,16 @@ export function StudioAddressV1({ data }: { data: any }) {
             {addressLines.length ? (
               <div className="studio-address__address">
                 {addressLines.map((l, i) => (
-                  <Kicker key={i} data-el={`address-${i}`}>{l}</Kicker>
+                  <Kicker key={i} data-el={`address-${i}`}>
+                    {updateLine ? (
+                      <TipTapInline
+                        value={l}
+                        onChange={(html) => updateLine(addressLines, "addressLines", i, html)}
+                        multiline={false}
+                        typoOptions={TYPO_PRESETS}
+                      />
+                    ) : l}
+                  </Kicker>
                 ))}
               </div>
             ) : (
@@ -121,7 +164,16 @@ export function StudioAddressV1({ data }: { data: any }) {
             {notes.length ? (
               <div className="studio-address__notes">
                 {notes.map((l, i) => (
-                  <Kicker key={i} data-el={`note-${i}`}>{l}</Kicker>
+                  <Kicker key={i} data-el={`note-${i}`}>
+                    {updateLine ? (
+                      <TipTapInline
+                        value={l}
+                        onChange={(html) => updateLine(notes, "notes", i, html)}
+                        multiline={false}
+                        typoOptions={TYPO_PRESETS}
+                      />
+                    ) : l}
+                  </Kicker>
                 ))}
               </div>
             ) : (
@@ -129,7 +181,7 @@ export function StudioAddressV1({ data }: { data: any }) {
             )}
           </div>
 
-          {/* Phone / Email centered below */}
+          {/* Phone / Email centered below — not editable (functional fields) */}
           <div className="studio-address__contacts">
             {phone && phoneHref ? (
               <a href={phoneHref} className="studio-address__contact-link" data-el="phone">

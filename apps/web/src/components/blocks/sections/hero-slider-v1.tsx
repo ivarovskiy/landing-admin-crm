@@ -7,6 +7,7 @@ import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { TipTapInline, renderRichText } from "@/components/rich-text";
 import { TYPO_PRESETS, getTypoOffset } from "@/lib/typo-presets";
 import { useLivePreviewEdit } from "@/components/live-preview-provider";
+import { computeColumnCenterX } from "@/lib/column-center";
 
 type SlideTemplate =
   | "image-left-copy-right"
@@ -153,8 +154,11 @@ type StyleGuidelinesConfig = {
   extras?: StyleExtraGuideline[];
   showTextCenterV?: boolean;
   showTextCenterH?: boolean;
-  showMediaGap?: boolean;           // vertical line at text column inner edge (gap boundary)
-  showMediaEdgeGuides?: boolean;    // tick lines from each media face toward slide boundaries
+  showMediaGap?: boolean;             // vertical line at text column inner edge (gap boundary)
+  showMediaEdgeGuides?: boolean;      // 6 short tick lines around each media face
+  showColumnCenter?: boolean;         // single DOM-measured text-zone center line (modes 1–4)
+  columnCenterMode?: 1 | 2 | 3 | 4;  // which zone pair to bisect (default 1)
+  columnCenterOuterMarginPx?: number; // outer text margin in layout px (default 13)
 };
 
 type CanvasGuidelines = {
@@ -798,11 +802,13 @@ function StyleGuidelineOverlay({
   mediaRect,
   italicFallbackOffset,
   imgSide,
+  slideWidthPx,
 }: {
   config: StyleGuidelinesConfig;
   mediaRect: MediaRect | null;
   italicFallbackOffset?: number;
   imgSide: "left" | "right" | "none";
+  slideWidthPx?: number;
 }) {
   const lines: GuideLineDef[] = [];
   let labelIdx = 1;
@@ -928,11 +934,8 @@ function StyleGuidelineOverlay({
   if (config.showTextCenterV) {
     let pos: string;
     if (mediaRect && imgSide === "left") {
-      // text area: mediaRect.right … 100%, center = (mediaRect.right + W) / 2
-      // In CSS: calc(50% + ${mediaRect.right / 2}px)
       pos = `calc(50% + ${mediaRect.right / 2}px)`;
     } else if (mediaRect && imgSide === "right") {
-      // text area: 0 … mediaRect.left, center = mediaRect.left / 2
       pos = `${mediaRect.left / 2}px`;
     } else {
       pos = "50%";
@@ -941,6 +944,23 @@ function StyleGuidelineOverlay({
   }
   if (config.showTextCenterH) {
     centerLines.push({ key: "tc-h", label: lbl(), type: "horizontal", pos: "50%", color: SG_COLORS.center, group: "text-center" });
+  }
+
+  // Column center — DOM-measured, single line, 4 modes (text zone only, not media)
+  if (config.showColumnCenter && mediaRect && imgSide !== "none" && slideWidthPx) {
+    const mode = (config.columnCenterMode ?? 1) as 1 | 2 | 3 | 4;
+    const outerMargin = config.columnCenterOuterMarginPx ?? 13;
+    const mediaEdge = imgSide === "right" ? mediaRect.left : mediaRect.right;
+    const gapBoundary = mediaRect.textColFace ?? mediaEdge;
+    const cx = computeColumnCenterX(mode, mediaEdge, gapBoundary, outerMargin, slideWidthPx, imgSide);
+    centerLines.push({
+      key: "col-center",
+      label: lbl(),
+      type: "vertical",
+      pos: `${cx}px`,
+      color: SG_COLORS.center,
+      group: "text-center",
+    });
   }
 
   const allLines = [...lines, ...centerLines];
@@ -1353,6 +1373,7 @@ function HeroSlide({
       mediaRect={mediaRect}
       italicFallbackOffset={canvasGuidelines?.italicBaselineOffset}
       imgSide={imageSide(template)}
+      slideWidthPx={slideRef.current?.offsetWidth}
     />
   ) : null;
 
@@ -1361,12 +1382,11 @@ function HeroSlide({
   const hasElementGuides = showElementGuides && elementRects.length > 0;
   const hasCompGuides = showCompositionGuides && compGuides.length > 0;
   const hasLayoutGuides = showLayoutGuides && (layoutGuideLines.gapX !== undefined || layoutGuideLines.bottomY !== undefined);
-  const hasClassicColumnCenters = !!(canvasGuidelines?.classicGrid?.showVerticalCenter) && !!mediaRect && imageSide(template) !== "none";
   const compGuideColor = compositionGuideColor || "rgba(255, 6, 102, 0.8)";
   const LAYOUT_GUIDE_COLOR = "#FF0066";
   const MEDIA_EDGE_COLOR = "rgba(251,191,36,0.85)"; // amber
-  const COLUMN_CENTER_COLOR = "rgba(72,199,72,0.85)"; // green
-  const guides = hasMediaGuides || hasMediaEdgeGuidesActive || hasElementGuides || hasCompGuides || hasLayoutGuides || hasClassicColumnCenters ? (
+  const MEDIA_EDGE_TICK = 24; // px — length of each short tick
+  const guides = hasMediaGuides || hasMediaEdgeGuidesActive || hasElementGuides || hasCompGuides || hasLayoutGuides ? (
     <div className="hero-slide__guides" aria-hidden="true">
       {hasMediaGuides ? (
         <>
@@ -1376,46 +1396,25 @@ function HeroSlide({
           <div className="hero-slide__guide hero-slide__guide--horizontal" style={{ top: `${mediaRect!.bottom}px` }} />
         </>
       ) : null}
-      {/* Media edge tick guides — lines from each media face toward the slide boundary */}
+      {/* Media edge tick guides — 6 short ticks around each media face */}
       {hasMediaEdgeGuidesActive ? (() => {
         const mr = mediaRect!;
-        const slideW = slideRef.current?.offsetWidth ?? mr.right + 1;
-        const slideH = mr.height;
         const medianX = (mr.left + mr.right) / 2;
-        const medianY = (mr.top + mr.bottom) / 2;
         const S: React.CSSProperties = { position: "absolute", background: MEDIA_EDGE_COLOR, pointerEvents: "none" };
         return (
           <>
-            {/* Left: slide-left → media-left, at media vertical center */}
-            {mr.left > 1 && <div style={{ ...S, top: medianY, left: 0, width: mr.left, height: 1 }} />}
-            {/* Right: media-right → slide-right, at media vertical center */}
-            {slideW - mr.right > 1 && <div style={{ ...S, top: medianY, left: mr.right, width: slideW - mr.right, height: 1 }} />}
-            {/* Top: slide-top → media-top, at media horizontal center */}
-            {mr.top > 1 && <div style={{ ...S, left: medianX, top: 0, width: 1, height: mr.top }} />}
-            {/* Bottom: media-bottom → slide-bottom, at media horizontal center */}
-            {slideH - mr.bottom > 1 && <div style={{ ...S, left: medianX, top: mr.bottom, width: 1, height: slideH - mr.bottom }} />}
-          </>
-        );
-      })() : null}
-      {/* DOM-measured column center lines — 1 for text zone, 1 for media zone */}
-      {hasClassicColumnCenters ? (() => {
-        const mr = mediaRect!;
-        const slideW = slideRef.current?.offsetWidth ?? mr.right + 1;
-        const imgS = imageSide(template);
-        let textCenter: number, mediaCenter: number;
-        if (imgS === "right") {
-          textCenter  = mr.left / 2;
-          mediaCenter = (mr.left + mr.right) / 2;
-        } else {
-          textCenter  = (mr.right + slideW) / 2;
-          mediaCenter = mr.right / 2;
-        }
-        return (
-          <>
-            <div className="hero-slide__guide hero-slide__guide--vertical"
-              style={{ left: `${textCenter}px`, background: COLUMN_CENTER_COLOR, opacity: 1 }} />
-            <div className="hero-slide__guide hero-slide__guide--vertical"
-              style={{ left: `${mediaCenter}px`, background: COLUMN_CENTER_COLOR, opacity: 0.6 }} />
+            {/* Top-left corner — going left */}
+            <div style={{ ...S, top: mr.top, left: mr.left - MEDIA_EDGE_TICK, width: MEDIA_EDGE_TICK, height: 1 }} />
+            {/* Bottom-left corner — going left */}
+            <div style={{ ...S, top: mr.bottom, left: mr.left - MEDIA_EDGE_TICK, width: MEDIA_EDGE_TICK, height: 1 }} />
+            {/* Top-right corner — going right */}
+            <div style={{ ...S, top: mr.top, left: mr.right, width: MEDIA_EDGE_TICK, height: 1 }} />
+            {/* Bottom-right corner — going right */}
+            <div style={{ ...S, top: mr.bottom, left: mr.right, width: MEDIA_EDGE_TICK, height: 1 }} />
+            {/* Top-center — going up */}
+            <div style={{ ...S, left: medianX, top: mr.top - MEDIA_EDGE_TICK, width: 1, height: MEDIA_EDGE_TICK }} />
+            {/* Bottom-center — going down */}
+            <div style={{ ...S, left: medianX, top: mr.bottom, width: 1, height: MEDIA_EDGE_TICK }} />
           </>
         );
       })() : null}

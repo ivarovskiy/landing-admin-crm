@@ -2,18 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import type React from "react";
+import { TipTapInline, renderRichText } from "@/components/rich-text";
+import { TYPO_PRESETS } from "@/lib/typo-presets";
 import { Container } from "@/components/landing/ui";
 import { MediaImage } from "@/components/media-image";
-import { renderRichText } from "@/components/rich-text";
 
-// Same item schema as content-page-v1 — copy the JSON as-is
 type ContentItem = {
   kind: "image" | "text";
-  // image
   src?: string;
   alt?: string;
-  aspectRatio?: string; // e.g. "342 / 207" — required for MediaImage fill mode
-  // text
+  aspectRatio?: string;
   heading?: string;
   body?: string;
 };
@@ -21,8 +19,8 @@ type ContentItem = {
 type ScrollStoryV1Data = {
   left?: ContentItem[];
   right?: ContentItem[];
-  stickyTop?: string;    // CSS length — offset from top when sticky, e.g. "80px"
-  showProgress?: boolean; // scroll-progress dot on right viewport edge
+  stickyTop?: string;
+  showProgress?: boolean;
 };
 
 function normalize(raw: unknown): ContentItem[] {
@@ -32,14 +30,17 @@ function normalize(raw: unknown): ContentItem[] {
   ) as ContentItem[];
 }
 
-function Col({ items }: { items: ContentItem[] }) {
+function Col({
+  items,
+  onItemChange,
+}: {
+  items: ContentItem[];
+  onItemChange?: (idx: number, field: "heading" | "body", value: string) => void;
+}) {
   return (
     <>
       {items.map((item, idx) => {
         if (item.kind === "image") {
-          // MediaImage uses Next.js fill — the wrapper must have a height.
-          // aspectRatio (e.g. "342 / 207") is passed as inline style so the
-          // wrapper div sizes itself correctly without explicit height.
           const imgStyle = item.aspectRatio
             ? { aspectRatio: item.aspectRatio }
             : { aspectRatio: "4 / 3" };
@@ -63,10 +64,27 @@ function Col({ items }: { items: ContentItem[] }) {
 
         return (
           <div key={idx} className="ss__text-item">
-            {item.heading ? <div className="ss__label">{renderRichText(item.heading)}</div> : null}
-            {item.body ? (
+            {(item.heading || onItemChange) ? (
+              <div className="ss__label">
+                {onItemChange ? (
+                  <TipTapInline
+                    value={item.heading ?? ""}
+                    onChange={(html) => onItemChange(idx, "heading", html)}
+                    multiline={false}
+                    typoOptions={TYPO_PRESETS}
+                  />
+                ) : renderRichText(item.heading!)}
+              </div>
+            ) : null}
+            {(item.body || onItemChange) ? (
               <div className="ss__body">
-                {renderRichText(item.body)}
+                {onItemChange ? (
+                  <TipTapInline
+                    value={item.body ?? ""}
+                    onChange={(html) => onItemChange(idx, "body", html)}
+                    typoOptions={TYPO_PRESETS}
+                  />
+                ) : renderRichText(item.body!)}
               </div>
             ) : null}
           </div>
@@ -76,7 +94,15 @@ function Col({ items }: { items: ContentItem[] }) {
   );
 }
 
-export function ScrollStoryV1({ data }: { data: any }) {
+export function ScrollStoryV1({
+  data,
+  editMode,
+  onChange,
+}: {
+  data: any;
+  editMode?: boolean;
+  onChange?: (next: unknown) => void;
+}) {
   const d = data as ScrollStoryV1Data;
   const left = normalize(d?.left);
   const right = normalize(d?.right);
@@ -85,6 +111,12 @@ export function ScrollStoryV1({ data }: { data: any }) {
 
   const sectionRef = useRef<HTMLElement>(null);
   const [dotStyle, setDotStyle] = useState<React.CSSProperties>({ opacity: 0, top: 0 });
+
+  const makeItemUpdater = editMode && onChange
+    ? (col: "left" | "right", arr: ContentItem[]) =>
+        (idx: number, field: "heading" | "body", value: string) =>
+          onChange({ ...d, [col]: arr.map((it, i) => i === idx ? { ...it, [field]: value } : it) })
+    : null;
 
   useEffect(() => {
     if (!showProgress) return;
@@ -120,12 +152,18 @@ export function ScrollStoryV1({ data }: { data: any }) {
         >
           {left.length > 0 && (
             <div className="ss__col">
-              <Col items={left} />
+              <Col
+                items={left}
+                onItemChange={makeItemUpdater ? makeItemUpdater("left", left) : undefined}
+              />
             </div>
           )}
           {right.length > 0 && (
             <div className="ss__col">
-              <Col items={right} />
+              <Col
+                items={right}
+                onItemChange={makeItemUpdater ? makeItemUpdater("right", right) : undefined}
+              />
             </div>
           )}
         </div>

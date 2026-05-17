@@ -1,8 +1,9 @@
 import type React from "react";
+import { TipTapInline, renderRichText } from "@/components/rich-text";
+import { TYPO_PRESETS } from "@/lib/typo-presets";
 import { Container } from "@/components/landing/ui";
 import NextImage from "next/image";
 import ClipIcon from "@/assets/icons/clip.svg";
-import { renderRichText } from "@/components/rich-text";
 
 type ElementStyle = {
   mt?: string;
@@ -50,10 +51,23 @@ function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
   return Object.keys(s).length ? s : undefined;
 }
 
-export function DocBodyV1({ data }: { data: any }) {
+export function DocBodyV1({
+  data,
+  editMode,
+  onChange,
+}: {
+  data: any;
+  editMode?: boolean;
+  onChange?: (next: unknown) => void;
+}) {
   const d = data as DocBodyV1Data;
   const sections: DocSection[] = Array.isArray(d?.sections) ? d.sections : [];
   const image = d?.image;
+
+  const updateSection = editMode && onChange
+    ? (idx: number, field: "heading" | "body", value: string) =>
+        onChange({ ...d, sections: sections.map((s, i) => i === idx ? { ...s, [field]: value } : s) })
+    : null;
 
   return (
     <section className="doc-body">
@@ -68,24 +82,39 @@ export function DocBodyV1({ data }: { data: any }) {
               </div>
               {sections.map((s, i) => (
                 <div key={s.id ?? i} className="doc-body__section">
-                  {s.heading ? (
+                  {(s.heading || updateSection) ? (
                     <h2
                       className={["doc-body__section-title", s.headingStyle?.typo]
                         .filter(Boolean)
                         .join(" ")}
                       style={elStyle(s.headingStyle)}
                     >
-                      {renderRichText(s.heading)}
+                      {updateSection ? (
+                        <TipTapInline
+                          value={s.heading ?? ""}
+                          onChange={(html) => updateSection(i, "heading", html)}
+                          multiline={false}
+                          typoClass={s.headingStyle?.typo}
+                          typoOptions={TYPO_PRESETS}
+                        />
+                      ) : renderRichText(s.heading!)}
                     </h2>
                   ) : null}
-                  {s.body ? (
+                  {(s.body || updateSection) ? (
                     <div
                       className={["doc-body__section-body", s.bodyStyle?.typo]
                         .filter(Boolean)
                         .join(" ")}
                       style={elStyle(s.bodyStyle)}
                     >
-                      {renderRichText(s.body)}
+                      {updateSection ? (
+                        <TipTapInline
+                          value={s.body ?? ""}
+                          onChange={(html) => updateSection(i, "body", html)}
+                          typoClass={s.bodyStyle?.typo}
+                          typoOptions={TYPO_PRESETS}
+                        />
+                      ) : renderRichText(s.body!)}
                     </div>
                   ) : null}
                 </div>

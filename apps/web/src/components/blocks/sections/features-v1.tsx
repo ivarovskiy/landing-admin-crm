@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { renderRichText } from "@/components/rich-text";
+import { TipTapInline, renderRichText } from "@/components/rich-text";
+import { TYPO_PRESETS } from "@/lib/typo-presets";
 import {
   Container,
   Kicker,
@@ -20,7 +21,7 @@ type FeatureItem = {
   title?: string;
   text?: string;
   icon?: string;
-  image?: string;  // custom image URL — overrides icon when set
+  image?: string;
   imageAlt?: string;
   _layout?: LayoutConfig;
 };
@@ -36,11 +37,28 @@ type FeaturesV1Data = {
   };
 };
 
-export function FeaturesV1({ data }: { data: FeaturesV1Data }) {
+export function FeaturesV1({
+  data,
+  editMode,
+  onChange,
+}: {
+  data: FeaturesV1Data;
+  editMode?: boolean;
+  onChange?: (next: unknown) => void;
+}) {
   const title = data?.title ?? "OUR SCHOOL";
   const items: FeatureItem[] = Array.isArray(data?.items) ? data.items : [];
   const autoPlayMs = Number(data?.options?.autoPlayMs ?? 4000);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  const update = editMode && onChange
+    ? (field: keyof FeaturesV1Data, value: unknown) => onChange({ ...data, [field]: value })
+    : null;
+
+  const updateItem = editMode && onChange
+    ? (idx: number, field: keyof FeatureItem, value: string) =>
+        onChange({ ...data, items: items.map((it, i) => i === idx ? { ...it, [field]: value } : it) })
+    : null;
 
   useEffect(() => {
     const el = gridRef.current;
@@ -64,7 +82,6 @@ export function FeaturesV1({ data }: { data: FeaturesV1Data }) {
 
     const stop = () => clearInterval(timer);
 
-    // pointerdown catches both touch and mouse; once:true — fires once and auto-removes
     el.addEventListener("pointerdown", stop, { passive: true, once: true });
     el.addEventListener("touchstart", stop, { passive: true, once: true });
 
@@ -82,25 +99,36 @@ export function FeaturesV1({ data }: { data: FeaturesV1Data }) {
           className="features-title"
           data-el="title"
           stamp={STAMP_SECTION_TITLE}
+          shadowContent={update ? renderRichText(title) : undefined}
         >
-          {title}
+          {update ? (
+            <TipTapInline
+              value={title}
+              onChange={(html) => update("title", html)}
+              multiline={false}
+              typoOptions={TYPO_PRESETS}
+            />
+          ) : title}
         </OutlineStampText>
 
-        {data?.subtitle ? (() => {
-          // subtitleHide: new responsive field; falls back to legacy showSubtitle boolean
-          const subtitleHide = data.subtitleHide
-            ?? (data.showSubtitle === false ? { base: true, md: true, lg: true } : {});
+        {(data?.subtitle || update) ? (() => {
+          const subtitleHide = data?.subtitleHide
+            ?? (data?.showSubtitle === false ? { base: true, md: true, lg: true } : {});
           const { className: rClass, style: rStyle } = hideToResponsiveClasses(subtitleHide, "block");
           return (
-
-              <div
-                className={`features-subtitle text-center ${rClass}`}
-                style={rStyle}
-                data-el="subtitle"
-              >
-                {renderRichText(data.subtitle)}
-              </div>
-
+            <div
+              className={`features-subtitle text-center ${rClass}`}
+              style={rStyle}
+              data-el="subtitle"
+            >
+              {update ? (
+                <TipTapInline
+                  value={data?.subtitle ?? ""}
+                  onChange={(html) => update("subtitle", html)}
+                  typoOptions={TYPO_PRESETS}
+                />
+              ) : renderRichText(data!.subtitle!)}
+            </div>
           );
         })() : null}
 
@@ -115,7 +143,6 @@ export function FeaturesV1({ data }: { data: FeaturesV1Data }) {
                 {...hideToResponsiveClasses(hide, "block")}
               >
                 <div className="feature-card">
-
                   <div className="feature-card__icon-wrap" data-el={`item-${idx}-icon`}>
                     {it?.image ? (
                       <MediaImage
@@ -129,12 +156,29 @@ export function FeaturesV1({ data }: { data: FeaturesV1Data }) {
                     )}
                   </div>
 
-                  {it?.title ? (
-                    <Kicker className="feature-card__title" data-el={`item-${idx}-title`}>{renderRichText(it.title)}</Kicker>
+                  {(it?.title || updateItem) ? (
+                    <Kicker className="feature-card__title" data-el={`item-${idx}-title`}>
+                      {updateItem ? (
+                        <TipTapInline
+                          value={it?.title ?? ""}
+                          onChange={(html) => updateItem(idx, "title", html)}
+                          multiline={false}
+                          typoOptions={TYPO_PRESETS}
+                        />
+                      ) : renderRichText(it.title!)}
+                    </Kicker>
                   ) : null}
 
-                  {it?.text ? (
-                    <div className="feature-card__text" data-el={`item-${idx}-body`}>{renderRichText(it.text)}</div>
+                  {(it?.text || updateItem) ? (
+                    <div className="feature-card__text" data-el={`item-${idx}-body`}>
+                      {updateItem ? (
+                        <TipTapInline
+                          value={it?.text ?? ""}
+                          onChange={(html) => updateItem(idx, "text", html)}
+                          typoOptions={TYPO_PRESETS}
+                        />
+                      ) : renderRichText(it.text!)}
+                    </div>
                   ) : null}
                 </div>
               </div>
