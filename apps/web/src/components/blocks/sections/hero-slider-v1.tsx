@@ -1384,7 +1384,7 @@ function HeroSlide({
   const hasLayoutGuides = showLayoutGuides && (layoutGuideLines.gapX !== undefined || layoutGuideLines.bottomY !== undefined);
   const compGuideColor = compositionGuideColor || "rgba(255, 6, 102, 0.8)";
   const LAYOUT_GUIDE_COLOR = "#FF0066";
-  const MEDIA_EDGE_COLOR = "rgba(251,191,36,0.85)"; // amber
+  const MEDIA_EDGE_COLOR = "rgba(239, 68, 68, 0.9)"; // amber
 
   // Media edge guides rendered separately at the highest z-index so the image cannot cover them.
   const mediaEdgeGuides = hasMediaEdgeGuidesActive ? (() => {
@@ -1393,8 +1393,10 @@ function HeroSlide({
     const base: React.CSSProperties = { position: "absolute", background: MEDIA_EDGE_COLOR, pointerEvents: "none", zIndex: 100 };
     return (
       <>
-        <div style={{ ...base, top: mr.top, left: mr.left,  width: 1, height: h }} />
-        <div style={{ ...base, top: mr.top, left: mr.right, width: 1, height: h }} />
+        <div style={{ ...base, top: mr.top, left: mr.left,  width: 1, height: mr.top }} />
+        <div style={{ ...base, top: mr.top, left: mr.right, width: 1, height: mr.top }} />
+        <div style={{ ...base, top: mr.bottom, left: mr.left,  width: 1, height: mr.bottom }} />
+        <div style={{ ...base, top: mr.bottom, left: mr.right, width: 1, height: mr.bottom }} />
       </>
     );
   })() : null;
@@ -1537,16 +1539,23 @@ function HeroSlide({
 
   const _imgSide = imageSide(template);
   const _slideWidthPx = slideRef.current?.offsetWidth;
-  const columnCenterX = (mediaRect && _slideWidthPx && _imgSide !== "none")
-    ? computeColumnCenterX(
-        3,
-        _imgSide === "right" ? mediaRect.left : mediaRect.right,
-        mediaRect.textColFace ?? (_imgSide === "right" ? mediaRect.left : mediaRect.right),
-        13,
-        _slideWidthPx,
-        _imgSide,
-      )
-    : undefined;
+  const columnCenterX = (() => {
+    if (!mediaRect || !_slideWidthPx || _imgSide === "none" || !slideRef.current) return undefined;
+    const rawCenter = computeColumnCenterX(
+      3,
+      _imgSide === "right" ? mediaRect.left : mediaRect.right,
+      mediaRect.textColFace ?? (_imgSide === "right" ? mediaRect.left : mediaRect.right),
+      13,
+      _slideWidthPx,
+      _imgSide,
+    );
+    const copyMain = slideRef.current.querySelector<HTMLElement>(".hero-slide__copy-main");
+    if (!copyMain) return rawCenter;
+    const sr = slideRef.current.getBoundingClientRect();
+    const cr = copyMain.getBoundingClientRect();
+    const scale = sr.width / slideRef.current.offsetWidth || 1;
+    return rawCenter - (cr.left - sr.left) / scale;
+  })();
 
   const standardCopy = (
     <CopyStack
@@ -1779,7 +1788,7 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle, columnCe
     const offsetVal = getTypoOffset(es.typo);
     if (offsetVal) s.paddingBottom = offsetVal;
   }
-  if (es?.width) s.width = es.width;
+  if (es?.width && es?.align !== "right") s.width = es.width;
   return s as React.CSSProperties;
 }
 
@@ -1933,6 +1942,11 @@ function useSlideElementEditor(
   viewportProfile?: HeroViewportProfileKey | null,
 ) {
   type GroupStart = { tx: number; ty: number; el: HTMLElement };
+  // Always-current ref so drag handlers read the latest slide even if re-rendered after pointer-down
+  const slideRef = useRef(slide);
+  slideRef.current = slide;
+  const onSlideChangeRef = useRef(onSlideChange);
+  onSlideChangeRef.current = onSlideChange;
   const dragRef = useRef<{
     key: string;
     mode: "move" | "resize" | "width-resize";
@@ -1956,7 +1970,7 @@ function useSlideElementEditor(
 
     return {
       onPointerDown: (e) => {
-        if (slide.positioningMode !== "absolute") return;
+        if (slideRef.current.positioningMode !== "absolute") return;
         if (e.pointerType === "mouse" && e.button !== 0) return;
         e.preventDefault();
         e.stopPropagation();
@@ -1972,14 +1986,14 @@ function useSlideElementEditor(
 
         // Collect group-member starting transforms for live group drag
         let groupStarts: Map<string, GroupStart> | undefined;
-        const groupId = currentStyle?.groupId;
+        const groupId = getSlideElementStyle(slideRef.current, key)?.groupId;
         if (groupId && slideEl) {
           groupStarts = new Map();
           slideEl.querySelectorAll<HTMLElement>("[data-hs-draggable]").forEach((member) => {
             if (member === el) return;
             const memberKey = member.dataset.hsDraggable ?? "";
             if (!memberKey) return;
-            const ms = getSlideElementStyle(slide, memberKey);
+            const ms = getSlideElementStyle(slideRef.current, memberKey);
             if (ms?.groupId !== groupId || ms.locked) return;
             const mc = getComputedStyle(member);
             const mm = new DOMMatrix(mc.transform === "none" ? "" : mc.transform);
@@ -2030,7 +2044,7 @@ function useSlideElementEditor(
         const copyRect = copyMain?.getBoundingClientRect();
         const sc = copyRect && copyMain ? copyRect.width / copyMain.offsetWidth || 1 : 1;
         const measureEl = (memberEl: HTMLElement, memberKey: string): { ml: number; mt: number; clear: boolean } => {
-          const memberSnap = getSlideElementStyle(slide, memberKey)?.align;
+          const memberSnap = getSlideElementStyle(slideRef.current, memberKey)?.align;
           const clear = memberSnap === "center" || memberSnap === "right";
           if (clear && copyRect && memberEl) {
             const er = memberEl.getBoundingClientRect();
@@ -2049,7 +2063,7 @@ function useSlideElementEditor(
         if (el) { el.classList.remove("hero-slide__editable--dragging"); el.style.transform = ""; }
         d.groupStarts?.forEach(({ el: gEl }) => { gEl.style.transform = ""; });
 
-        const migratedSlide = migrateSlideToAbsolute(slide);
+        const migratedSlide = migrateSlideToAbsolute(slideRef.current);
 
         if (d.groupStarts && d.groupStarts.size > 0) {
           const allGroupKeys = new Set([key, ...d.groupStarts.keys()]);
@@ -2074,7 +2088,7 @@ function useSlideElementEditor(
               ...(m?.clear ? { align: undefined } : {}),
             });
           }
-          onSlideChange(updated);
+          onSlideChangeRef.current!(updated);
         } else {
           let newMl: number;
           let newMt: number;
@@ -2086,7 +2100,7 @@ function useSlideElementEditor(
             newMl = (parseFloat(style.ml ?? "0") || 0) + dx;
             newMt = (parseFloat(style.mt ?? "0") || 0) + dy;
           }
-          onSlideChange(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
+          onSlideChangeRef.current!(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
             ml: newMl !== 0 ? `${newMl}px` : undefined,
             mt: newMt !== 0 ? `${newMt}px` : undefined,
             x: undefined, y: undefined,
@@ -2159,7 +2173,7 @@ function useSlideElementEditor(
         }
 
         // Legacy slides: no drag, let event bubble so slider can swipe
-        if (!isResize && slide.positioningMode !== "absolute") return;
+        if (!isResize && slideRef.current.positioningMode !== "absolute") return;
 
         // Always stop slider from swiping on absolute elements
         e.stopPropagation();
@@ -2180,14 +2194,14 @@ function useSlideElementEditor(
         // Collect group-member starting transforms (same as dragHandleProps)
         let groupStarts: Map<string, GroupStart> | undefined;
         if (!isResize) {
-          const groupId = getSlideElementStyle(slide, key)?.groupId;
+          const groupId = getSlideElementStyle(slideRef.current, key)?.groupId;
           if (groupId && slideEl) {
             groupStarts = new Map();
             slideEl.querySelectorAll<HTMLElement>("[data-hs-draggable]").forEach((member) => {
               if (member === el) return;
               const memberKey = member.dataset.hsDraggable ?? "";
               if (!memberKey) return;
-              const ms = getSlideElementStyle(slide, memberKey);
+              const ms = getSlideElementStyle(slideRef.current, memberKey);
               if (ms?.groupId !== groupId || ms.locked) return;
               const mc = getComputedStyle(member);
               const mm = new DOMMatrix(mc.transform === "none" ? "" : mc.transform);
@@ -2247,7 +2261,7 @@ function useSlideElementEditor(
         if (d.mode === "resize") {
           el.style.transform = "";
           const nextSize = Math.max(6, Math.round(d.startSize + (dx + dy) / 2));
-          onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, { size: `${nextSize}px` }));
+          onSlideChangeRef.current!(setSlideElementViewportStyle(slideRef.current, key, viewportProfile, { size: `${nextSize}px` }));
           return;
         }
         // Measure snap-aligned elements from DOM before resetting transforms
@@ -2256,7 +2270,7 @@ function useSlideElementEditor(
         const copyRect2 = copyMain2?.getBoundingClientRect();
         const sc2 = copyRect2 && copyMain2 ? copyRect2.width / copyMain2.offsetWidth || 1 : 1;
         const measureEl2 = (memberEl: HTMLElement, memberKey: string) => {
-          const memberSnap = getSlideElementStyle(slide, memberKey)?.align;
+          const memberSnap = getSlideElementStyle(slideRef.current, memberKey)?.align;
           const clear = memberSnap === "center" || memberSnap === "right";
           if (clear && copyRect2) {
             const er = memberEl.getBoundingClientRect();
@@ -2270,7 +2284,7 @@ function useSlideElementEditor(
         // Reset transforms
         el.style.transform = "";
         d.groupStarts?.forEach(({ el: gEl }) => { gEl.style.transform = ""; });
-        const migratedSlide = migrateSlideToAbsolute(slide);
+        const migratedSlide = migrateSlideToAbsolute(slideRef.current);
         if (d.groupStarts && d.groupStarts.size > 0) {
           const allGroupKeys = new Set([key, ...d.groupStarts.keys()]);
           let updated = migratedSlide;
@@ -2291,7 +2305,7 @@ function useSlideElementEditor(
               ...(m?.clear ? { align: undefined } : {}),
             });
           }
-          onSlideChange(updated);
+          onSlideChangeRef.current!(updated);
         } else {
           let newMl: number, newMt: number;
           if (leaderM.clear) { newMl = leaderM.ml; newMt = leaderM.mt; }
@@ -2300,7 +2314,7 @@ function useSlideElementEditor(
             newMl = (parseFloat(style.ml ?? "0") || 0) + dx;
             newMt = (parseFloat(style.mt ?? "0") || 0) + dy;
           }
-          onSlideChange(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
+          onSlideChangeRef.current!(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
             ml: newMl !== 0 ? `${newMl}px` : undefined,
             mt: newMt !== 0 ? `${newMt}px` : undefined,
             x: undefined, y: undefined,
@@ -2321,7 +2335,7 @@ function useSlideElementEditor(
         });
       },
       onKeyDown: (e) => {
-        if (slide.positioningMode !== "absolute") return;
+        if (slideRef.current.positioningMode !== "absolute") return;
         const deltaByKey: Record<string, [number, number]> = {
           ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
         };
@@ -2330,7 +2344,7 @@ function useSlideElementEditor(
         e.preventDefault();
         e.stopPropagation();
         const step = e.shiftKey ? 10 : 1;
-        const migratedSlide = migrateSlideToAbsolute(slide);
+        const migratedSlide = migrateSlideToAbsolute(slideRef.current);
         const currentStyle = mergeElementStyle(getSlideElementStyle(migratedSlide, key), viewportProfile) ?? {};
         const currentMl = parseFloat(currentStyle.ml ?? "0") || 0;
         const currentMt = parseFloat(currentStyle.mt ?? "0") || 0;
@@ -2340,7 +2354,7 @@ function useSlideElementEditor(
         const isHorizontal = delta[0] !== 0;
         const snapAlign = currentStyle.align;
         const clearAlign = isHorizontal && (snapAlign === "center" || snapAlign === "right");
-        onSlideChange(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
+        onSlideChangeRef.current!(setSlideElementViewportStyle(migratedSlide, key, viewportProfile, {
           ml: nextMl !== 0 ? `${nextMl}px` : undefined,
           mt: nextMt !== 0 ? `${nextMt}px` : undefined,
           x: undefined, y: undefined,
@@ -2358,7 +2372,7 @@ function useSlideElementEditor(
 
     return {
       onPointerDown: (e) => {
-        if (slide.positioningMode !== "absolute") return;
+        if (slideRef.current.positioningMode !== "absolute") return;
         if (e.pointerType === "mouse" && e.button !== 0) return;
         e.preventDefault();
         e.stopPropagation();
@@ -2402,7 +2416,7 @@ function useSlideElementEditor(
         const dx = Math.round((e.clientX - d.startX) / d.scale);
         const newWidth = Math.max(50, d.startWidth + dx);
         lastWidthResizeRef.current = { key, orig: d.startWidth, curr: newWidth };
-        onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, { width: `${newWidth}px` }));
+        onSlideChangeRef.current!(setSlideElementViewportStyle(slideRef.current, key, viewportProfile, { width: `${newWidth}px` }));
       },
       onPointerCancel: (e) => {
         const d = dragRef.current;
