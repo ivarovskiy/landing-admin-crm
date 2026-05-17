@@ -1395,7 +1395,7 @@ function HeroSlide({
           <div className="hero-slide__guide hero-slide__guide--horizontal" style={{ top: `${mediaRect!.bottom}px` }} />
         </>
       ) : null}
-      {/* Media edge guides — inner edge: vertical line only; outer edge: vertical + horizontal */}
+      {/* Media edge guides — vertical segments from image corners to slide edges */}
       {hasMediaEdgeGuidesActive ? (() => {
         const mr = mediaRect!;
         const S: React.CSSProperties = { position: "absolute", background: MEDIA_EDGE_COLOR, pointerEvents: "none" };
@@ -1403,13 +1403,17 @@ function HeroSlide({
         const outerX = imgSide === "right" ? mr.right : mr.left;
         return (
           <>
-            {/* Inner edge — vertical line only (text column boundary) */}
-            <div style={{ ...S, top: 0, bottom: 0, left: innerX, width: 1 }} />
-            {/* Outer edge — vertical line */}
-            <div style={{ ...S, top: 0, bottom: 0, left: outerX, width: 1 }} />
-            {/* Outer edge — horizontal top line */}
+            {/* Inner edge — above image */}
+            <div style={{ ...S, top: 0, left: innerX, width: 1, height: mr.top }} />
+            {/* Inner edge — below image */}
+            <div style={{ ...S, top: mr.bottom, left: innerX, width: 1, bottom: 0 }} />
+            {/* Outer edge — above image */}
+            <div style={{ ...S, top: 0, left: outerX, width: 1, height: mr.top }} />
+            {/* Outer edge — below image */}
+            <div style={{ ...S, top: mr.bottom, left: outerX, width: 1, bottom: 0 }} />
+            {/* Horizontal at image top */}
             <div style={{ ...S, top: mr.top, left: 0, right: 0, height: 1 }} />
-            {/* Outer edge — horizontal bottom line */}
+            {/* Horizontal at image bottom */}
             <div style={{ ...S, top: mr.bottom, left: 0, right: 0, height: 1 }} />
           </>
         );

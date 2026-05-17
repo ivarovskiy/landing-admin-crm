@@ -566,7 +566,7 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
                   onChange={(v) => setSg(["showMediaEdgeGuides"], v || undefined)}
                 />
                 <InspectorToggle
-                  label="🟢 Column center line (text zone)"
+                  label="🟢 Canvas center vertical"
                   checked={!!sg.showColumnCenter}
                   onChange={(v) => setSg(["showColumnCenter"], v || undefined)}
                 />
