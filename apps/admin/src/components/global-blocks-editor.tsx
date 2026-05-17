@@ -168,13 +168,17 @@ function ScopePicker({
         className="w-full h-8 rounded-md bg-[oklch(1_0_0/6%)] border border-[oklch(1_0_0/10%)] px-2 text-xs text-[oklch(0.88_0_0)] focus:outline-none focus:border-[oklch(0.58_0.22_25)]"
       >
         <option value="site">🌐 Unattached Pages</option>
-        {topLevel.map((p) => (
-          <option key={p.id} value={p.id}>
-            {/* /{p.slug} */}
-            {p.slug === "sdc-ballet" && " (Simply Dance)"}
-            {p.slug === "ibc-ballet" && " (IBC Ballet)"}
-          </option>
-        ))}
+        {topLevel.map((p) => {
+          const label =
+            p.slug === "sdc-ballet" ? "Simply Dance" :
+            p.slug === "ibc-ballet" ? "IBC Ballet" :
+            p.slug;
+          return (
+            <option key={p.id} value={p.id}>
+              {label}
+            </option>
+          );
+        })}
       </select>
       <p className="text-[10px] text-[oklch(0.5_0_0)] leading-tight pt-1">
         Choose Website name from Dropdown Menu to edit its respective Top Menu and/or Footer.
