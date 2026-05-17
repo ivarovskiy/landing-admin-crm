@@ -1194,6 +1194,13 @@ export function BlocksWorkspace({
                     );
                   } catch { /* cross-origin */ }
                 }}
+                onBlockReset={(blockId) => {
+                  setPendingDrafts((prev) => {
+                    const next = { ...prev };
+                    delete next[blockId];
+                    return next;
+                  });
+                }}
               />
             ) : (
               <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground p-6">

@@ -30,6 +30,7 @@ export function BlockEditPanel({
   externalDraftUpdate,
   onElementSelect,
   onDraftChange,
+  onBlockReset,
 }: {
   blockId: string;
   title: string;
@@ -42,6 +43,7 @@ export function BlockEditPanel({
   externalDraftUpdate?: { blockId: string; data: any; version: number } | null;
   onElementSelect?: (elementId: string | null) => void;
   onDraftChange?: (blockId: string, data: any) => void;
+  onBlockReset?: (blockId: string) => void;
 }) {
   const router = useRouter();
   const Form = useMemo(() => getBlockForm(type, variant), [type, variant]);
@@ -65,15 +67,22 @@ export function BlockEditPanel({
     return () => clearTimeout(timer);
   }, [blockId, draft]);
 
+  // Tracks the last externalDraftUpdate version we applied — prevents stale
+  // pendingDrafts from re-applying after a Reset.
+  const lastAppliedExternalVersion = useRef<number>(0);
+
   useEffect(() => {
     setDraft(initial ?? {});
     setError(null);
     setSaved(false);
     setMode(hasVisual ? "visual" : Form ? "form" : "json");
+    lastAppliedExternalVersion.current = 0;
   }, [blockId, Form, hasVisual, initial]);
 
   useEffect(() => {
     if (!externalDraftUpdate || externalDraftUpdate.blockId !== blockId) return;
+    if (externalDraftUpdate.version <= lastAppliedExternalVersion.current) return;
+    lastAppliedExternalVersion.current = externalDraftUpdate.version;
     setDraft(externalDraftUpdate.data ?? {});
   }, [blockId, externalDraftUpdate]);
 
@@ -180,7 +189,10 @@ export function BlockEditPanel({
         dirty={dirty}
         saving={saving}
         saved={saved}
-        onReset={() => setDraft(initial ?? {})}
+        onReset={() => {
+          setDraft(initial ?? {});
+          onBlockReset?.(blockId);
+        }}
         onSave={save}
       />
     </div>
