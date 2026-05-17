@@ -77,7 +77,7 @@ export function DocHeaderV1({
                 typoClass={d?.kickerStyle?.typo}
                 typoOptions={TYPO_PRESETS}
               />
-            ) : d.kicker}
+            ) : renderRichText(d.kicker!)}
           </p>
         ) : null}
 
@@ -103,7 +103,7 @@ export function DocHeaderV1({
                     typoClass={d?.titleStyle?.typo}
                     typoOptions={TYPO_PRESETS}
                   />
-                ) : d.title}
+                ) : renderRichText(d.title!)}
               </OutlineStampText>
             ) : null}
 
@@ -120,7 +120,7 @@ export function DocHeaderV1({
                     typoClass={d?.subtitleStyle?.typo}
                     typoOptions={TYPO_PRESETS}
                   />
-                ) : d.subtitle}
+                ) : renderRichText(d.subtitle!)}
               </p>
             ) : null}
           </div>

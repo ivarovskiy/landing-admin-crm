@@ -98,7 +98,7 @@ export function ScrapbookV1({
                 multiline={false}
                 typoOptions={TYPO_PRESETS}
               />
-            ) : title}
+            ) : renderRichText(title)}
           </OutlineStampText>
 
           {(data?.subtitle && data?.showSubtitle !== false) || update ? (
@@ -110,7 +110,7 @@ export function ScrapbookV1({
                   multiline={false}
                   typoOptions={TYPO_PRESETS}
                 />
-              ) : data.subtitle}
+              ) : renderRichText(data.subtitle)}
             </p>
           ) : null}
         </div>

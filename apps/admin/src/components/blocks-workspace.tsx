@@ -362,9 +362,8 @@ export function BlocksWorkspace({
           ...prev,
           [blockId]: { data: changeData, version: Date.now() },
         }));
-        // Outside text-edit mode: auto-switch admin panel to the block being edited
-        // so the Save bar appears immediately without manual navigation.
-        if (!toolboxText && blockId !== activeIdRef.current) {
+        // Auto-switch admin panel to the block being edited so the Save bar appears.
+        if (blockId !== activeIdRef.current) {
           setActiveId(blockId);
           setSelectedElementId(null);
         }

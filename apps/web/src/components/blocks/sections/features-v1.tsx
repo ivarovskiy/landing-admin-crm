@@ -108,7 +108,7 @@ export function FeaturesV1({
               multiline={false}
               typoOptions={TYPO_PRESETS}
             />
-          ) : title}
+          ) : renderRichText(title)}
         </OutlineStampText>
 
         {(data?.subtitle || update) ? (() => {
