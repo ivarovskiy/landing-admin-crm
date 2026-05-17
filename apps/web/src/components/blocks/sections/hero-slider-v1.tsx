@@ -7,7 +7,7 @@ import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { TipTapInline, renderRichText } from "@/components/rich-text";
 import { TYPO_PRESETS, getTypoOffset } from "@/lib/typo-presets";
 import { useLivePreviewEdit } from "@/components/live-preview-provider";
-import { computeColumnCenterX } from "@/lib/column-center";
+import { computeColumnCenterX, type ColumnCenterMode } from "@/lib/column-center";
 
 type SlideTemplate =
   | "image-left-copy-right"
@@ -173,6 +173,27 @@ type CanvasGuidelines = {
   sliderHorizontalGuideColor?: string;
 };
 
+type ColumnCenterContext = {
+  centers: Record<ColumnCenterMode, number>;
+};
+
+function sameColumnCenterContext(a?: ColumnCenterContext, b?: ColumnCenterContext) {
+  if (!a || !b) return a === b;
+  return a.centers[1] === b.centers[1] &&
+    a.centers[2] === b.centers[2] &&
+    a.centers[3] === b.centers[3] &&
+    a.centers[4] === b.centers[4];
+}
+
+function getElementCenterMode(mode?: ElementStyle["alignMode"]): ColumnCenterMode {
+  if (mode === "1" || mode === "2" || mode === "3" || mode === "4") {
+    return Number(mode) as ColumnCenterMode;
+  }
+  // Back-compat: older centered elements did not store alignMode and behaved like
+  // the margin-to-gap center in measured layouts.
+  return 3;
+}
+
 /** Design canvas height used in the admin mini-canvas — offsets are relative to this. */
 const DESIGN_CANVAS_H = 574;
 
@@ -197,6 +218,13 @@ function resolveDesignViewportUnits(value?: string) {
     if (!Number.isFinite(n)) return `${raw}vw`;
     return `${trimNumber((n / 100) * DESIGN_WIDTH_PX)}px`;
   });
+}
+
+function parseDesignPx(value: string | undefined, fallback = 0) {
+  const resolved = resolveDesignViewportUnits(value);
+  if (resolved == null || resolved === "") return fallback;
+  const n = parseFloat(resolved);
+  return Number.isFinite(n) ? n : fallback;
 }
 
 /** Pick the stamp preset that matches the typo class so default shadow/stroke
@@ -1061,13 +1089,25 @@ function HeroSlide({
   const [compGuides, setCompGuides] = useState<CompLine[]>([]);
   type LayoutGuideLines = { gapX?: number; bottomY?: number };
   const [layoutGuideLines, setLayoutGuideLines] = useState<LayoutGuideLines>({});
-  // Measurement is needed for guides and for media-aligned text stretching.
-  const measureNeeded = showGuides || showElementGuides || stretchToMedia || showCompositionGuides || showLayoutGuides || showStyleGuides || showMediaEdgeGuides || !!(canvasGuidelines?.classicGrid?.showVerticalCenter);
+  const [columnCenterContext, setColumnCenterContext] = useState<ColumnCenterContext | undefined>(undefined);
+  const hasCenteredAbsoluteText = useMemo(() => {
+    if (slide.positioningMode !== "absolute") return false;
+    if (imageSide(template) === "none") return false;
+    return buildSlideOrderedKeys(slide).some((key) => {
+      const style = mergeElementStyle(getSlideElementStyle(slide, key), viewportProfile);
+      return style?.align === "center";
+    });
+  }, [slide, template, viewportProfile]);
+
+  // Measurement is needed for guides, media-aligned stretching, and centered
+  // absolute text, because center modes depend on measured media/gap boundaries.
+  const measureNeeded = showGuides || showElementGuides || stretchToMedia || showCompositionGuides || showLayoutGuides || showStyleGuides || showMediaEdgeGuides || !!(canvasGuidelines?.classicGrid?.showVerticalCenter) || hasCenteredAbsoluteText;
 
   useLayoutEffect(() => {
     if (!measureNeeded) {
       setMediaRect(null);
       setElementRects([]);
+      setColumnCenterContext(undefined);
       return;
     }
     const slideEl = slideRef.current;
@@ -1081,6 +1121,7 @@ function HeroSlide({
 
       if (!media) {
         setMediaRect((prev) => (prev === null ? null : null));
+        setColumnCenterContext((prev) => (prev === undefined ? prev : undefined));
       } else {
         const mr = media.getBoundingClientRect();
         if (mr.width) {
@@ -1105,6 +1146,27 @@ function HeroSlide({
             stretchBottom: Math.max(0, (refBottom - mr.bottom) / scale),
             textColFace,
           };
+          if (hasCenteredAbsoluteText && side !== "none") {
+            const copyMain = slideEl.querySelector<HTMLElement>(".hero-slide__copy-main");
+            const copyRect = copyMain?.getBoundingClientRect();
+            const copyLeft = copyRect ? (copyRect.left - sr.left) / scale : 0;
+            const outerMarginPx = parseDesignPx(desktopLayout.outerPadding, 13);
+            const mediaEdge = side === "right" ? next.left : next.right;
+            const gapBoundary = next.textColFace ?? mediaEdge;
+            const center = (mode: ColumnCenterMode) =>
+              computeColumnCenterX(mode, mediaEdge, gapBoundary, outerMarginPx, slideEl.offsetWidth, side) - copyLeft;
+            const nextContext: ColumnCenterContext = {
+              centers: {
+                1: center(1),
+                2: center(2),
+                3: center(3),
+                4: center(4),
+              },
+            };
+            setColumnCenterContext((prev) => sameColumnCenterContext(prev, nextContext) ? prev : nextContext);
+          } else {
+            setColumnCenterContext((prev) => (prev === undefined ? prev : undefined));
+          }
           // Skip state update if nothing changed to avoid ResizeObserver feedback loop.
           setMediaRect((prev) =>
             prev &&
@@ -1252,7 +1314,7 @@ function HeroSlide({
       ro.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [measureNeeded, showGuides, showElementGuides, showCompositionGuides, showLayoutGuides, layoutGuideBottomOffset, slide]);
+  }, [measureNeeded, showGuides, showElementGuides, showCompositionGuides, showLayoutGuides, layoutGuideBottomOffset, slide, template, hasCenteredAbsoluteText, desktopLayout.outerPadding]);
 
   const slideClass = cn(
     "hero-slide",
@@ -1537,34 +1599,6 @@ function HeroSlide({
     <MediaFrame media={slide.media} className="hero-slide__media-box" slotId={`slide-${i}-media`} priority={i === 0} />
   );
 
-  const _imgSide = imageSide(template);
-  // columnCenterX: center of the text column in copy-main coordinates (layout px).
-  // Measured directly from DOM so it works regardless of whether guides/mediaRect are active.
-  const columnCenterX = (() => {
-    if (_imgSide === "none" || !slideRef.current) return undefined;
-    const slideEl = slideRef.current;
-    const sr = slideEl.getBoundingClientRect();
-    if (!sr.width) return undefined;
-    const scale = sr.width / slideEl.offsetWidth || 1;
-    const slideWidthPx = slideEl.offsetWidth;
-    const outerMarginPx = 13;
-    const textCol = slideEl.querySelector<HTMLElement>(".hero-slide__text-col");
-    const tc = textCol?.getBoundingClientRect();
-    if (!tc) return undefined;
-    let rawCenter: number;
-    if (_imgSide === "right") {
-      const gapBoundaryPx = (tc.right - sr.left) / scale;
-      rawCenter = (outerMarginPx + gapBoundaryPx) / 2;
-    } else {
-      const gapBoundaryPx = (tc.left - sr.left) / scale;
-      rawCenter = (gapBoundaryPx + (slideWidthPx - outerMarginPx)) / 2;
-    }
-    const copyMain = slideEl.querySelector<HTMLElement>(".hero-slide__copy-main");
-    if (!copyMain) return rawCenter;
-    const cr = copyMain.getBoundingClientRect();
-    return rawCenter - (cr.left - sr.left) / scale;
-  })();
-
   const standardCopy = (
     <CopyStack
       slide={slide}
@@ -1576,7 +1610,7 @@ function HeroSlide({
       widthResizeHandleProps={effectiveDragMode ? widthResizeHandleProps : undefined}
       dragMode={effectiveDragMode}
       onSlideChange={editMode ? onSlideChange : undefined}
-      columnCenterX={columnCenterX}
+      columnCenterContext={columnCenterContext}
     />
   );
 
@@ -1749,7 +1783,12 @@ function preserveVisualPositions(
 
 /** Edit-mode positioning: position:absolute so elements are independent (no cascade).
  *  For legacy slides (no positioningMode) adds getPrecedingMt so visual matches live flow. */
-function absPositionStyle(slide: Slide, key: string, es?: ElementStyle, columnCenterX?: number): React.CSSProperties {
+function absPositionStyle(
+  slide: Slide,
+  key: string,
+  es?: ElementStyle,
+  columnCenterContext?: ColumnCenterContext,
+): React.CSSProperties {
   const mtPx = parseFloat(resolveDesignViewportUnits(es?.mt) ?? "0") || 0;
   const mlPx = parseFloat(resolveDesignViewportUnits(es?.ml) ?? "0") || 0;
   const xPx  = parseFloat(resolveDesignViewportUnits(es?.x)  ?? "0") || 0;
@@ -1761,20 +1800,21 @@ function absPositionStyle(slide: Slide, key: string, es?: ElementStyle, columnCe
   const s: Record<string, string> = { position: "absolute", top: `${top}px` };
 
   if (es?.align === "center") {
-    if (columnCenterX != null) {
-      // DOM-measured text-column center — exact, matches Canvas center vertical guideline.
-      s.left = `${columnCenterX}px`;
+    const centerMode = getElementCenterMode(es.alignMode);
+    if (columnCenterContext) {
+      // DOM-measured text-zone center, converted to copy-main coordinates.
+      s.left = `${columnCenterContext.centers[centerMode]}px`;
     } else {
       // Fallback: formula-based approximation when DOM measurement is unavailable.
       const desktop = mergeDesktopLayout(slide);
-      const gapPx = parseFloat(resolveDesignViewportUnits(desktop.gap) ?? "0") || 0;
-      const outerPadPx = parseFloat(resolveDesignViewportUnits(desktop.outerPadding) ?? "0") || 0;
+      const gapPx = parseDesignPx(desktop.gap);
+      const outerPadPx = parseDesignPx(desktop.outerPadding, 13);
       const side = imageSide(resolveTemplate(slide));
       const dir = side === "right" ? 1 : side === "left" ? -1 : 0;
       let offsetPx = 0;
-      if (es.alignMode === "1") offsetPx = dir * gapPx / 2;
-      else if (es.alignMode === "2") offsetPx = dir * (outerPadPx + gapPx) / 2;
-      else if (es.alignMode === "4") offsetPx = dir * outerPadPx / 2;
+      if (centerMode === 1) offsetPx = dir * gapPx / 2;
+      else if (centerMode === 2) offsetPx = dir * (outerPadPx + gapPx) / 2;
+      else if (centerMode === 4) offsetPx = dir * outerPadPx / 2;
       s.left = offsetPx ? `calc(50% + ${offsetPx}px)` : "50%";
     }
     s.transform = "translateX(-50%)";
@@ -1886,9 +1926,13 @@ function measureSlideToAbsolute(
  * - legacy slides: margin-based flow (same as live site) — migrate via "Перенести на absolute" button
  */
 function posStyle(
-  slide: Slide, key: string, es?: ElementStyle, _isEdit?: boolean, columnCenterX?: number,
+  slide: Slide,
+  key: string,
+  es?: ElementStyle,
+  _isEdit?: boolean,
+  columnCenterContext?: ColumnCenterContext,
 ): React.CSSProperties | undefined {
-  if (slide.positioningMode === "absolute") return absPositionStyle(slide, key, es, columnCenterX);
+  if (slide.positioningMode === "absolute") return absPositionStyle(slide, key, es, columnCenterContext);
   return elStyle(es) ?? undefined;
 }
 
@@ -2451,7 +2495,7 @@ function CopyStack({
   widthResizeHandleProps,
   dragMode = true,
   onSlideChange,
-  columnCenterX,
+  columnCenterContext,
 }: {
   slide: Slide;
   slideIndex: number;
@@ -2462,7 +2506,7 @@ function CopyStack({
   widthResizeHandleProps?: (key: string) => React.HTMLAttributes<HTMLElement>;
   dragMode?: boolean;
   onSlideChange?: (next: Slide) => void;
-  columnCenterX?: number;
+  columnCenterContext?: ColumnCenterContext;
 }) {
   const kicker = slide?.kicker;
   const quote = slide?.quote;
@@ -2499,7 +2543,10 @@ function CopyStack({
   const makeAlignChange = (!dragMode && onSlideChange)
     ? (key: string, _es: ElementStyle | undefined) =>
         (align: "left" | "center" | "right" | undefined) =>
-          onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, { align }))
+          onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, {
+            align,
+            alignMode: align === "center" ? (_es?.alignMode ?? "1") : undefined,
+          }))
     : null;
 
   const makeTypoChange = (!dragMode && onSlideChange)
@@ -2513,7 +2560,7 @@ function CopyStack({
       const es = mergeElementStyle(slide.kickerStyle, viewportProfile);
       if (es?.hidden) return null;
       const typo = es?.typo;
-      const s = posStyle(slide, "kicker", es, !!onSlideChange, columnCenterX);
+      const s = posStyle(slide, "kicker", es, !!onSlideChange, columnCenterContext);
       if (onSlideChange && slide.positioningMode === "absolute") {
         const isLocked = !!es?.locked;
         return (
@@ -2539,7 +2586,7 @@ function CopyStack({
       const titleEs = mergeElementStyle(slide.titleStyle, viewportProfile);
       if (titleEs?.hidden) return null;
       const titleTypo = titleEs?.typo;
-      const titleStyle = posStyle(slide, "title", titleEs, !!onSlideChange, columnCenterX);
+      const titleStyle = posStyle(slide, "title", titleEs, !!onSlideChange, columnCenterContext);
       const titleClass = cn("hero-slide__title", titleTypo);
       const isTitleStamp = !titleTypo || titleTypo === "typo-content-header" || titleTypo === "typo-homepage-header" || titleTypo === "typo-subtitle";
       if (onSlideChange && slide.positioningMode === "absolute") {
@@ -2609,7 +2656,7 @@ function CopyStack({
       const es = mergeElementStyle(slide.subtitleStyle, viewportProfile);
       if (es?.hidden) return null;
       const typo = es?.typo;
-      const s = posStyle(slide, "subtitle", es, !!onSlideChange, columnCenterX);
+      const s = posStyle(slide, "subtitle", es, !!onSlideChange, columnCenterContext);
       if (onSlideChange && slide.positioningMode === "absolute") {
         const isLocked = !!es?.locked;
         return (
@@ -2635,7 +2682,7 @@ function CopyStack({
       const es = mergeElementStyle(slide.bodyStyle, viewportProfile);
       if (es?.hidden) return null;
       const typo = es?.typo;
-      const s = posStyle(slide, "body", es, !!onSlideChange, columnCenterX);
+      const s = posStyle(slide, "body", es, !!onSlideChange, columnCenterContext);
       if (onSlideChange && slide.positioningMode === "absolute") {
         const isLocked = !!es?.locked;
         return (
@@ -2661,7 +2708,7 @@ function CopyStack({
       const es = mergeElementStyle(slide.quoteStyle, viewportProfile);
       if (es?.hidden) return null;
       const typo = es?.typo;
-      const s = posStyle(slide, "quote", es, !!onSlideChange, columnCenterX);
+      const s = posStyle(slide, "quote", es, !!onSlideChange, columnCenterContext);
       const cls = cn("hero-slide__quote", typo);
       if (onSlideChange && slide.positioningMode === "absolute") {
         const isLocked = !!es?.locked;
@@ -2700,7 +2747,7 @@ function CopyStack({
           dragMode={dragMode}
           slide={slide}
           onSlideChange={onSlideChange}
-          columnCenterX={columnCenterX}
+          columnCenterContext={columnCenterContext}
         />
       );
     }
@@ -2727,7 +2774,7 @@ function ExtraElement({
   dragMode = true,
   slide,
   onSlideChange,
-  columnCenterX,
+  columnCenterContext,
 }: {
   extra: SlideExtra;
   slideIndex: number;
@@ -2739,13 +2786,13 @@ function ExtraElement({
   dragMode?: boolean;
   slide?: Slide;
   onSlideChange?: (next: Slide) => void;
-  columnCenterX?: number;
+  columnCenterContext?: ColumnCenterContext;
 }) {
   const resolvedStyle = mergeElementStyle(extra.style, viewportProfile);
   if (resolvedStyle?.hidden) return null;
   const extraKey = extra.id ?? "";
   const inEditMode = !!(onSlideChange && slide && slide.positioningMode === "absolute");
-  const style = slide ? posStyle(slide, extraKey, resolvedStyle, inEditMode, columnCenterX) : elStyle(resolvedStyle);
+  const style = slide ? posStyle(slide, extraKey, resolvedStyle, inEditMode, columnCenterContext) : elStyle(resolvedStyle);
   const typo = resolvedStyle?.typo;
   const slotId = `slide-${slideIndex}-extra-${extraIndex}`;
   const isLocked = !!resolvedStyle?.locked;
@@ -2765,7 +2812,10 @@ function ExtraElement({
     : undefined;
   const onExtraAlignChange = !dragMode && inEditMode
     ? (align: "left" | "center" | "right" | undefined) => {
-        onSlideChange!(setSlideElementViewportStyle(slide!, extra.id!, viewportProfile, { align }));
+        onSlideChange!(setSlideElementViewportStyle(slide!, extra.id!, viewportProfile, {
+          align,
+          alignMode: align === "center" ? (resolvedStyle?.alignMode ?? "1") : undefined,
+        }));
       }
     : undefined;
   const onExtraTypoChange = !dragMode && inEditMode
@@ -2896,7 +2946,7 @@ function ExtraElement({
       >
         {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
         {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps(extraKey)} />}
-        <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} />
+        <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={resolvedStyle?.align} onElementTypoChange={onExtraTypoChange} />
       </div>
     );
   }

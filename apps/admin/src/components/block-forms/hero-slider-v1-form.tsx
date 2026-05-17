@@ -87,6 +87,13 @@ const MEDIA_ALIGN_OPTIONS = [
   { value: "stretch", label: "Stretch" },
 ];
 
+const CENTER_MODE_OPTIONS = [
+  { value: "1", label: "1", title: "Slide edge to media edge" },
+  { value: "2", label: "2", title: "Outer margin to media edge" },
+  { value: "3", label: "3", title: "Outer margin to gap boundary" },
+  { value: "4", label: "4", title: "Slide edge to gap boundary" },
+] as const;
+
 const STAR_VARIANTS: { marker: string; label: string }[] = [
   { marker: "{{icon:star-v1}}", label: "v1" },
   { marker: "{{icon:star-dt}}", label: "dt" },
@@ -1138,6 +1145,13 @@ function ElementStyleEditor({
   const fallback = getScopeFallbackElementStyle(style, tuningScope);
   const patch = (key: ElementStyleField, v: string) =>
     onChange(updateScopedElementStyle(style, tuningScope, { [key]: v || undefined } as Partial<ElementStyleProfile>));
+  const patchAlign = (v: string) => {
+    const align = (v || undefined) as ElementStyleProfile["align"] | undefined;
+    onChange(updateScopedElementStyle(style, tuningScope, {
+      align,
+      alignMode: align === "center" ? (s.alignMode ?? "1") : undefined,
+    }));
+  };
 
   return (
     <div className="space-y-1">
@@ -1195,7 +1209,7 @@ function ElementStyleEditor({
           <div className="text-[11px] text-muted-foreground mb-0.5">Align</div>
           <InspectorSelect
             value={s.align ?? ""}
-            onChange={(v) => patch("align", v)}
+            onChange={patchAlign}
             options={ELEMENT_ALIGN_OPTIONS}
           />
         </div>
@@ -1220,14 +1234,15 @@ function ElementStyleEditor({
         <div>
           <div className="text-[11px] text-muted-foreground mb-0.5">Center mode</div>
           <div className="flex gap-1">
-            {(["1", "2", "3", "4"] as const).map((m) => (
+            {CENTER_MODE_OPTIONS.map((option) => (
               <button
-                key={m}
+                key={option.value}
                 type="button"
-                onClick={() => patch("alignMode", s.alignMode === m ? "" : m)}
-                className={`flex-1 rounded text-[11px] py-0.5 border transition-colors ${s.alignMode === m ? "bg-primary text-primary-foreground border-primary" : "bg-transparent text-muted-foreground border-border hover:border-foreground/40"}`}
+                title={option.title}
+                onClick={() => patch("alignMode", s.alignMode === option.value ? "" : option.value)}
+                className={`flex-1 rounded text-[11px] py-0.5 border transition-colors ${s.alignMode === option.value ? "bg-primary text-primary-foreground border-primary" : "bg-transparent text-muted-foreground border-border hover:border-foreground/40"}`}
               >
-                {m}
+                {option.label}
               </button>
             ))}
           </div>
@@ -1412,7 +1427,13 @@ function TextElementsEditor({
 
   const handleGroupAlign = (groupId: string, align: "left" | "center" | "right" | undefined) => {
     let updated = s;
-    for (const key of getGroupKeys(groupId)) updated = applyStylePatchViewport(updated, key, { align }, vMode);
+    for (const key of getGroupKeys(groupId)) {
+      const currentMode = getScopedElementStyle(getSlideStyle(updated, key), tuningScope).alignMode;
+      updated = applyStylePatchViewport(updated, key, {
+        align,
+        alignMode: align === "center" ? (currentMode ?? "1") : undefined,
+      }, vMode);
+    }
     onChange(updated);
   };
 
@@ -1642,20 +1663,20 @@ function TextElementsEditor({
                 {commonAlign === "center" && (
                   <div className="flex items-center gap-1">
                     <span className="text-[9px] text-muted-foreground/50 mr-0.5">Mode</span>
-                    {(["1", "2", "3", "4"] as const).map((m) => (
+                    {CENTER_MODE_OPTIONS.map((option) => (
                       <button
-                        key={m}
+                        key={option.value}
                         type="button"
-                        title={`Center mode ${m}`}
-                        onClick={() => handleGroupAlignMode(gid, commonAlignMode === m ? undefined : m)}
+                        title={option.title}
+                        onClick={() => handleGroupAlignMode(gid, commonAlignMode === option.value ? undefined : option.value)}
                         className={[
                           "text-[10px] font-mono px-1.5 py-0.5 rounded border transition-colors",
-                          commonAlignMode === m
+                          commonAlignMode === option.value
                             ? "border-primary/50 bg-primary/10 text-primary"
                             : "border-border/50 text-muted-foreground hover:text-foreground hover:border-border",
                         ].join(" ")}
                       >
-                        {m}
+                        {option.label}
                       </button>
                     ))}
                   </div>
