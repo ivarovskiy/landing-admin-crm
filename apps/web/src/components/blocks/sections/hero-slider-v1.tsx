@@ -2648,7 +2648,7 @@ function CopyStack({
               style={titleStyle}
             >
               {!isTitleLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("title")} />}
-              <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)} shadowContent={renderRichText(title)}>
+              <OutlineStampText className={titleClass} data-editable-stamp="true" data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)} shadowContent={renderRichText(title)}>
                 <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title")} elementAlign={titleEs?.align} onElementTypoChange={makeTypoChange?.("title")} />
               </OutlineStampText>
             </div>
@@ -2881,7 +2881,7 @@ function ExtraElement({
           data-hs-draggable={extraKey}
           style={style}
         >
-          <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
+          <OutlineStampText className={cls} data-editable-stamp="true" data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
             <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={resolvedStyle?.align} onElementTypoChange={onExtraTypoChange} />
           </OutlineStampText>
         </div>
@@ -2950,7 +2950,7 @@ function ExtraElement({
           data-hs-draggable={extraKey}
           style={style}
         >
-          <OutlineStampText className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
+          <OutlineStampText className={cls} data-editable-stamp="true" data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
             <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={resolvedStyle?.align} onElementTypoChange={onExtraTypoChange} />
           </OutlineStampText>
         </div>

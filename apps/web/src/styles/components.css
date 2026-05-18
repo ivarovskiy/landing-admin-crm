@@ -133,6 +133,28 @@
   display: inline;
 }
 
+.ds-outline-stamp[data-editable-stamp="true"] {
+  display: block;
+  width: 100%;
+  text-align: inherit;
+}
+
+.ds-outline-stamp[data-editable-stamp="true"] .ds-outline-stamp__front,
+.ds-outline-stamp[data-editable-stamp="true"] [data-tiptap],
+.ds-outline-stamp[data-editable-stamp="true"] [data-tiptap-content="true"] {
+  display: block;
+  width: 100%;
+  text-align: inherit;
+}
+
+.ds-outline-stamp[data-editable-stamp="true"] .ds-outline-stamp__shadow {
+  width: 100%;
+  text-align: inherit;
+}
+
+.ds-outline-stamp[data-editable-stamp="true"] p {
+  margin: 0;
+}
 
 .ds-outline-stamp--no-shadow {
   filter: none;
