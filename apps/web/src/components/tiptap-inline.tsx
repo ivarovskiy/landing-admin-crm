@@ -7,7 +7,7 @@ import { Underline } from "@tiptap/extension-underline";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { Mark, mergeAttributes } from "@tiptap/core";
-import { useEffect, useCallback, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useCallback, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -444,6 +444,7 @@ export function TipTapInline({
   const initialTypoRef = useRef(typoClass);
   // Track external typoClass changes to update marks when inspector changes the block typo
   const prevTypoClassRef = useRef(typoClass);
+  const promotedTypoRef = useRef<string | null>(null);
   // Stable ref so effects can read the current value without being in deps
   const onElementTypoChangeRef = useRef(onElementTypoChange);
 
@@ -513,16 +514,16 @@ export function TipTapInline({
     immediatelyRender: false,
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     onElementTypoChangeRef.current = onElementTypoChange;
   }, [onElementTypoChange]);
 
   // Migration: on editor mount, ensure typo marks are consistent with the current mode.
-  // - External typo mode (onElementTypoChange provided): first promote legacy
-  //   inline typo marks to ElementStyle.typo, then strip marks once the outer
-  //   element's CSS class can safely drive styling.
+  // - External typo mode (onElementTypoChange provided): promote legacy inline
+  //   typo marks to ElementStyle.typo, but do not strip marks on mount. Merely
+  //   entering Text mode must be visually inert.
   // - Internal typo mode: apply element-level typoClass mark to all text if any mismatch.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!editor) return;
     const markType = editor.schema.marks.typoClass;
     if (!markType) return;
@@ -532,20 +533,9 @@ export function TipTapInline({
     if (onElementTypoChangeRef.current) {
       const inlineTypo = getDocTypo(editor);
       if (!initialTypoRef.current && inlineTypo) {
+        promotedTypoRef.current = inlineTypo;
         onElementTypoChangeRef.current(inlineTypo);
-        return;
       }
-
-      // External typo mode — strip any residual inline marks and persist clean HTML.
-      let hasMarks = false;
-      editor.state.doc.descendants((node) => {
-        if (!hasMarks && node.isText && node.marks.some((m) => m.type.name === "typoClass")) hasMarks = true;
-      });
-      if (!hasMarks) return;
-      const { tr } = editor.state;
-      tr.removeMark(0, size, markType);
-      editor.view.dispatch(tr);
-      // Allow onChange to fire so stored HTML is persisted without inline marks
       return;
     }
 
@@ -569,7 +559,7 @@ export function TipTapInline({
   // When the external typoClass prop changes (e.g. inspector changes the block typo),
   // strip all inline marks so the outer element's class drives the style (external mode),
   // or replace all marks (internal mode). onChange fires so stored HTML is updated.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!editor) return;
     if (typoClass === prevTypoClassRef.current) return;
     prevTypoClassRef.current = typoClass;
@@ -577,6 +567,10 @@ export function TipTapInline({
     if (!markType) return;
     const size = editor.state.doc.content.size;
     if (size <= 0) return;
+    if (onElementTypoChangeRef.current && promotedTypoRef.current === typoClass) {
+      promotedTypoRef.current = null;
+      return;
+    }
     const { tr } = editor.state;
     tr.removeMark(0, size, markType);
     // Only re-add marks in internal mode; external mode uses outer element class
@@ -747,64 +741,72 @@ export function TipTapInline({
 
   return (
     <div data-tiptap ref={rootRef} style={style}>
-      <FloatingToolbar
-        state={toolbarState}
-        onBold={() => editor?.chain().focus().toggleBold().run()}
-        onItalic={() => editor?.chain().focus().toggleItalic().run()}
-        onUnderline={() => editor?.chain().focus().toggleUnderline().run()}
-        onStrike={() => editor?.chain().focus().toggleStrike().run()}
-        onLink={handleLink}
-        onCase={handleCycleCase}
-        onBulletList={() => editor?.chain().focus().toggleBulletList().run()}
-        onOrderedList={() => editor?.chain().focus().toggleOrderedList().run()}
-        onAlignLeft={() => {
-          if (onElementAlignChange) {
-            // Suppress onChange so the stale HTML doesn't race with the element-level align update
-            isSettingContent.current = true;
-            editor?.chain().focus().unsetTextAlign().run();
-            isSettingContent.current = false;
-            onElementAlignChange(elementAlign === "left" ? undefined : "left");
-          } else {
-            editor?.chain().focus().setTextAlign("left").run();
-          }
-        }}
-        onAlignCenter={() => {
-          if (onElementAlignChange) {
-            isSettingContent.current = true;
-            editor?.chain().focus().unsetTextAlign().run();
-            isSettingContent.current = false;
-            onElementAlignChange(elementAlign === "center" ? undefined : "center");
-          } else {
-            editor?.chain().focus().setTextAlign("center").run();
-          }
-        }}
-        onAlignRight={() => {
-          if (onElementAlignChange) {
-            isSettingContent.current = true;
-            editor?.chain().focus().unsetTextAlign().run();
-            isSettingContent.current = false;
-            onElementAlignChange(elementAlign === "right" ? undefined : "right");
-          } else {
-            editor?.chain().focus().setTextAlign("right").run();
-          }
-        }}
-        onAlignJustify={() => editor?.chain().focus().setTextAlign("justify").run()}
-        onBlockquote={() => editor?.chain().focus().toggleBlockquote().run()}
-        onHR={() => editor?.chain().focus().setHorizontalRule().run()}
-        onClearFormat={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
-        typoOptions={typoOptions}
-        onTypoChange={onTypoChange ?? (onElementTypoChange ?? (typoOptions ? handleApplyTypo : undefined))}
-        currentTypoClass={onElementTypoChange ? (typoClass ?? currentTypoClass) : currentTypoClass}
-        onIndent={() => editor?.chain().focus().sinkListItem("listItem").run()}
-        onOutdent={() => editor?.chain().focus().liftListItem("listItem").run()}
-        onThinSpace={handleThinSpace}
-        fontOffsetAvailable={currentFontHasOffset}
-        fontOffsetActive={fontOffsetEnabled}
-        onFontOffset={onFontOffsetToggle}
-        onElementAlignChange={onElementAlignChange}
-        elementAlign={elementAlign}
-      />
-      <EditorContent editor={editor} className={className} />
+      {editor ? (
+        <>
+          <FloatingToolbar
+            state={toolbarState}
+            onBold={() => editor.chain().focus().toggleBold().run()}
+            onItalic={() => editor.chain().focus().toggleItalic().run()}
+            onUnderline={() => editor.chain().focus().toggleUnderline().run()}
+            onStrike={() => editor.chain().focus().toggleStrike().run()}
+            onLink={handleLink}
+            onCase={handleCycleCase}
+            onBulletList={() => editor.chain().focus().toggleBulletList().run()}
+            onOrderedList={() => editor.chain().focus().toggleOrderedList().run()}
+            onAlignLeft={() => {
+              if (onElementAlignChange) {
+                // Suppress onChange so the stale HTML doesn't race with the element-level align update
+                isSettingContent.current = true;
+                editor.chain().focus().unsetTextAlign().run();
+                isSettingContent.current = false;
+                onElementAlignChange(elementAlign === "left" ? undefined : "left");
+              } else {
+                editor.chain().focus().setTextAlign("left").run();
+              }
+            }}
+            onAlignCenter={() => {
+              if (onElementAlignChange) {
+                isSettingContent.current = true;
+                editor.chain().focus().unsetTextAlign().run();
+                isSettingContent.current = false;
+                onElementAlignChange(elementAlign === "center" ? undefined : "center");
+              } else {
+                editor.chain().focus().setTextAlign("center").run();
+              }
+            }}
+            onAlignRight={() => {
+              if (onElementAlignChange) {
+                isSettingContent.current = true;
+                editor.chain().focus().unsetTextAlign().run();
+                isSettingContent.current = false;
+                onElementAlignChange(elementAlign === "right" ? undefined : "right");
+              } else {
+                editor.chain().focus().setTextAlign("right").run();
+              }
+            }}
+            onAlignJustify={() => editor.chain().focus().setTextAlign("justify").run()}
+            onBlockquote={() => editor.chain().focus().toggleBlockquote().run()}
+            onHR={() => editor.chain().focus().setHorizontalRule().run()}
+            onClearFormat={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
+            typoOptions={typoOptions}
+            onTypoChange={onTypoChange ?? (onElementTypoChange ?? (typoOptions ? handleApplyTypo : undefined))}
+            currentTypoClass={onElementTypoChange ? (typoClass ?? currentTypoClass) : currentTypoClass}
+            onIndent={() => editor.chain().focus().sinkListItem("listItem").run()}
+            onOutdent={() => editor.chain().focus().liftListItem("listItem").run()}
+            onThinSpace={handleThinSpace}
+            fontOffsetAvailable={currentFontHasOffset}
+            fontOffsetActive={fontOffsetEnabled}
+            onFontOffset={onFontOffsetToggle}
+            onElementAlignChange={onElementAlignChange}
+            elementAlign={elementAlign}
+          />
+          <EditorContent editor={editor} className={className} />
+        </>
+      ) : (
+        <div data-tiptap-content="true" className={className} aria-hidden="true">
+          {renderRichText(value)}
+        </div>
+      )}
       {multiline && showWordCount && (
         <div
           style={{

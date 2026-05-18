@@ -559,7 +559,8 @@
   display: none;
 }
 
-[data-stamp-shadow-style="layered"] .ds-outline-stamp[data-editable-stamp="true"] {
+[data-stamp-shadow-style="layered"] .ds-outline-stamp[data-editable-stamp="true"],
+[data-stamp-shadow-style="layered"] .hero-slide__title.ds-outline-stamp[data-editable-stamp="true"] {
   filter: drop-shadow(var(--stamp-shadow-x) var(--stamp-shadow-y) 0 var(--stamp-shadow-color));
 }
 
