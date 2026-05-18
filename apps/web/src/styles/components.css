@@ -554,6 +554,23 @@
   transform: translate(var(--stamp-shadow-x), var(--stamp-shadow-y));
 }
 
+.ds-outline-stamp[data-editable-stamp="true"] .ds-outline-stamp__shadow,
+[data-stamp-shadow-style="layered"] .ds-outline-stamp[data-editable-stamp="true"] .ds-outline-stamp__shadow {
+  display: none;
+}
+
+[data-stamp-shadow-style="layered"] .ds-outline-stamp[data-editable-stamp="true"] {
+  filter: drop-shadow(var(--stamp-shadow-x) var(--stamp-shadow-y) 0 var(--stamp-shadow-color));
+}
+
+[data-stamp-shadow-style="layered"][data-section-shadow="on"] .hero-slide__title.typo-homepage-header.ds-outline-stamp[data-editable-stamp="true"] {
+  filter: drop-shadow(var(--section-title-shadow-offset) var(--section-title-shadow-offset) 0 var(--stamp-stroke, var(--color-primary)));
+}
+
+[data-stamp-shadow-style="layered"][data-subtitle-shadow="on"] .hero-slide__title.typo-subtitle.ds-outline-stamp[data-editable-stamp="true"] {
+  filter: drop-shadow(var(--subtitle-shadow-offset) var(--subtitle-shadow-offset) 0 var(--stamp-stroke, var(--color-primary)));
+}
+
 /* ---- Scroll-to-top button ---- */
 
 .scroll-to-top {
