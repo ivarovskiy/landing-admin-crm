@@ -1856,38 +1856,22 @@ function absPositionStyle(
 
   if (es?.align === "center") {
     const centerMode = getElementCenterMode(es.alignMode);
-    const zone = columnCenterContext?.zones?.[centerMode];
+    const zone = centerMode === 4 ? undefined : columnCenterContext?.zones?.[centerMode];
     if (zone) {
-      if (explicitWidth) {
-        s.left = `${trimNumber(zone.left + zone.width / 2)}px`;
-        s.transform = "translateX(-50%)";
-        s.width = explicitWidth;
-      } else {
-        s.left = `${zone.left}px`;
-        s.width = `${zone.width}px`;
-      }
-    } else if (explicitWidth) {
-      s.left = "50%";
-      s.transform = "translateX(-50%)";
-      s.width = explicitWidth;
+      s.left = `${zone.left}px`;
+      s.width = `${zone.width}px`;
     } else {
       s.left = "0";
       s.right = "0";
     }
     s.textAlign = "center";
   } else if (es?.align === "right") {
-    if (explicitWidth) {
-      s.right = "0";
-      s.width = explicitWidth;
-    } else {
-      s.left = "0";
-      s.right = "0";
-    }
+    s.left = "0";
+    s.right = "0";
     s.textAlign = "right";
   } else if (es?.align === "left") {
     s.left = "0";
-    if (explicitWidth) s.width = explicitWidth;
-    else s.right = "0";
+    s.right = "0";
     s.textAlign = "left";
   } else {
     s.left = `${left}px`;
@@ -2605,16 +2589,16 @@ function CopyStack({
   }
 
   const makeAlignChange = (!dragMode && onSlideChange)
-    ? (key: string, _es: ElementStyle | undefined) =>
+    ? (key: string) =>
         (align: "left" | "center" | "right" | undefined) =>
           onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, {
             align,
-            alignMode: align === "center" ? (_es?.alignMode ?? "4") : undefined,
+            alignMode: align === "center" ? "4" : undefined,
           }))
     : null;
 
   const makeTypoChange = (!dragMode && onSlideChange)
-    ? (key: string, _es: ElementStyle | undefined) =>
+    ? (key: string) =>
         (typo: string) =>
           onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, { typo: typo || undefined }))
     : null;
@@ -2636,7 +2620,7 @@ function CopyStack({
             data-el={`slide-${slideIndex}-kicker`}
           >
             {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("kicker")} />}
-            <TipTapInline value={kicker} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, kicker: html })} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, kickerStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("kicker", es)} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("kicker", es)} />
+            <TipTapInline value={kicker} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, kicker: html })} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, kickerStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("kicker")} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("kicker")} />
           </div>
         );
       }
@@ -2665,7 +2649,7 @@ function CopyStack({
             >
               {!isTitleLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("title")} />}
               <OutlineStampText className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)} shadowContent={renderRichText(title)}>
-                <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title", titleEs)} elementAlign={titleEs?.align} onElementTypoChange={makeTypoChange?.("title", titleEs)} />
+                <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title")} elementAlign={titleEs?.align} onElementTypoChange={makeTypoChange?.("title")} />
               </OutlineStampText>
             </div>
           );
@@ -2680,7 +2664,7 @@ function CopyStack({
             {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
             {!isTitleLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("title")} />}
             <p className={titleClass} data-el={`slide-${slideIndex}-title`} style={textContentStyle(titleEs)}>
-              <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title", titleEs)} elementAlign={titleEs?.align} onElementTypoChange={makeTypoChange?.("title", titleEs)} />
+              <TipTapInline value={title} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title")} elementAlign={titleEs?.align} onElementTypoChange={makeTypoChange?.("title")} />
             </p>
           </div>
         );
@@ -2732,7 +2716,7 @@ function CopyStack({
             data-el={`slide-${slideIndex}-subtitle`}
           >
             {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("subtitle")} />}
-            <TipTapInline value={subtitle} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, subtitle: html })} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, subtitleStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("subtitle", es)} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("subtitle", es)} />
+            <TipTapInline value={subtitle} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, subtitle: html })} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, subtitleStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("subtitle")} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("subtitle")} />
           </div>
         );
       }
@@ -2758,7 +2742,7 @@ function CopyStack({
             data-el={`slide-${slideIndex}-body`}
           >
             {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("body")} />}
-            <TipTapInline value={body} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, body: html })} typoClass={typo} typoOptions={TYPO_PRESETS} showWordCount fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, bodyStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("body", es)} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("body", es)} />
+            <TipTapInline value={body} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, body: html })} typoClass={typo} typoOptions={TYPO_PRESETS} showWordCount fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, bodyStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("body")} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("body")} />
           </div>
         );
       }
@@ -2785,7 +2769,7 @@ function CopyStack({
             data-el={`slide-${slideIndex}-quote`}
           >
             {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("quote")} />}
-            <TipTapInline value={quote} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, quote: html })} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, quoteStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("quote", es)} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("quote", es)} />
+            <TipTapInline value={quote} onChange={dragMode ? undefined : (html) => onSlideChange({ ...slide, quote: html })} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={dragMode ? undefined : () => onSlideChange({ ...slide, quoteStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("quote")} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("quote")} />
           </div>
         );
       }
@@ -2878,7 +2862,7 @@ function ExtraElement({
     ? (align: "left" | "center" | "right" | undefined) => {
         onSlideChange!(setSlideElementViewportStyle(slide!, extra.id!, viewportProfile, {
           align,
-          alignMode: align === "center" ? (resolvedStyle?.alignMode ?? "4") : undefined,
+          alignMode: align === "center" ? "4" : undefined,
         }));
       }
     : undefined;

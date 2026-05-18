@@ -125,6 +125,8 @@
 
 .ds-outline-stamp__shadow {
   display: none;
+  pointer-events: none;
+  user-select: none;
 }
 
 .ds-outline-stamp__front {

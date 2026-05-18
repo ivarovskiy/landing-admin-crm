@@ -1149,7 +1149,7 @@ function ElementStyleEditor({
     const align = (v || undefined) as ElementStyleProfile["align"] | undefined;
     onChange(updateScopedElementStyle(style, tuningScope, {
       align,
-      alignMode: align === "center" ? (s.alignMode ?? "4") : undefined,
+      alignMode: align === "center" ? "4" : undefined,
     }));
   };
 
@@ -1428,10 +1428,9 @@ function TextElementsEditor({
   const handleGroupAlign = (groupId: string, align: "left" | "center" | "right" | undefined) => {
     let updated = s;
     for (const key of getGroupKeys(groupId)) {
-      const currentMode = getScopedElementStyle(getSlideStyle(updated, key), tuningScope).alignMode;
       updated = applyStylePatchViewport(updated, key, {
         align,
-        alignMode: align === "center" ? (currentMode ?? "4") : undefined,
+        alignMode: align === "center" ? "4" : undefined,
       }, vMode);
     }
     onChange(updated);

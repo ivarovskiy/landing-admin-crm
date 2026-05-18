@@ -439,6 +439,7 @@ export function TipTapInline({
   // Suppress selectionUpdate-triggered hide while interacting with toolbar
   // (e.g. native <select> dropdown steals focus briefly)
   const suppressHideUntil = useRef(0);
+  const rootRef = useRef<HTMLDivElement>(null);
   // Capture typoClass at mount so migration runs exactly once
   const initialTypoRef = useRef(typoClass);
   // Track external typoClass changes to update marks when inspector changes the block typo
@@ -598,6 +599,11 @@ export function TipTapInline({
       setToolbarState(null);
       return;
     }
+    const root = rootRef.current;
+    if (!root || !sel.anchorNode || !sel.focusNode || !root.contains(sel.anchorNode) || !root.contains(sel.focusNode)) {
+      setToolbarState(null);
+      return;
+    }
     const rect = sel.getRangeAt(0).getBoundingClientRect();
     if (!rect.width) {
       setToolbarState(null);
@@ -639,12 +645,13 @@ export function TipTapInline({
         suppressHideUntil.current = Date.now() + 500;
         return;
       }
-      if (target.closest("[data-tiptap]")) {
+      if (rootRef.current?.contains(target)) {
         // Starting a new drag-selection inside the editor
         isDragging.current = true;
         setToolbarState(null);
       } else {
         // Clicked outside editor and toolbar — hide
+        isDragging.current = false;
         setToolbarState(null);
       }
     };
@@ -739,7 +746,7 @@ export function TipTapInline({
     : 0;
 
   return (
-    <div data-tiptap style={style}>
+    <div data-tiptap ref={rootRef} style={style}>
       <FloatingToolbar
         state={toolbarState}
         onBold={() => editor?.chain().focus().toggleBold().run()}
