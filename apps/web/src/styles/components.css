@@ -134,21 +134,22 @@
 }
 
 .ds-outline-stamp[data-editable-stamp="true"] {
-  display: block;
-  width: 100%;
+  display: inline-block;
+  max-width: 100%;
   text-align: inherit;
+  vertical-align: top;
 }
 
 .ds-outline-stamp[data-editable-stamp="true"] .ds-outline-stamp__front,
 .ds-outline-stamp[data-editable-stamp="true"] [data-tiptap],
 .ds-outline-stamp[data-editable-stamp="true"] [data-tiptap-content="true"] {
   display: block;
-  width: 100%;
+  width: auto;
   text-align: inherit;
 }
 
 .ds-outline-stamp[data-editable-stamp="true"] .ds-outline-stamp__shadow {
-  width: 100%;
+  width: auto;
   text-align: inherit;
 }
 
