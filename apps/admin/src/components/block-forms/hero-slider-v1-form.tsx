@@ -687,6 +687,8 @@ function SlideEditor({
 }) {
   const [collapsed, setCollapsed] = useState(true);
   const [showCanvas, setShowCanvas] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const desktop = getScopedDesktopLayout(s, tuningScope);
   const desktopFallback = getScopeFallbackLayout(s, tuningScope);
   const mobile = s?.layout?.mobile ?? {};
@@ -694,75 +696,98 @@ function SlideEditor({
   const tuningScopeLabel = tuningScope === "ipadPro" ? "iPad Pro overrides" : "Desktop/default";
   const isAbsoluteSlide = s?.positioningMode === "absolute";
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handle(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [menuOpen]);
+
   return (
-    <div className="rounded-md border bg-muted/10">
-      {/* Slide header — click to collapse/expand */}
+    <div className={["rounded-md border transition-colors", s?.hidden ? "opacity-60" : ""].join(" ")}>
+      {/* Slide header */}
       <div
-        className={[
-          "flex items-center justify-between px-2 py-1.5 border-b bg-muted/20 cursor-pointer select-none",
-          s?.hidden ? "opacity-50" : "",
-        ].filter(Boolean).join(" ")}
+        className="flex items-center gap-1 px-1 py-1 cursor-pointer select-none min-h-[36px] bg-muted/10 rounded-t-md border-b"
         onClick={() => setCollapsed((c) => !c)}
       >
+        {/* Drag grip */}
+        <div className="flex-shrink-0 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing px-0.5" onClick={e => e.stopPropagation()}>
+          <GripVertical className="h-3.5 w-3.5" />
+        </div>
+
+        {/* Canvas toggle */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setShowCanvas((v) => !v); }}
+          className={["flex-shrink-0 p-0.5 rounded transition-colors", showCanvas ? "text-primary" : "text-muted-foreground hover:text-foreground"].join(" ")}
+          title="Toggle canvas editor"
+        >
+          <Layers className="h-3.5 w-3.5" />
+        </button>
+
+        {/* Label */}
         <span className={[
-          "text-[11px] font-semibold text-muted-foreground truncate max-w-[160px]",
-          s?.hidden ? "line-through" : "",
-        ].filter(Boolean).join(" ")}>
+          "text-[11px] font-semibold text-muted-foreground truncate flex-1",
+          s?.hidden ? "line-through opacity-60" : "",
+        ].join(" ")}>
           {collapsed ? "▸" : "▾"} {idx + 1}. {s?.name || s?.title?.split("\n")[0] || template}
         </span>
-        <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+
+        {/* 3-dot menu */}
+        <div ref={menuRef} className="relative flex-shrink-0" onClick={e => e.stopPropagation()}>
           <button
             type="button"
-            onClick={() => setShowCanvas((v) => !v)}
-            className={[
-              "p-0.5",
-              showCanvas
-                ? "text-primary"
-                : "text-muted-foreground hover:text-foreground",
-            ].join(" ")}
-            title="Toggle canvas editor"
+            onClick={() => setMenuOpen(o => !o)}
+            className="flex items-center justify-center w-7 h-7 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
           >
-            <Layers className="h-3 w-3" />
+            <MoreHorizontal className="h-4 w-4" />
           </button>
-          <button
-            type="button"
-            onClick={() => onChange({ ...s, hidden: !s?.hidden })}
-            className="text-muted-foreground hover:text-foreground p-0.5"
-            title={s?.hidden ? "Show slide" : "Hide slide"}
-          >
-            {s?.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-          </button>
-          <button
-            type="button"
-            onClick={() => onMove("up")}
-            disabled={idx === 0}
-            className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
-          >
-            <ChevronUp className="h-3 w-3" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onMove("down")}
-            disabled={idx === total - 1}
-            className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
-          >
-            <ChevronDown className="h-3 w-3" />
-          </button>
-          <button
-            type="button"
-            onClick={onDuplicate}
-            className="text-muted-foreground hover:text-foreground p-0.5"
-            title="Duplicate slide"
-          >
-            <Copy className="h-3 w-3" />
-          </button>
-          <button
-            type="button"
-            onClick={onRemove}
-            className="text-muted-foreground hover:text-red-500 p-0.5"
-          >
-            <Trash2 className="h-3 w-3" />
-          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-1 z-50 min-w-[160px] rounded-md border border-border bg-popover shadow-md py-1 text-[12px]">
+              <button
+                type="button"
+                disabled={idx === 0}
+                onClick={() => { onMove("up"); setMenuOpen(false); }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ChevronUp className="h-3.5 w-3.5" /> Move up
+              </button>
+              <button
+                type="button"
+                disabled={idx === total - 1}
+                onClick={() => { onMove("down"); setMenuOpen(false); }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ChevronDown className="h-3.5 w-3.5" /> Move down
+              </button>
+              <div className="my-1 border-t border-border/50" />
+              <button
+                type="button"
+                onClick={() => { onChange({ ...s, hidden: !s?.hidden }); setMenuOpen(false); }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-muted"
+              >
+                {s?.hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                {s?.hidden ? "Show" : "Hide"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { onDuplicate(); setMenuOpen(false); }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-muted"
+              >
+                <Copy className="h-3.5 w-3.5" /> Duplicate
+              </button>
+              <div className="my-1 border-t border-border/50" />
+              <button
+                type="button"
+                onClick={() => { onRemove(); setMenuOpen(false); }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-red-50 text-red-500"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Delete
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1204,7 +1229,7 @@ function ElementStyleEditor({
           />
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-1">
+      <div className="grid grid-cols-4 gap-1">
         <div>
           <div className="text-[11px] text-muted-foreground mb-0.5">Align</div>
           <InspectorSelect
@@ -1227,6 +1252,14 @@ function ElementStyleEditor({
             value={s.strokeW ?? ""}
             onChange={(v) => patch("strokeW", v)}
             placeholder={fallback.strokeW ?? "3.6px"}
+          />
+        </div>
+        <div>
+          <div className="text-[11px] text-muted-foreground mb-0.5">Spacing</div>
+          <InspectorInput
+            value={s.letterSpacing ?? ""}
+            onChange={(v) => patch("letterSpacing", v)}
+            placeholder={fallback.letterSpacing ?? "0"}
           />
         </div>
       </div>

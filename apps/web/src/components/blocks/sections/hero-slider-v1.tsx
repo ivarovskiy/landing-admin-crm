@@ -32,6 +32,7 @@ type ElementStyle = {
   size?: string;
   typo?: string; // typography class from design system
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
+  letterSpacing?: string; // letter-spacing override (e.g. "0.05em", "2px")
   locked?: boolean; // prevents drag/resize in preview and canvas
   hidden?: boolean; // hide this element without deleting it
   groupId?: string; // group identifier for moving elements together
@@ -338,6 +339,7 @@ function absElStyle(es?: ElementStyle, precedingMt = 0): React.CSSProperties {
   }
   if (es?.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
   if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
+  if (es?.letterSpacing) s.letterSpacing = resolveDesignViewportUnits(es.letterSpacing)!;
   return { position: "relative", height: 0, overflow: "visible", ...s } as React.CSSProperties;
 }
 
@@ -362,6 +364,7 @@ function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
   }
   if (es.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
   if (es.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
+  if (es.letterSpacing) s.letterSpacing = resolveDesignViewportUnits(es.letterSpacing)!;
   if (es.useFontOffset && es.typo) {
     const offsetVal = getTypoOffset(es.typo);
     if (offsetVal) s.paddingBottom = offsetVal;

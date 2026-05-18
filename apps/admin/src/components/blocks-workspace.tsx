@@ -42,7 +42,7 @@ import {
   MoreHorizontal,
   Move,
   Grid3X3,
-  ArrowLeftRight,
+  Palette,
 } from "lucide-react";
 
 /* ================================================================
@@ -193,6 +193,7 @@ export function BlocksWorkspace({
   const [toolboxText, setToolboxText] = useState(false);
   const [toolboxDrag, setToolboxDrag] = useState(false);
   const [toolboxGuides, setToolboxGuides] = useState(false);
+  const colorInputRef = useRef<HTMLInputElement>(null);
 
   // Page settings floating panel
   const [showPageSettings, setShowPageSettings] = useState(false);
@@ -777,19 +778,26 @@ export function BlocksWorkspace({
               Guides
             </TToolBtn>
             <TToolBtn
-              label="Scale font to match element width (select element first)"
-              active={toolboxDrag}
-              onClick={() => {
-                try {
-                  iframeRef.current?.contentWindow?.postMessage(
-                    { type: "scale-font-to-width", elementId: selectedElementId },
-                    "*",
-                  );
-                } catch { /* cross-origin */ }
-              }}
+              label="Change element color (select element first)"
+              active={false}
+              onClick={() => colorInputRef.current?.click()}
             >
-              <ArrowLeftRight className="h-4 w-4" />
-              Scale
+              <Palette className="h-4 w-4" />
+              Color
+              <input
+                ref={colorInputRef}
+                type="color"
+                defaultValue="#ffffff"
+                style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
+                onChange={(e) => {
+                  try {
+                    iframeRef.current?.contentWindow?.postMessage(
+                      { type: "set-element-color", elementId: selectedElementId, color: e.target.value },
+                      "*",
+                    );
+                  } catch { /* cross-origin */ }
+                }}
+              />
             </TToolBtn>
           </div>
 
@@ -1258,7 +1266,7 @@ function TToolBtn({
         "relative group flex items-center justify-center gap-1 rounded transition-all disabled:opacity-40",
         wide ? "px-3 py-1.5 text-xs font-medium" : "px-2.5 py-1.5",
         active
-          ? "bg-muted text-foreground shadow-sm"
+          ? "bg-primary/15 text-primary shadow-sm"
           : "text-foreground/60 hover:text-foreground",
       ].join(" ")}
     >

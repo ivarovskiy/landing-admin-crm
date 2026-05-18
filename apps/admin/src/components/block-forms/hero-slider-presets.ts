@@ -49,6 +49,7 @@ export type ElementStyle = {
   size?: string;  // font-size override
   typo?: TypoClass; // typography class from design system
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
+  letterSpacing?: string; // letter-spacing (e.g. "0.05em", "2px")
   snapToBaseline?: boolean; // lock Y to the canvas baseline guideline
   locked?: boolean;         // prevent position/size changes in canvas and preview
   hidden?: boolean;         // hide this element without deleting it

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { FileText, ExternalLink, Search, ChevronRight, ChevronDown, Minus } from "lucide-react";
+import { FileText, ExternalLink, Search, ChevronRight, ChevronDown, Minus, Globe } from "lucide-react";
 import { timeAgo } from "@/lib/time-utils";
 
 export type AdminPageRow = {
@@ -23,43 +23,19 @@ type TreeNode = {
 
 // ─── Site detection ───────────────────────────────────────────────────────────
 
-function detectSite(slug: string): { label: string; color: string } | null {
+const KNOWN_SITES: { id: string; label: string; color: string }[] = [
+  { id: "sdc-ballet",  label: "Simply Dance", color: "oklch(0.6 0.18 270)" },
+  { id: "ibc-ballet",  label: "IBC Ballet",   color: "oklch(0.58 0.22 25)"  },
+];
+
+function siteForSlug(slug: string): { label: string; color: string } | null {
   const s = slug.toLowerCase();
   if (s.includes("ibc") || s === "home") return { label: "IBC Ballet", color: "oklch(0.58 0.22 25)" };
   if (
-    s.includes("sds") ||
-    s.includes("sdc") ||
-    s.includes("simply-dance") ||
-    s.includes("junior-company") ||
-    s.includes("summer-program") ||
-    s.includes("new-student-memo")
-  ) {
-    return { label: "Simply Dance Studio", color: "oklch(0.6 0.18 270)" };
-  }
+    s.includes("sds") || s.includes("sdc") || s.includes("simply-dance") ||
+    s.includes("junior-company") || s.includes("summer-program") || s.includes("new-student-memo")
+  ) return { label: "Simply Dance", color: "oklch(0.6 0.18 270)" };
   return null;
-}
-
-// ─── Block type labels ────────────────────────────────────────────────────────
-
-const BLOCK_LABELS: Record<string, { label: string; color: string }> = {
-  "hero:slider-v1":        { label: "Hero Slider",    color: "oklch(0.55 0.18 200)" },
-  "content-page:v1":       { label: "Content Page",   color: "oklch(0.52 0.14 145)" },
-  "new-student-memo:v1":   { label: "Student Memo",   color: "oklch(0.55 0.16 60)"  },
-  "doc-header:v1":         { label: "Document",       color: "oklch(0.52 0.12 240)" },
-  "doc-body:v1":           { label: "Document",       color: "oklch(0.52 0.12 240)" },
-  "text-block:v1":         { label: "Text Block",     color: "oklch(0.52 0.08 0)"   },
-  "image-block:v1":        { label: "Image Block",    color: "oklch(0.52 0.12 310)" },
-  "features:v1":           { label: "Features",       color: "oklch(0.52 0.14 170)" },
-  "studio-address:v1":     { label: "Studio Address", color: "oklch(0.52 0.14 80)"  },
-  "scrapbook:v1":          { label: "Scrapbook",      color: "oklch(0.52 0.16 330)" },
-  "header:v1":             { label: "Header",         color: "oklch(0.46 0.06 0)"   },
-  "footer:v1":             { label: "Footer",         color: "oklch(0.46 0.06 0)"   },
-};
-
-function blockMeta(block?: { type: string; variant: string } | null) {
-  if (!block) return null;
-  const key = `${block.type}:${block.variant}`;
-  return BLOCK_LABELS[key] ?? BLOCK_LABELS[block.type] ?? { label: block.type, color: "oklch(0.52 0.06 0)" };
 }
 
 // ─── Tree builder ─────────────────────────────────────────────────────────────
@@ -71,18 +47,16 @@ function buildTree(pages: AdminPageRow[]): TreeNode[] {
     if (!childrenMap.has(key)) childrenMap.set(key, []);
     childrenMap.get(key)!.push(p);
   }
-
   function buildNodes(parentId: string | null): TreeNode[] {
     return (childrenMap.get(parentId) ?? []).map((page) => ({
       page,
       children: buildNodes(page.id),
     }));
   }
-
   return buildNodes(null);
 }
 
-// ─── Row component ────────────────────────────────────────────────────────────
+// ─── Row ─────────────────────────────────────────────────────────────────────
 
 function PageRow({
   page,
@@ -90,7 +64,6 @@ function PageRow({
   hasChildren,
   isExpanded,
   onToggle,
-  isLast,
   now,
 }: {
   page: AdminPageRow;
@@ -98,17 +71,14 @@ function PageRow({
   hasChildren: boolean;
   isExpanded: boolean;
   onToggle: () => void;
-  isLast: boolean;
   now: number;
 }) {
-  const site = detectSite(page.slug ?? "");
-  const block = blockMeta(page.primaryBlock);
+  const site = siteForSlug(page.slug ?? "");
 
   return (
-    <div className="grid min-h-[52px] grid-cols-[1fr_130px_110px_80px_76px_80px] items-center gap-2 border-b border-border px-3 py-2 transition-colors hover:bg-muted/40 last:border-0">
-      {/* Page column — indented */}
-      <div className="flex min-w-0 items-center gap-1" style={{ paddingLeft: depth * 20 }}>
-        {/* Expand / collapse / leaf indicator */}
+    <div className="grid min-h-[48px] grid-cols-[1fr_100px_72px_68px_68px] items-center gap-2 border-b border-border px-3 py-1.5 transition-colors hover:bg-muted/40 last:border-0">
+      {/* Page */}
+      <div className="flex min-w-0 items-center gap-1" style={{ paddingLeft: depth * 18 }}>
         <button
           type="button"
           onClick={hasChildren ? onToggle : undefined}
@@ -117,7 +87,6 @@ function PageRow({
             hasChildren ? "text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer" : "cursor-default text-transparent",
           ].join(" ")}
           tabIndex={hasChildren ? 0 : -1}
-          aria-label={isExpanded ? "Collapse" : "Expand"}
         >
           {hasChildren ? (
             isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />
@@ -125,53 +94,34 @@ function PageRow({
             <Minus className="h-3 w-3 text-border" />
           ) : null}
         </button>
-
         <Link href={`/admin/pages/${page.id}`} className="flex min-w-0 items-center gap-1.5">
           <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span className="truncate text-sm font-medium text-foreground">/{page.slug}</span>
         </Link>
       </div>
 
-      {/* Block type */}
-      <div className="min-w-0">
-        {block ? (
-          <span
-            className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold leading-none tracking-wide"
-            style={{ background: block.color + "22", color: block.color }}
-          >
-            {block.label}
-          </span>
-        ) : (
-          <span className="text-[10px] text-muted-foreground/50">—</span>
-        )}
-      </div>
-
       {/* Site */}
       <div className="min-w-0">
         {site ? (
-          <span className="inline-flex items-center gap-1 truncate text-[11px] font-medium" style={{ color: site.color }}>
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium truncate" style={{ color: site.color }}>
             <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: site.color }} />
             {site.label}
           </span>
         ) : (
-          <span className="text-xs text-muted-foreground/40">—</span>
+          <span className="text-[10px] text-muted-foreground/40">—</span>
         )}
       </div>
 
       {/* Status */}
-      <span
-        className={[
-          "w-fit rounded-md px-2 py-0.5 text-[10px] font-semibold leading-none",
-          page.status === "published"
-            ? "bg-primary/10 text-primary"
-            : "bg-muted text-muted-foreground",
-        ].join(" ")}
-      >
+      <span className={[
+        "w-fit rounded-md px-2 py-0.5 text-[10px] font-semibold leading-none",
+        page.status === "published" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+      ].join(" ")}>
         {page.status ?? "draft"}
       </span>
 
       {/* Updated */}
-      <span className="text-[11px] text-muted-foreground">
+      <span className="text-[11px] text-muted-foreground tabular-nums">
         {timeAgo(page.contentUpdatedAt ?? page.updatedAt, now)}
       </span>
 
@@ -189,14 +139,10 @@ function PageRow({
   );
 }
 
-// ─── Recursive tree renderer ──────────────────────────────────────────────────
+// ─── Tree renderer ────────────────────────────────────────────────────────────
 
 function TreeRows({
-  nodes,
-  depth,
-  expanded,
-  onToggle,
-  now,
+  nodes, depth, expanded, onToggle, now,
 }: {
   nodes: TreeNode[];
   depth: number;
@@ -206,7 +152,7 @@ function TreeRows({
 }) {
   return (
     <>
-      {nodes.map((node, i) => {
+      {nodes.map((node) => {
         const isExpanded = expanded.has(node.page.id);
         return (
           <div key={node.page.id}>
@@ -216,17 +162,10 @@ function TreeRows({
               hasChildren={node.children.length > 0}
               isExpanded={isExpanded}
               onToggle={() => onToggle(node.page.id)}
-              isLast={i === nodes.length - 1 && depth === 0}
               now={now}
             />
             {isExpanded && node.children.length > 0 && (
-              <TreeRows
-                nodes={node.children}
-                depth={depth + 1}
-                expanded={expanded}
-                onToggle={onToggle}
-                now={now}
-              />
+              <TreeRows nodes={node.children} depth={depth + 1} expanded={expanded} onToggle={onToggle} now={now} />
             )}
           </div>
         );
@@ -239,22 +178,57 @@ function TreeRows({
 
 export function PagesTable({ pages }: { pages: AdminPageRow[] }) {
   const [search, setSearch] = useState("");
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null); // null = All
   const now = useMemo(() => Date.now(), []);
 
+  // Top-level pages for the left sidebar
+  const topLevel = useMemo(
+    () => pages.filter((p) => !p.parentId).sort((a, b) => a.slug.localeCompare(b.slug)),
+    [pages],
+  );
+
+  // Pages visible in the main area (filtered by selected parent)
+  const visiblePages = useMemo(() => {
+    if (selectedParentId === null) return pages;
+    // Collect ids of selectedParent + all descendants
+    const ids = new Set<string>();
+    ids.add(selectedParentId);
+    function collect(parentId: string) {
+      for (const p of pages) {
+        if (p.parentId === parentId) { ids.add(p.id); collect(p.id); }
+      }
+    }
+    collect(selectedParentId);
+    return pages.filter((p) => ids.has(p.id));
+  }, [pages, selectedParentId]);
+
   const tree = useMemo(() => {
-    const sorted = [...pages].sort(
+    const sorted = [...visiblePages].sort(
       (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
     );
+    // If filtered to a specific parent, root the tree at that parent's children
+    if (selectedParentId !== null) {
+      const rootPage = pages.find((p) => p.id === selectedParentId)!;
+      if (!rootPage) return buildTree(sorted);
+      const childrenMap = new Map<string | null, AdminPageRow[]>();
+      for (const p of sorted) {
+        const key = p.parentId ?? null;
+        if (!childrenMap.has(key)) childrenMap.set(key, []);
+        childrenMap.get(key)!.push(p);
+      }
+      const rootNode: TreeNode = {
+        page: rootPage,
+        children: (childrenMap.get(selectedParentId) ?? []).map((page) => ({ page, children: [] })),
+      };
+      return [rootNode];
+    }
     return buildTree(sorted);
-  }, [pages]);
+  }, [visiblePages, selectedParentId, pages]);
 
-  // All nodes with children start expanded
   const defaultExpanded = useMemo(() => {
     const ids = new Set<string>();
     function collect(nodes: TreeNode[]) {
-      for (const n of nodes) {
-        if (n.children.length > 0) { ids.add(n.page.id); collect(n.children); }
-      }
+      for (const n of nodes) { if (n.children.length > 0) { ids.add(n.page.id); collect(n.children); } }
     }
     collect(tree);
     return ids;
@@ -263,70 +237,102 @@ export function PagesTable({ pages }: { pages: AdminPageRow[] }) {
   const [expanded, setExpanded] = useState<Set<string>>(defaultExpanded);
 
   const onToggle = (id: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setExpanded((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
 
-  // Search: flat filtered list (bypass tree)
   const searchTrimmed = search.trim().toLowerCase();
   const flatFiltered = searchTrimmed
     ? pages.filter((p) => p.slug?.toLowerCase().includes(searchTrimmed))
     : null;
 
   return (
-    <div className="space-y-3">
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search pages..."
-          className="h-11 w-full rounded-lg border border-border bg-card pl-10 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/70 focus:ring-1 focus:ring-ring/70"
-        />
+    <div className="flex gap-4">
+      {/* ── Left sidebar: parent pages ── */}
+      <div className="w-44 shrink-0 space-y-0.5">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2">Sites</p>
+        <button
+          type="button"
+          onClick={() => setSelectedParentId(null)}
+          className={[
+            "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors",
+            selectedParentId === null
+              ? "bg-primary/10 text-primary font-medium"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          ].join(" ")}
+        >
+          <Globe className="h-3.5 w-3.5 shrink-0" />
+          All pages
+          <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">{pages.length}</span>
+        </button>
+
+        {topLevel.map((p) => {
+          const site = siteForSlug(p.slug);
+          const childCount = pages.filter((c) => c.parentId === p.id).length;
+          const isActive = selectedParentId === p.id;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setSelectedParentId(isActive ? null : p.id)}
+              className={[
+                "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors",
+                isActive ? "bg-primary/10 font-medium" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              ].join(" ")}
+              style={isActive && site ? { color: site.color } : undefined}
+            >
+              {site ? (
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: site.color }} />
+              ) : (
+                <FileText className="h-3.5 w-3.5 shrink-0" />
+              )}
+              <span className="truncate">{site?.label ?? `/${p.slug}`}</span>
+              {childCount > 0 && (
+                <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">{childCount}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-        {/* Header */}
-        <div className="grid grid-cols-[1fr_130px_110px_80px_76px_80px] gap-2 border-b border-border bg-muted/30 px-3 py-2">
-          {["Page", "Component", "Site", "Status", "Updated", ""].map((h) => (
-            <span key={h} className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {h}
-            </span>
-          ))}
+      {/* ── Main area ── */}
+      <div className="min-w-0 flex-1 space-y-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search pages..."
+            className="h-11 w-full rounded-lg border border-border bg-card pl-10 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/70 focus:ring-1 focus:ring-ring/70"
+          />
         </div>
 
-        {/* Search results — flat list */}
-        {flatFiltered !== null ? (
-          flatFiltered.length === 0 ? (
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          {/* Header */}
+          <div className="grid grid-cols-[1fr_100px_72px_68px_68px] gap-2 border-b border-border bg-muted/30 px-3 py-2">
+            {["Page", "Site", "Status", "Updated", ""].map((h) => (
+              <span key={h} className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{h}</span>
+            ))}
+          </div>
+
+          {flatFiltered !== null ? (
+            flatFiltered.length === 0 ? (
+              <div className="px-4 py-10 text-center">
+                <p className="text-sm text-muted-foreground">No pages match &ldquo;{search}&rdquo;</p>
+              </div>
+            ) : (
+              <div>
+                {flatFiltered.map((page) => (
+                  <PageRow key={page.id} page={page} depth={0} hasChildren={false} isExpanded={false} onToggle={() => {}} now={now} />
+                ))}
+              </div>
+            )
+          ) : tree.length === 0 ? (
             <div className="px-4 py-10 text-center">
-              <p className="text-sm text-muted-foreground">No pages match &ldquo;{search}&rdquo;</p>
+              <p className="text-sm text-muted-foreground">No pages yet.</p>
             </div>
           ) : (
-            <div>
-              {flatFiltered.map((page) => (
-                <PageRow
-                  key={page.id}
-                  page={page}
-                  depth={0}
-                  hasChildren={false}
-                  isExpanded={false}
-                  onToggle={() => {}}
-                  isLast={false}
-                  now={now}
-                />
-              ))}
-            </div>
-          )
-        ) : tree.length === 0 ? (
-          <div className="px-4 py-10 text-center">
-            <p className="text-sm text-muted-foreground">No pages yet.</p>
-          </div>
-        ) : (
-          /* Tree view */
-          <TreeRows nodes={tree} depth={0} expanded={expanded} onToggle={onToggle} now={now} />
-        )}
+            <TreeRows nodes={tree} depth={0} expanded={expanded} onToggle={onToggle} now={now} />
+          )}
+        </div>
       </div>
     </div>
   );
