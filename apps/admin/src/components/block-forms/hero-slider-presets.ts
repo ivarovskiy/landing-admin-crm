@@ -124,7 +124,7 @@ export type ElementStyleProfile = Omit<ElementStyle, "viewportProfiles">;
 /** Extra text block that can be added to any slide */
 export type SlideExtra = {
   id?: string;
-  kind: "text" | "kicker" | "stamp";
+  kind: "text" | "tagline" | "kicker" | "stamp";
   text: string;
   style?: ElementStyle;
 };

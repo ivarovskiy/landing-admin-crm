@@ -46,7 +46,7 @@ type ElementStyleProfile = Omit<ElementStyle, "viewportProfiles">;
 
 type SlideExtra = {
   id?: string;
-  kind: "text" | "kicker" | "stamp";
+  kind: "text" | "tagline" | "kicker" | "stamp";
   text: string;
   style?: ElementStyle;
 };
@@ -521,6 +521,7 @@ export function HeroSliderV1({
   const toolboxDrag     = editMode && toolboxState.drag;
   const toolboxGuides   = editMode && toolboxState.guides;
   const toolboxIgnoreGap = editMode && toolboxState.ignoreGap;
+  const toolboxAddText  = editMode && toolboxState.addText;
 
   // effective values gated by toolbox
   const effectiveEditMode = editMode && (toolboxTextEdit || toolboxDrag);
@@ -778,6 +779,7 @@ export function HeroSliderV1({
                     canvasGuidelines={toolboxGuides ? canvasGuidelines : undefined}
                     viewportProfile={viewportProfile}
                     toolboxIgnoreGap={toolboxIgnoreGap}
+                    addTextMode={toolboxAddText && !isClone && realIndex === active}
                   />
                 </div>
               );
@@ -1100,6 +1102,7 @@ function HeroSlide({
   canvasGuidelines,
   viewportProfile,
   toolboxIgnoreGap = false,
+  addTextMode = false,
 }: {
   slide: Slide;
   isDragging: boolean;
@@ -1120,6 +1123,7 @@ function HeroSlide({
   canvasGuidelines?: CanvasGuidelines;
   viewportProfile?: HeroViewportProfileKey | null;
   toolboxIgnoreGap?: boolean;
+  addTextMode?: boolean;
 }) {
   const template = resolveTemplate(slide, viewportProfile);
   const mobileImageFirst = !!slide?.layout?.mobile?.imageFirst;
@@ -1712,6 +1716,32 @@ function HeroSlide({
     />
   );
 
+  const addTextOverlay = (addTextMode && adminMode && editMode) ? (
+    <div
+      style={{ position: "absolute", inset: 0, zIndex: 200, cursor: "crosshair" }}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const slideEl = slideRef.current;
+        if (!slideEl) return;
+        const rect = slideEl.getBoundingClientRect();
+        const x = Math.round(e.clientX - rect.left);
+        const y = Math.round(e.clientY - rect.top);
+        const blockEl = slideEl.closest<HTMLElement>("[data-block-id]");
+        const blockId = blockEl?.dataset.blockId ?? "";
+        window.parent.postMessage({
+          type: "canvas-add-text-click",
+          blockId,
+          slideIndex: i,
+          x,
+          y,
+          iframeX: e.clientX,
+          iframeY: e.clientY + window.scrollY,
+        }, "*");
+      }}
+    />
+  ) : null;
+
   const cta = slide?.cta;
   const imgSide = imageSide(template);
   const autoCtaAlign = imgSide === "left" ? "right" : "left";
@@ -1730,6 +1760,7 @@ function HeroSlide({
         {guides}
         {styleGuidelineOverlay}
         {mediaEdgeGuides}
+        {addTextOverlay}
       </div>
     );
   }
@@ -1748,6 +1779,7 @@ function HeroSlide({
       {guides}
       {styleGuidelineOverlay}
       {mediaEdgeGuides}
+      {addTextOverlay}
 
       {cta?.href && cta?.enabled !== false ? (
         <a
@@ -3030,6 +3062,41 @@ function ExtraElement({
         data-hs-draggable={onSlideChange ? extraKey : undefined}
       >
         <Kicker>{renderRichText(extra.text)}</Kicker>
+      </div>
+    );
+  }
+
+  if (extra.kind === "tagline") {
+    // Oblique font applied inline to avoid the ds-outline-stamp font-family conflict.
+    const taglineFont: React.CSSProperties = { fontFamily: "var(--font-maru-oblique)", fontStyle: "normal", fontWeight: 500 };
+    if (inEditMode) {
+      return (
+        <div
+          {...(editableProps?.(extraKey, cn(isLocked && "hero-slide__editable--locked", typo || undefined)) ?? { className: cn("hero-slide__editable", isLocked && "hero-slide__editable--locked", typo || undefined) })}
+          data-hs-draggable={extraKey}
+          style={style}
+          data-el={slotId}
+        >
+          {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
+          {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps(extraKey)} />}
+          <div style={taglineFont}>
+            {dragMode ? (
+              renderRichText(extra.text)
+            ) : (
+              <TipTapInline value={extra.text} onChange={updateText ?? undefined} multiline={false} typoClass={typo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={resolvedStyle?.align} onElementTypoChange={onExtraTypoChange} />
+            )}
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div
+        className={typo || undefined}
+        style={{ ...style, ...taglineFont }}
+        data-el={slotId}
+        data-hs-draggable={onSlideChange ? extraKey : undefined}
+      >
+        {renderRichText(extra.text)}
       </div>
     );
   }

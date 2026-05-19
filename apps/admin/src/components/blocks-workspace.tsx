@@ -196,6 +196,14 @@ export function BlocksWorkspace({
   const [toolboxDrag, setToolboxDrag] = useState(false);
   const [toolboxGuides, setToolboxGuides] = useState(false);
   const [toolboxIgnoreGap, setToolboxIgnoreGap] = useState(false);
+  const [toolboxAddText, setToolboxAddText] = useState(false);
+
+  // Add-text popup state
+  type AddTextPopup = { blockId: string; slideIndex: number; x: number; y: number; screenX: number; screenY: number };
+  const [addTextPopup, setAddTextPopup] = useState<AddTextPopup | null>(null);
+  const [addTextInput, setAddTextInput] = useState("");
+  const [addTextKind, setAddTextKind] = useState<"text" | "tagline" | "kicker" | "stamp">("text");
+  const addTextInputRef = useRef<HTMLInputElement>(null);
   const scaleDragRef = useRef<{ active: boolean; startY: number } | null>(null);
 
   // Page settings floating panel
@@ -290,11 +298,11 @@ export function BlocksWorkspace({
   useEffect(() => {
     try {
       iframeRef.current?.contentWindow?.postMessage(
-        { type: "set-toolbox-state", text: toolboxText, drag: toolboxDrag, guides: toolboxGuides, ignoreGap: toolboxIgnoreGap },
+        { type: "set-toolbox-state", text: toolboxText, drag: toolboxDrag, guides: toolboxGuides, ignoreGap: toolboxIgnoreGap, addText: toolboxAddText },
         "*",
       );
     } catch { /* cross-origin */ }
-  }, [toolboxText, toolboxDrag, toolboxGuides, toolboxIgnoreGap]);
+  }, [toolboxText, toolboxDrag, toolboxGuides, toolboxIgnoreGap, toolboxAddText]);
 
   const availableWidth = canvasWidth > 0 ? canvasWidth - CANVAS_PADDING * 2 : 1440;
 
@@ -383,6 +391,25 @@ export function BlocksWorkspace({
         const newPanY = 80 - CANVAS_PADDING - offsetTop * scaleRef.current;
         setPanY(newPanY);
       }
+
+      if (type === "canvas-add-text-click" && e.data?.blockId && e.data?.x != null) {
+        const iframeEl = iframeRef.current;
+        if (!iframeEl) return;
+        const iframeRect = iframeEl.getBoundingClientRect();
+        const sc = scaleRef.current;
+        const sx = iframeRect.left + (e.data.iframeX ?? 0) * sc;
+        const sy = iframeRect.top + (e.data.iframeY ?? 0) * sc;
+        setAddTextPopup({
+          blockId: e.data.blockId,
+          slideIndex: e.data.slideIndex ?? 0,
+          x: e.data.x,
+          y: e.data.y,
+          screenX: sx,
+          screenY: sy,
+        });
+        setAddTextInput("");
+        setTimeout(() => addTextInputRef.current?.focus(), 30);
+      }
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
@@ -395,8 +422,9 @@ export function BlocksWorkspace({
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.code === "KeyH") setTool("hand");
       if (e.code === "KeyV") setTool("pointer");
+      if (e.code === "KeyT") { setToolboxAddText((v) => !v); setAddTextPopup(null); }
       if (e.code === "KeyP") setPreviewMode((v) => !v);
-      if (e.code === "Escape") setPreviewMode(false);
+      if (e.code === "Escape") { setPreviewMode(false); setAddTextPopup(null); setToolboxAddText(false); }
       if (e.code === "Space" && !e.repeat) { e.preventDefault(); setSpaceHeld(true); }
     }
     function onKeyUp(e: KeyboardEvent) {
@@ -653,7 +681,7 @@ export function BlocksWorkspace({
         postLiveEditMode();
         try {
           iframeRef.current?.contentWindow?.postMessage(
-            { type: "set-toolbox-state", text: toolboxText, drag: toolboxDrag, guides: toolboxGuides, ignoreGap: toolboxIgnoreGap },
+            { type: "set-toolbox-state", text: toolboxText, drag: toolboxDrag, guides: toolboxGuides, ignoreGap: toolboxIgnoreGap, addText: toolboxAddText },
             "*",
           );
         } catch { /* cross-origin */ }
@@ -664,7 +692,7 @@ export function BlocksWorkspace({
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [postLiveEditMode, toolboxText, toolboxDrag, toolboxGuides]);
+  }, [postLiveEditMode, toolboxText, toolboxDrag, toolboxGuides, toolboxAddText]);
 
   useEffect(() => {
     function handleHeroConvert(event: Event) {
@@ -699,6 +727,35 @@ export function BlocksWorkspace({
     }, PREVIEW_REFRESH_MS);
     return () => clearInterval(id);
   }, []);
+
+  /* ================================================================
+     ADD-TEXT CONFIRM
+     ================================================================ */
+  const confirmAddText = () => {
+    if (!addTextPopup || !addTextInput.trim()) return;
+    const { blockId, slideIndex, x, y } = addTextPopup;
+    const block = sorted.find((b) => b.id === blockId);
+    if (!block) return;
+    const currentData = pendingDrafts[blockId]?.data ?? block.data;
+    const slides: any[] = Array.isArray(currentData.slides) ? [...currentData.slides] : [];
+    const slide = slides[slideIndex];
+    if (!slide) return;
+    const newId = `ex-${Date.now()}`;
+    const newExtra = { id: newId, kind: addTextKind, text: addTextInput.trim(), style: { mt: `${y}px`, ml: `${x}px` } };
+    const extras = Array.isArray(slide.extras) ? slide.extras : [];
+    const updatedSlide = { ...slide, extras: [...extras, newExtra], elementOrder: [...(slide.elementOrder ?? []), newId], positioningMode: "absolute" as const };
+    slides[slideIndex] = updatedSlide;
+    const newData = { ...currentData, slides };
+    setPendingDrafts((prev) => ({ ...prev, [blockId]: { data: newData, version: Date.now() } }));
+    try {
+      iframeRef.current?.contentWindow?.postMessage({ type: "update-block", blockId, data: newData }, "*");
+    } catch { /* cross-origin */ }
+    setActiveId(blockId);
+    setSelectedElementId(`slide-${slideIndex}-${newId}`);
+    setAddTextPopup(null);
+    setAddTextInput("");
+    setToolboxAddText(false);
+  };
 
   /* ================================================================
      RENDER
@@ -809,6 +866,15 @@ export function BlocksWorkspace({
 
           {/* Canvas toolbox — quick toggles for content-maker tasks */}
           <div className="flex rounded-lg border border-border/50 bg-muted/40 p-0.5">
+            <TToolBtn
+              label="Add text element — click on canvas to place"
+              shortcut="T"
+              active={toolboxAddText}
+              onClick={() => { setToolboxAddText((v) => !v); setAddTextPopup(null); }}
+            >
+              <Plus className="h-4 w-4" />
+              Add
+            </TToolBtn>
             <TToolBtn label="Text editing" active={toolboxText} onClick={() => setToolboxText((v) => !v)}>
               <Type className="h-4 w-4" />
               Text
@@ -1326,6 +1392,60 @@ export function BlocksWorkspace({
           />
         )}
       </div>
+
+      {/* ── Add-text floating popup ─────────────────────────────── */}
+      {addTextPopup && (
+        <div
+          className="admin-theme fixed z-[9999] w-72 rounded-xl border border-border bg-card shadow-2xl p-3 space-y-2.5"
+          style={{ left: Math.min(addTextPopup.screenX + 12, window.innerWidth - 300), top: Math.min(addTextPopup.screenY + 8, window.innerHeight - 200) }}
+          onKeyDown={(e) => { if (e.key === "Escape") { setAddTextPopup(null); setToolboxAddText(false); } }}
+        >
+          <div className="flex gap-1">
+            {(["text", "tagline", "kicker", "stamp"] as const).map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setAddTextKind(k)}
+                className={[
+                  "flex-1 py-1 text-[10px] font-semibold uppercase tracking-wide rounded-md transition-all",
+                  addTextKind === k ? "bg-sky-500/15 text-sky-600 border border-sky-500/30" : "text-muted-foreground hover:text-foreground bg-muted/40 border border-transparent",
+                ].join(" ")}
+              >
+                {k === "tagline" ? "Tag" : k.charAt(0).toUpperCase() + k.slice(1)}
+              </button>
+            ))}
+          </div>
+          <input
+            ref={addTextInputRef}
+            type="text"
+            value={addTextInput}
+            onChange={(e) => setAddTextInput(e.target.value)}
+            placeholder="Type element text…"
+            className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-sky-500/60 focus:ring-2 focus:ring-sky-500/20 placeholder:text-muted-foreground/50"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && addTextInput.trim()) { e.preventDefault(); confirmAddText(); }
+              if (e.key === "Escape") { setAddTextPopup(null); setToolboxAddText(false); }
+            }}
+          />
+          <div className="flex items-center gap-2 justify-end">
+            <button
+              type="button"
+              onClick={() => { setAddTextPopup(null); setToolboxAddText(false); }}
+              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={!addTextInput.trim()}
+              onClick={confirmAddText}
+              className="text-[11px] font-semibold bg-sky-500 hover:bg-sky-400 text-white rounded-md px-3 py-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Add ↵
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1701,6 +1821,7 @@ function LayerItem({
           </div>
         </>
       )}
+
     </div>
   );
 }

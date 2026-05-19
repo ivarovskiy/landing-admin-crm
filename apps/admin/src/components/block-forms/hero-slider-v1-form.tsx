@@ -1268,6 +1268,7 @@ function applyStylePatchViewport(
 
 const EXTRA_KIND_OPTIONS = [
   { value: "text", label: "Text" },
+  { value: "tagline", label: "Tagline (oblique)" },
   { value: "kicker", label: "Kicker" },
   { value: "stamp", label: "Stamp" },
 ];

@@ -11,7 +11,7 @@ import {
 } from "react";
 
 type Overrides = Record<string, any>;
-export type ToolboxState = { text: boolean; drag: boolean; guides: boolean; ignoreGap: boolean };
+export type ToolboxState = { text: boolean; drag: boolean; guides: boolean; ignoreGap: boolean; addText: boolean };
 type LivePreviewValue = {
   overrides: Overrides;
   editMode: boolean;
@@ -22,7 +22,7 @@ type LivePreviewValue = {
 const LivePreviewContext = createContext<LivePreviewValue>({
   overrides: {},
   editMode: false,
-  toolboxState: { text: false, drag: false, guides: false, ignoreGap: false },
+  toolboxState: { text: false, drag: false, guides: false, ignoreGap: false, addText: false },
   updateBlock: () => {},
 });
 
@@ -39,7 +39,7 @@ export function useLivePreviewEdit() {
 export function LivePreviewProvider({ children }: { children: ReactNode }) {
   const [overrides, setOverrides] = useState<Overrides>({});
   const [editMode, setEditMode] = useState(false);
-  const [toolboxState, setToolboxState] = useState<ToolboxState>({ text: false, drag: false, guides: false, ignoreGap: false });
+  const [toolboxState, setToolboxState] = useState<ToolboxState>({ text: false, drag: false, guides: false, ignoreGap: false, addText: false });
 
   useEffect(() => {
     const isPreview = window !== window.parent;
@@ -59,6 +59,7 @@ export function LivePreviewProvider({ children }: { children: ReactNode }) {
           drag: e.data?.drag === true,
           guides: e.data?.guides === true,
           ignoreGap: e.data?.ignoreGap === true,
+          addText: e.data?.addText === true,
         });
       }
     }
