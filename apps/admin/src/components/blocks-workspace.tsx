@@ -202,7 +202,7 @@ export function BlocksWorkspace({
   type AddTextPopup = { blockId: string; slideIndex: number; x: number; y: number; screenX: number; screenY: number };
   const [addTextPopup, setAddTextPopup] = useState<AddTextPopup | null>(null);
   const [addTextInput, setAddTextInput] = useState("");
-  const [addTextKind, setAddTextKind] = useState<"text" | "tagline" | "kicker" | "stamp">("text");
+  const [addTextKind, setAddTextKind] = useState<"h1" | "h2" | "h3">("h1");
   const addTextInputRef = useRef<HTMLInputElement>(null);
   const scaleDragRef = useRef<{ active: boolean; startY: number } | null>(null);
 
@@ -737,15 +737,24 @@ export function BlocksWorkspace({
     const block = sorted.find((b) => b.id === blockId);
     if (!block) return;
     const currentData = pendingDrafts[blockId]?.data ?? block.data;
-    const slides: any[] = Array.isArray(currentData.slides) ? [...currentData.slides] : [];
-    const slide = slides[slideIndex];
+    const allSlides: any[] = Array.isArray(currentData.slides) ? [...currentData.slides] : [];
+    // Mirror slider's visibleSlides logic: map visible index → raw data index
+    const visibleItems = allSlides.map((s: any, idx: number) => ({ s, idx })).filter(({ s }: { s: any }) => !s?.hidden);
+    const rawIdx = visibleItems[slideIndex]?.idx ?? slideIndex;
+    const slide = allSlides[rawIdx];
     if (!slide) return;
     const newId = `ex-${Date.now()}`;
-    const newExtra = { id: newId, kind: addTextKind, text: addTextInput.trim(), style: { mt: `${y}px`, ml: `${x}px` } };
+    const kindToStyle: Record<typeof addTextKind, { kind: string; typo: string }> = {
+      h1: { kind: "stamp", typo: "typo-homepage-header" },
+      h2: { kind: "stamp", typo: "typo-content-header" },
+      h3: { kind: "tagline", typo: "typo-subtitle" },
+    };
+    const { kind, typo } = kindToStyle[addTextKind];
+    const newExtra = { id: newId, kind, text: addTextInput.trim(), style: { mt: `${y}px`, ml: `${x}px`, typo } };
     const extras = Array.isArray(slide.extras) ? slide.extras : [];
     const updatedSlide = { ...slide, extras: [...extras, newExtra], elementOrder: [...(slide.elementOrder ?? []), newId], positioningMode: "absolute" as const };
-    slides[slideIndex] = updatedSlide;
-    const newData = { ...currentData, slides };
+    allSlides[rawIdx] = updatedSlide;
+    const newData = { ...currentData, slides: allSlides };
     setPendingDrafts((prev) => ({ ...prev, [blockId]: { data: newData, version: Date.now() } }));
     try {
       iframeRef.current?.contentWindow?.postMessage({ type: "update-block", blockId, data: newData }, "*");
@@ -1397,22 +1406,26 @@ export function BlocksWorkspace({
       {/* ── Add-text floating popup ─────────────────────────────── */}
       {addTextPopup && (
         <div
-          className="admin-theme fixed z-[9999] w-72 rounded-xl border border-border bg-card shadow-2xl p-3 space-y-2.5"
-          style={{ left: Math.min(addTextPopup.screenX + 12, window.innerWidth - 300), top: Math.min(addTextPopup.screenY + 8, window.innerHeight - 200) }}
+          className="admin-theme fixed z-[9999] w-96 rounded-xl border border-border bg-card shadow-2xl p-3 space-y-2.5"
+          style={{ left: Math.min(addTextPopup.screenX + 12, window.innerWidth - 400), top: Math.min(addTextPopup.screenY + 8, window.innerHeight - 200) }}
           onKeyDown={(e) => { if (e.key === "Escape") { setAddTextPopup(null); setToolboxAddText(false); } }}
         >
-          <div className="flex gap-1">
-            {(["text", "tagline", "kicker", "stamp"] as const).map((k) => (
+          <div className="flex gap-1.5">
+            {([
+              { k: "h1", label: "H1 · 104px" },
+              { k: "h2", label: "H2 · 78px" },
+              { k: "h3", label: "H3 · Italic 48px" },
+            ] as { k: "h1" | "h2" | "h3"; label: string }[]).map(({ k, label }) => (
               <button
                 key={k}
                 type="button"
                 onClick={() => setAddTextKind(k)}
                 className={[
-                  "flex-1 py-1 text-[10px] font-semibold uppercase tracking-wide rounded-md transition-all",
+                  "flex-1 py-1.5 text-[11px] font-semibold rounded-md transition-all",
                   addTextKind === k ? "bg-sky-500/15 text-sky-600 border border-sky-500/30" : "text-muted-foreground hover:text-foreground bg-muted/40 border border-transparent",
                 ].join(" ")}
               >
-                {k === "tagline" ? "Tag" : k.charAt(0).toUpperCase() + k.slice(1)}
+                {label}
               </button>
             ))}
           </div>
@@ -1422,7 +1435,7 @@ export function BlocksWorkspace({
             value={addTextInput}
             onChange={(e) => setAddTextInput(e.target.value)}
             placeholder="Type element text…"
-            className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-sky-500/60 focus:ring-2 focus:ring-sky-500/20 placeholder:text-muted-foreground/50"
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-base outline-none focus:border-sky-500/60 focus:ring-2 focus:ring-sky-500/20 placeholder:text-muted-foreground/50"
             onKeyDown={(e) => {
               if (e.key === "Enter" && addTextInput.trim()) { e.preventDefault(); confirmAddText(); }
               if (e.key === "Escape") { setAddTextPopup(null); setToolboxAddText(false); }
