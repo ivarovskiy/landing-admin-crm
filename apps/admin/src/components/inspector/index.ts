@@ -17,3 +17,4 @@ export { ImageUpload } from "./image-upload";
 
 export { HrefInput } from "./href-input";
 export { PageHrefInput } from "./page-href-input";
+export { InspectorRichText } from "./rich-text";

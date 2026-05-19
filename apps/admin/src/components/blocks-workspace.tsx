@@ -1369,6 +1369,7 @@ export function BlocksWorkspace({
                     return next;
                   });
                 }}
+                onSaveComplete={() => setShowInspector(false)}
               />
             ) : (
               <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground p-6">

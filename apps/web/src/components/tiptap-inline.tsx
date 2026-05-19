@@ -116,6 +116,8 @@ type FloatingToolbarProps = {
   onElementAlignChange?: (align: "left" | "center" | "right" | undefined) => void;
   /** Current element-level alignment (controls active state for align buttons). */
   elementAlign?: "left" | "center" | "right";
+  /** Centers the element horizontally within the text column (relative to sibling elements). */
+  onCenterX?: () => void;
 };
 
 function Btn({
@@ -200,6 +202,7 @@ function FloatingToolbar({
   fontOffsetAvailable,
   onElementAlignChange,
   elementAlign,
+  onCenterX,
 }: FloatingToolbarProps) {
   if (!state) return null;
 
@@ -340,6 +343,14 @@ function FloatingToolbar({
 
       {/* Thin space (U+2009) — narrow typographic space */}
       <Btn label="½·" title="Insert thin space (½ пробілу, U+2009)" active={false} handler={onThinSpace} style={{ fontSize: 10, letterSpacing: "-0.3px" }} />
+
+      {/* Center X — position element at horizontal center of the text column */}
+      {onCenterX && (
+        <>
+          <Sep />
+          <Btn label="↔" title="Center element horizontally within text column" active={false} handler={onCenterX} style={{ fontSize: 13 }} />
+        </>
+      )}
 
       {/* Font offset toggle — whole-block padding, only for fonts with configured offset */}
       {fontOffsetAvailable && onFontOffset && (
@@ -798,6 +809,9 @@ export function TipTapInline({
             onFontOffset={onFontOffsetToggle}
             onElementAlignChange={onElementAlignChange}
             elementAlign={elementAlign}
+            onCenterX={() => {
+              editor?.chain().focus().selectAll().setTextAlign("center").run();
+            }}
           />
           <EditorContent editor={editor} className={className} />
         </>

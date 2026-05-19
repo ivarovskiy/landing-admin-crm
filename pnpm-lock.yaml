@@ -26,6 +26,15 @@ importers:
       '@acme/ui':
         specifier: workspace:^
         version: link:../../packages/ui
+      '@tiptap/extension-placeholder':
+        specifier: ^3.22.5
+        version: 3.22.5(@tiptap/extensions@3.22.5(@tiptap/core@3.22.5(@tiptap/pm@3.22.5))(@tiptap/pm@3.22.5))
+      '@tiptap/react':
+        specifier: ^3.22.5
+        version: 3.22.5(@floating-ui/dom@1.7.6)(@tiptap/core@3.22.5(@tiptap/pm@3.22.5))(@tiptap/pm@3.22.5)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@tiptap/starter-kit':
+        specifier: ^3.22.5
+        version: 3.22.5
       lucide-react:
         specifier: ^0.575.0
         version: 0.575.0(react@19.2.3)

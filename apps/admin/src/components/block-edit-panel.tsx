@@ -31,6 +31,7 @@ export function BlockEditPanel({
   onElementSelect,
   onDraftChange,
   onBlockReset,
+  onSaveComplete,
 }: {
   blockId: string;
   title: string;
@@ -44,6 +45,7 @@ export function BlockEditPanel({
   onElementSelect?: (elementId: string | null) => void;
   onDraftChange?: (blockId: string, data: any) => void;
   onBlockReset?: (blockId: string) => void;
+  onSaveComplete?: () => void;
 }) {
   const router = useRouter();
   const Form = useMemo(() => getBlockForm(type, variant), [type, variant]);
@@ -56,6 +58,7 @@ export function BlockEditPanel({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [savedOnce, setSavedOnce] = useState(false);
 
   // Notify parent of draft changes for live preview (debounced)
   const onDraftChangeRef = useRef(onDraftChange);
@@ -75,6 +78,7 @@ export function BlockEditPanel({
     setDraft(initial ?? {});
     setError(null);
     setSaved(false);
+    setSavedOnce(false);
     setMode(Form ? "form" : "json");
     lastAppliedExternalVersion.current = 0;
   }, [blockId, Form, hasVisual, initial]);
@@ -103,15 +107,17 @@ export function BlockEditPanel({
       });
       if (!r.ok) throw new Error(await r.text());
       setSaved(true);
+      setSavedOnce(true);
       setTimeout(() => setSaved(false), 2000);
       router.refresh();
       onBlockReset?.(blockId);
+      setTimeout(() => onSaveComplete?.(), 700);
     } catch (e: any) {
       setError(e?.message ?? "Save failed");
     } finally {
       setSaving(false);
     }
-  }, [blockId, draft, router, onBlockReset]);
+  }, [blockId, draft, router, onBlockReset, onSaveComplete]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -185,6 +191,34 @@ export function BlockEditPanel({
           <span className="text-xs text-red-700 break-all">{error}</span>
         </div>
       )}
+
+      {/* Static bottom action bar */}
+      <div className="shrink-0 border-t border-border/60 px-3 py-2 flex items-center gap-2">
+        <button
+          type="button"
+          disabled={!dirty || saving}
+          onClick={() => { setDraft(initial ?? {}); onBlockReset?.(blockId); }}
+          className="flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium border border-border/70 bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all disabled:opacity-35 disabled:pointer-events-none"
+        >
+          <RotateCcw className="h-3 w-3" />
+          Reset
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={save}
+          className="flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-semibold transition-all disabled:opacity-50 disabled:pointer-events-none ml-auto"
+          style={{
+            background: saved ? "rgba(16,185,129,0.12)" : dirty ? "rgba(99,102,241,0.9)" : savedOnce ? "rgba(16,185,129,0.1)" : "rgba(99,102,241,0.15)",
+            color: saved ? "rgb(5,150,105)" : dirty ? "#fff" : savedOnce ? "rgb(5,150,105)" : "rgba(99,102,241,0.8)",
+            border: saved || (savedOnce && !dirty) ? "1px solid rgba(16,185,129,0.3)" : dirty ? "none" : "1px solid rgba(99,102,241,0.25)",
+            boxShadow: dirty ? "0 2px 8px rgba(99,102,241,0.35)" : "none",
+          }}
+        >
+          {saved || (savedOnce && !dirty) ? <Check className="h-3 w-3" /> : <Save className="h-3 w-3" />}
+          {saving ? "Saving…" : saved ? "Saved" : savedOnce && !dirty ? "Confirm save" : "Save"}
+        </button>
+      </div>
 
       <FloatingSaveBar
         dirty={dirty}

@@ -1942,12 +1942,12 @@ function absPositionStyle(
     }
     s.textAlign = "center";
   } else if (es?.align === "right") {
-    s.left = "0";
     s.right = "0";
+    s.maxWidth = "100%";
     s.textAlign = "right";
   } else if (es?.align === "left") {
     s.left = "0";
-    s.right = "0";
+    s.maxWidth = "100%";
     s.textAlign = "left";
   } else {
     s.left = `${left}px`;
@@ -2735,7 +2735,7 @@ function CopyStack({
               {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
               {!isTitleLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("title")} />}
               {dragMode ? (
-                <OutlineStampText as="div" frontAs="div" shadowAs="div" className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)}>
+                <OutlineStampText as="div" frontAs="div" shadowAs="div" className={titleClass} data-editable-stamp="true" data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)} shadowContent={renderRichText(title)}>
                   {renderRichText(title)}
                 </OutlineStampText>
               ) : (
@@ -2755,13 +2755,13 @@ function CopyStack({
           >
             {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
             {!isTitleLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("title")} />}
-            <p className={titleClass} data-el={`slide-${slideIndex}-title`} style={textContentStyle(titleEs)}>
+            <div className={titleClass} data-el={`slide-${slideIndex}-title`} style={textContentStyle(titleEs)}>
               {dragMode ? (
                 renderRichText(title)
               ) : (
                 <TipTapInline value={title} onChange={(html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={TYPO_PRESETS} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={() => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title")} elementAlign={titleEs?.align} onElementTypoChange={makeTypoChange?.("title")} />
               )}
-            </p>
+            </div>
           </div>
         );
       }
@@ -2982,7 +2982,6 @@ function ExtraElement({
         onSlideChange!(setSlideElementViewportStyle(slide!, extra.id!, viewportProfile, { typo: cls || undefined }));
       }
     : undefined;
-
   if (extra.kind === "stamp") {
     const cls = cn("hero-slide__title", typo);
     if (inEditMode) {
@@ -2995,7 +2994,7 @@ function ExtraElement({
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps(extraKey)} />}
           {dragMode ? (
-            <OutlineStampText as="div" frontAs="div" shadowAs="div" className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)}>
+            <OutlineStampText as="div" frontAs="div" shadowAs="div" className={cls} data-editable-stamp="true" data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
               {renderRichText(extra.text)}
             </OutlineStampText>
           ) : (
@@ -3115,7 +3114,7 @@ function ExtraElement({
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps(extraKey)} />}
           {dragMode ? (
-            <OutlineStampText as="div" frontAs="div" shadowAs="div" className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)}>
+            <OutlineStampText as="div" frontAs="div" shadowAs="div" className={cls} data-editable-stamp="true" data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
               {renderRichText(extra.text)}
             </OutlineStampText>
           ) : (
