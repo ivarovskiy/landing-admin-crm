@@ -140,18 +140,18 @@ function Btn({
         handler();
       }}
       style={{
-        minWidth: 28,
-        height: 28,
+        minWidth: 36,
+        height: 36,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 4,
+        borderRadius: 5,
         border: "none",
         background: active ? "rgba(99,102,241,0.35)" : "transparent",
         color: active ? "#a5b4fc" : "rgba(255,255,255,0.82)",
         cursor: "pointer",
-        fontSize: 12,
-        padding: "0 4px",
+        fontSize: 14,
+        padding: "0 5px",
         ...extraStyle,
       }}
     >
@@ -164,9 +164,9 @@ const Sep = () => (
   <div
     style={{
       width: 1,
-      height: 18,
+      height: 22,
       background: "rgba(255,255,255,0.12)",
-      margin: "0 2px",
+      margin: "0 3px",
       flexShrink: 0,
     }}
   />
@@ -204,8 +204,7 @@ function FloatingToolbar({
   if (!state) return null;
 
   const showAlignButtons = state.multiline || !!onElementAlignChange;
-  // 2-row height for multiline (lists + alignment + blockquote wrap), 1-row for single-line
-  const toolbarH = state.multiline ? 84 : showAlignButtons ? 56 : 44;
+  const toolbarH = state.multiline ? 120 : showAlignButtons ? 80 : 56;
   const gap = 8;
   const rawTop = state.rect.top - toolbarH - gap;
   const top = Math.max(8, rawTop);
@@ -225,8 +224,8 @@ function FloatingToolbar({
         gap: 2,
         background: "#0f0f1a",
         border: "1px solid rgba(255,255,255,0.1)",
-        borderRadius: 7,
-        padding: 3,
+        borderRadius: 9,
+        padding: 5,
         boxShadow: "0 6px 24px rgba(0,0,0,0.55)",
         pointerEvents: "all",
         flexWrap: "wrap",

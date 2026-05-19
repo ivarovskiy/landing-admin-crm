@@ -20,6 +20,7 @@ export type BlockFormProps = {
   onChange: (next: any) => void;
   viewMode: "desktop" | "ipadPro" | "mobile";
   allPages?: PageLite[];
+  externalSelectedElementId?: string | null;
 };
 
 const REGISTRY: Record<string, ComponentType<BlockFormProps>> = {

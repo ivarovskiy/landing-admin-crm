@@ -207,7 +207,7 @@ function updateMedia(
   };
 }
 
-export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFormProps) {
+export function HeroSliderV1Form({ blockId, value, onChange, viewMode, externalSelectedElementId }: BlockFormProps) {
   const slides: Slide[] = arr<Slide>(value?.slides);
   const options = value?.options ?? {};
   const canvasGuidelines: CanvasGuidelines = value?.canvasGuidelines ?? {};
@@ -646,6 +646,7 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode }: BlockFo
               tuningScope={viewMode === "ipadPro" ? "ipadPro" : "default"}
               canvasGuidelines={canvasGuidelines}
               onRequestAbsolute={() => requestAbsoluteConversion(idx)}
+              externalSelectedElementId={externalSelectedElementId}
             />
           ))}
         </div>
@@ -672,6 +673,7 @@ function SlideEditor({
   tuningScope,
   canvasGuidelines,
   onRequestAbsolute,
+  externalSelectedElementId,
 }: {
   slide: Slide;
   index: number;
@@ -684,6 +686,7 @@ function SlideEditor({
   tuningScope: HeroTuningScope;
   canvasGuidelines: CanvasGuidelines;
   onRequestAbsolute: () => void;
+  externalSelectedElementId?: string | null;
 }) {
   const [collapsed, setCollapsed] = useState(true);
   const [showCanvas, setShowCanvas] = useState(false);
@@ -912,7 +915,7 @@ function SlideEditor({
           icon={<Type className="h-3 w-3" />}
           defaultOpen
         >
-          <TextElementsEditor slide={s} tuningScope={tuningScope} onChange={onChange} />
+          <TextElementsEditor slide={s} tuningScope={tuningScope} onChange={onChange} externalSelectedElementId={externalSelectedElementId} />
         </InspectorSection>
 
         {/* CTA */}
@@ -1174,7 +1177,7 @@ function ElementStyleEditor({
     const align = (v || undefined) as ElementStyleProfile["align"] | undefined;
     onChange(updateScopedElementStyle(style, tuningScope, {
       align,
-      alignMode: align === "center" ? "4" : undefined,
+      alignMode: align === "center" ? "1" : undefined,
     }));
   };
 
@@ -1372,13 +1375,22 @@ function TextElementsEditor({
   slide: s,
   tuningScope,
   onChange,
+  externalSelectedElementId,
 }: {
   slide: Slide;
   tuningScope: HeroTuningScope;
   onChange: (next: Slide) => void;
+  externalSelectedElementId?: string | null;
 }) {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  // Accordion: only one card open at a time
+  const [openKey, setOpenKey] = useState<string | null>(null);
+
+  // When canvas element is clicked, open its card and collapse others
+  useEffect(() => {
+    if (externalSelectedElementId) setOpenKey(externalSelectedElementId);
+  }, [externalSelectedElementId]);
   const dragIdxRef = useRef<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
@@ -1549,6 +1561,8 @@ function TextElementsEditor({
           total={orderedKeys.length}
           tuningScope={tuningScope}
           onChange={onChange}
+          open={openKey === key}
+          onOpenChange={(v) => setOpenKey(v ? key : null)}
           onMove={(dir) => moveElement(idx, dir)}
           onRemove={extraKeys.includes(key) ? () => removeExtra(key) : undefined}
           onDuplicate={extraKeys.includes(key) ? () => {
@@ -1743,6 +1757,8 @@ function TextElementCard({
   total,
   tuningScope,
   onChange,
+  open,
+  onOpenChange,
   onMove,
   onRemove,
   onDuplicate,
@@ -1763,6 +1779,8 @@ function TextElementCard({
   total: number;
   tuningScope: HeroTuningScope;
   onChange: (next: Slide) => void;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
   onMove: (dir: "up" | "down") => void;
   onRemove?: () => void;
   onDuplicate?: () => void;
@@ -1777,7 +1795,6 @@ function TextElementCard({
   onDrop?: () => void;
   onDragEnd?: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const extras = Array.isArray(s?.extras) ? s.extras : [];
@@ -1822,7 +1839,7 @@ function TextElementCard({
     >
       <div
         className="flex items-center gap-1 px-1 py-1 cursor-pointer select-none min-h-[36px]"
-        onClick={() => selectMode ? onToggleSelect?.() : setOpen(o => !o)}
+        onClick={() => selectMode ? onToggleSelect?.() : onOpenChange(!open)}
       >
         {/* Drag handle */}
         {!selectMode && (

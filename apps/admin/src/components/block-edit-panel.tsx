@@ -50,7 +50,7 @@ export function BlockEditPanel({
   const hasVisual = useMemo(() => hasVisualEditor(type, variant), [type, variant]);
 
   const [mode, setMode] = useState<"visual" | "form" | "json">(() =>
-    hasVisual ? "visual" : Form ? "form" : "json",
+    Form ? "form" : "json",
   );
   const [draft, setDraft] = useState<any>(initial ?? {});
   const [saving, setSaving] = useState(false);
@@ -75,7 +75,7 @@ export function BlockEditPanel({
     setDraft(initial ?? {});
     setError(null);
     setSaved(false);
-    setMode(hasVisual ? "visual" : Form ? "form" : "json");
+    setMode(Form ? "form" : "json");
     lastAppliedExternalVersion.current = 0;
   }, [blockId, Form, hasVisual, initial]);
 
@@ -173,7 +173,7 @@ export function BlockEditPanel({
           />
         ) : Form ? (
           <div className="p-3">
-            <Form blockId={blockId} value={draft} onChange={setDraft} viewMode={viewMode} allPages={allPages} />
+            <Form blockId={blockId} value={draft} onChange={setDraft} viewMode={viewMode} allPages={allPages} externalSelectedElementId={externalSelectedElementId} />
           </div>
         ) : null}
       </div>
@@ -412,7 +412,7 @@ function InspectorHeader({
   dirty: boolean;
 }) {
   const tabs: { key: "visual" | "form" | "json"; label: string; icon: React.ReactNode; show: boolean }[] = [
-    { key: "visual", label: "Visual", icon: <Layers className="h-3 w-3" />, show: hasVisual },
+    { key: "visual", label: "Visual", icon: <Layers className="h-3 w-3" />, show: false },
     { key: "form", label: "Inspector", icon: <SlidersHorizontal className="h-3 w-3" />, show: hasForm },
     { key: "json", label: "JSON", icon: <Code className="h-3 w-3" />, show: true },
   ];

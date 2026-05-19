@@ -42,7 +42,8 @@ import {
   MoreHorizontal,
   Move,
   Grid3X3,
-  Palette,
+  ArrowLeftRight,
+  AlignCenter,
 } from "lucide-react";
 
 /* ================================================================
@@ -193,7 +194,8 @@ export function BlocksWorkspace({
   const [toolboxText, setToolboxText] = useState(false);
   const [toolboxDrag, setToolboxDrag] = useState(false);
   const [toolboxGuides, setToolboxGuides] = useState(false);
-  const colorInputRef = useRef<HTMLInputElement>(null);
+  const [toolboxIgnoreGap, setToolboxIgnoreGap] = useState(false);
+  const scaleDragRef = useRef<{ active: boolean; startY: number } | null>(null);
 
   // Page settings floating panel
   const [showPageSettings, setShowPageSettings] = useState(false);
@@ -283,11 +285,11 @@ export function BlocksWorkspace({
   useEffect(() => {
     try {
       iframeRef.current?.contentWindow?.postMessage(
-        { type: "set-toolbox-state", text: toolboxText, drag: toolboxDrag, guides: toolboxGuides },
+        { type: "set-toolbox-state", text: toolboxText, drag: toolboxDrag, guides: toolboxGuides, ignoreGap: toolboxIgnoreGap },
         "*",
       );
     } catch { /* cross-origin */ }
-  }, [toolboxText, toolboxDrag, toolboxGuides]);
+  }, [toolboxText, toolboxDrag, toolboxGuides, toolboxIgnoreGap]);
 
   const availableWidth = canvasWidth > 0 ? canvasWidth - CANVAS_PADDING * 2 : 1440;
 
@@ -634,7 +636,7 @@ export function BlocksWorkspace({
         postLiveEditMode();
         try {
           iframeRef.current?.contentWindow?.postMessage(
-            { type: "set-toolbox-state", text: toolboxText, drag: toolboxDrag, guides: toolboxGuides },
+            { type: "set-toolbox-state", text: toolboxText, drag: toolboxDrag, guides: toolboxGuides, ignoreGap: toolboxIgnoreGap },
             "*",
           );
         } catch { /* cross-origin */ }
@@ -741,7 +743,7 @@ export function BlocksWorkspace({
 
           <div className="h-5 w-px bg-border/50" />
 
-          {/* Viewport toggle */}
+          {/* Viewport toggle — icon-only compact */}
           <div className="flex rounded-lg border bg-muted/40 p-0.5">
             {([
               { mode: "desktop" as const, Icon: Monitor },
@@ -753,10 +755,8 @@ export function BlocksWorkspace({
                 label={VIEWPORT_PRESETS[mode].tooltip}
                 active={viewMode === mode}
                 onClick={() => setViewMode(mode)}
-                wide
               >
                 <Icon className="h-4 w-4" />
-                {VIEWPORT_PRESETS[mode].label}
               </TToolBtn>
             ))}
           </div>
@@ -773,32 +773,82 @@ export function BlocksWorkspace({
               <Move className="h-4 w-4" />
               Drag
             </TToolBtn>
+            <TToolBtn
+              label="Ignore gap while dragging — elements move across the full slide width"
+              active={toolboxIgnoreGap}
+              onClick={() => setToolboxIgnoreGap((v) => !v)}
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+              No gap
+            </TToolBtn>
             <TToolBtn label="Show guidelines" active={toolboxGuides} onClick={() => setToolboxGuides((v) => !v)}>
               <Grid3X3 className="h-4 w-4" />
               Guides
             </TToolBtn>
-            <TToolBtn
-              label="Change element color (select element first)"
-              active={false}
-              onClick={() => colorInputRef.current?.click()}
+            {/* Center — centers the selected element's alignment */}
+            <button
+              type="button"
+              title="Center selected element"
+              disabled={!selectedElementId}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                if (!selectedElementId) return;
+                try {
+                  iframeRef.current?.contentWindow?.postMessage(
+                    { type: "center-element", elementId: selectedElementId, blockId: activeId },
+                    "*",
+                  );
+                } catch { /* cross-origin */ }
+              }}
+              className={[
+                "relative group flex items-center justify-center gap-1 rounded transition-all px-2.5 py-1.5 text-xs font-medium",
+                selectedElementId ? "text-foreground/70 hover:text-foreground" : "text-foreground/25 cursor-default",
+              ].join(" ")}
             >
-              <Palette className="h-4 w-4" />
-              Color
-              <input
-                ref={colorInputRef}
-                type="color"
-                defaultValue="#ffffff"
-                style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
-                onChange={(e) => {
-                  try {
-                    iframeRef.current?.contentWindow?.postMessage(
-                      { type: "set-element-color", elementId: selectedElementId, color: e.target.value },
-                      "*",
-                    );
-                  } catch { /* cross-origin */ }
-                }}
-              />
-            </TToolBtn>
+              <AlignCenter className="h-4 w-4" />
+              Center
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center whitespace-nowrap rounded-md bg-popover border border-border/60 shadow-md px-2 py-1 text-[11px] text-popover-foreground z-50">
+                Center selected element
+              </span>
+            </button>
+            {/* Scale — drag up/down to resize selected element font size */}
+            <button
+              type="button"
+              title="Scale font size — drag up to grow, down to shrink"
+              disabled={!selectedElementId}
+              style={{ cursor: selectedElementId ? "ns-resize" : "default", touchAction: "none" }}
+              onPointerDown={(e) => {
+                if (!selectedElementId) return;
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                scaleDragRef.current = { active: true, startY: e.clientY };
+              }}
+              onPointerMove={(e) => {
+                const ref = scaleDragRef.current;
+                if (!ref?.active || !selectedElementId) return;
+                const dy = ref.startY - e.clientY; // up = positive = grow
+                ref.startY = e.clientY; // incremental delta
+                if (Math.abs(dy) < 0.5) return;
+                try {
+                  iframeRef.current?.contentWindow?.postMessage(
+                    { type: "scale-element", elementId: selectedElementId, blockId: activeId, delta: dy * 0.3 },
+                    "*",
+                  );
+                } catch { /* cross-origin */ }
+              }}
+              onPointerUp={() => { if (scaleDragRef.current) scaleDragRef.current.active = false; }}
+              onPointerCancel={() => { if (scaleDragRef.current) scaleDragRef.current.active = false; }}
+              className={[
+                "relative group flex items-center justify-center gap-1 rounded transition-all px-2.5 py-1.5 text-xs font-medium select-none",
+                selectedElementId ? "text-foreground/70 hover:text-foreground" : "text-foreground/25",
+              ].join(" ")}
+            >
+              <Maximize2 className="h-4 w-4" />
+              Scale
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center whitespace-nowrap rounded-md bg-popover border border-border/60 shadow-md px-2 py-1 text-[11px] text-popover-foreground z-50">
+                Scale font size — drag ↑ to grow, ↓ to shrink
+              </span>
+            </button>
           </div>
 
           <div className="h-5 w-px bg-border" />

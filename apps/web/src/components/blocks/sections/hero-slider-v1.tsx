@@ -520,6 +520,7 @@ export function HeroSliderV1({
   const toolboxTextEdit = editMode && toolboxState.text;
   const toolboxDrag     = editMode && toolboxState.drag;
   const toolboxGuides   = editMode && toolboxState.guides;
+  const toolboxIgnoreGap = editMode && toolboxState.ignoreGap;
 
   // effective values gated by toolbox
   const effectiveEditMode = editMode && (toolboxTextEdit || toolboxDrag);
@@ -776,6 +777,7 @@ export function HeroSliderV1({
                     showMediaEdgeGuides={toolboxGuides && showMediaEdgeGuides}
                     canvasGuidelines={toolboxGuides ? canvasGuidelines : undefined}
                     viewportProfile={viewportProfile}
+                    toolboxIgnoreGap={toolboxIgnoreGap}
                   />
                 </div>
               );
@@ -1097,6 +1099,7 @@ function HeroSlide({
   showMediaEdgeGuides = false,
   canvasGuidelines,
   viewportProfile,
+  toolboxIgnoreGap = false,
 }: {
   slide: Slide;
   isDragging: boolean;
@@ -1116,6 +1119,7 @@ function HeroSlide({
   showMediaEdgeGuides?: boolean;
   canvasGuidelines?: CanvasGuidelines;
   viewportProfile?: HeroViewportProfileKey | null;
+  toolboxIgnoreGap?: boolean;
 }) {
   const template = resolveTemplate(slide, viewportProfile);
   const mobileImageFirst = !!slide?.layout?.mobile?.imageFirst;
@@ -1377,7 +1381,7 @@ function HeroSlide({
     "hero-slide",
     `hero-slide--${template}`,
     mobileImageFirst && "hero-slide--mobile-image-first",
-    (desktopLayout.textAlignFullWidth || (editMode && desktopLayout.dragIgnoreGap)) && "hs-text-wide",
+    (desktopLayout.textAlignFullWidth || (editMode && (desktopLayout.dragIgnoreGap || toolboxIgnoreGap))) && "hs-text-wide",
     slide?.stretchTextToMedia && "hero-slide--copy-stretch",
     (showGuides || showElementGuides || showCompositionGuides || showStyleGuides) && "hero-slide--with-guides"
   );
@@ -1645,6 +1649,43 @@ function HeroSlide({
         onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, {
           size: `${newSizePx}px`,
           width: undefined,
+        }));
+      }
+      if (type === "scale-element") {
+        const elementId = event.data?.elementId as string | undefined;
+        const delta = event.data?.delta as number | undefined;
+        const slideEl = slideRef.current;
+        if (!slideEl || !elementId || delta == null) return;
+        const blockEl = slideEl.closest<HTMLElement>("[data-block-id]");
+        if (blockEl?.dataset.blockId !== event.data?.blockId) return;
+        const dataEl = slideEl.querySelector<HTMLElement>(`[data-el="${CSS.escape(elementId)}"]`);
+        if (!dataEl) return;
+        const draggable = dataEl.closest<HTMLElement>("[data-hs-draggable]");
+        if (!draggable) return;
+        const key = draggable.dataset.hsDraggable;
+        if (!key) return;
+        const es = mergeElementStyle(getSlideElementStyle(slide, key), viewportProfile);
+        const currentSizePx = parseDesignPx(es?.size, 16);
+        const newSizePx = Math.max(6, Math.round(currentSizePx + delta));
+        onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, {
+          size: `${newSizePx}px`,
+        }));
+      }
+      if (type === "center-element") {
+        const elementId = event.data?.elementId as string | undefined;
+        const slideEl = slideRef.current;
+        if (!slideEl || !elementId) return;
+        const blockEl = slideEl.closest<HTMLElement>("[data-block-id]");
+        if (blockEl?.dataset.blockId !== event.data?.blockId) return;
+        const dataEl = slideEl.querySelector<HTMLElement>(`[data-el="${CSS.escape(elementId)}"]`);
+        if (!dataEl) return;
+        const draggable = dataEl.closest<HTMLElement>("[data-hs-draggable]");
+        if (!draggable) return;
+        const key = draggable.dataset.hsDraggable;
+        if (!key) return;
+        onSlideChange(setSlideElementViewportStyle(slide, key, viewportProfile, {
+          align: "center",
+          alignMode: "1",
         }));
       }
     };
