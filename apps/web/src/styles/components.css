@@ -134,10 +134,8 @@
 }
 
 .ds-outline-stamp[data-editable-stamp="true"] {
-  display: inline-block;
   max-width: 100%;
   text-align: inherit;
-  vertical-align: top;
 }
 
 .ds-outline-stamp[data-editable-stamp="true"] .ds-outline-stamp__front,

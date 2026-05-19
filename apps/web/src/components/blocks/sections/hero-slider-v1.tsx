@@ -2735,7 +2735,7 @@ function CopyStack({
               {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
               {!isTitleLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("title")} />}
               {dragMode ? (
-                <OutlineStampText as="div" frontAs="div" shadowAs="div" className={titleClass} data-editable-stamp="true" data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)} shadowContent={renderRichText(title)}>
+                <OutlineStampText as="div" frontAs="div" shadowAs="div" className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)}>
                   {renderRichText(title)}
                 </OutlineStampText>
               ) : (
@@ -2994,7 +2994,7 @@ function ExtraElement({
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps(extraKey)} />}
           {dragMode ? (
-            <OutlineStampText as="div" frontAs="div" shadowAs="div" className={cls} data-editable-stamp="true" data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
+            <OutlineStampText as="div" frontAs="div" shadowAs="div" className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)}>
               {renderRichText(extra.text)}
             </OutlineStampText>
           ) : (
@@ -3114,7 +3114,7 @@ function ExtraElement({
           {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
           {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps(extraKey)} />}
           {dragMode ? (
-            <OutlineStampText as="div" frontAs="div" shadowAs="div" className={cls} data-editable-stamp="true" data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
+            <OutlineStampText as="div" frontAs="div" shadowAs="div" className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)}>
               {renderRichText(extra.text)}
             </OutlineStampText>
           ) : (
