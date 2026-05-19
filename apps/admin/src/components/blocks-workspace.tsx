@@ -17,6 +17,7 @@ import {
   Search,
   Smartphone,
   Monitor,
+  Tablet,
   Layers,
   EyeOff,
   Eye,
@@ -217,6 +218,10 @@ export function BlocksWorkspace({
   const [showMore, setShowMore] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
+  // Viewport dropdown
+  const [showViewportMenu, setShowViewportMenu] = useState(false);
+  const viewportMenuRef = useRef<HTMLDivElement>(null);
+
   // Canvas tool
   const [tool, setTool] = useState<"pointer" | "hand">("pointer");
   const [spaceHeld, setSpaceHeld] = useState(false);
@@ -416,6 +421,18 @@ export function BlocksWorkspace({
     document.addEventListener("mousedown", onOutside);
     return () => document.removeEventListener("mousedown", onOutside);
   }, [showMore]);
+
+  // Close viewport menu on outside click
+  useEffect(() => {
+    if (!showViewportMenu) return;
+    function onOutside(e: MouseEvent) {
+      if (viewportMenuRef.current && !viewportMenuRef.current.contains(e.target as Node)) {
+        setShowViewportMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, [showViewportMenu]);
 
   // Canvas pan drag handler — pointer events work for both mouse and touch (iPad)
   function handleCanvasPointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -719,8 +736,55 @@ export function BlocksWorkspace({
           </div>
         </div>
 
-        {/* Center: tool + viewport + zoom */}
+        {/* Center: viewport dropdown + tool + zoom */}
         <div className="flex items-center gap-2">
+          {/* Viewport dropdown — leftmost */}
+          <div ref={viewportMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setShowViewportMenu((v) => !v)}
+              className={[
+                "relative group flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all",
+                showViewportMenu
+                  ? "bg-sky-500/15 text-sky-500 border-sky-500/30"
+                  : "bg-muted/40 text-foreground/70 border-border hover:text-foreground",
+              ].join(" ")}
+              title="Switch viewport"
+            >
+              {viewMode === "desktop" && <Monitor className="h-4 w-4" />}
+              {viewMode === "ipadPro" && <Tablet className="h-4 w-4" />}
+              {viewMode === "mobile" && <Smartphone className="h-4 w-4" />}
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+            {showViewportMenu && (
+              <div className="absolute top-full left-0 mt-1.5 z-50 w-44 rounded-xl border border-border/60 bg-card shadow-2xl overflow-hidden py-1">
+                {([
+                  { mode: "desktop" as const, Icon: Monitor, label: "Desktop", sub: "1440px" },
+                  { mode: "ipadPro" as const, Icon: Tablet, label: "iPad Pro", sub: "1366px" },
+                  { mode: "mobile" as const, Icon: Smartphone, label: "Mobile", sub: "390px" },
+                ] as const).map(({ mode, Icon, label, sub }) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => { setViewMode(mode); setShowViewportMenu(false); }}
+                    className={[
+                      "w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors",
+                      viewMode === mode
+                        ? "bg-sky-500/10 text-sky-500"
+                        : "text-foreground/80 hover:bg-muted/60 hover:text-foreground",
+                    ].join(" ")}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 text-left">{label}</span>
+                    <span className="text-[10px] text-muted-foreground">{sub}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="h-5 w-px bg-border/50" />
+
           {/* Tool switcher */}
           <div className="flex rounded-lg border border-border/50 bg-muted/40 p-0.5">
             <TToolBtn
@@ -739,26 +803,6 @@ export function BlocksWorkspace({
             >
               <Hand className="h-4 w-4" />
             </TToolBtn>
-          </div>
-
-          <div className="h-5 w-px bg-border/50" />
-
-          {/* Viewport toggle — icon-only compact */}
-          <div className="flex rounded-lg border bg-muted/40 p-0.5">
-            {([
-              { mode: "desktop" as const, Icon: Monitor },
-              { mode: "ipadPro" as const, Icon: Monitor },
-              { mode: "mobile" as const, Icon: Smartphone },
-            ]).map(({ mode, Icon }) => (
-              <TToolBtn
-                key={mode}
-                label={VIEWPORT_PRESETS[mode].tooltip}
-                active={viewMode === mode}
-                onClick={() => setViewMode(mode)}
-              >
-                <Icon className="h-4 w-4" />
-              </TToolBtn>
-            ))}
           </div>
 
           <div className="h-5 w-px bg-border" />
@@ -802,7 +846,7 @@ export function BlocksWorkspace({
               }}
               className={[
                 "relative group flex items-center justify-center gap-1 rounded transition-all px-2.5 py-1.5 text-xs font-medium",
-                selectedElementId ? "text-foreground/70 hover:text-foreground" : "text-foreground/25 cursor-default",
+                selectedElementId ? "text-sky-500 hover:text-sky-400" : "text-foreground/25 cursor-default",
               ].join(" ")}
             >
               <AlignCenter className="h-4 w-4" />
@@ -840,7 +884,7 @@ export function BlocksWorkspace({
               onPointerCancel={() => { if (scaleDragRef.current) scaleDragRef.current.active = false; }}
               className={[
                 "relative group flex items-center justify-center gap-1 rounded transition-all px-2.5 py-1.5 text-xs font-medium select-none",
-                selectedElementId ? "text-foreground/70 hover:text-foreground" : "text-foreground/25",
+                selectedElementId ? "text-sky-500 hover:text-sky-400" : "text-foreground/25",
               ].join(" ")}
             >
               <Maximize2 className="h-4 w-4" />
@@ -1316,7 +1360,7 @@ function TToolBtn({
         "relative group flex items-center justify-center gap-1 rounded transition-all disabled:opacity-40",
         wide ? "px-3 py-1.5 text-xs font-medium" : "px-2.5 py-1.5",
         active
-          ? "bg-primary/15 text-primary shadow-sm"
+          ? "bg-sky-500/15 text-sky-500 shadow-sm"
           : "text-foreground/60 hover:text-foreground",
       ].join(" ")}
     >
@@ -1357,7 +1401,7 @@ function TBtn({
   const cls = [
     "relative group flex items-center justify-center rounded px-2 py-1 h-9 w-9 transition-all",
     active
-      ? "bg-primary/15 text-primary"
+      ? "bg-sky-500/15 text-sky-500"
       : "text-foreground/70 hover:text-foreground hover:bg-muted/60",
   ].join(" ");
 

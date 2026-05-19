@@ -2308,10 +2308,12 @@ function useSlideElementEditor(
         const rect = el.getBoundingClientRect();
         const isResize = e.clientX >= rect.right - 16 && e.clientY >= rect.bottom - 16;
 
-        // Send element-clicked for admin panel selection regardless of mode
+        // Send element-clicked for admin panel selection regardless of mode.
+        // data-el may be on an inner child (e.g. stamp wrapper) rather than on
+        // the editableProps outer element, so fall back to first descendant.
         const blockEl = el.closest<HTMLElement>("[data-block-id]");
         const blockId = blockEl?.dataset.blockId;
-        const elementId = el.dataset.el;
+        const elementId = el.dataset.el ?? el.querySelector<HTMLElement>("[data-el]")?.dataset.el;
         if (blockId && elementId && window !== window.parent) {
           window.parent.postMessage({ type: "element-clicked", blockId, elementId }, "*");
         }
@@ -2508,7 +2510,7 @@ function useSlideElementEditor(
     };
   }
 
-  // Width-resize handle props — lower-left corner handle that changes element width
+  // Font-size drag handle — vertical drag changes font size for any element
   function widthResizeHandleProps(key: string): React.HTMLAttributes<HTMLElement> {
     if (!editMode || !onSlideChange || !dragMode) return {};
     const currentStyle = getSlideElementStyle(slide, key);
@@ -2528,48 +2530,50 @@ function useSlideElementEditor(
         handle.setPointerCapture(e.pointerId);
         el.classList.add("hero-slide__editable--resizing");
         dragRef.current = {
-          key, mode: "width-resize",
+          key, mode: "resize",
           startX: e.clientX, startY: e.clientY,
           startTx: 0, startTy: 0,
-          startSize: 0, startWidth: el.offsetWidth,
+          startSize: parseFloat(getComputedStyle(el).fontSize || "0") || 16,
+          startWidth: 0,
           scale, moved: false,
         };
       },
       onPointerMove: (e) => {
         const d = dragRef.current;
-        if (!d || d.key !== key || d.mode !== "width-resize") return;
+        if (!d || d.key !== key || d.mode !== "resize") return;
         e.stopPropagation();
-        const dx = (e.clientX - d.startX) / d.scale;
-        if (Math.abs(dx) > 2) d.moved = true;
+        const dy = (d.startY - e.clientY) / d.scale; // drag up = grow
+        if (Math.abs(dy) > 1) d.moved = true;
         if (!d.moved) return;
         const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hs-draggable]");
         if (!el) return;
-        el.style.width = `${Math.max(50, Math.round(d.startWidth + dx))}px`;
+        const nextSize = Math.max(6, Math.round(d.startSize + dy));
+        el.style.fontSize = `${nextSize}px`;
       },
       onPointerUp: (e) => {
         const d = dragRef.current;
         dragRef.current = null;
         const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hs-draggable]");
-        if (!d || d.key !== key || d.mode !== "width-resize") {
-          if (el) { el.classList.remove("hero-slide__editable--resizing"); el.style.width = ""; }
+        el?.classList.remove("hero-slide__editable--resizing");
+        if (!d || d.key !== key || d.mode !== "resize") {
+          if (el) el.style.fontSize = "";
           return;
         }
         e.stopPropagation();
-        if (el) { el.classList.remove("hero-slide__editable--resizing"); el.style.width = ""; }
+        if (el) el.style.fontSize = "";
         if (!d.moved) return;
-        const dx = Math.round((e.clientX - d.startX) / d.scale);
-        const newWidth = Math.max(50, d.startWidth + dx);
-        lastWidthResizeRef.current = { key, orig: d.startWidth, curr: newWidth };
-        onSlideChangeRef.current!(setSlideElementViewportStyle(slideRef.current, key, viewportProfile, { width: `${newWidth}px` }));
+        const dy = Math.round((d.startY - e.clientY) / d.scale);
+        const newSize = Math.max(6, d.startSize + dy);
+        onSlideChangeRef.current!(setSlideElementViewportStyle(slideRef.current, key, viewportProfile, { size: `${newSize}px` }));
       },
       onPointerCancel: (e) => {
         const d = dragRef.current;
         dragRef.current = null;
-        if (!d || d.key !== key || d.mode !== "width-resize") return;
+        if (!d || d.key !== key || d.mode !== "resize") return;
         const el = (e.currentTarget as HTMLElement).closest<HTMLElement>("[data-hs-draggable]");
         if (!el) return;
         el.classList.remove("hero-slide__editable--resizing");
-        el.style.width = "";
+        el.style.fontSize = "";
       },
     };
   }
@@ -2663,6 +2667,7 @@ function CopyStack({
             style={s}
             data-el={`slide-${slideIndex}-kicker`}
           >
+            {!isLocked && dragMode && <DragHandle {...dragHandleProps("kicker")} />}
             {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("kicker")} />}
             {dragMode ? (
               <SlideKicker text={kicker} />
@@ -2695,6 +2700,7 @@ function CopyStack({
               data-hs-draggable="title"
               style={titleStyle}
             >
+              {!isTitleLocked && dragMode && <DragHandle {...dragHandleProps("title")} />}
               {!isTitleLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("title")} />}
               {dragMode ? (
                 <OutlineStampText as="div" frontAs="div" shadowAs="div" className={titleClass} data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)}>
@@ -2773,6 +2779,7 @@ function CopyStack({
             style={s}
             data-el={`slide-${slideIndex}-subtitle`}
           >
+            {!isLocked && dragMode && <DragHandle {...dragHandleProps("subtitle")} />}
             {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("subtitle")} />}
             {dragMode ? (
               <SlideSubtitle text={subtitle} variant={slide?.subtitleVariant} slotId={`slide-${slideIndex}-subtitle`} />
@@ -2803,6 +2810,7 @@ function CopyStack({
             style={s}
             data-el={`slide-${slideIndex}-body`}
           >
+            {!isLocked && dragMode && <DragHandle {...dragHandleProps("body")} />}
             {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("body")} />}
             {dragMode ? (
               <SlideBody text={body} variant={slide?.bodyVariant} />
@@ -2834,6 +2842,7 @@ function CopyStack({
             style={s}
             data-el={`slide-${slideIndex}-quote`}
           >
+            {!isLocked && dragMode && <DragHandle {...dragHandleProps("quote")} />}
             {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps("quote")} />}
             {dragMode ? (
               renderRichText(quote)
@@ -2951,6 +2960,8 @@ function ExtraElement({
           data-hs-draggable={extraKey}
           style={style}
         >
+          {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
+          {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps(extraKey)} />}
           {dragMode ? (
             <OutlineStampText as="div" frontAs="div" shadowAs="div" className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)}>
               {renderRichText(extra.text)}
@@ -2999,6 +3010,8 @@ function ExtraElement({
           style={style}
           data-el={slotId}
         >
+          {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
+          {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps(extraKey)} />}
           <Kicker>
             {dragMode ? (
               renderRichText(extra.text)
@@ -3032,6 +3045,8 @@ function ExtraElement({
           data-hs-draggable={extraKey}
           style={style}
         >
+          {!isLocked && dragMode && dragHandleProps && <DragHandle {...dragHandleProps(extraKey)} />}
+          {!isLocked && dragMode && widthResizeHandleProps && <WidthResizeHandle {...widthResizeHandleProps(extraKey)} />}
           {dragMode ? (
             <OutlineStampText as="div" frontAs="div" shadowAs="div" className={cls} data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)}>
               {renderRichText(extra.text)}

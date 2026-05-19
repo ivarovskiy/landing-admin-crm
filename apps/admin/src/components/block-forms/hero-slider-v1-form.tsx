@@ -692,6 +692,16 @@ function SlideEditor({
   const [showCanvas, setShowCanvas] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [slideTab, setSlideTab] = useState<"text" | "layout" | "media" | "cta">("text");
+
+  // Auto-expand this slide and switch to Text tab when an element is clicked
+  useEffect(() => {
+    if (externalSelectedElementId?.startsWith(`slide-${idx}-`)) {
+      setCollapsed(false);
+      setSlideTab("text");
+    }
+  }, [externalSelectedElementId, idx]);
+
   const desktop = getScopedDesktopLayout(s, tuningScope);
   const desktopFallback = getScopeFallbackLayout(s, tuningScope);
   const mobile = s?.layout?.mobile ?? {};
@@ -823,329 +833,228 @@ function SlideEditor({
         </div>
       )}
 
-      {!collapsed && <div className="p-2 space-y-2">
-        {!isAbsoluteSlide ? (
-          <div className="rounded-md border border-red-500/40 bg-red-500/10 p-2">
-            <button
-              type="button"
-              className="w-full rounded-md bg-red-600 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-sm hover:bg-red-700"
-              onClick={onRequestAbsolute}
-            >
-              Перенести на absolute
-            </button>
-            <p className="mt-1.5 text-[10px] leading-snug text-red-700">
-              Старі слайди лишаються у flow, щоб вигляд збігався з сайтом. Натисни перед незалежним drag.
-            </p>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5 text-[10px] font-medium text-emerald-700">
-            <Check className="h-3 w-3" /> Absolute positioning enabled
-          </div>
-        )}
-
-        {/* Slide name — admin-only label, not rendered on site */}
-        <InspectorField label="Slide name">
-          <InspectorInput
-            value={s?.name ?? ""}
-            onChange={(v) => onChange({ ...s, name: v || undefined })}
-            placeholder={s?.title?.split("\n")[0] || template}
-          />
-        </InspectorField>
-
-        {/* Preset — applies full clean slide from Figma design */}
-        <InspectorField label="Preset" stacked>
-          <InspectorSelect
-            value=""
-            onChange={(v) => {
-              const preset = presetSlide(v as PresetKey);
-              onChange({ id: s.id, name: s.name, ...preset } as Slide);
-            }}
-            options={[{ value: "", label: "Select preset..." }, ...PRESET_OPTIONS]}
-          />
-        </InspectorField>
-
-        {/* Template — only changes layout, keeps content */}
-        <InspectorField label="Layout">
-          <InspectorSelect
-            value={template}
-            onChange={(v) => onChange({ ...s, template: v as SlideTemplate })}
-            options={TEMPLATE_OPTIONS}
-          />
-        </InspectorField>
-
-        {/* Slide-level toggles — visibility, mirror, stretch, per-slide timer */}
-        <InspectorSection
-          title="Slide options"
-          icon={<SlidersHorizontal className="h-3 w-3" />}
-          defaultOpen={false}
-        >
-          <InspectorField
-            label="Autoplay (this slide)"
-            hint="ms — overrides global Autoplay for this slide. Empty/0 = use global."
-          >
-            <InspectorNumber
-              value={s?.autoPlayMs || undefined}
-              onChange={(v) => onChange({ ...s, autoPlayMs: v ?? 0 })}
-              placeholder="3000"
-            />
-          </InspectorField>
-
-          <div className="space-y-1.5">
-            <InspectorToggle
-              label="Hidden"
-              checked={!!s?.hidden}
-              onChange={(v) => onChange({ ...s, hidden: v || undefined })}
-            />
-            <InspectorToggle
-              label="Mirror layout (swap media ↔ text)"
-              checked={!!s?.mirror}
-              onChange={(v) => onChange({ ...s, mirror: v || undefined })}
-            />
-            <InspectorToggle
-              label="Stretch text to media height"
-              checked={!!s?.stretchTextToMedia}
-              onChange={(v) => onChange({ ...s, stretchTextToMedia: v || undefined })}
-            />
-          </div>
-        </InspectorSection>
-
-        {/* Text content — collapsible + reorderable cards */}
-        <InspectorSection
-          title="Text"
-          icon={<Type className="h-3 w-3" />}
-          defaultOpen
-        >
-          <TextElementsEditor slide={s} tuningScope={tuningScope} onChange={onChange} externalSelectedElementId={externalSelectedElementId} />
-        </InspectorSection>
-
-        {/* CTA */}
-        <InspectorSection title="CTA" icon={<Type className="h-3 w-3" />} defaultOpen={false}>
-          <InspectorToggle
-            label="Enable link"
-            checked={s?.cta?.enabled === true || (s?.cta?.enabled == null && !!s?.cta?.href)}
-            onChange={(v) => onChange({ ...s, cta: { ...s?.cta, enabled: v ? true : false } })}
-          />
-          {(s?.cta?.enabled === true || (s?.cta?.enabled == null && !!s?.cta?.href)) && (
-            <>
-              <InspectorField label="Label">
-                <InspectorInput
-                  value={s?.cta?.label ?? ""}
-                  onChange={(v) => onChange({ ...s, cta: { ...s?.cta, label: v } })}
-                />
-              </InspectorField>
-              <div className="grid grid-cols-2 gap-1.5">
-                <InspectorField label="Href">
-                  <InspectorInput
-                    value={s?.cta?.href ?? ""}
-                    onChange={(v) => onChange({ ...s, cta: { ...s?.cta, href: v } })}
-                  />
-                </InspectorField>
-                <InspectorField label="Open in">
-                  <InspectorSelect
-                    value={s?.cta?.target ?? "_self"}
-                    onChange={(v) => onChange({ ...s, cta: { ...s?.cta, target: (v as "_self" | "_blank") || undefined } })}
-                    options={[
-                      { value: "_self", label: "Same tab" },
-                      { value: "_blank", label: "New tab" },
-                    ]}
-                  />
-                </InspectorField>
+      {!collapsed && (
+        <div>
+          {/* Absolute mode status */}
+          <div className="px-2 pt-2">
+            {!isAbsoluteSlide ? (
+              <div className="rounded-md border border-red-500/40 bg-red-500/10 p-2">
+                <button
+                  type="button"
+                  className="w-full rounded-md bg-red-600 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-sm hover:bg-red-700"
+                  onClick={onRequestAbsolute}
+                >
+                  Перенести на absolute
+                </button>
+                <p className="mt-1.5 text-[10px] leading-snug text-red-700">
+                  Старі слайди лишаються у flow, щоб вигляд збігався з сайтом. Натисни перед незалежним drag.
+                </p>
               </div>
-              <InspectorField label="Align">
-                <InspectorSelect
-                  value={s.ctaStyle?.align ?? ""}
-                  onChange={(v) => onChange({ ...s, ctaStyle: { ...s.ctaStyle, align: v || undefined } as any })}
-                  options={[{ value: "", label: "Auto" }, ...ALIGN_OPTIONS]}
+            ) : (
+              <div className="flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5 text-[10px] font-medium text-emerald-700">
+                <Check className="h-3 w-3" /> Absolute positioning enabled
+              </div>
+            )}
+          </div>
+
+          {/* Tab bar */}
+          <div className="flex gap-px px-2 pt-2 pb-0">
+            {(["text", "layout", "media", "cta"] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setSlideTab(tab)}
+                className={[
+                  "flex-1 py-1.5 text-[11px] font-semibold uppercase tracking-wide rounded-sm transition-all",
+                  slideTab === tab
+                    ? "bg-sky-500/15 text-sky-600"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                ].join(" ")}
+              >
+                {tab === "text" ? "Text" : tab === "layout" ? "Layout" : tab === "media" ? "Media" : "CTA"}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div className="p-2 space-y-2">
+
+            {/* ── TEXT tab ── */}
+            {slideTab === "text" && (
+              <TextElementsEditor
+                slide={s}
+                tuningScope={tuningScope}
+                onChange={onChange}
+                externalSelectedElementId={externalSelectedElementId}
+              />
+            )}
+
+            {/* ── LAYOUT tab ── */}
+            {slideTab === "layout" && (
+              <div className="space-y-2">
+                <InspectorField label="Slide name">
+                  <InspectorInput
+                    value={s?.name ?? ""}
+                    onChange={(v) => onChange({ ...s, name: v || undefined })}
+                    placeholder={s?.title?.split("\n")[0] || template}
+                  />
+                </InspectorField>
+
+                <InspectorField label="Preset" stacked>
+                  <InspectorSelect
+                    value=""
+                    onChange={(v) => {
+                      const preset = presetSlide(v as PresetKey);
+                      onChange({ id: s.id, name: s.name, ...preset } as Slide);
+                    }}
+                    options={[{ value: "", label: "Select preset..." }, ...PRESET_OPTIONS]}
+                  />
+                </InspectorField>
+
+                <InspectorField label="Layout">
+                  <InspectorSelect
+                    value={template}
+                    onChange={(v) => onChange({ ...s, template: v as SlideTemplate })}
+                    options={TEMPLATE_OPTIONS}
+                  />
+                </InspectorField>
+
+                <InspectorSection title="Slide options" icon={<SlidersHorizontal className="h-3 w-3" />} defaultOpen={false}>
+                  <InspectorField label="Autoplay (this slide)" hint="ms — overrides global. Empty/0 = use global.">
+                    <InspectorNumber
+                      value={s?.autoPlayMs || undefined}
+                      onChange={(v) => onChange({ ...s, autoPlayMs: v ?? 0 })}
+                      placeholder="3000"
+                    />
+                  </InspectorField>
+                  <div className="space-y-1.5">
+                    <InspectorToggle label="Hidden" checked={!!s?.hidden} onChange={(v) => onChange({ ...s, hidden: v || undefined })} />
+                    <InspectorToggle label="Mirror layout (swap media ↔ text)" checked={!!s?.mirror} onChange={(v) => onChange({ ...s, mirror: v || undefined })} />
+                    <InspectorToggle label="Stretch text to media height" checked={!!s?.stretchTextToMedia} onChange={(v) => onChange({ ...s, stretchTextToMedia: v || undefined })} />
+                  </div>
+                </InspectorSection>
+
+                <InspectorSection title={`Desktop Tuning - ${tuningScopeLabel}`} icon={<LayoutTemplate className="h-3 w-3" />} defaultOpen={false}>
+                  {tuningScope === "ipadPro" && (
+                    <p className="text-[10px] text-muted-foreground/80">Editing iPad Pro-only layout values. Empty fields inherit Desktop/default.</p>
+                  )}
+                  <div className="mb-1.5">
+                    <div className="mb-1 text-xs text-muted-foreground">Padding</div>
+                    <InspectorInput value={desktop?.padding ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { padding: v }))} placeholder={desktopFallback.padding ?? "10px 0"} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div>
+                      <div className="mb-1 text-xs text-muted-foreground">Media width</div>
+                      <InspectorInput value={desktop?.mediaWidth ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaWidth: v }))} placeholder={desktopFallback.mediaWidth ?? "40%"} />
+                    </div>
+                    <div>
+                      <div className="mb-1 text-xs text-muted-foreground">Text width</div>
+                      <InspectorInput value={desktop?.textWidth ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { textWidth: v }))} placeholder={desktopFallback.textWidth ?? "92%"} />
+                    </div>
+                    <div>
+                      <div className="mb-1 text-xs text-muted-foreground">Offset X</div>
+                      <InspectorInput value={desktop?.contentOffsetX ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { contentOffsetX: v }))} placeholder={desktopFallback.contentOffsetX ?? "0px"} />
+                    </div>
+                    <div>
+                      <div className="mb-1 text-xs text-muted-foreground">Offset Y</div>
+                      <InspectorInput value={desktop?.contentOffsetY ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { contentOffsetY: v }))} placeholder={desktopFallback.contentOffsetY ?? "0px"} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 mt-2">
+                    <div>
+                      <div className="mb-1 text-xs text-muted-foreground">Title size</div>
+                      <InspectorInput value={desktop?.titleSize ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { titleSize: v }))} placeholder={desktopFallback.titleSize ?? "clamp(54px, 5.5vw, 84px)"} />
+                    </div>
+                    <div>
+                      <div className="mb-1 text-xs text-muted-foreground">Tagline size</div>
+                      <InspectorInput value={desktop?.subtitleSize ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { subtitleSize: v }))} placeholder={desktopFallback.subtitleSize ?? "clamp(20px, 2vw, 30px)"} />
+                    </div>
+                    <div>
+                      <div className="mb-1 text-xs text-muted-foreground">Kicker size</div>
+                      <InspectorInput value={desktop?.kickerSize ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { kickerSize: v }))} placeholder={desktopFallback.kickerSize ?? "clamp(22px, 1.8vw, 28px)"} />
+                    </div>
+                    <div>
+                      <div className="mb-1 text-xs text-muted-foreground">Body size</div>
+                      <InspectorInput value={desktop?.bodySize ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { bodySize: v }))} placeholder={desktopFallback.bodySize ?? "clamp(13px, 1vw, 15px)"} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 mt-2">
+                    <InspectorField label="Align">
+                      <InspectorSelect value={desktop?.textAlign ?? "center"} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { textAlign: v }))} options={ALIGN_OPTIONS} />
+                    </InspectorField>
+                    <InspectorField label="Justify">
+                      <InspectorSelect value={desktop?.contentJustify ?? "center"} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { contentJustify: v }))} options={JUSTIFY_OPTIONS} />
+                    </InspectorField>
+                  </div>
+                  <InspectorToggle label="Align text ignoring gap" checked={!!desktop?.textAlignFullWidth} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { textAlignFullWidth: v || undefined }))} />
+                  <InspectorToggle label="Ignore gap while dragging" checked={!!desktop?.dragIgnoreGap} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { dragIgnoreGap: v || undefined }))} />
+                  <InspectorToggle label="Mobile: image first" checked={!!mobile?.imageFirst} onChange={(v) => onChange(updateMobileLayout(s, { imageFirst: v }))} />
+                </InspectorSection>
+              </div>
+            )}
+
+            {/* ── MEDIA tab ── */}
+            {slideTab === "media" && (
+              <div className="space-y-2">
+                <MediaFields label="Image" media={s?.media} onChange={(patch) => onChange(updateMedia(s, patch))} />
+                <div className="grid grid-cols-2 gap-1.5">
+                  <InspectorField label="Gap to text" hint="Space between media and text column">
+                    <InspectorInput value={desktop?.gap ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { gap: v }))} placeholder={desktopFallback.gap ?? "42px"} />
+                  </InspectorField>
+                  <InspectorField label="Outer padding" hint="Centering modes 2 & 4">
+                    <InspectorInput value={desktop?.outerPadding ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { outerPadding: v || undefined }))} placeholder={desktopFallback.outerPadding ?? "0px"} />
+                  </InspectorField>
+                  <InspectorField label="Media padding">
+                    <InspectorInput value={desktop?.mediaPadding ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaPadding: v }))} placeholder={desktopFallback.mediaPadding ?? "0 10px 30px 0"} />
+                  </InspectorField>
+                  <InspectorField label="Media height">
+                    <InspectorInput value={desktop?.mediaHeight ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaHeight: v }))} placeholder={desktopFallback.mediaHeight ?? "auto"} />
+                  </InspectorField>
+                  <InspectorField label="Media vertical align">
+                    <InspectorSelect value={desktop?.mediaAlign ?? ""} onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaAlign: v || undefined }))} options={MEDIA_ALIGN_OPTIONS} />
+                  </InspectorField>
+                </div>
+              </div>
+            )}
+
+            {/* ── CTA tab ── */}
+            {slideTab === "cta" && (
+              <div className="space-y-2">
+                <InspectorToggle
+                  label="Enable link"
+                  checked={s?.cta?.enabled === true || (s?.cta?.enabled == null && !!s?.cta?.href)}
+                  onChange={(v) => onChange({ ...s, cta: { ...s?.cta, enabled: v ? true : false } })}
                 />
-              </InspectorField>
-            </>
-          )}
-          {s?.cta?.enabled === false && s?.cta?.href && (
-            <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-              Saved: {s.cta.href}
-            </p>
-          )}
-        </InspectorSection>
-
-        {/* Media */}
-        <InspectorSection
-          title="Media"
-          icon={<Image className="h-3 w-3" />}
-
-          defaultOpen={false}
-        >
-          <MediaFields
-            label="Image"
-            media={s?.media}
-            onChange={(patch) => onChange(updateMedia(s, patch))}
-          />
-          <div className="grid grid-cols-2 gap-1.5">
-            <InspectorField label="Gap to text" hint="Space between media and text column">
-              <InspectorInput
-                value={desktop?.gap ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { gap: v }))}
-                placeholder={desktopFallback.gap ?? "42px"}
-              />
-            </InspectorField>
-            <InspectorField label="Outer padding" hint="Symmetric outer padding used for centering modes 2 & 4">
-              <InspectorInput
-                value={desktop?.outerPadding ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { outerPadding: v || undefined }))}
-                placeholder={desktopFallback.outerPadding ?? "0px"}
-              />
-            </InspectorField>
-            <InspectorField label="Media padding">
-              <InspectorInput
-                value={desktop?.mediaPadding ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaPadding: v }))}
-                placeholder={desktopFallback.mediaPadding ?? "0 10px 30px 0"}
-              />
-            </InspectorField>
-            <InspectorField label="Media height">
-              <InspectorInput
-                value={desktop?.mediaHeight ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaHeight: v }))}
-                placeholder={desktopFallback.mediaHeight ?? "auto"}
-              />
-            </InspectorField>
-            <InspectorField label="Media vertical align">
-              <InspectorSelect
-                value={desktop?.mediaAlign ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaAlign: v || undefined }))}
-                options={MEDIA_ALIGN_OPTIONS}
-              />
-            </InspectorField>
+                {(s?.cta?.enabled === true || (s?.cta?.enabled == null && !!s?.cta?.href)) && (
+                  <>
+                    <InspectorField label="Label">
+                      <InspectorInput value={s?.cta?.label ?? ""} onChange={(v) => onChange({ ...s, cta: { ...s?.cta, label: v } })} />
+                    </InspectorField>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <InspectorField label="Href">
+                        <InspectorInput value={s?.cta?.href ?? ""} onChange={(v) => onChange({ ...s, cta: { ...s?.cta, href: v } })} />
+                      </InspectorField>
+                      <InspectorField label="Open in">
+                        <InspectorSelect
+                          value={s?.cta?.target ?? "_self"}
+                          onChange={(v) => onChange({ ...s, cta: { ...s?.cta, target: (v as "_self" | "_blank") || undefined } })}
+                          options={[{ value: "_self", label: "Same tab" }, { value: "_blank", label: "New tab" }]}
+                        />
+                      </InspectorField>
+                    </div>
+                    <InspectorField label="Align">
+                      <InspectorSelect value={s.ctaStyle?.align ?? ""} onChange={(v) => onChange({ ...s, ctaStyle: { ...s.ctaStyle, align: v || undefined } as any })} options={[{ value: "", label: "Auto" }, ...ALIGN_OPTIONS]} />
+                    </InspectorField>
+                  </>
+                )}
+                {s?.cta?.enabled === false && s?.cta?.href && (
+                  <p className="text-[10px] text-muted-foreground/60">Saved: {s.cta.href}</p>
+                )}
+              </div>
+            )}
           </div>
-        </InspectorSection>
-
-        {/* Desktop layout tuning */}
-        <InspectorSection
-          title={`Desktop Tuning - ${tuningScopeLabel}`}
-          icon={<LayoutTemplate className="h-3 w-3" />}
-
-          defaultOpen={false}
-        >
-          {tuningScope === "ipadPro" ? (
-            <p className="text-[10px] text-muted-foreground/80">
-              Editing iPad Pro-only layout values. Empty fields inherit Desktop/default.
-            </p>
-          ) : null}
-          <div className="mb-1.5">
-            <div className="mb-1 text-xs text-muted-foreground">Padding</div>
-            <InspectorInput
-              value={desktop?.padding ?? ""}
-              onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { padding: v }))}
-              placeholder={desktopFallback.padding ?? "10px 0"}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-1.5">
-            <div>
-              <div className="mb-1 text-xs text-muted-foreground">Media width</div>
-              <InspectorInput
-                value={desktop?.mediaWidth ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { mediaWidth: v }))}
-                placeholder={desktopFallback.mediaWidth ?? "40%"}
-              />
-            </div>
-            <div>
-              <div className="mb-1 text-xs text-muted-foreground">Text width</div>
-              <InspectorInput
-                value={desktop?.textWidth ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { textWidth: v }))}
-                placeholder={desktopFallback.textWidth ?? "92%"}
-              />
-            </div>
-            <div>
-              <div className="mb-1 text-xs text-muted-foreground">Offset X</div>
-              <InspectorInput
-                value={desktop?.contentOffsetX ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { contentOffsetX: v }))}
-                placeholder={desktopFallback.contentOffsetX ?? "0px"}
-              />
-            </div>
-            <div>
-              <div className="mb-1 text-xs text-muted-foreground">Offset Y</div>
-              <InspectorInput
-                value={desktop?.contentOffsetY ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { contentOffsetY: v }))}
-                placeholder={desktopFallback.contentOffsetY ?? "0px"}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-1.5 mt-2">
-            <div>
-              <div className="mb-1 text-xs text-muted-foreground">Title size</div>
-              <InspectorInput
-                value={desktop?.titleSize ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { titleSize: v }))}
-                placeholder={desktopFallback.titleSize ?? "clamp(54px, 5.5vw, 84px)"}
-              />
-            </div>
-            <div>
-              <div className="mb-1 text-xs text-muted-foreground">Tagline size</div>
-              <InspectorInput
-                value={desktop?.subtitleSize ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { subtitleSize: v }))}
-                placeholder={desktopFallback.subtitleSize ?? "clamp(20px, 2vw, 30px)"}
-              />
-            </div>
-            <div>
-              <div className="mb-1 text-xs text-muted-foreground">Kicker size</div>
-              <InspectorInput
-                value={desktop?.kickerSize ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { kickerSize: v }))}
-                placeholder={desktopFallback.kickerSize ?? "clamp(22px, 1.8vw, 28px)"}
-              />
-            </div>
-            <div>
-              <div className="mb-1 text-xs text-muted-foreground">Body size</div>
-              <InspectorInput
-                value={desktop?.bodySize ?? ""}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { bodySize: v }))}
-                placeholder={desktopFallback.bodySize ?? "clamp(13px, 1vw, 15px)"}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-1.5 mt-2">
-            <InspectorField label="Align">
-              <InspectorSelect
-                value={desktop?.textAlign ?? "center"}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { textAlign: v }))}
-                options={ALIGN_OPTIONS}
-              />
-            </InspectorField>
-            <InspectorField label="Justify">
-              <InspectorSelect
-                value={desktop?.contentJustify ?? "center"}
-                onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { contentJustify: v }))}
-                options={JUSTIFY_OPTIONS}
-              />
-            </InspectorField>
-          </div>
-
-          <InspectorToggle
-            label="Align text ignoring gap"
-            checked={!!desktop?.textAlignFullWidth}
-            onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { textAlignFullWidth: v || undefined }))}
-          />
-
-          <InspectorToggle
-            label="Ignore gap while dragging"
-            checked={!!desktop?.dragIgnoreGap}
-            onChange={(v) => onChange(updateScopedDesktopLayout(s, tuningScope, { dragIgnoreGap: v || undefined }))}
-          />
-
-          <InspectorToggle
-            label="Mobile: image first"
-            checked={!!mobile?.imageFirst}
-            onChange={(v) => onChange(updateMobileLayout(s, { imageFirst: v }))}
-          />
-        </InspectorSection>
-
-      </div>}
+        </div>
+      )}
     </div>
   );
 }
@@ -1387,9 +1296,12 @@ function TextElementsEditor({
   // Accordion: only one card open at a time
   const [openKey, setOpenKey] = useState<string | null>(null);
 
-  // When canvas element is clicked, open its card and collapse others
+  // When canvas element is clicked, open its card and collapse others.
+  // externalSelectedElementId is "slide-N-key" — strip the prefix to get the card key.
   useEffect(() => {
-    if (externalSelectedElementId) setOpenKey(externalSelectedElementId);
+    if (!externalSelectedElementId) return;
+    const key = externalSelectedElementId.replace(/^slide-\d+-/, "");
+    setOpenKey(key);
   }, [externalSelectedElementId]);
   const dragIdxRef = useRef<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
@@ -1398,7 +1310,7 @@ function TextElementsEditor({
 
   const activeFixed: string[] = [];
   if (s?.kicker !== undefined) activeFixed.push("kicker");
-  activeFixed.push("title");
+  if (s?.title !== undefined) activeFixed.push("title");
   if (s?.subtitle !== undefined) activeFixed.push("subtitle");
   if (s?.body !== undefined) activeFixed.push("body");
   if (s?.quote !== undefined) activeFixed.push("quote");
@@ -1432,6 +1344,35 @@ function TextElementsEditor({
     const newExtras = extras.filter(e => e.id !== id);
     const newOrder = orderedKeys.filter(k => k !== id);
     onChange({ ...s, extras: newExtras, elementOrder: newOrder.length ? newOrder : undefined });
+  };
+
+  const NAMED_FIELD_MAP: Record<string, keyof Slide> = {
+    title: "title", kicker: "kicker", subtitle: "subtitle", body: "body", quote: "quote",
+  };
+  const NAMED_STYLE_MAP: Record<string, keyof Slide> = {
+    title: "titleStyle", kicker: "kickerStyle", subtitle: "subtitleStyle", body: "bodyStyle", quote: "quoteStyle",
+  };
+
+  const removeNamedElement = (key: string) => {
+    if (!(key in NAMED_FIELD_MAP)) return;
+    const newOrder = orderedKeys.filter(k => k !== key);
+    onChange({ ...s, [NAMED_FIELD_MAP[key]]: undefined, [NAMED_STYLE_MAP[key]]: undefined, elementOrder: newOrder.length ? newOrder : undefined });
+  };
+
+  const duplicateNamedElement = (key: string) => {
+    const NAMED_KIND: Record<string, SlideExtra["kind"]> = {
+      kicker: "kicker", title: "stamp", subtitle: "text", body: "text", quote: "text",
+    };
+    const textField = NAMED_FIELD_MAP[key];
+    const styleField = NAMED_STYLE_MAP[key];
+    if (!textField) return;
+    const text = (s[textField] as string | undefined) ?? "";
+    const style = s[styleField] as ElementStyle | undefined;
+    const newId = crypto?.randomUUID?.() ?? `ex-${Date.now()}`;
+    const newExtra: SlideExtra = { id: newId, kind: NAMED_KIND[key] ?? "text", text, style: style ? { ...style } : undefined };
+    const insertAt = orderedKeys.indexOf(key) + 1;
+    const newOrder = [...orderedKeys.slice(0, insertAt), newId, ...orderedKeys.slice(insertAt)];
+    onChange({ ...s, extras: [...extras, newExtra], elementOrder: newOrder });
   };
 
   const addExtra = () => {
@@ -1564,15 +1505,19 @@ function TextElementsEditor({
           open={openKey === key}
           onOpenChange={(v) => setOpenKey(v ? key : null)}
           onMove={(dir) => moveElement(idx, dir)}
-          onRemove={extraKeys.includes(key) ? () => removeExtra(key) : undefined}
-          onDuplicate={extraKeys.includes(key) ? () => {
-            const extra = extras.find(e => e.id === key)!;
-            const newId = crypto?.randomUUID?.() ?? `ex-${Date.now()}`;
-            const newExtra: SlideExtra = { ...extra, id: newId };
-            const insertAt = orderedKeys.indexOf(key) + 1;
-            const newOrder = [...orderedKeys.slice(0, insertAt), newId, ...orderedKeys.slice(insertAt)];
-            onChange({ ...s, extras: [...extras, newExtra], elementOrder: newOrder });
-          } : undefined}
+          onRemove={extraKeys.includes(key)
+            ? () => removeExtra(key)
+            : key in NAMED_FIELD_MAP ? () => removeNamedElement(key) : undefined}
+          onDuplicate={extraKeys.includes(key)
+            ? () => {
+                const extra = extras.find(e => e.id === key)!;
+                const newId = crypto?.randomUUID?.() ?? `ex-${Date.now()}`;
+                const newExtra: SlideExtra = { ...extra, id: newId };
+                const insertAt = orderedKeys.indexOf(key) + 1;
+                const newOrder = [...orderedKeys.slice(0, insertAt), newId, ...orderedKeys.slice(insertAt)];
+                onChange({ ...s, extras: [...extras, newExtra], elementOrder: newOrder });
+              }
+            : key in NAMED_FIELD_MAP ? () => duplicateNamedElement(key) : undefined}
           onToggleHidden={() => {
             const es = getSlideStyle(s, key);
             onChange(applyStylePatch(s, key, { hidden: es?.hidden ? undefined : true }));
