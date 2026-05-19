@@ -1405,7 +1405,7 @@ function HeroSlide({
         const cols = Math.max(1, classicGrid!.columns ?? 6);
         const rows = Math.max(1, classicGrid!.rows ?? 4);
         const lineColor = classicGrid!.color ?? "rgba(56,189,248,0.45)";
-        const centerColor = "rgba(72,199,72,0.75)";
+        const centerColor = "red";
         const marginPct = ((classicGrid!.marginPx ?? 0) / DESIGN_WIDTH_PX) * 100;
         const usable = 100 - 2 * marginPct;
         return (

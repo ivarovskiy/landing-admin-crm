@@ -302,7 +302,6 @@ export function presetSlide(preset: PresetKey): Omit<Slide, "id"> {
         media: media("Children's programs", "1/1"),
         titleStyle: { typo: "typo-content-header", mt: "120px", mb: "46px" },
         subtitleStyle: { typo: "typo-subtitle", pb: "132px" },
-        ctaStyle: { mb: "4px" },
         layout: {
           desktop: {
             gap: "50px", mediaWidth: "547px", textWidth: "88%",
