@@ -1327,13 +1327,13 @@ function HeroSlide({
           });
 
           // CTA: horizontal line at its bottom edge
-          const ctaEl = slideEl.querySelector<HTMLElement>(".hero-slide__cta");
-          if (ctaEl) {
-            const cr = ctaEl.getBoundingClientRect();
-            if (cr.height) {
-              lines.push({ axis: "h", pos: (cr.bottom - sr.top) / scale });
-            }
-          }
+          // const ctaEl = slideEl.querySelector<HTMLElement>(".hero-slide__cta");
+          // if (ctaEl) {
+          //   const cr = ctaEl.getBoundingClientRect();
+          //   if (cr.height) {
+          //     lines.push({ axis: "h", pos: (cr.bottom - sr.top) / scale });
+          //   }
+          // }
 
           setCompGuides(lines);
         }
