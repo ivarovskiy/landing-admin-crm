@@ -1172,7 +1172,7 @@ function ElementStyleEditor({
           />
         </div>
       </div>
-      <div className="grid grid-cols-4 gap-1">
+      <div className="grid grid-cols-5 gap-1">
         <div>
           <div className="text-[11px] text-muted-foreground mb-0.5">Align</div>
           <InspectorSelect
@@ -1191,6 +1191,19 @@ function ElementStyleEditor({
             value={s.size ?? ""}
             onChange={(v) => patch("size", v)}
             placeholder={fallback.size ?? "inherit"}
+          />
+        </div>
+        <div>
+          <div className="text-[11px] text-muted-foreground mb-0.5">Shadow</div>
+          <InspectorInput
+            value={s.shadowOffset ?? ""}
+            onChange={(v) => patch("shadowOffset", v)}
+            placeholder={(() => {
+              const sz = parseFloat(s.size ?? fallback.size ?? "");
+              return Number.isFinite(sz) && sz > 0
+                ? `${Math.round((sz / 104) * 5.56 * 100) / 100}px`
+                : "auto";
+            })()}
           />
         </div>
         <div>
@@ -1415,10 +1428,12 @@ function TextElementsEditor({
     const newExtra: SlideExtra = {
       id: crypto?.randomUUID?.() ?? `ex-${Date.now()}`,
       kind: "text",
-      text: "",
+      text: "New text",
+      style: { mt: "100px", ml: "0px" },
     };
     onChange({
       ...s,
+      positioningMode: "absolute" as const,
       extras: [...extras, newExtra],
       elementOrder: [...orderedKeys, newExtra.id!],
     });

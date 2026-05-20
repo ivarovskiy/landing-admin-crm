@@ -33,6 +33,7 @@ type ElementStyle = {
   size?: string;
   typo?: string; // typography class from design system
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
+  shadowOffset?: string; // stamp shadow x/y offset (e.g. "5.56px"); scales with font size
   letterSpacing?: string; // letter-spacing override (e.g. "0.05em", "2px")
   locked?: boolean; // prevents drag/resize in preview and canvas
   hidden?: boolean; // hide this element without deleting it
@@ -2036,6 +2037,7 @@ function absPositionStyle(
   }
   if (es?.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
   if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
+  if (es?.letterSpacing) s.letterSpacing = resolveDesignViewportUnits(es.letterSpacing)!;
   if (es?.pt) s.paddingTop = resolveDesignViewportUnits(es.pt)!;
   if (es?.pb) s.paddingBottom = resolveDesignViewportUnits(es.pb)!;
   if (es?.useFontOffset && es?.typo) {
@@ -2063,6 +2065,11 @@ function textContentStyle(es?: ElementStyle): React.CSSProperties | undefined {
     }
   }
   if (es.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
+  if (es.shadowOffset) {
+    const offset = resolveDesignViewportUnits(es.shadowOffset)!;
+    s["--stamp-shadow-x"] = offset;
+    s["--stamp-shadow-y"] = offset;
+  }
   return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
 }
 
@@ -2678,7 +2685,12 @@ function useSlideElementEditor(
         if (!d.moved) return;
         const dy = Math.round((d.startY - e.clientY) / d.scale);
         const newSize = Math.max(6, d.startSize + dy);
-        onSlideChangeRef.current!(setSlideElementViewportStyle(slideRef.current, key, viewportProfile, { size: `${newSize}px` }));
+        // Scale shadow proportionally: reference 104px → 5.56px shadow
+        const newShadow = Math.round((newSize / 104) * 5.56 * 100) / 100;
+        onSlideChangeRef.current!(setSlideElementViewportStyle(slideRef.current, key, viewportProfile, {
+          size: `${newSize}px`,
+          shadowOffset: `${newShadow}px`,
+        }));
       },
       onPointerCancel: (e) => {
         const d = dragRef.current;

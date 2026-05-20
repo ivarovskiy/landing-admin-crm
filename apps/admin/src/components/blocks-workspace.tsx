@@ -420,6 +420,7 @@ export function BlocksWorkspace({
     function onKeyDown(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if ((e.target as HTMLElement)?.isContentEditable) return;
       if (e.code === "KeyH") setTool("hand");
       if (e.code === "KeyV") setTool("pointer");
       if (e.code === "KeyT") { setToolboxAddText((v) => !v); setAddTextPopup(null); }
