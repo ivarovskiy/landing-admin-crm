@@ -42,7 +42,10 @@
       "Bash(pnpm typecheck *)",
       "Bash(npx jest *)",
       "Bash(pnpm -C apps/web typecheck)",
-      "Bash(powershell -c \"\\(Get-Content 'c:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\\\\apps\\\\admin\\\\src\\\\components\\\\block-forms\\\\hero-slider-presets.ts'\\).Count\")"
+      "Bash(powershell -c \"\\(Get-Content 'c:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\\\\apps\\\\admin\\\\src\\\\components\\\\block-forms\\\\hero-slider-presets.ts'\\).Count\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(npm install *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\ThinkPad\\.claude\\projects\\c--Users-ThinkPad-Desktop-Work-landing-admin-crm\\memory"

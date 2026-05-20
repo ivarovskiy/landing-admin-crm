@@ -13,6 +13,7 @@ import type {
   SiteTypographyViewportProfileKey,
   NavUnderlineMode,
 } from "@/lib/admin-api";
+import { FontPresetEditor } from "./font-preset-editor";
 
 /* ----------------------------------------------------------------
    Sub-components
@@ -230,13 +231,14 @@ function SliderRow({
   );
 }
 
-type SettingsTab = "layout" | "typography" | "header";
+type SettingsTab = "layout" | "typography" | "header" | "presets";
 type TypographyMetricScope = "all" | SiteTypographyViewportProfileKey;
 
 const SETTINGS_TABS: { value: SettingsTab; label: string }[] = [
   { value: "layout", label: "Layout" },
   { value: "typography", label: "Typography" },
   { value: "header", label: "Header" },
+  { value: "presets", label: "Presets" },
 ];
 
 const TYPOGRAPHY_METRIC_SCOPE_OPTIONS: { value: TypographyMetricScope; label: string }[] = [
@@ -1138,6 +1140,19 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
           />
         </div>
       </div>
+        </>
+      ) : null}
+
+      {activeTab === "presets" ? (
+        <>
+          <SectionLabel>Font Presets</SectionLabel>
+          <p className="text-[10px] text-[oklch(0.45_0_0)] px-2 pb-1 leading-snug">
+            Custom typography styles based on GT Maru. Use these presets in slides and blocks.
+          </p>
+          <FontPresetEditor
+            presets={typography.customPresets ?? []}
+            onChange={(presets) => updateTypography({ customPresets: presets })}
+          />
         </>
       ) : null}
 

@@ -68,6 +68,23 @@ export type SiteScrollToTopSettings = {
   /** Distance (px) from document bottom where the button locks in place (sticky-until-footer). 0/undefined = no stop */
   stopOffset?: number;
 }
+export type FontPreset = {
+  id: string;
+  name: string;
+  fontFamily: "maru" | "maru-oblique";
+  fontSize: number;
+  fontWeight: number;
+  fill: string;
+  strokeEnabled: boolean;
+  stroke: string;
+  strokeWidthPx: number;
+  shadowEnabled: boolean;
+  shadowColor: string;
+  shadowX: number;
+  shadowY: number;
+  letterSpacing: string;
+};
+
 export type SiteTypographySettings = {
   /** Auto-scale stamp stroke + shadow proportionally to font-size (em-based).
    *  Per-size overrides below always win over this when both are enabled. */
@@ -126,6 +143,9 @@ export type SiteTypographySettings = {
   /** Optional screen-specific text metric overrides. Empty fields fall back to
    *  the global values above, then to CSS defaults. */
   viewportProfiles?: Partial<Record<SiteTypographyViewportProfileKey, SiteTypographyViewportProfile>>;
+
+  /** User-defined custom font presets visible in the Presets tab. */
+  customPresets?: FontPreset[];
 }
 
 export type SiteTextMetrics = {
