@@ -2919,6 +2919,7 @@ function CopyStack({
           slide={slide}
           onSlideChange={onSlideChange}
           columnCenterContext={columnCenterContext}
+          typoOptions={typoOptions}
         />
       );
     }
@@ -2946,6 +2947,7 @@ function ExtraElement({
   slide,
   onSlideChange,
   columnCenterContext,
+  typoOptions,
 }: {
   extra: SlideExtra;
   slideIndex: number;
@@ -2958,12 +2960,8 @@ function ExtraElement({
   slide?: Slide;
   onSlideChange?: (next: Slide) => void;
   columnCenterContext?: ColumnCenterContext;
+  typoOptions: { value: string; label: string }[];
 }) {
-  const _extraCustomPresets = useCustomPresets();
-  const typoOptions = useMemo(
-    () => mergeCustomTypoPresets(TYPO_PRESETS, presetsToTypoOptions(_extraCustomPresets)),
-    [_extraCustomPresets],
-  );
   const resolvedStyle = mergeElementStyle(extra.style, viewportProfile);
   if (resolvedStyle?.hidden) return null;
   const extraKey = extra.id ?? "";

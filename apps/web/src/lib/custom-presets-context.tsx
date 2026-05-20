@@ -1,11 +1,13 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { FontPreset } from "./api-public";
 
 const CustomPresetsContext = createContext<FontPreset[]>([]);
 
-export const CustomPresetsProvider = CustomPresetsContext.Provider;
+export function CustomPresetsProvider({ value, children }: { value: FontPreset[]; children: ReactNode }) {
+  return <CustomPresetsContext.Provider value={value}>{children}</CustomPresetsContext.Provider>;
+}
 
 export function useCustomPresets(): FontPreset[] {
   return useContext(CustomPresetsContext);
