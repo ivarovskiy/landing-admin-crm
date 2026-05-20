@@ -546,6 +546,7 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     nav: initialSettings?.typography?.nav,
     meta: initialSettings?.typography?.meta,
     viewportProfiles: initialSettings?.typography?.viewportProfiles,
+    customPresets: initialSettings?.typography?.customPresets,
   });
   const [header, setHeader] = useState<SiteHeaderSettings>({
     navUnderlineMode: initialSettings?.header?.navUnderlineMode ?? "parent",

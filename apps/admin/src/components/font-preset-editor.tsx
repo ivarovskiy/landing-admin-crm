@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { HexColorPicker } from "react-colorful";
-import { Plus, Trash2, ChevronDown, Copy } from "lucide-react";
+import { Plus, Trash2, ChevronDown, Copy, Save } from "lucide-react";
 import type { FontPreset } from "@/lib/admin-api";
 
 /* ── constants ──────────────────────────────────────────────── */
@@ -27,13 +27,34 @@ const FONT_FAMILY_OPTIONS: { value: FontPreset["fontFamily"]; label: string; css
   { value: "maru-oblique", label: "GT Maru Oblique", css: "var(--font-maru-oblique, Arial, sans-serif)" },
 ];
 
-/* ── shared primitives ──────────────────────────────────────── */
+/* ── color picker popover ───────────────────────────────────── */
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function ColorSwatch({ value, onChange, disabled }: {
+  value: string;
+  onChange: (hex: string) => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5">
-      <span className="text-[10px] text-[oklch(0.42_0_0)] w-14 shrink-0">{label}</span>
-      <div className="flex-1 flex items-center gap-2 min-w-0">{children}</div>
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        className="w-5 h-5 rounded border border-[oklch(1_0_0/15%)] disabled:opacity-30 shrink-0"
+        style={{ background: value }}
+      />
+      {open && (
+        <>
+          <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
+          <div className="absolute z-[101] left-0 top-7 rounded-xl overflow-hidden shadow-2xl border border-[oklch(1_0_0/12%)]">
+            <HexColorPicker color={value} onChange={onChange} />
+            <div className="bg-[oklch(0.14_0_0)] px-3 py-1.5">
+              <span className="text-[10px] font-mono text-[oklch(0.5_0_0)]">{value.toUpperCase()}</span>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -56,79 +77,27 @@ function MiniToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
   );
 }
 
-function ColorRow({ label, value, onChange, enabled, onToggle }: {
-  label: string;
+function FieldInput({ value, onChange, placeholder, mono, className }: {
   value: string;
-  onChange: (hex: string) => void;
-  enabled?: boolean;
-  onToggle?: (v: boolean) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="flex items-center gap-2 px-3 py-1.5 relative">
-      <span className="text-[10px] text-[oklch(0.42_0_0)] w-14 shrink-0">{label}</span>
-      {onToggle !== undefined && (
-        <MiniToggle value={enabled ?? false} onChange={onToggle} />
-      )}
-      <button
-        type="button"
-        disabled={enabled === false}
-        onClick={() => setOpen((v) => !v)}
-        className="w-5 h-5 rounded shrink-0 border border-[oklch(1_0_0/15%)] disabled:opacity-30"
-        style={{ background: value }}
-      />
-      <input
-        type="text"
-        value={value}
-        disabled={enabled === false}
-        onChange={(e) => {
-          const v = e.target.value.startsWith("#") ? e.target.value : `#${e.target.value}`;
-          if (/^#[0-9a-fA-F]{0,8}$/.test(v)) onChange(v);
-        }}
-        className="flex-1 min-w-0 bg-transparent border border-[oklch(1_0_0/10%)] rounded px-2 py-0.5 text-[10px] font-mono text-[oklch(0.7_0_0)] outline-none focus:border-[oklch(0.58_0.22_25/50%)] disabled:opacity-30"
-        spellCheck={false}
-      />
-      {open && (
-        <>
-          <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
-          <div className="absolute z-[101] left-16 top-8 rounded-xl overflow-hidden shadow-2xl border border-[oklch(1_0_0/12%)]">
-            <HexColorPicker color={value} onChange={onChange} />
-            <div className="bg-[oklch(0.14_0_0)] px-3 py-1.5">
-              <span className="text-[10px] font-mono text-[oklch(0.5_0_0)]">{value.toUpperCase()}</span>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function SliderRow({ label, value, min, max, step, unit, disabled, onChange }: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  unit: string;
-  disabled?: boolean;
-  onChange: (v: number) => void;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  mono?: boolean;
+  className?: string;
 }) {
   return (
-    <div className={["flex items-center gap-2 px-3 py-1.5", disabled ? "opacity-30 pointer-events-none" : ""].join(" ")}>
-      <span className="text-[10px] text-[oklch(0.42_0_0)] w-14 shrink-0">{label}</span>
-      <input
-        type="range"
-        min={min} max={max} step={step} value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="flex-1 h-[3px] accent-[oklch(0.58_0.22_25)] cursor-pointer"
-      />
-      <span className="text-[10px] font-mono text-[oklch(0.5_0_0)] w-10 text-right shrink-0">{value}{unit}</span>
-    </div>
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={[
+        "bg-transparent border border-[oklch(1_0_0/10%)] rounded px-2 py-0.5 text-[11px] text-[oklch(0.78_0_0)] outline-none focus:border-[oklch(0.58_0.22_25/50%)] w-full",
+        mono ? "font-mono" : "",
+        className ?? "",
+      ].join(" ")}
+      spellCheck={false}
+    />
   );
-}
-
-function Divider() {
-  return <div className="mx-3 h-px bg-[oklch(1_0_0/6%)]" />;
 }
 
 /* ── live preview ───────────────────────────────────────────── */
@@ -137,19 +106,19 @@ function PresetPreview({ preset, text }: { preset: FontPreset; text: string }) {
   const fontCss = FONT_FAMILY_OPTIONS.find((f) => f.value === preset.fontFamily)?.css ?? "Arial, sans-serif";
   const style: React.CSSProperties = {
     fontFamily: fontCss,
-    fontSize: Math.min(preset.fontSize, 96),
+    fontSize: preset.fontSize,
     fontWeight: preset.fontWeight,
     letterSpacing: preset.letterSpacing,
     color: preset.fill,
     WebkitTextStroke: preset.strokeEnabled ? `${preset.strokeWidthPx}px ${preset.stroke}` : "0",
-    textShadow: preset.shadowEnabled ? `${preset.shadowX}px ${preset.shadowY}px 0 ${preset.shadowColor}` : "none",
-    lineHeight: 1.15,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "clip",
+    textShadow: preset.shadowEnabled
+      ? `${preset.shadowX}px ${preset.shadowY}px 0 ${preset.shadowColor}`
+      : "none",
+    lineHeight: 1.2,
+    display: "block",
   };
   return (
-    <div className="mx-3 mt-2 mb-1 rounded-lg bg-[oklch(0.1_0_0)] border border-[oklch(1_0_0/6%)] flex items-center justify-center overflow-hidden" style={{ height: 72 }}>
+    <div className="mx-3 mt-2 rounded-lg bg-[oklch(0.1_0_0)] border border-[oklch(1_0_0/6%)] flex items-center justify-center overflow-auto px-4 py-5">
       <span style={style}>{text || "Preview"}</span>
     </div>
   );
@@ -157,105 +126,169 @@ function PresetPreview({ preset, text }: { preset: FontPreset; text: string }) {
 
 /* ── preset editor form ─────────────────────────────────────── */
 
-function PresetForm({ preset, onChange }: { preset: FontPreset; onChange: (p: FontPreset) => void }) {
-  function patch(u: Partial<FontPreset>) { onChange({ ...preset, ...u }); }
+function PresetForm({ preset, onSave }: {
+  preset: FontPreset;
+  onSave: (p: FontPreset) => void;
+}) {
+  const [draft, setDraft] = useState<FontPreset>(preset);
+  const [previewText, setPreviewText] = useState("Preview");
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(preset);
+
+  function patch(u: Partial<FontPreset>) { setDraft((d) => ({ ...d, ...u })); }
 
   return (
-    <div className="border-t border-[oklch(1_0_0/6%)] py-1">
-      <PresetPreview preset={preset} text={preset.name} />
+    <div className="border-t border-[oklch(1_0_0/6%)]">
+      {/* Preview */}
+      <PresetPreview preset={draft} text={previewText} />
 
-      {/* Name */}
-      <Row label="Name">
+      {/* Preview text input */}
+      <div className="mx-3 mt-1.5 mb-2">
         <input
           type="text"
-          value={preset.name}
-          onChange={(e) => patch({ name: e.target.value })}
-          placeholder="My heading"
-          className="flex-1 bg-transparent border border-[oklch(1_0_0/10%)] rounded px-2 py-0.5 text-[11px] text-[oklch(0.85_0_0)] outline-none focus:border-[oklch(0.58_0.22_25/50%)]"
+          value={previewText}
+          onChange={(e) => setPreviewText(e.target.value)}
+          placeholder="Type preview text…"
+          className="w-full bg-[oklch(1_0_0/4%)] border border-[oklch(1_0_0/8%)] rounded px-2.5 py-1 text-[11px] text-[oklch(0.6_0_0)] placeholder:text-[oklch(0.35_0_0)] outline-none focus:border-[oklch(0.58_0.22_25/40%)] text-center"
         />
-      </Row>
+      </div>
 
-      {/* Font */}
-      <Row label="Font">
-        <select
-          value={preset.fontFamily}
-          onChange={(e) => patch({ fontFamily: e.target.value as FontPreset["fontFamily"] })}
-          className="flex-1 bg-[oklch(0.18_0_0)] border border-[oklch(1_0_0/10%)] rounded px-2 py-0.5 text-[11px] text-[oklch(0.75_0_0)] outline-none"
-        >
-          {FONT_FAMILY_OPTIONS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-        </select>
-      </Row>
+      <div className="px-3 space-y-2 py-2">
 
-      {/* Size */}
-      <Row label="Size">
-        <input
-          type="number"
-          min={1}
-          value={preset.fontSize}
-          onChange={(e) => { const v = parseInt(e.target.value, 10); if (v > 0) patch({ fontSize: v }); }}
-          className="w-16 bg-transparent border border-[oklch(1_0_0/10%)] rounded px-2 py-0.5 text-[11px] font-mono text-[oklch(0.75_0_0)] outline-none focus:border-[oklch(0.58_0.22_25/50%)]"
-        />
-        <span className="text-[10px] text-[oklch(0.42_0_0)]">px</span>
-        {/* Weight chips */}
-        <div className="flex gap-1 ml-auto">
-          {[400, 500, 700, 900].map((w) => (
-            <button
-              key={w}
-              type="button"
-              onClick={() => patch({ fontWeight: w })}
-              className={[
-                "px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors",
-                preset.fontWeight === w
-                  ? "bg-[oklch(0.58_0.22_25)] text-white"
-                  : "bg-[oklch(1_0_0/6%)] text-[oklch(0.45_0_0)] hover:text-[oklch(0.7_0_0)]",
-              ].join(" ")}
-            >
-              {w}
-            </button>
-          ))}
+        {/* Name */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-[oklch(0.42_0_0)] w-14 shrink-0">Name</span>
+          <FieldInput value={draft.name} onChange={(v) => patch({ name: v })} placeholder="My heading" />
         </div>
-      </Row>
 
-      {/* Letter spacing */}
-      <Row label="Spacing">
-        <input
-          type="text"
-          value={preset.letterSpacing}
-          onChange={(e) => patch({ letterSpacing: e.target.value })}
-          placeholder="0.02em"
-          className="w-20 bg-transparent border border-[oklch(1_0_0/10%)] rounded px-2 py-0.5 text-[11px] font-mono text-[oklch(0.75_0_0)] outline-none focus:border-[oklch(0.58_0.22_25/50%)]"
-        />
-      </Row>
+        {/* Font + Weight grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] text-[oklch(0.42_0_0)]">Font</span>
+            <select
+              value={draft.fontFamily}
+              onChange={(e) => patch({ fontFamily: e.target.value as FontPreset["fontFamily"] })}
+              className="bg-[oklch(0.18_0_0)] border border-[oklch(1_0_0/10%)] rounded px-2 py-0.5 text-[10px] text-[oklch(0.72_0_0)] outline-none w-full"
+            >
+              {FONT_FAMILY_OPTIONS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] text-[oklch(0.42_0_0)]">Weight</span>
+            <div className="flex gap-1">
+              {[400, 500, 700, 900].map((w) => (
+                <button
+                  key={w}
+                  type="button"
+                  onClick={() => patch({ fontWeight: w })}
+                  className={[
+                    "flex-1 py-0.5 rounded text-[9px] font-bold transition-colors",
+                    draft.fontWeight === w
+                      ? "bg-[oklch(0.58_0.22_25)] text-white"
+                      : "bg-[oklch(1_0_0/6%)] text-[oklch(0.42_0_0)] hover:text-[oklch(0.7_0_0)]",
+                  ].join(" ")}
+                >
+                  {w}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
-      <Divider />
+        {/* Size + Spacing grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] text-[oklch(0.42_0_0)]">Size</span>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min={1}
+                value={draft.fontSize}
+                onChange={(e) => { const v = parseInt(e.target.value, 10); if (v > 0) patch({ fontSize: v }); }}
+                className="w-full bg-transparent border border-[oklch(1_0_0/10%)] rounded px-2 py-0.5 text-[11px] font-mono text-[oklch(0.75_0_0)] outline-none focus:border-[oklch(0.58_0.22_25/50%)]"
+              />
+              <span className="text-[10px] text-[oklch(0.38_0_0)] shrink-0">px</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] text-[oklch(0.42_0_0)]">Spacing</span>
+            <FieldInput value={draft.letterSpacing} onChange={(v) => patch({ letterSpacing: v })} placeholder="0.02em" mono />
+          </div>
+        </div>
 
-      {/* Fill */}
-      <ColorRow label="Fill" value={preset.fill} onChange={(v) => patch({ fill: v })} />
+        <div className="h-px bg-[oklch(1_0_0/6%)]" />
 
-      <Divider />
+        {/* Fill */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-[oklch(0.42_0_0)] w-14 shrink-0">Fill</span>
+          <ColorSwatch value={draft.fill} onChange={(v) => patch({ fill: v })} />
+          <FieldInput value={draft.fill} onChange={(v) => { if (/^#[0-9a-fA-F]{0,8}$/.test(v)) patch({ fill: v }); }} mono />
+        </div>
 
-      {/* Stroke */}
-      <ColorRow
-        label="Stroke"
-        value={preset.stroke}
-        onChange={(v) => patch({ stroke: v })}
-        enabled={preset.strokeEnabled}
-        onToggle={(v) => patch({ strokeEnabled: v })}
-      />
-      <SliderRow label="Width" value={preset.strokeWidthPx} min={0} max={8} step={0.1} unit="px" disabled={!preset.strokeEnabled} onChange={(v) => patch({ strokeWidthPx: v })} />
+        <div className="h-px bg-[oklch(1_0_0/6%)]" />
 
-      <Divider />
+        {/* Stroke row */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-[oklch(0.42_0_0)] w-14 shrink-0">Stroke</span>
+          <MiniToggle value={draft.strokeEnabled} onChange={(v) => patch({ strokeEnabled: v })} />
+          <ColorSwatch value={draft.stroke} onChange={(v) => patch({ stroke: v })} disabled={!draft.strokeEnabled} />
+          <FieldInput value={draft.stroke} onChange={(v) => { if (/^#[0-9a-fA-F]{0,8}$/.test(v)) patch({ stroke: v }); }} mono className={!draft.strokeEnabled ? "opacity-30 pointer-events-none" : ""} />
+        </div>
 
-      {/* Shadow */}
-      <ColorRow
-        label="Shadow"
-        value={preset.shadowColor}
-        onChange={(v) => patch({ shadowColor: v })}
-        enabled={preset.shadowEnabled}
-        onToggle={(v) => patch({ shadowEnabled: v })}
-      />
-      <SliderRow label="Offset X" value={preset.shadowX} min={0} max={20} step={0.5} unit="px" disabled={!preset.shadowEnabled} onChange={(v) => patch({ shadowX: v })} />
-      <SliderRow label="Offset Y" value={preset.shadowY} min={0} max={20} step={0.5} unit="px" disabled={!preset.shadowEnabled} onChange={(v) => patch({ shadowY: v })} />
+        {/* Stroke width */}
+        <div className={["flex items-center gap-2", !draft.strokeEnabled ? "opacity-30 pointer-events-none" : ""].join(" ")}>
+          <span className="text-[10px] text-[oklch(0.42_0_0)] w-14 shrink-0">Width</span>
+          <input type="range" min={0} max={8} step={0.1} value={draft.strokeWidthPx}
+            onChange={(e) => patch({ strokeWidthPx: Number(e.target.value) })}
+            className="flex-1 h-[3px] accent-[oklch(0.58_0.22_25)]" />
+          <span className="text-[10px] font-mono text-[oklch(0.45_0_0)] w-9 text-right shrink-0">{draft.strokeWidthPx}px</span>
+        </div>
+
+        <div className="h-px bg-[oklch(1_0_0/6%)]" />
+
+        {/* Shadow row */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-[oklch(0.42_0_0)] w-14 shrink-0">Shadow</span>
+          <MiniToggle value={draft.shadowEnabled} onChange={(v) => patch({ shadowEnabled: v })} />
+          <ColorSwatch value={draft.shadowColor} onChange={(v) => patch({ shadowColor: v })} disabled={!draft.shadowEnabled} />
+          <FieldInput value={draft.shadowColor} onChange={(v) => { if (/^#[0-9a-fA-F]{0,8}$/.test(v)) patch({ shadowColor: v }); }} mono className={!draft.shadowEnabled ? "opacity-30 pointer-events-none" : ""} />
+        </div>
+
+        {/* Shadow X/Y grid */}
+        <div className={["grid grid-cols-2 gap-2", !draft.shadowEnabled ? "opacity-30 pointer-events-none" : ""].join(" ")}>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-[oklch(0.42_0_0)] shrink-0">X</span>
+            <input type="range" min={0} max={20} step={0.5} value={draft.shadowX}
+              onChange={(e) => patch({ shadowX: Number(e.target.value) })}
+              className="flex-1 h-[3px] accent-[oklch(0.58_0.22_25)]" />
+            <span className="text-[10px] font-mono text-[oklch(0.45_0_0)] w-7 text-right shrink-0">{draft.shadowX}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-[oklch(0.42_0_0)] shrink-0">Y</span>
+            <input type="range" min={0} max={20} step={0.5} value={draft.shadowY}
+              onChange={(e) => patch({ shadowY: Number(e.target.value) })}
+              className="flex-1 h-[3px] accent-[oklch(0.58_0.22_25)]" />
+            <span className="text-[10px] font-mono text-[oklch(0.45_0_0)] w-7 text-right shrink-0">{draft.shadowY}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Save button */}
+      <div className="px-3 pb-3">
+        <button
+          type="button"
+          disabled={!isDirty}
+          onClick={() => onSave(draft)}
+          className={[
+            "w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all",
+            isDirty
+              ? "bg-[oklch(0.58_0.22_25)] text-white hover:bg-[oklch(0.52_0.22_25)]"
+              : "bg-[oklch(1_0_0/6%)] text-[oklch(0.38_0_0)] cursor-default",
+          ].join(" ")}
+        >
+          <Save className="w-3 h-3" />
+          {isDirty ? "Save preset" : "Saved"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -275,8 +308,8 @@ export function FontPresetEditor({ presets, onChange }: {
     setOpenId(id);
   }
 
-  function update(p: FontPreset) {
-    onChange(presets.map((x) => (x.id === p.id ? p : x)));
+  function save(updated: FontPreset) {
+    onChange(presets.map((p) => (p.id === updated.id ? updated : p)));
   }
 
   function remove(id: string) {
@@ -306,7 +339,6 @@ export function FontPresetEditor({ presets, onChange }: {
         const isOpen = openId === preset.id;
         return (
           <div key={preset.id} className="rounded-lg border border-[oklch(1_0_0/8%)] bg-[oklch(1_0_0/3%)] overflow-hidden">
-            {/* Header */}
             <div className="flex items-center gap-1.5 px-2.5 py-2">
               <button
                 type="button"
@@ -316,7 +348,7 @@ export function FontPresetEditor({ presets, onChange }: {
                 <span className="w-3.5 h-3.5 rounded-sm shrink-0 border border-[oklch(1_0_0/10%)]" style={{ background: preset.fill }} />
                 <span className="text-[11px] text-[oklch(0.82_0_0)] font-medium truncate">{preset.name || "Untitled"}</span>
                 <span className="text-[10px] text-[oklch(0.4_0_0)] shrink-0">{preset.fontSize}px</span>
-                <ChevronDown className={["w-3 h-3 text-[oklch(0.4_0_0)] ml-auto shrink-0 transition-transform", isOpen ? "" : "-rotate-90"].join(" ")} />
+                <ChevronDown className={["w-3 h-3 text-[oklch(0.4_0_0)] ml-auto shrink-0 transition-transform duration-150", isOpen ? "" : "-rotate-90"].join(" ")} />
               </button>
               <button type="button" title="Duplicate" onClick={() => duplicate(preset)} className="text-[oklch(0.38_0_0)] hover:text-[oklch(0.65_0_0)] transition-colors p-0.5">
                 <Copy className="w-3 h-3" />
@@ -326,7 +358,7 @@ export function FontPresetEditor({ presets, onChange }: {
               </button>
             </div>
 
-            {isOpen && <PresetForm preset={preset} onChange={update} />}
+            {isOpen && <PresetForm key={preset.id} preset={preset} onSave={save} />}
           </div>
         );
       })}
