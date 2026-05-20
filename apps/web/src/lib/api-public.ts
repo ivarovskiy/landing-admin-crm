@@ -67,6 +67,26 @@ export type TypographySettings = {
   /** Optional screen-specific text metric overrides. Empty fields fall back to
    *  global values above, then to CSS defaults. */
   viewportProfiles?: Partial<Record<TypographyViewportProfileKey, TypographyViewportProfile>>;
+
+  customPresets?: FontPreset[];
+};
+
+export type FontPreset = {
+  id: string;
+  name: string;
+  fontFamily: "maru" | "maru-oblique";
+  fontSize: number;
+  fontWeight: number;
+  fill: string;
+  strokeEnabled: boolean;
+  stroke: string;
+  strokeWidthPx: number;
+  shadowEnabled: boolean;
+  shadowColor: string;
+  shadowX: number;
+  shadowY: number;
+  letterSpacing: string;
+  textTransform?: "none" | "uppercase" | "lowercase";
 };
 
 export type TextMetricsSettings = {

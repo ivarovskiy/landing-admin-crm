@@ -16,6 +16,7 @@ import {
 } from "@/components/inspector";
 import { AlignLeft, Columns2, Image, Type } from "lucide-react";
 import { TYPO_OPTIONS } from "./hero-slider-presets";
+import { useCustomTypoOptions } from "@/hooks/use-custom-typo-options";
 import { ContentGridDnd, prepareGridItems, type ContentGridConfig } from "./content-grid-dnd";
 import { ItemOrderList } from "./content-items-order";
 import {
@@ -237,6 +238,7 @@ function TextItemEditor({
   item: any;
   onChange: (next: any) => void;
 }) {
+  const typoOptions = useCustomTypoOptions();
   const widthValue = item?.layout?.lg?.width ?? item.textMaxWidth ?? "";
 
   return (
@@ -286,7 +288,7 @@ function TextItemEditor({
             <InspectorSelect
               value={item.headingTypo ?? ""}
               onChange={(v) => onChange({ ...item, headingTypo: v || undefined })}
-              options={TYPO_OPTIONS}
+              options={typoOptions}
             />
           </InspectorField>
           <InspectorField label="Head line">
@@ -300,7 +302,7 @@ function TextItemEditor({
             <InspectorSelect
               value={item.bodyTypo ?? ""}
               onChange={(v) => onChange({ ...item, bodyTypo: v || undefined })}
-              options={TYPO_OPTIONS}
+              options={typoOptions}
             />
           </InspectorField>
           <InspectorField label="Body line">
@@ -747,6 +749,7 @@ function EntriesEditor({
 }
 
 export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
+  const typoOptions = useCustomTypoOptions();
   const scrollStory = !!value?.scrollStory;
   const gridEnabled = value?.grid?.enabled === true;
 
@@ -819,7 +822,7 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
               <InspectorSelect
                 value={value?.kickerTypo ?? ""}
                 onChange={(v) => onChange({ ...value, kickerTypo: v || undefined })}
-                options={TYPO_OPTIONS}
+                options={typoOptions}
               />
             </InspectorField>
             <InspectorField label="Kick line">
@@ -840,7 +843,7 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
               <InspectorSelect
                 value={value?.subtitleTypo ?? ""}
                 onChange={(v) => onChange({ ...value, subtitleTypo: v || undefined })}
-                options={TYPO_OPTIONS}
+                options={typoOptions}
               />
             </InspectorField>
             <InspectorField label="Sub line">

@@ -83,6 +83,7 @@ export type FontPreset = {
   shadowX: number;
   shadowY: number;
   letterSpacing: string;
+  textTransform?: "none" | "uppercase" | "lowercase";
 };
 
 export type SiteTypographySettings = {

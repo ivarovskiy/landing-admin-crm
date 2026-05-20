@@ -8,6 +8,7 @@ import {
   InspectorToggle,
 } from "@/components/inspector";
 import { TYPO_OPTIONS } from "./hero-slider-presets";
+import { useCustomTypoOptions } from "@/hooks/use-custom-typo-options";
 
 export type MemoScope = "default" | "ipadPro" | "mobile";
 
@@ -125,6 +126,7 @@ export function StyleEditor({
   showTypography?: boolean;
   showBox?: boolean;
 }) {
+  const typoOptions = useCustomTypoOptions();
   const patch = (key: keyof MemoElementStyle, value: string) =>
     onChange({ ...(style ?? {}), [key]: value || undefined });
 
@@ -138,7 +140,7 @@ export function StyleEditor({
             <InspectorSelect
               value={style?.typo ?? ""}
               onChange={(v) => patch("typo", v)}
-              options={TYPO_OPTIONS}
+              options={typoOptions}
             />
           </InspectorField>
           <CompactGrid>

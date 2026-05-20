@@ -10,6 +10,14 @@ export const TYPO_PRESETS: { value: string; label: string }[] = [
   { value: "typo-body-text", label: "Column Text (20px)" },
 ];
 
+export function mergeCustomTypoPresets(
+  base: { value: string; label: string }[],
+  extra: { value: string; label: string }[],
+): { value: string; label: string }[] {
+  if (!extra.length) return base;
+  return [...base, ...extra];
+}
+
 /**
  * Returns the configured bottom offset for a font, or undefined if none set.
  * Reads the CSS variable `--{typoClass}-bottom-offset` from the root element

@@ -20,6 +20,7 @@ const DEFAULT_PRESET: Omit<FontPreset, "id" | "name"> = {
   shadowX: 4,
   shadowY: 4,
   letterSpacing: "0.02em",
+  textTransform: "none",
 };
 
 const FONT_FAMILY_OPTIONS: { value: FontPreset["fontFamily"]; label: string; css: string }[] = [
@@ -109,6 +110,7 @@ function PresetPreview({ preset, text }: { preset: FontPreset; text: string }) {
     fontSize: preset.fontSize,
     fontWeight: preset.fontWeight,
     letterSpacing: preset.letterSpacing,
+    textTransform: (preset.textTransform === "none" ? undefined : preset.textTransform) as React.CSSProperties["textTransform"],
     color: preset.fill,
     WebkitTextStroke: preset.strokeEnabled ? `${preset.strokeWidthPx}px ${preset.stroke}` : "0",
     textShadow: preset.shadowEnabled
@@ -118,7 +120,7 @@ function PresetPreview({ preset, text }: { preset: FontPreset; text: string }) {
     display: "block",
   };
   return (
-    <div className="mx-3 mt-2 rounded-lg bg-[oklch(0.1_0_0)] border border-[oklch(1_0_0/6%)] flex items-center justify-center overflow-auto px-4 py-5">
+    <div className="mx-3 mt-2 rounded-lg bg-card border border-[oklch(1_0_0/6%)] flex items-center justify-center overflow-auto px-4 py-5">
       <span style={style}>{text || "Preview"}</span>
     </div>
   );
@@ -212,6 +214,28 @@ function PresetForm({ preset, onSave }: {
           <div className="flex flex-col gap-1">
             <span className="text-[10px] text-[oklch(0.42_0_0)]">Spacing</span>
             <FieldInput value={draft.letterSpacing} onChange={(v) => patch({ letterSpacing: v })} placeholder="0.02em" mono />
+          </div>
+        </div>
+
+        {/* Transform */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-[oklch(0.42_0_0)] w-14 shrink-0">Transform</span>
+          <div className="flex gap-1 flex-1">
+            {(["none", "uppercase", "lowercase"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => patch({ textTransform: t })}
+                className={[
+                  "flex-1 py-0.5 rounded text-[9px] transition-colors capitalize",
+                  (draft.textTransform ?? "none") === t
+                    ? "bg-[oklch(0.58_0.22_25)] text-white font-semibold"
+                    : "bg-[oklch(1_0_0/6%)] text-[oklch(0.42_0_0)] hover:text-[oklch(0.7_0_0)]",
+                ].join(" ")}
+              >
+                {t === "none" ? "Def" : t === "uppercase" ? "AA" : "aa"}
+              </button>
+            ))}
           </div>
         </div>
 

@@ -10,6 +10,7 @@ import {
   type TypographyViewportProfileKey,
   type ZoomSettings,
 } from "@/lib/api-public";
+import { CustomPresetsProvider, buildCustomPresetsCSS } from "@/lib/custom-presets-context";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -330,8 +331,15 @@ export default async function RootLayout({ children }: {
             dangerouslySetInnerHTML={{ __html: typographyViewportStyle }}
           />
         ) : null}
+        {typography?.customPresets?.length ? (
+          <style
+            id="custom-font-presets"
+            dangerouslySetInnerHTML={{ __html: buildCustomPresetsCSS(typography.customPresets) }}
+          />
+        ) : null}
       </head>
       <body>
+        <CustomPresetsProvider value={typography?.customPresets ?? []}>
         {children}
         <ScrollToTop
           enabled={scrollToTop?.enabled !== false}
@@ -341,6 +349,7 @@ export default async function RootLayout({ children }: {
           stopOffset={scrollToTop?.stopOffset}
         />
         <GridOverlay {...(grid ?? {})} />
+        </CustomPresetsProvider>
       </body>
     </html>
   );

@@ -12,6 +12,7 @@ import {
 } from "@/components/inspector";
 import { Type, AlignLeft } from "lucide-react";
 import { TYPO_OPTIONS } from "./hero-slider-presets";
+import { useCustomTypoOptions } from "@/hooks/use-custom-typo-options";
 import { AdvancedPanel, FieldGrid, PresetButton, PresetRow, SectionNote } from "./admin-control-kit";
 
 const ALIGN_OPTIONS = [
@@ -73,6 +74,7 @@ function PresetButtons({
 }
 
 export function TextBlockV1Form({ value, onChange }: BlockFormProps) {
+  const typoOptions = useCustomTypoOptions();
   return (
     <div>
       <InspectorSection title="Content" icon={<Type className="h-3 w-3" />}>
@@ -175,7 +177,7 @@ export function TextBlockV1Form({ value, onChange }: BlockFormProps) {
               <InspectorSelect
                 value={value?.kickerTypo ?? ""}
                 onChange={(v) => onChange({ ...value, kickerTypo: v || undefined })}
-                options={TYPO_OPTIONS}
+                options={typoOptions}
               />
             </InspectorField>
             <InspectorField label="Kick line">
@@ -189,7 +191,7 @@ export function TextBlockV1Form({ value, onChange }: BlockFormProps) {
               <InspectorSelect
                 value={value?.headingTypo ?? ""}
                 onChange={(v) => onChange({ ...value, headingTypo: v || undefined })}
-                options={TYPO_OPTIONS}
+                options={typoOptions}
               />
             </InspectorField>
             <InspectorField label="Head line">
@@ -203,7 +205,7 @@ export function TextBlockV1Form({ value, onChange }: BlockFormProps) {
               <InspectorSelect
                 value={value?.bodyTypo ?? ""}
                 onChange={(v) => onChange({ ...value, bodyTypo: v || undefined })}
-                options={TYPO_OPTIONS}
+                options={typoOptions}
               />
             </InspectorField>
             <InspectorField label="Body line">

@@ -13,6 +13,7 @@ import {
   TYPO_OPTIONS,
   ALIGN_OPTIONS,
 } from "./hero-slider-presets";
+import { useCustomTypoOptions } from "@/hooks/use-custom-typo-options";
 
 const ALIGN_WITH_INHERIT = [
   { value: "", label: "Default" },
@@ -28,6 +29,7 @@ function ElementStyleFields({
   style: any;
   onChange: (patch: any) => void;
 }) {
+  const typoOptions = useCustomTypoOptions();
   return (
     <InspectorSection title={`${label} style`} defaultOpen={false}>
       <div className="grid grid-cols-2 gap-1.5">
@@ -35,7 +37,7 @@ function ElementStyleFields({
           <InspectorSelect
             value={style?.typo ?? ""}
             onChange={(v) => onChange({ ...style, typo: v || undefined })}
-            options={TYPO_OPTIONS}
+            options={typoOptions}
           />
         </InspectorField>
         <InspectorField label="Align">

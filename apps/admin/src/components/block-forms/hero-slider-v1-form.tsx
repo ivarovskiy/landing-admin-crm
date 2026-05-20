@@ -72,6 +72,7 @@ import {
   newSlide,
   getTypoOffset,
 } from "./hero-slider-presets";
+import { useCustomTypoOptions } from "@/hooks/use-custom-typo-options";
 
 const ELEMENT_ALIGN_OPTIONS = [
   { value: "", label: "Inherit" },
@@ -1079,6 +1080,7 @@ function ElementStyleEditor({
   showSnap?: boolean;
   tuningScope?: HeroTuningScope;
 }) {
+  const typoOptions = useCustomTypoOptions();
   const s = getScopedElementStyle(style, tuningScope);
   const fallback = getScopeFallbackElementStyle(style, tuningScope);
   const patch = (key: ElementStyleField, v: string) =>
@@ -1104,7 +1106,7 @@ function ElementStyleEditor({
           <InspectorSelect
             value={s.typo ?? ""}
             onChange={(v) => patch("typo", v)}
-            options={TYPO_OPTIONS}
+            options={typoOptions}
           />
         </div>
       )}

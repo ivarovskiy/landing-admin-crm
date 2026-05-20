@@ -264,7 +264,7 @@ export const JUSTIFY_OPTIONS = [
   { value: "end", label: "End" },
 ];
 
-export const TYPO_OPTIONS: { value: TypoClass; label: string }[] = [
+export const TYPO_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "Default" },
   { value: "typo-homepage-header", label: "Block Title (104px stamp)" },
   { value: "typo-content-header", label: "Page / Slider Header (78px stamp)" },
@@ -275,6 +275,11 @@ export const TYPO_OPTIONS: { value: TypoClass; label: string }[] = [
   { value: "typo-text-header", label: "Pull-Out Quote (22px, ls 32.1%)" },
   { value: "typo-body-text", label: "Column Text (20px)" },
 ];
+
+/** Class name for a custom font preset (mirrors web app logic). */
+export function customPresetClass(id: string): string {
+  return `typo-custom-${id.replace(/[^a-zA-Z0-9-]/g, "-")}`;
+}
 
 const CTA_DEFAULT = { label: "LEARN MORE", href: "#address" };
 
