@@ -10,7 +10,8 @@ import {
   type TypographyViewportProfileKey,
   type ZoomSettings,
 } from "@/lib/api-public";
-import { CustomPresetsProvider, buildCustomPresetsCSS } from "@/lib/custom-presets-context";
+import { CustomPresetsProvider } from "@/lib/custom-presets-context";
+import { buildCustomPresetsCSS } from "@/lib/custom-presets-css";
 
 export const metadata: Metadata = {
   title: "Create Next App",
