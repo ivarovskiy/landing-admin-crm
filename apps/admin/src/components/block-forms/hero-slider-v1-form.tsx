@@ -74,11 +74,27 @@ import {
 } from "./hero-slider-presets";
 import { useCustomTypoOptions } from "@/hooks/use-custom-typo-options";
 
-const ELEMENT_ALIGN_OPTIONS = [
-  { value: "", label: "Inherit" },
+const ELEMENT_ALIGN_OPTIONS_BASE = [
+  { value: "", label: "default (free)" },
   { value: "left", label: "Left" },
   { value: "center", label: "Center" },
   { value: "right", label: "Right" },
+];
+
+const ELEMENT_ALIGN_OPTIONS_IMG_LEFT = [
+  { value: "", label: "default (free)" },
+  { value: "right", label: "Right" },
+  { value: "center", label: "Center" },
+  { value: "left", label: "Left — slide edge" },
+  { value: "left-m", label: "Left — outer margin" },
+];
+
+const ELEMENT_ALIGN_OPTIONS_IMG_RIGHT = [
+  { value: "", label: "default (free)" },
+  { value: "left", label: "Left" },
+  { value: "center", label: "Center" },
+  { value: "right", label: "Right — slide edge" },
+  { value: "right-m", label: "Right — outer margin" },
 ];
 
 const MEDIA_ALIGN_OPTIONS = [
@@ -90,10 +106,10 @@ const MEDIA_ALIGN_OPTIONS = [
 ];
 
 const CENTER_MODE_OPTIONS = [
-  { value: "1", label: "1", title: "Slide edge to media edge" },
-  { value: "2", label: "2", title: "Outer margin to media edge" },
-  { value: "3", label: "3", title: "Outer margin to gap boundary" },
-  { value: "4", label: "4", title: "Slide edge to gap boundary" },
+  { value: "1", label: "1", title: "Slide edge ↔ photo (no gap)" },
+  { value: "2", label: "2", title: "Outer margin ↔ photo (no gap)" },
+  { value: "3", label: "3", title: "Slide edge ↔ gap boundary" },
+  { value: "4", label: "4", title: "Outer margin ↔ gap boundary" },
 ] as const;
 
 const STAR_VARIANTS: { marker: string; label: string }[] = [
@@ -586,16 +602,16 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode, externalS
                 />
                 {!!sg.showColumnCenter && (
                   <>
-                    <InspectorField label="Center mode" hint="Which zone to bisect: 1=slide↔media, 2=margin↔media, 3=margin↔gap, 4=slide↔gap">
+                    <InspectorField label="Center mode" hint="Which zone to bisect: 1=slide↔photo, 2=margin↔photo, 3=slide↔gap, 4=margin↔gap">
                       <select
                         className="w-full h-7 rounded border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                        value={sg.columnCenterMode ?? 4}
+                        value={sg.columnCenterMode ?? 3}
                         onChange={(e) => setSg(["columnCenterMode"], Number(e.target.value) as 1 | 2 | 3 | 4)}
                       >
-                        <option value={1}>1 — slide edge ↔ media (no gap)</option>
-                        <option value={2}>2 — outer margin ↔ media (no gap)</option>
-                        <option value={3}>3 — outer margin ↔ gap boundary</option>
-                        <option value={4}>4 — slide edge ↔ gap boundary</option>
+                        <option value={1}>1 — slide edge ↔ photo (no gap)</option>
+                        <option value={2}>2 — outer margin ↔ photo (no gap)</option>
+                        <option value={3}>3 — slide edge ↔ gap boundary</option>
+                        <option value={4}>4 — outer margin ↔ gap boundary</option>
                       </select>
                     </InspectorField>
                     <InspectorField label="Outer margin (layout px)" hint="Outer text zone margin in layout px (default 13)">
@@ -605,6 +621,16 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode, externalS
                         placeholder="13"
                       />
                     </InspectorField>
+                    <InspectorToggle
+                      label="Quarter vertical lines (¼ and ¾ of zone)"
+                      checked={!!sg.showColumnCenterQuartersV}
+                      onChange={(v) => setSg(["showColumnCenterQuartersV"], v || undefined)}
+                    />
+                    <InspectorToggle
+                      label="Quarter horizontal lines (25% and 75%)"
+                      checked={!!sg.showColumnCenterQuartersH}
+                      onChange={(v) => setSg(["showColumnCenterQuartersH"], v || undefined)}
+                    />
                   </>
                 )}
               </>
@@ -1072,6 +1098,7 @@ function ElementStyleEditor({
   showTypo = false,
   showSnap = false,
   tuningScope = "default",
+  imgSide,
 }: {
   label: string;
   style?: ElementStyle;
@@ -1079,6 +1106,7 @@ function ElementStyleEditor({
   showTypo?: boolean;
   showSnap?: boolean;
   tuningScope?: HeroTuningScope;
+  imgSide?: "left" | "right";
 }) {
   const typoOptions = useCustomTypoOptions();
   const s = getScopedElementStyle(style, tuningScope);
@@ -1150,7 +1178,11 @@ function ElementStyleEditor({
           <InspectorSelect
             value={s.align ?? ""}
             onChange={patchAlign}
-            options={ELEMENT_ALIGN_OPTIONS}
+            options={
+              imgSide === "left" ? ELEMENT_ALIGN_OPTIONS_IMG_LEFT :
+              imgSide === "right" ? ELEMENT_ALIGN_OPTIONS_IMG_RIGHT :
+              ELEMENT_ALIGN_OPTIONS_BASE
+            }
           />
         </div>
         <div>
@@ -1751,6 +1783,10 @@ function TextElementCard({
   const isExtra = !!extra;
   const elementStyle = getSlideStyle(s, elementKey);
   const groupId = elementStyle?.groupId;
+  const imgSide: "left" | "right" | undefined =
+    s.template === "image-left-copy-right" ? "left" :
+    s.template === "copy-left-image-right" ? "right" :
+    undefined;
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -1902,21 +1938,21 @@ function TextElementCard({
             <>
               <InspectorRichText value={s.kicker ?? ""} onChange={(v) => onChange({ ...s, kicker: v })} minRows={2} />
               <IconInsertBar value={s.kicker ?? ""} onChange={(v) => onChange({ ...s, kicker: v })} />
-              <ElementStyleEditor label="" style={s.kickerStyle} onChange={(es) => onChange({ ...s, kickerStyle: es })} showTypo showSnap tuningScope={tuningScope} />
+              <ElementStyleEditor label="" style={s.kickerStyle} onChange={(es) => onChange({ ...s, kickerStyle: es })} showTypo showSnap tuningScope={tuningScope} imgSide={imgSide} />
             </>
           )}
           {elementKey === "title" && (
             <>
               <InspectorRichText value={s.title ?? ""} onChange={(v) => onChange({ ...s, title: v })} minRows={2} />
               <IconInsertBar value={s.title ?? ""} onChange={(v) => onChange({ ...s, title: v })} />
-              <ElementStyleEditor label="" style={s.titleStyle} onChange={(es) => onChange({ ...s, titleStyle: es })} showTypo showSnap tuningScope={tuningScope} />
+              <ElementStyleEditor label="" style={s.titleStyle} onChange={(es) => onChange({ ...s, titleStyle: es })} showTypo showSnap tuningScope={tuningScope} imgSide={imgSide} />
             </>
           )}
           {elementKey === "subtitle" && (
             <>
               <InspectorRichText value={s.subtitle ?? ""} onChange={(v) => onChange({ ...s, subtitle: v })} minRows={2} />
               <IconInsertBar value={s.subtitle ?? ""} onChange={(v) => onChange({ ...s, subtitle: v })} />
-              <ElementStyleEditor label="" style={s.subtitleStyle} onChange={(es) => onChange({ ...s, subtitleStyle: es })} showTypo showSnap tuningScope={tuningScope} />
+              <ElementStyleEditor label="" style={s.subtitleStyle} onChange={(es) => onChange({ ...s, subtitleStyle: es })} showTypo showSnap tuningScope={tuningScope} imgSide={imgSide} />
             </>
           )}
           {elementKey === "body" && (
@@ -1931,14 +1967,14 @@ function TextElementCard({
                   options={BODY_VARIANT_OPTIONS}
                 />
               </div>
-              <ElementStyleEditor label="" style={s.bodyStyle} onChange={(es) => onChange({ ...s, bodyStyle: es })} showTypo showSnap tuningScope={tuningScope} />
+              <ElementStyleEditor label="" style={s.bodyStyle} onChange={(es) => onChange({ ...s, bodyStyle: es })} showTypo showSnap tuningScope={tuningScope} imgSide={imgSide} />
             </>
           )}
           {elementKey === "quote" && (
             <>
               <InspectorRichText value={s.quote ?? ""} onChange={(v) => onChange({ ...s, quote: v })} minRows={2} />
               <IconInsertBar value={s.quote ?? ""} onChange={(v) => onChange({ ...s, quote: v })} />
-              <ElementStyleEditor label="" style={s.quoteStyle} onChange={(es) => onChange({ ...s, quoteStyle: es })} showTypo showSnap tuningScope={tuningScope} />
+              <ElementStyleEditor label="" style={s.quoteStyle} onChange={(es) => onChange({ ...s, quoteStyle: es })} showTypo showSnap tuningScope={tuningScope} imgSide={imgSide} />
             </>
           )}
           {isExtra && extra && (
@@ -1957,7 +1993,7 @@ function TextElementCard({
                 minRows={2}
                 placeholder="Text content..."
               />
-              <ElementStyleEditor label="" style={extra.style} tuningScope={tuningScope} onChange={(es) => updateExtra({ style: es })} showTypo showSnap />
+              <ElementStyleEditor label="" style={extra.style} tuningScope={tuningScope} onChange={(es) => updateExtra({ style: es })} showTypo showSnap imgSide={imgSide} />
             </>
           )}
         </div>

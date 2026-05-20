@@ -29,7 +29,7 @@ type ElementStyle = {
   pb?: string;
   x?: string;
   y?: string;
-  align?: "left" | "center" | "right";
+  align?: "left" | "center" | "right" | "right-m" | "left-m";
   size?: string;
   typo?: string; // typography class from design system
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
@@ -158,9 +158,11 @@ type StyleGuidelinesConfig = {
   showTextCenterH?: boolean;
   showMediaGap?: boolean;             // vertical line at text column inner edge (gap boundary)
   showMediaEdgeGuides?: boolean;      // inner edge: vertical line; outer edge: vertical + horizontal lines
-  showColumnCenter?: boolean;         // single DOM-measured text-zone center line (modes 1–4)
-  columnCenterMode?: 1 | 2 | 3 | 4;  // which zone pair to bisect (default 4)
-  columnCenterOuterMarginPx?: number; // outer text margin in layout px (default 13)
+  showColumnCenter?: boolean;          // single DOM-measured text-zone center line (modes 1–4)
+  columnCenterMode?: 1 | 2 | 3 | 4;   // which zone pair to bisect (default 3)
+  columnCenterOuterMarginPx?: number;  // outer text margin in layout px (default 13)
+  showColumnCenterQuartersV?: boolean; // two vertical quarter lines (1/4 and 3/4 of zone width)
+  showColumnCenterQuartersH?: boolean; // two horizontal quarter lines at 25% and 75%
 };
 
 type CanvasGuidelines = {
@@ -208,7 +210,7 @@ function getElementCenterMode(mode?: ElementStyle["alignMode"]): ColumnCenterMod
   }
   // Default to the same text canvas used by left/right alignment:
   // slide edge to gap boundary.
-  return 4;
+  return 3;
 }
 
 function computeColumnAlignZone(
@@ -224,11 +226,11 @@ function computeColumnAlignZone(
   let right: number;
 
   if (imgSide === "right") {
-    left = mode === 2 || mode === 3 ? outerMarginPx : 0;
+    left = mode === 2 || mode === 4 ? outerMarginPx : 0;
     right = mode === 3 || mode === 4 ? gapBoundaryPx : mediaEdgePx;
   } else {
     left = mode === 3 || mode === 4 ? gapBoundaryPx : mediaEdgePx;
-    right = mode === 2 || mode === 3 ? slideWidthPx - outerMarginPx : slideWidthPx;
+    right = mode === 2 || mode === 4 ? slideWidthPx - outerMarginPx : slideWidthPx;
   }
 
   const zoneLeft = Math.min(left, right);
@@ -335,13 +337,23 @@ function absElStyle(es?: ElementStyle, precedingMt = 0): React.CSSProperties {
   const s: Record<string, string> = {};
   if (tx !== 0 || ty !== 0) s.transform = `translate(${tx}px, ${ty}px)`;
   if (es?.align) {
-    s.textAlign = es.align;
-    s.alignSelf = es.align === "center" ? "center" : es.align === "right" ? "flex-end" : "flex-start";
+    const baseAlign = es.align === "right-m" ? "right" : es.align === "left-m" ? "left" : es.align;
+    s.textAlign = baseAlign;
+    s.alignSelf = baseAlign === "center" ? "center" : baseAlign === "right" ? "flex-end" : "flex-start";
+    if (es.align === "right-m") s.paddingRight = "var(--hs-outer-padding, 13px)";
+    if (es.align === "left-m") s.paddingLeft = "var(--hs-outer-padding, 13px)";
   }
   if (es?.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
   if (es?.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
   if (es?.letterSpacing) s.letterSpacing = resolveDesignViewportUnits(es.letterSpacing)!;
   return { position: "relative", height: 0, overflow: "visible", ...s } as React.CSSProperties;
+}
+
+/** Normalize extended align values to the base 3-way used by TipTap / components that don't know the -m variants. */
+function normalizeAlign(align: ElementStyle["align"]): "left" | "right" | "center" | undefined {
+  if (align === "right-m") return "right";
+  if (align === "left-m") return "left";
+  return align;
 }
 
 /** Convert ElementStyle to inline CSS */
@@ -360,8 +372,11 @@ function elStyle(es?: ElementStyle): React.CSSProperties | undefined {
     s.transform = `translate(${tx}, ${ty})`;
   }
   if (es.align) {
-    s.textAlign = es.align;
-    s.alignSelf = es.align === "center" ? "center" : es.align === "right" ? "flex-end" : "flex-start";
+    const baseAlign = es.align === "right-m" ? "right" : es.align === "left-m" ? "left" : es.align;
+    s.textAlign = baseAlign;
+    s.alignSelf = baseAlign === "center" ? "center" : baseAlign === "right" ? "flex-end" : "flex-start";
+    if (es.align === "right-m") s.paddingRight = "var(--hs-outer-padding, 13px)";
+    if (es.align === "left-m") s.paddingLeft = "var(--hs-outer-padding, 13px)";
   }
   if (es.size) s.fontSize = resolveDesignViewportUnits(es.size)!;
   if (es.strokeW) s["--text-stroke-w"] = resolveDesignViewportUnits(es.strokeW)!;
@@ -1033,19 +1048,71 @@ function StyleGuidelineOverlay({
 
   // Column center — DOM-measured, single line, 4 modes (text zone only, not media)
   if (config.showColumnCenter && mediaRect && imgSide !== "none" && slideWidthPx) {
-    const mode = (config.columnCenterMode ?? 4) as 1 | 2 | 3 | 4;
+    const mode = (config.columnCenterMode ?? 3) as 1 | 2 | 3 | 4;
     const outerMargin = config.columnCenterOuterMarginPx ?? 13;
     const mediaEdge = imgSide === "right" ? mediaRect.left : mediaRect.right;
     const gapBoundary = mediaRect.textColFace ?? mediaEdge;
     const cx = computeColumnCenterX(mode, mediaEdge, gapBoundary, outerMargin, slideWidthPx, imgSide);
+    // Modes 1,3 span from slide edge → color RED; modes 2,4 span from outer margin → color BLUE
+    const centerColor = (mode === 1 || mode === 3) ? SG_COLORS.boundary : SG_COLORS.photoMargin;
     centerLines.push({
       key: "col-center",
       label: lbl(),
       type: "vertical",
       pos: `${cx}px`,
-      color: SG_COLORS.center,
+      color: centerColor,
       group: "text-center",
     });
+
+    // Quarter vertical lines — 1/4 and 3/4 of the same zone
+    if (config.showColumnCenterQuartersV) {
+      // Compute zone boundaries in slide px (same logic as computeColumnAlignZone with copyLeftPx=0)
+      let zLeft: number, zRight: number;
+      if (imgSide === "right") {
+        zLeft  = (mode === 2 || mode === 4) ? outerMargin : 0;
+        zRight = (mode === 3 || mode === 4) ? gapBoundary : mediaEdge;
+      } else {
+        zLeft  = (mode === 3 || mode === 4) ? gapBoundary : mediaEdge;
+        zRight = (mode === 2 || mode === 4) ? slideWidthPx - outerMargin : slideWidthPx;
+      }
+      const span = zRight - zLeft;
+      centerLines.push({
+        key: "col-q1",
+        label: lbl(),
+        type: "vertical",
+        pos: `${zLeft + span * 0.25}px`,
+        color: centerColor,
+        group: "text-center",
+      });
+      centerLines.push({
+        key: "col-q3",
+        label: lbl(),
+        type: "vertical",
+        pos: `${zLeft + span * 0.75}px`,
+        color: centerColor,
+        group: "text-center",
+      });
+    }
+
+    // Quarter horizontal lines — 25% and 75% of slide height
+    if (config.showColumnCenterQuartersH) {
+      centerLines.push({
+        key: "col-qh1",
+        label: lbl(),
+        type: "horizontal",
+        pos: "25%",
+        color: centerColor,
+        group: "text-center",
+      });
+      centerLines.push({
+        key: "col-qh3",
+        label: lbl(),
+        type: "horizontal",
+        pos: "75%",
+        color: centerColor,
+        group: "text-center",
+      });
+    }
   }
 
   const allLines = [...lines, ...centerLines];
@@ -1939,7 +2006,7 @@ function absPositionStyle(
 
   if (es?.align === "center") {
     const centerMode = getElementCenterMode(es.alignMode);
-    const zone = centerMode === 4 ? undefined : columnCenterContext?.zones?.[centerMode];
+    const zone = centerMode === 3 ? undefined : columnCenterContext?.zones?.[centerMode];
     if (zone) {
       s.left = `${zone.left}px`;
       s.width = `${zone.width}px`;
@@ -1952,8 +2019,16 @@ function absPositionStyle(
     s.right = "0";
     s.maxWidth = "100%";
     s.textAlign = "right";
+  } else if (es?.align === "right-m") {
+    s.right = "var(--hs-outer-padding, 13px)";
+    s.maxWidth = "100%";
+    s.textAlign = "right";
   } else if (es?.align === "left") {
     s.left = "0";
+    s.maxWidth = "100%";
+    s.textAlign = "left";
+  } else if (es?.align === "left-m") {
+    s.left = "var(--hs-outer-padding, 13px)";
     s.maxWidth = "100%";
     s.textAlign = "left";
   } else {
@@ -2716,7 +2791,7 @@ function CopyStack({
             {dragMode ? (
               <SlideKicker text={kicker} />
             ) : (
-              <TipTapInline value={kicker} onChange={(html) => onSlideChange({ ...slide, kicker: html })} multiline={false} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={() => onSlideChange({ ...slide, kickerStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("kicker")} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("kicker")} />
+              <TipTapInline value={kicker} onChange={(html) => onSlideChange({ ...slide, kicker: html })} multiline={false} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={() => onSlideChange({ ...slide, kickerStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("kicker")} elementAlign={normalizeAlign(es?.align)} onElementTypoChange={makeTypoChange?.("kicker")} />
             )}
           </div>
         );
@@ -2752,7 +2827,7 @@ function CopyStack({
                 </OutlineStampText>
               ) : (
                 <OutlineStampText as="div" frontAs="div" shadowAs="div" className={titleClass} data-editable-stamp="true" data-el={`slide-${slideIndex}-title`} stamp={stampForTypo(titleTypo)} style={textContentStyle(titleEs)} shadowContent={renderRichText(title)}>
-                  <TipTapInline value={title} onChange={(html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={typoOptions} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={() => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title")} elementAlign={titleEs?.align} onElementTypoChange={makeTypoChange?.("title")} />
+                  <TipTapInline value={title} onChange={(html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={typoOptions} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={() => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title")} elementAlign={normalizeAlign(titleEs?.align)} onElementTypoChange={makeTypoChange?.("title")} />
                 </OutlineStampText>
               )}
             </div>
@@ -2771,7 +2846,7 @@ function CopyStack({
               {dragMode ? (
                 renderRichText(title)
               ) : (
-                <TipTapInline value={title} onChange={(html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={typoOptions} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={() => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title")} elementAlign={titleEs?.align} onElementTypoChange={makeTypoChange?.("title")} />
+                <TipTapInline value={title} onChange={(html) => onSlideChange({ ...slide, title: html })} typoClass={titleTypo} typoOptions={typoOptions} fontOffsetEnabled={!!titleEs?.useFontOffset} currentFontHasOffset={!!getTypoOffset(titleTypo)} onFontOffsetToggle={() => onSlideChange({ ...slide, titleStyle: { ...(titleEs ?? {}), useFontOffset: !titleEs?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("title")} elementAlign={normalizeAlign(titleEs?.align)} onElementTypoChange={makeTypoChange?.("title")} />
               )}
             </div>
           </div>
@@ -2828,7 +2903,7 @@ function CopyStack({
             {dragMode ? (
               <SlideSubtitle text={subtitle} variant={slide?.subtitleVariant} slotId={`slide-${slideIndex}-subtitle`} />
             ) : (
-              <TipTapInline value={subtitle} onChange={(html) => onSlideChange({ ...slide, subtitle: html })} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={() => onSlideChange({ ...slide, subtitleStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("subtitle")} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("subtitle")} />
+              <TipTapInline value={subtitle} onChange={(html) => onSlideChange({ ...slide, subtitle: html })} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={() => onSlideChange({ ...slide, subtitleStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("subtitle")} elementAlign={normalizeAlign(es?.align)} onElementTypoChange={makeTypoChange?.("subtitle")} />
             )}
           </div>
         );
@@ -2859,7 +2934,7 @@ function CopyStack({
             {dragMode ? (
               <SlideBody text={body} variant={slide?.bodyVariant} />
             ) : (
-              <TipTapInline value={body} onChange={(html) => onSlideChange({ ...slide, body: html })} typoClass={typo} typoOptions={typoOptions} showWordCount fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={() => onSlideChange({ ...slide, bodyStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("body")} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("body")} />
+              <TipTapInline value={body} onChange={(html) => onSlideChange({ ...slide, body: html })} typoClass={typo} typoOptions={typoOptions} showWordCount fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={() => onSlideChange({ ...slide, bodyStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("body")} elementAlign={normalizeAlign(es?.align)} onElementTypoChange={makeTypoChange?.("body")} />
             )}
           </div>
         );
@@ -2891,7 +2966,7 @@ function CopyStack({
             {dragMode ? (
               renderRichText(quote)
             ) : (
-              <TipTapInline value={quote} onChange={(html) => onSlideChange({ ...slide, quote: html })} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={() => onSlideChange({ ...slide, quoteStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("quote")} elementAlign={es?.align} onElementTypoChange={makeTypoChange?.("quote")} />
+              <TipTapInline value={quote} onChange={(html) => onSlideChange({ ...slide, quote: html })} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={!!es?.useFontOffset} currentFontHasOffset={!!getTypoOffset(typo)} onFontOffsetToggle={() => onSlideChange({ ...slide, quoteStyle: { ...(es ?? {}), useFontOffset: !es?.useFontOffset } })} onElementAlignChange={makeAlignChange?.("quote")} elementAlign={normalizeAlign(es?.align)} onElementTypoChange={makeTypoChange?.("quote")} />
             )}
           </div>
         );
@@ -3014,7 +3089,7 @@ function ExtraElement({
             </OutlineStampText>
           ) : (
             <OutlineStampText as="div" frontAs="div" shadowAs="div" className={cls} data-editable-stamp="true" data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
-              <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={resolvedStyle?.align} onElementTypoChange={onExtraTypoChange} />
+              <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={normalizeAlign(resolvedStyle?.align)} onElementTypoChange={onExtraTypoChange} />
             </OutlineStampText>
           )}
         </div>
@@ -3062,7 +3137,7 @@ function ExtraElement({
             {dragMode ? (
               renderRichText(extra.text)
             ) : (
-              <TipTapInline value={extra.text} onChange={updateText ?? undefined} multiline={false} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={resolvedStyle?.align} onElementTypoChange={onExtraTypoChange} />
+              <TipTapInline value={extra.text} onChange={updateText ?? undefined} multiline={false} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={normalizeAlign(resolvedStyle?.align)} onElementTypoChange={onExtraTypoChange} />
             )}
           </Kicker>
         </div>
@@ -3097,7 +3172,7 @@ function ExtraElement({
             {dragMode ? (
               renderRichText(extra.text)
             ) : (
-              <TipTapInline value={extra.text} onChange={updateText ?? undefined} multiline={false} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={resolvedStyle?.align} onElementTypoChange={onExtraTypoChange} />
+              <TipTapInline value={extra.text} onChange={updateText ?? undefined} multiline={false} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={normalizeAlign(resolvedStyle?.align)} onElementTypoChange={onExtraTypoChange} />
             )}
           </div>
         </div>
@@ -3134,7 +3209,7 @@ function ExtraElement({
             </OutlineStampText>
           ) : (
             <OutlineStampText as="div" frontAs="div" shadowAs="div" className={cls} data-editable-stamp="true" data-el={slotId} stamp={stampForTypo(typo)} style={textContentStyle(resolvedStyle)} shadowContent={renderRichText(extra.text)}>
-              <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={resolvedStyle?.align} onElementTypoChange={onExtraTypoChange} />
+              <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={normalizeAlign(resolvedStyle?.align)} onElementTypoChange={onExtraTypoChange} />
             </OutlineStampText>
           )}
         </div>
@@ -3181,7 +3256,7 @@ function ExtraElement({
         {dragMode ? (
           renderRichText(extra.text)
         ) : (
-          <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={resolvedStyle?.align} onElementTypoChange={onExtraTypoChange} />
+          <TipTapInline value={extra.text} onChange={updateText ?? undefined} typoClass={typo} typoOptions={typoOptions} fontOffsetEnabled={extraFontOffsetEnabled} currentFontHasOffset={extraFontHasOffset} onFontOffsetToggle={onExtraFontOffsetToggle} onElementAlignChange={onExtraAlignChange} elementAlign={normalizeAlign(resolvedStyle?.align)} onElementTypoChange={onExtraTypoChange} />
         )}
       </div>
     );

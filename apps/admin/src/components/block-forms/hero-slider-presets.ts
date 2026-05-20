@@ -45,7 +45,7 @@ export type ElementStyle = {
   x?: string;    // legacy drag offset folded into ml during absolute migration
   y?: string;    // legacy drag offset folded into mt during absolute migration
   w?: string;    // absolute rendered width captured from the live preview
-  align?: "left" | "center" | "right";   // text-align + align-self
+  align?: "left" | "center" | "right" | "right-m" | "left-m";   // text-align + align-self; -m variants snap to outer margin
   size?: string;  // font-size override
   typo?: TypoClass; // typography class from design system
   strokeW?: string; // -webkit-text-stroke width (e.g. "3.6px")
@@ -101,9 +101,11 @@ export type StyleGuidelinesConfig = {
   showTextCenterH?: boolean;        // horizontal center of text area (horizontal line)
   showMediaGap?: boolean;           // vertical line at text column inner edge (gap boundary)
   showMediaEdgeGuides?: boolean;    // inner edge: vertical line; outer edge: vertical + horizontal lines
-  showColumnCenter?: boolean;       // single DOM-measured text-zone center line (modes 1–4)
-  columnCenterMode?: 1 | 2 | 3 | 4; // which zone pair to bisect (default 1)
+  showColumnCenter?: boolean;         // single DOM-measured text-zone center line (modes 1–4)
+  columnCenterMode?: 1 | 2 | 3 | 4;  // which zone pair to bisect (default 3)
   columnCenterOuterMarginPx?: number; // outer text margin in layout px (default 13)
+  showColumnCenterQuartersV?: boolean; // two vertical quarter lines (1/4 and 3/4 of zone width)
+  showColumnCenterQuartersH?: boolean; // two horizontal quarter lines at 25% and 75%
 };
 
 /** Canvas guideline offsets stored at block level (shared across all slides) */
