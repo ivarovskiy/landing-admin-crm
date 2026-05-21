@@ -488,7 +488,7 @@
 
 .cp__columns {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: var(--cp-col-left-w, minmax(0, 1fr)) var(--cp-col-right-w, minmax(0, 1fr));
   /* gap: clamp(56px, 10vw, 142px); */
   gap: var(--cp-col-gap, 80px);
   align-items: start;

@@ -757,6 +757,9 @@ export function ContentPageV1({
   const left = normalize(data?.left);
   const right = normalize(data?.right);
   const contentMaxWidth = data?.maxWidth as string | undefined;
+  const colGap = data?.colGap as string | undefined;
+  const colLeftW = data?.colLeftW as string | undefined;
+  const colRightW = data?.colRightW as string | undefined;
   const boxed = !!data?.boxed;
 
   const heroAlign = data?.heroAlign as HeroAlign | undefined;
@@ -808,6 +811,9 @@ export function ContentPageV1({
 
   const columnsStyle: React.CSSProperties = {
     ...(contentMaxWidth ? { "--cp-content-max-w": contentMaxWidth } : {}),
+    ...(colGap ? { "--cp-col-gap": colGap } : {}),
+    ...(colLeftW ? { "--cp-col-left-w": colLeftW } : {}),
+    ...(colRightW ? { "--cp-col-right-w": colRightW } : {}),
   } as React.CSSProperties;
 
   const columnsClass = [

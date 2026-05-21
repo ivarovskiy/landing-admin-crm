@@ -1162,6 +1162,34 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             </InspectorField>
 
             {value?.columns !== "one" && (
+              <>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <InspectorField label="Left col width">
+                    <InspectorInput
+                      value={value?.colLeftW ?? ""}
+                      onChange={(v) => onChange({ ...value, colLeftW: v || undefined })}
+                      placeholder="1fr"
+                    />
+                  </InspectorField>
+                  <InspectorField label="Right col width">
+                    <InspectorInput
+                      value={value?.colRightW ?? ""}
+                      onChange={(v) => onChange({ ...value, colRightW: v || undefined })}
+                      placeholder="1fr"
+                    />
+                  </InspectorField>
+                </div>
+                <InspectorField label="Col gap">
+                  <InspectorInput
+                    value={value?.colGap ?? ""}
+                    onChange={(v) => onChange({ ...value, colGap: v || undefined })}
+                    placeholder="80px"
+                  />
+                </InspectorField>
+              </>
+            )}
+
+            {value?.columns !== "one" && (
               <ItemOrderList
                 left={arr(value?.left)}
                 right={arr(value?.right)}
