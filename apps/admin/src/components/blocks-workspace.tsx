@@ -159,7 +159,7 @@ export function BlocksWorkspace({
     [blocks],
   );
 
-  const hasSlider = sorted.some((b) => b.type === "hero-slider");
+  const hasSlider = sorted.some((b) => b.type === "hero" && b.variant === "slider-v1");
 
   const [q, setQ] = useState("");
   const [viewportMode, setViewportMode] = useState<ViewportMode>("all");
