@@ -166,6 +166,14 @@ type StyleGuidelinesConfig = {
   showColumnCenterQuartersH?: boolean; // two horizontal quarter lines at 25% and 75%
 };
 
+type CustomGuideline = {
+  id: string;
+  name?: string;
+  positionPx: number;
+  color: string;
+  enabled?: boolean;
+};
+
 type CanvasGuidelines = {
   gapOffset?: number;            // px from top in design canvas (574px total)
   baselineOffset?: number;       // px from bottom in design canvas
@@ -176,6 +184,7 @@ type CanvasGuidelines = {
   globalVerticalGuideColor?: string;
   sliderHorizontalGuide?: string;    // CSS `top` value — full-slider-width horizontal line
   sliderHorizontalGuideColor?: string;
+  customGuides?: CustomGuideline[];
 };
 
 type ColumnCenterContext = {
@@ -803,6 +812,12 @@ export function HeroSliderV1({
                     viewportProfile={viewportProfile}
                     toolboxIgnoreGap={toolboxIgnoreGap}
                     addTextMode={toolboxAddText && !isClone && realIndex === active}
+                    onCustomGuideMove={(id, newPx) => {
+                      const guides = (canvasGuidelines?.customGuides ?? []).map(g =>
+                        g.id === id ? { ...g, positionPx: newPx } : g
+                      );
+                      onChange?.({ ...data, canvasGuidelines: { ...canvasGuidelines, customGuides: guides } });
+                    }}
                   />
                 </div>
               );
@@ -904,12 +919,16 @@ function StyleGuidelineOverlay({
   italicFallbackOffset,
   imgSide,
   slideWidthPx,
+  globalVerticalGuide,
+  globalVerticalGuideColor,
 }: {
   config: StyleGuidelinesConfig;
   mediaRect: MediaRect | null;
   italicFallbackOffset?: number;
   imgSide: "left" | "right" | "none";
   slideWidthPx?: number;
+  globalVerticalGuide?: string;
+  globalVerticalGuideColor?: string;
 }) {
   const lines: GuideLineDef[] = [];
   let labelIdx = 1;
@@ -1065,55 +1084,27 @@ function StyleGuidelineOverlay({
       group: "text-center",
     });
 
-    // Quarter vertical lines — 1/4 and 3/4 of the same zone
-    if (config.showColumnCenterQuartersV) {
-      // Compute zone boundaries in slide px (same logic as computeColumnAlignZone with copyLeftPx=0)
-      let zLeft: number, zRight: number;
-      if (imgSide === "right") {
-        zLeft  = (mode === 2 || mode === 4) ? outerMargin : 0;
-        zRight = (mode === 3 || mode === 4) ? gapBoundary : mediaEdge;
-      } else {
-        zLeft  = (mode === 3 || mode === 4) ? gapBoundary : mediaEdge;
-        zRight = (mode === 2 || mode === 4) ? slideWidthPx - outerMargin : slideWidthPx;
-      }
-      const span = zRight - zLeft;
-      centerLines.push({
-        key: "col-q1",
-        label: lbl(),
-        type: "vertical",
-        pos: `${zLeft + span * 0.25}px`,
-        color: centerColor,
-        group: "text-center",
-      });
-      centerLines.push({
-        key: "col-q3",
-        label: lbl(),
-        type: "vertical",
-        pos: `${zLeft + span * 0.75}px`,
-        color: centerColor,
-        group: "text-center",
-      });
-    }
+  }
 
-    // Quarter horizontal lines — 25% and 75% of slide height
-    if (config.showColumnCenterQuartersH) {
-      centerLines.push({
-        key: "col-qh1",
-        label: lbl(),
-        type: "horizontal",
-        pos: "25%",
-        color: centerColor,
-        group: "text-center",
-      });
-      centerLines.push({
-        key: "col-qh3",
-        label: lbl(),
-        type: "horizontal",
-        pos: "75%",
-        color: centerColor,
-        group: "text-center",
-      });
-    }
+  // Quarter vertical lines — from globalVerticalGuide center, full slide
+  if (config.showColumnCenterQuartersV && globalVerticalGuide) {
+    const pct = globalVerticalGuide.endsWith('%')
+      ? parseFloat(globalVerticalGuide)
+      : slideWidthPx
+        ? (parseFloat(globalVerticalGuide) / slideWidthPx) * 100
+        : 50;
+    const q1 = pct / 2;
+    const q3 = pct + (100 - pct) / 2;
+    const qColor = globalVerticalGuideColor ?? "rgba(255,100,180,0.55)";
+    centerLines.push({ key: "gv-q1", label: lbl(), type: "vertical", pos: `${q1}%`, color: qColor, group: "slide-boundary" });
+    centerLines.push({ key: "gv-q3", label: lbl(), type: "vertical", pos: `${q3}%`, color: qColor, group: "slide-boundary" });
+  }
+
+  // Quarter horizontal lines — 25% and 75% of slide height, full slide
+  if (config.showColumnCenterQuartersH) {
+    const qhColor = globalVerticalGuideColor ?? SG_COLORS.center;
+    centerLines.push({ key: "col-qh1", label: lbl(), type: "horizontal", pos: "25%", color: qhColor, group: "slide-boundary" });
+    centerLines.push({ key: "col-qh3", label: lbl(), type: "horizontal", pos: "75%", color: qhColor, group: "slide-boundary" });
   }
 
   const allLines = [...lines, ...centerLines];
@@ -1178,6 +1169,7 @@ function HeroSlide({
   viewportProfile,
   toolboxIgnoreGap = false,
   addTextMode = false,
+  onCustomGuideMove,
 }: {
   slide: Slide;
   isDragging: boolean;
@@ -1199,6 +1191,7 @@ function HeroSlide({
   viewportProfile?: HeroViewportProfileKey | null;
   toolboxIgnoreGap?: boolean;
   addTextMode?: boolean;
+  onCustomGuideMove?: (id: string, newPx: number) => void;
 }) {
   const template = resolveTemplate(slide, viewportProfile);
   const mobileImageFirst = !!slide?.layout?.mobile?.imageFirst;
@@ -1576,6 +1569,8 @@ function HeroSlide({
       italicFallbackOffset={canvasGuidelines?.italicBaselineOffset}
       imgSide={imageSide(template)}
       slideWidthPx={slideRef.current?.offsetWidth}
+      globalVerticalGuide={canvasGuidelines?.globalVerticalGuide}
+      globalVerticalGuideColor={canvasGuidelines?.globalVerticalGuideColor}
     />
   ) : null;
 
@@ -1772,6 +1767,57 @@ function HeroSlide({
     return () => window.removeEventListener("message", handler);
   }, [adminMode, onSlideChange, slide, viewportProfile, lastWidthResizeRef]);
 
+  const customGuideDragRef = useRef<{ id: string; slideRect: DOMRect; scaleX: number } | null>(null);
+
+  const handleCustomGuidePD = (e: React.PointerEvent, id: string) => {
+    if (!adminMode || !onCustomGuideMove) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const slideEl = slideRef.current;
+    if (!slideEl) return;
+    const rect = slideEl.getBoundingClientRect();
+    const scaleX = rect.width / (slideEl.offsetWidth || rect.width);
+    customGuideDragRef.current = { id, slideRect: rect, scaleX };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handleCustomGuidePM = (e: React.PointerEvent) => {
+    const drag = customGuideDragRef.current;
+    if (!drag || !onCustomGuideMove) return;
+    const rawPx = (e.clientX - drag.slideRect.left) / drag.scaleX;
+    const newPx = Math.round(Math.max(0, Math.min(DESIGN_WIDTH_PX, rawPx)));
+    onCustomGuideMove(drag.id, newPx);
+  };
+
+  const handleCustomGuidePU = () => {
+    customGuideDragRef.current = null;
+  };
+
+  const customGuideOverlay = (adminMode && canvasGuidelines?.customGuides?.length) ? (
+    <div className="hero-slide__guides" aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 120 }}>
+      {canvasGuidelines.customGuides.filter(g => g.enabled !== false).map(guide => {
+        const leftPct = (guide.positionPx / DESIGN_WIDTH_PX) * 100;
+        return (
+          <div key={guide.id} style={{ position: "absolute", top: 0, bottom: 0, left: `${leftPct}%`, width: 0 }}>
+            <div style={{ position: "absolute", top: 0, bottom: 0, left: -0.5, width: 1, background: guide.color, opacity: 0.85, pointerEvents: "none" }} />
+            {guide.name && (
+              <div style={{ position: "absolute", top: 4, left: 3, fontSize: 9, lineHeight: 1, color: guide.color, whiteSpace: "nowrap", pointerEvents: "none", textShadow: "0 0 3px rgba(0,0,0,0.7)" }}>
+                {guide.name}
+              </div>
+            )}
+            <div
+              style={{ position: "absolute", top: 0, bottom: 0, left: -5, width: 11, cursor: "ew-resize", background: "transparent", pointerEvents: "auto" }}
+              onPointerDown={(e) => handleCustomGuidePD(e, guide.id)}
+              onPointerMove={handleCustomGuidePM}
+              onPointerUp={handleCustomGuidePU}
+              onPointerCancel={handleCustomGuidePU}
+            />
+          </div>
+        );
+      })}
+    </div>
+  ) : null;
+
   const mediaPrimary = (
     <MediaFrame media={slide.media} className="hero-slide__media-box" slotId={`slide-${i}-media`} priority={i === 0} />
   );
@@ -1835,6 +1881,7 @@ function HeroSlide({
         {guides}
         {styleGuidelineOverlay}
         {mediaEdgeGuides}
+        {customGuideOverlay}
         {addTextOverlay}
       </div>
     );
@@ -1854,6 +1901,7 @@ function HeroSlide({
       {guides}
       {styleGuidelineOverlay}
       {mediaEdgeGuides}
+      {customGuideOverlay}
       {addTextOverlay}
 
       {cta?.href && cta?.enabled !== false ? (

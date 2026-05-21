@@ -109,6 +109,15 @@ export type StyleGuidelinesConfig = {
   showColumnCenterQuartersH?: boolean; // two horizontal quarter lines at 25% and 75%
 };
 
+/** A single user-defined draggable vertical guideline on the slider canvas */
+export type CustomGuideline = {
+  id: string;
+  name?: string;
+  positionPx: number;  // px from left in 1440-basis design canvas
+  color: string;
+  enabled?: boolean;   // undefined/true = visible, false = hidden
+};
+
 /** Canvas guideline offsets stored at block level (shared across all slides) */
 export type CanvasGuidelines = {
   gapOffset?: number;            // px from top — amber dashed line
@@ -120,6 +129,7 @@ export type CanvasGuidelines = {
   globalVerticalGuideColor?: string;
   sliderHorizontalGuide?: string;    // CSS `top` value for a full-slider-width horizontal line
   sliderHorizontalGuideColor?: string;
+  customGuides?: CustomGuideline[];  // user-defined draggable vertical lines
 };
 
 export type ElementStyleProfile = Omit<ElementStyle, "viewportProfiles">;

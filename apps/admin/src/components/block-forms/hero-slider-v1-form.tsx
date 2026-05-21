@@ -14,6 +14,7 @@ import {
 import {
   BlockLayoutSection,
   ImageUpload,
+  InspectorColorInput,
   InspectorField,
   InspectorInput,
   InspectorNumber,
@@ -59,6 +60,7 @@ import {
   type BodyVariant,
   type CanvasGuidelines,
   type ClassicGridSettings,
+  type CustomGuideline,
   type StyleGuidelinesConfig,
   TEMPLATE_OPTIONS,
   PRESET_OPTIONS,
@@ -242,6 +244,16 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode, externalS
 
   const set = (path: (string | number)[], v: unknown) =>
     onChange(updatePath(value, path, v));
+
+  const [newGuideColor, setNewGuideColor] = useState("#e040fb");
+
+  const setCustomGuides = (guides: CustomGuideline[]) =>
+    set(["canvasGuidelines", "customGuides"], guides.length ? guides : undefined);
+
+  const addCustomGuide = () => {
+    const guides: CustomGuideline[] = canvasGuidelines.customGuides ?? [];
+    setCustomGuides([...guides, { id: `cg-${Date.now()}`, name: "", positionPx: 720, color: newGuideColor }]);
+  };
 
   const requestAbsoluteConversion = (slideIndex: number) => {
     if (blockId) {
@@ -475,6 +487,81 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode, externalS
               placeholder="rgba(239, 68, 68, 0.9)"
             />
           </InspectorField>
+
+          {/* Draggable custom guides */}
+          <div className="mt-2 border-t border-border/40 pt-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-medium text-foreground/70">Draggable guides</span>
+              <div className="flex items-center gap-1">
+                <InspectorColorInput
+                  value={newGuideColor}
+                  onChange={(v) => setNewGuideColor(v || "#e040fb")}
+                />
+                <button
+                  type="button"
+                  onClick={addCustomGuide}
+                  className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add
+                </button>
+              </div>
+            </div>
+            {(canvasGuidelines.customGuides ?? []).length === 0 && (
+              <p className="text-[9px] text-muted-foreground/50 italic">No custom guides yet. Pick a color and click Add.</p>
+            )}
+            {(canvasGuidelines.customGuides ?? []).map((guide, idx) => (
+              <div key={guide.id} className="flex items-center gap-1 mb-1">
+                <InspectorColorInput
+                  value={guide.color}
+                  onChange={(v) => {
+                    const next = [...(canvasGuidelines.customGuides ?? [])];
+                    next[idx] = { ...guide, color: v || guide.color };
+                    setCustomGuides(next);
+                  }}
+                />
+                <input
+                  type="text"
+                  value={guide.name ?? ""}
+                  placeholder="Name…"
+                  onChange={(e) => {
+                    const next = [...(canvasGuidelines.customGuides ?? [])];
+                    next[idx] = { ...guide, name: e.target.value || undefined };
+                    setCustomGuides(next);
+                  }}
+                  className="flex-1 min-w-0 text-[10px] bg-transparent border border-border/40 rounded px-1 py-0.5 outline-none focus:border-primary/60"
+                />
+                <span className="text-[9px] text-muted-foreground/60 tabular-nums w-10 shrink-0 text-right">
+                  {Math.round(guide.positionPx)}px
+                </span>
+                <button
+                  type="button"
+                  title={guide.enabled === false ? "Show" : "Hide"}
+                  onClick={() => {
+                    const next = [...(canvasGuidelines.customGuides ?? [])];
+                    next[idx] = { ...guide, enabled: guide.enabled === false ? undefined : false };
+                    setCustomGuides(next);
+                  }}
+                  className="text-muted-foreground/50 hover:text-foreground transition-colors"
+                >
+                  {guide.enabled === false
+                    ? <EyeOff className="h-3 w-3" />
+                    : <Eye className="h-3 w-3" />}
+                </button>
+                <button
+                  type="button"
+                  title="Delete"
+                  onClick={() => {
+                    const next = (canvasGuidelines.customGuides ?? []).filter((_, i) => i !== idx);
+                    setCustomGuides(next);
+                  }}
+                  className="text-muted-foreground/50 hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
         </InspectorSection>
 
         {/* Stylistic guidelines overlay */}
