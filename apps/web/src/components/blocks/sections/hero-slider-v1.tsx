@@ -2117,6 +2117,10 @@ function textContentStyle(es?: ElementStyle): React.CSSProperties | undefined {
     const offset = resolveDesignViewportUnits(es.shadowOffset)!;
     s["--stamp-shadow-x"] = offset;
     s["--stamp-shadow-y"] = offset;
+    // Override the per-size shadow variables used by [data-hero-shadow="on"] etc.
+    s["--hero-title-shadow-offset"] = offset;
+    s["--section-title-shadow-offset"] = offset;
+    s["--subtitle-shadow-offset"] = offset;
   }
   return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
 }
@@ -2576,10 +2580,13 @@ function useSlideElementEditor(
         if (d.mode === "resize") {
           el.style.transform = "";
           const nextSize = Math.max(6, Math.round(d.startSize + (dx + dy) / 2));
-          const nextShadow = Math.round((nextSize / 104) * 5.56 * 100) / 100;
+          const currentStyle = mergeElementStyle(getSlideElementStyle(slideRef.current, key), viewportProfile);
+          const shadowPatch = currentStyle?.shadowOffset
+            ? { shadowOffset: `${Math.round((nextSize / 104) * 5.56 * 100) / 100}px` }
+            : {};
           onSlideChangeRef.current!(setSlideElementViewportStyle(slideRef.current, key, viewportProfile, {
             size: `${nextSize}px`,
-            shadowOffset: `${nextShadow}px`,
+            ...shadowPatch,
           }));
           return;
         }
@@ -2737,11 +2744,13 @@ function useSlideElementEditor(
         if (!d.moved) return;
         const dy = Math.round((d.startY - e.clientY) / d.scale);
         const newSize = Math.max(6, d.startSize + dy);
-        // Scale shadow proportionally: reference 104px → 5.56px shadow
-        const newShadow = Math.round((newSize / 104) * 5.56 * 100) / 100;
+        const currentStyle = mergeElementStyle(getSlideElementStyle(slideRef.current, key), viewportProfile);
+        const shadowPatch = currentStyle?.shadowOffset
+          ? { shadowOffset: `${Math.round((newSize / 104) * 5.56 * 100) / 100}px` }
+          : {};
         onSlideChangeRef.current!(setSlideElementViewportStyle(slideRef.current, key, viewportProfile, {
           size: `${newSize}px`,
-          shadowOffset: `${newShadow}px`,
+          ...shadowPatch,
         }));
       },
       onPointerCancel: (e) => {

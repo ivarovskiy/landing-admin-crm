@@ -1278,18 +1278,32 @@ function ElementStyleEditor({
             placeholder={fallback.size ?? "inherit"}
           />
         </div>
-        <div>
-          <div className="text-[11px] text-muted-foreground mb-0.5">Shadow</div>
-          <InspectorInput
-            value={s.shadowOffset ?? ""}
-            onChange={(v) => patch("shadowOffset", v)}
-            placeholder={(() => {
-              const sz = parseFloat(s.size ?? fallback.size ?? "");
-              return Number.isFinite(sz) && sz > 0
-                ? `${Math.round((sz / 104) * 5.56 * 100) / 100}px`
-                : "auto";
-            })()}
-          />
+        <div className="col-span-2">
+          <div className="flex items-center justify-between mb-0.5">
+            <div className="text-[11px] text-muted-foreground">Edit shadow</div>
+            <InspectorToggle
+              label=""
+              checked={!!s.shadowOffset}
+              onChange={(on) => {
+                if (on) {
+                  const sz = parseFloat(s.size ?? fallback.size ?? "");
+                  const computed = Number.isFinite(sz) && sz > 0
+                    ? `${Math.round((sz / 104) * 5.56 * 100) / 100}px`
+                    : "5.56px";
+                  patch("shadowOffset", computed);
+                } else {
+                  patch("shadowOffset", "");
+                }
+              }}
+            />
+          </div>
+          {!!s.shadowOffset && (
+            <InspectorInput
+              value={s.shadowOffset}
+              onChange={(v) => patch("shadowOffset", v)}
+              placeholder="5.56px"
+            />
+          )}
         </div>
         <div>
           <div className="text-[11px] text-muted-foreground mb-0.5">Stroke</div>

@@ -50,7 +50,8 @@
       "Bash(findstr \"hero-slider\")",
       "PowerShell(\\(Get-Content -Path \"C:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\\\\apps\\\\web\\\\src\\\\components\\\\blocks\\\\sections\\\\content-page-v1.tsx\"\\).Length)",
       "PowerShell(\\(Get-Content -Path \"C:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\\\\apps\\\\admin\\\\src\\\\components\\\\block-forms\\\\content-page-v1-form.tsx\"\\).Length)",
-      "PowerShell(\\(Get-Content -Path \"C:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\\\\apps\\\\admin\\\\src\\\\components\\\\visual-editor\\\\adapters\\\\content-page-v1.ts\"\\).Length)"
+      "PowerShell(\\(Get-Content -Path \"C:\\\\Users\\\\ThinkPad\\\\Desktop\\\\Work\\\\landing-admin-crm\\\\apps\\\\admin\\\\src\\\\components\\\\visual-editor\\\\adapters\\\\content-page-v1.ts\"\\).Length)",
+      "Bash(node -e \"const p = require\\('./apps/web/package.json'\\); console.log\\(p.dependencies.react\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\ThinkPad\\.claude\\projects\\c--Users-ThinkPad-Desktop-Work-landing-admin-crm\\memory"
