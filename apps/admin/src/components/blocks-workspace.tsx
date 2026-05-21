@@ -716,8 +716,8 @@ export function BlocksWorkspace({
     return () => window.removeEventListener("hero-slider-convert-to-absolute", handleHeroConvert);
   }, []);
 
-  // Reset iframe height when preview source changes so stale size doesn't flash
-  useEffect(() => { setIframeHeight(1200); }, [previewSrc]);
+  // Reset iframe height and pan when preview source changes so stale state doesn't flash
+  useEffect(() => { setIframeHeight(1200); setPanX(0); setPanY(0); }, [previewSrc]);
 
   // Preview JWT lives ~7 days by default, but if TTL is shorter we still want
   // the iframe to auto-renew before it expires. Refresh every 50 min while the

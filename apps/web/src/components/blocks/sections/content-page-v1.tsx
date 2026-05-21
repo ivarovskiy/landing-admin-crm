@@ -43,33 +43,35 @@ type GuidelinesConfig = {
   showEdgeLines?: boolean;
 };
 
-function ContentPageGuidelines({
-  config,
-  gap,
-}: {
-  config: GuidelinesConfig;
-  gap: string;
-}) {
-  const line = (props: React.CSSProperties) => (
-    <div aria-hidden="true" style={{ position: "absolute", top: 0, bottom: 0, width: 1, pointerEvents: "none", ...props }} />
+function ContentPageGuidelines({ config }: { config: GuidelinesConfig }) {
+  const line = (style: React.CSSProperties) => (
+    <div aria-hidden="true" style={{ position: "absolute", top: 0, bottom: 0, width: 1, pointerEvents: "none", ...style }} />
   );
+  // CSS vars set on the section cascade here; defaults match CSS defaults
+  const L = "var(--cp-col-left-max-w, 533px)";
+  const R = "var(--cp-col-right-max-w, 533px)";
+  const G = "var(--cp-entry-col-gap, 142px)";
+
   return (
     <div
       aria-hidden="true"
       style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 50, overflow: "hidden" }}
     >
+      {/* Outer edges of the defined maximum content area */}
       {config.showEdgeLines !== false && (
         <>
           {line({ left: 0, background: "rgba(239,68,68,0.55)" })}
-          {line({ right: 0, background: "rgba(239,68,68,0.55)" })}
+          {line({ left: `calc(${L} + ${G} + ${R})`, background: "rgba(239,68,68,0.55)" })}
         </>
       )}
+      {/* Left col/gap boundary and gap/right col boundary */}
       {config.showGapLines !== false && (
         <>
-          {line({ left: `calc(50% - ${gap} / 2)`, background: "rgba(16,185,129,0.6)" })}
-          {line({ left: `calc(50% + ${gap} / 2)`, background: "rgba(16,185,129,0.6)" })}
+          {line({ left: L, background: "rgba(16,185,129,0.6)" })}
+          {line({ left: `calc(${L} + ${G})`, background: "rgba(16,185,129,0.6)" })}
         </>
       )}
+      {/* True center of the container — only symmetric reference */}
       {config.showCenter !== false && (
         line({ left: "50%", background: "rgba(59,130,246,0.65)" })
       )}
@@ -1182,10 +1184,7 @@ export function ContentPageV1({
 
         {bodyContent}
         {showGuides && (
-          <ContentPageGuidelines
-            config={guidelinesConfig}
-            gap={scrollStory ? scrollStoryColGap : "80px"}
-          />
+          <ContentPageGuidelines config={guidelinesConfig} />
         )}
       </Container>
       {scrollStory && showProgress && <ScrollProgressDot />}
