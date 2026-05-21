@@ -90,8 +90,13 @@ export function ImageBlockV1Form({ value, onChange }: BlockFormProps) {
           apiBase={API_BASE}
           onChange={(src) => onChange({ ...value, src })}
           onAssetUploaded={(asset) => {
-            const aspectRatio = asset.width && asset.height ? `${asset.width}/${asset.height}` : value?.aspectRatio;
-            onChange({ ...value, src: asset.url, aspectRatio });
+            const next: Record<string, unknown> = { ...value, src: asset.url };
+            if (asset.width && asset.height) {
+              next.aspectRatio = `${asset.width}/${asset.height}`;
+              next.naturalW = asset.width;
+              next.naturalH = asset.height;
+            }
+            onChange(next);
           }}
         />
 

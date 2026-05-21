@@ -99,6 +99,14 @@ export type SiteTypographySettings = {
    *  em-ratio as `calc(<value> / 104px * 1em)`. Default 5.56px (= 0.0535em). */
   linkStampShadowOffsetAt104?: string;
 
+  /** Reference font size (px) for the slide shadow auto-scale formula.
+   *  Default 104. Formula: shadowOffset = (fontSize / basePx) * baseOffset. */
+  slideShadowBasePx?: number;
+
+  /** Shadow offset at the reference font size for the slide shadow formula.
+   *  Default 5.56px. Applied only when shadowOffset is enabled per element. */
+  slideShadowBaseOffset?: string;
+
   /** Stamp shadow render style.
    *  - `'drop'` (default): classic single-offset `filter: drop-shadow`. On
    *    iPad/Safari this can leak the painted cream fill into hollow glyph

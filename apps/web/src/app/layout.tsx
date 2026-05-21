@@ -275,6 +275,12 @@ export default async function RootLayout({ children }: {
   if (typography?.linkStampShadowOffsetAt104) {
     typographyStyle["--link-stamp-shadow-em"] = `calc(${typography.linkStampShadowOffsetAt104} / 104px * 1em)`;
   }
+  if (typography?.slideShadowBasePx !== undefined) {
+    typographyStyle["--slide-shadow-base-px"] = String(typography.slideShadowBasePx);
+  }
+  if (typography?.slideShadowBaseOffset) {
+    typographyStyle["--slide-shadow-base-offset"] = typography.slideShadowBaseOffset;
+  }
 
   // Always set --landing-design-width so both layout.css and landing-zoom.tsx
   // use the same canvas width. Defaults to 1440 (1320px content + 60px padding

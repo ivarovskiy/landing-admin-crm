@@ -461,7 +461,7 @@ export function NewStudentMemoV1({ data, editMode, onChange }: { data: any; edit
                   alt={image.alt ?? ""}
                   className="nsm__image"
                   sizes="(max-width: 767px) 100vw, 380px"
-                  objectFit={data?.imageFrame?.objectFit === "contain" ? "contain" : "cover"}
+                  objectFit={editMode ? "contain" : (data?.imageFrame?.objectFit === "contain" ? "contain" : "cover")}
                 />
               ) : (
                 <div className="nsm__image-placeholder">Image</div>

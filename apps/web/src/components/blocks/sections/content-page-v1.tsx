@@ -85,6 +85,8 @@ type ContentItem = {
   src?: string;
   alt?: string;
   aspectRatio?: string; // e.g. "4/3", "1/1", "3/4"
+  naturalW?: number;    // natural image width from upload — used as aspectRatio fallback
+  naturalH?: number;
   imageWidth?: string;  // e.g. "420px"
   imageHeight?: string; // e.g. "253px"
   imagePadding?: string; // e.g. "0 113px 33px 0"
@@ -106,10 +108,14 @@ type ContentItem = {
   leftAlt?: string;
   leftWidth?: string;  // becomes left grid-template column, e.g. "300px" or "1fr"
   leftAspect?: string;
+  leftNaturalW?: number;
+  leftNaturalH?: number;
   rightSrc?: string;
   rightAlt?: string;
   rightWidth?: string; // becomes right grid-template column
   rightAspect?: string;
+  rightNaturalW?: number;
+  rightNaturalH?: number;
   // mobile
   mobileOrder?: number;
   // row layout
@@ -167,7 +173,8 @@ function itemStyle(item: ContentItem, col?: "left" | "right"): React.CSSProperti
   }
 
   if (item.kind === "image") {
-    if (item.aspectRatio) s["--aspect"] = item.aspectRatio;
+    const ar = item.aspectRatio ?? (item.naturalW && item.naturalH ? `${item.naturalW}/${item.naturalH}` : undefined);
+    if (ar) s["--aspect"] = ar;
     if (item.imageWidth) s["--img-w"] = item.imageWidth;
     if (item.imageHeight) s["--img-h"] = item.imageHeight;
     if (item.imagePadding) s["--img-padding"] = item.imagePadding;
@@ -584,6 +591,7 @@ function ContentImageItem({
             className="cp__image-media"
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
             sizes="(max-width: 767px) 100vw, 530px"
+            objectFit={onItemChange ? "contain" : "cover"}
           />
         ) : null}
       </div>
@@ -650,7 +658,7 @@ function MediaPairItem({
         <div
           ref={leftRef}
           className={["cp__media-pair__media", !item.leftSrc ? "cp__image--placeholder" : ""].filter(Boolean).join(" ")}
-          style={item.leftAspect ? { aspectRatio: item.leftAspect } : undefined}
+          style={(item.leftAspect ?? (item.leftNaturalW && item.leftNaturalH ? `${item.leftNaturalW}/${item.leftNaturalH}` : undefined)) ? { aspectRatio: item.leftAspect ?? `${item.leftNaturalW}/${item.leftNaturalH}` } : undefined}
         >
           {item.leftSrc ? (
             <MediaImage
@@ -659,6 +667,7 @@ function MediaPairItem({
               className="cp__image-media"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
               sizes="(max-width: 767px) 100vw, 530px"
+              objectFit={onItemChange ? "contain" : "cover"}
             />
           ) : null}
           {onItemChange ? (
@@ -675,7 +684,7 @@ function MediaPairItem({
         <div
           ref={rightRef}
           className={["cp__media-pair__media", !item.rightSrc ? "cp__image--placeholder" : ""].filter(Boolean).join(" ")}
-          style={item.rightAspect ? { aspectRatio: item.rightAspect } : undefined}
+          style={(item.rightAspect ?? (item.rightNaturalW && item.rightNaturalH ? `${item.rightNaturalW}/${item.rightNaturalH}` : undefined)) ? { aspectRatio: item.rightAspect ?? `${item.rightNaturalW}/${item.rightNaturalH}` } : undefined}
         >
           {item.rightSrc ? (
             <MediaImage
@@ -684,6 +693,7 @@ function MediaPairItem({
               className="cp__image-media"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
               sizes="(max-width: 767px) 100vw, 530px"
+              objectFit={onItemChange ? "contain" : "cover"}
             />
           ) : null}
           {onItemChange ? (

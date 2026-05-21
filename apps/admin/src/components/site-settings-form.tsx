@@ -511,6 +511,8 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
     linkStampScale: initialSettings?.typography?.linkStampScale === true,
     linkStampStrokeWAt104: initialSettings?.typography?.linkStampStrokeWAt104,
     linkStampShadowOffsetAt104: initialSettings?.typography?.linkStampShadowOffsetAt104,
+    slideShadowBasePx: initialSettings?.typography?.slideShadowBasePx,
+    slideShadowBaseOffset: initialSettings?.typography?.slideShadowBaseOffset,
     stampShadowStyle:
       initialSettings?.typography?.stampShadowStyle === "extruded" ||
       initialSettings?.typography?.stampShadowStyle === "layered"
@@ -958,6 +960,22 @@ export function SiteSettingsForm({ initialSettings }: { initialSettings: SiteSet
               </div>
             );
           })()}
+          <NumberRow
+            icon={<Ruler className="h-3.5 w-3.5" />}
+            label="Slide shadow: base px"
+            description="Reference font size for slide resize shadow formula. Default 104. Formula: shadow = (fontSize / basePx) × baseOffset."
+            value={typography.slideShadowBasePx}
+            placeholder="104"
+            onChange={(v) => updateTypography({ slideShadowBasePx: v })}
+          />
+          <TextRow
+            icon={<Ruler className="h-3.5 w-3.5 opacity-50" />}
+            label="Slide shadow: base offset"
+            description="Shadow offset at the reference font size (e.g. 5.56px). Applies only when element has Shadow Offset enabled."
+            value={typography.slideShadowBaseOffset}
+            placeholder="5.56px"
+            onChange={(v) => updateTypography({ slideShadowBaseOffset: v })}
+          />
           <SelectRow<"drop" | "extruded" | "layered">
             icon={<Layers className="h-3.5 w-3.5" />}
             label="Stamp shadow style"

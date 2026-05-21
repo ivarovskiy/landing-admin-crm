@@ -31,6 +31,11 @@ export type TypographySettings = {
   linkStampStrokeWAt104?: string;
   linkStampShadowOffsetAt104?: string;
 
+  /** Reference font size (px) for slide resize shadow formula. Default 104. */
+  slideShadowBasePx?: number;
+  /** Shadow offset at the reference size for slide resize formula. Default "5.56px". */
+  slideShadowBaseOffset?: string;
+
   /** Stamp shadow render style — see settings.service.ts for full docs. */
   stampShadowStyle?: 'drop' | 'extruded' | 'layered';
 

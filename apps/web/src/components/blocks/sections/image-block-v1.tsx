@@ -12,6 +12,8 @@ type ImageBlockV1Data = {
   caption?: string;
   href?: string;
   aspectRatio?: string;
+  naturalW?: number;
+  naturalH?: number;
   objectFit?: "cover" | "contain";
   width?: string;
   maxWidth?: string;
@@ -50,7 +52,7 @@ export function ImageBlockV1({
   const frameStyle = {
     width: d.width ?? "100%",
     maxWidth: d.maxWidth ?? "960px",
-    aspectRatio: d.aspectRatio || "16 / 9",
+    aspectRatio: d.aspectRatio || (d.naturalW && d.naturalH ? `${d.naturalW}/${d.naturalH}` : "16 / 9"),
     borderRadius: d.borderRadius ?? "0px",
     ...alignMargin(align),
   } as React.CSSProperties;
@@ -72,7 +74,7 @@ export function ImageBlockV1({
           alt={d.alt ?? ""}
           className="image-block__media"
           sizes="(max-width: 767px) 100vw, 960px"
-          objectFit={d.objectFit ?? "cover"}
+          objectFit={editMode && onChange ? "contain" : (d.objectFit ?? "cover")}
         />
       ) : (
         <div className="image-block__placeholder" />

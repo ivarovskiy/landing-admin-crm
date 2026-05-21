@@ -533,6 +533,13 @@ export function NewStudentMemoV1Form({ value, onChange, viewMode }: BlockFormPro
           <ImageUpload
             value={value?.image?.src ?? ""}
             onChange={(v) => onChange({ ...value, image: { ...(value?.image ?? {}), src: v } })}
+            onAssetUploaded={(asset) => {
+              const patch: any = { ...value, image: { ...(value?.image ?? {}), src: asset.url } };
+              if (asset.width && asset.height) {
+                patch.imageFrame = { ...(value?.imageFrame ?? {}), aspectRatio: `${asset.width}/${asset.height}` };
+              }
+              onChange(patch);
+            }}
             apiBase={API_BASE}
           />
         </InspectorField>

@@ -364,6 +364,15 @@ function ImageItemEditor({
       <ImageUpload
         value={item.src ?? ""}
         onChange={(url) => onChange({ ...item, src: url })}
+        onAssetUploaded={(asset) => {
+          const patch: any = { ...item, src: asset.url };
+          if (asset.width && asset.height) {
+            patch.aspectRatio = `${asset.width}/${asset.height}`;
+            patch.naturalW = asset.width;
+            patch.naturalH = asset.height;
+          }
+          onChange(patch);
+        }}
         apiBase={API_BASE}
       />
 
@@ -478,6 +487,15 @@ function MediaPairItemEditor({
       <ImageUpload
         value={item.leftSrc ?? ""}
         onChange={(url) => onChange({ ...item, leftSrc: url })}
+        onAssetUploaded={(asset) => {
+          const patch: any = { ...item, leftSrc: asset.url };
+          if (asset.width && asset.height) {
+            patch.leftAspect = `${asset.width}/${asset.height}`;
+            patch.leftNaturalW = asset.width;
+            patch.leftNaturalH = asset.height;
+          }
+          onChange(patch);
+        }}
         apiBase={API_BASE}
       />
       <FieldGrid>
@@ -508,6 +526,15 @@ function MediaPairItemEditor({
       <ImageUpload
         value={item.rightSrc ?? ""}
         onChange={(url) => onChange({ ...item, rightSrc: url })}
+        onAssetUploaded={(asset) => {
+          const patch: any = { ...item, rightSrc: asset.url };
+          if (asset.width && asset.height) {
+            patch.rightAspect = `${asset.width}/${asset.height}`;
+            patch.rightNaturalW = asset.width;
+            patch.rightNaturalH = asset.height;
+          }
+          onChange(patch);
+        }}
         apiBase={API_BASE}
       />
       <FieldGrid>

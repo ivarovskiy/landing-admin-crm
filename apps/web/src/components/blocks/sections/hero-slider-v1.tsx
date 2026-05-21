@@ -268,6 +268,13 @@ function trimNumber(value: number) {
  * smaller than the Figma canvas value on iPad. Convert those viewport units
  * to their 1440px design equivalent before they enter inline styles / CSS vars.
  */
+function readSlideShadowFormula(): { basePx: number; baseOffset: number } {
+  const s = getComputedStyle(document.documentElement);
+  const basePx = parseFloat(s.getPropertyValue("--slide-shadow-base-px").trim()) || 104;
+  const baseOffset = parseFloat(s.getPropertyValue("--slide-shadow-base-offset").trim()) || 5.56;
+  return { basePx, baseOffset };
+}
+
 function resolveDesignViewportUnits(value?: string) {
   if (!value || !value.includes("vw")) return value;
   return value.replace(VW_UNIT_RE, (_, raw: string) => {
@@ -2581,8 +2588,9 @@ function useSlideElementEditor(
           el.style.transform = "";
           const nextSize = Math.max(6, Math.round(d.startSize + (dx + dy) / 2));
           const currentStyle = mergeElementStyle(getSlideElementStyle(slideRef.current, key), viewportProfile);
+          const { basePx, baseOffset } = readSlideShadowFormula();
           const shadowPatch = currentStyle?.shadowOffset
-            ? { shadowOffset: `${Math.round((nextSize / 104) * 5.56 * 100) / 100}px` }
+            ? { shadowOffset: `${Math.round((nextSize / basePx) * baseOffset * 100) / 100}px` }
             : {};
           onSlideChangeRef.current!(setSlideElementViewportStyle(slideRef.current, key, viewportProfile, {
             size: `${nextSize}px`,
@@ -2745,8 +2753,9 @@ function useSlideElementEditor(
         const dy = Math.round((d.startY - e.clientY) / d.scale);
         const newSize = Math.max(6, d.startSize + dy);
         const currentStyle = mergeElementStyle(getSlideElementStyle(slideRef.current, key), viewportProfile);
+        const { basePx: bp2, baseOffset: bo2 } = readSlideShadowFormula();
         const shadowPatch = currentStyle?.shadowOffset
-          ? { shadowOffset: `${Math.round((newSize / 104) * 5.56 * 100) / 100}px` }
+          ? { shadowOffset: `${Math.round((newSize / bp2) * bo2 * 100) / 100}px` }
           : {};
         onSlideChangeRef.current!(setSlideElementViewportStyle(slideRef.current, key, viewportProfile, {
           size: `${newSize}px`,
