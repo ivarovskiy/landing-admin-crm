@@ -792,7 +792,7 @@ export function ContentPageV1({
   const guidelinesConfig = (data?.guidelinesConfig ?? {}) as GuidelinesConfig;
 
   const { toolboxState, editMode: liveEditMode } = useLivePreviewEdit();
-  const showGuides = liveEditMode && toolboxState.guides && columnsMode === "two" && !gridEnabled;
+  const showGuides = liveEditMode && toolboxState.guides && !gridEnabled;
 
   // Entries for scroll-story mode: each entry is an independent sticky pair
   const entries: { left: ContentItem[]; right: ContentItem[] }[] = Array.isArray(data?.entries)
