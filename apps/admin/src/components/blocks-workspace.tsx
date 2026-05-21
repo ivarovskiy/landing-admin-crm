@@ -45,6 +45,7 @@ import {
   Grid3X3,
   ArrowLeftRight,
   AlignCenter,
+  SeparatorVertical,
 } from "lucide-react";
 
 /* ================================================================
@@ -199,6 +200,18 @@ export function BlocksWorkspace({
   const [toolboxGuides, setToolboxGuides] = useState(false);
   const [toolboxIgnoreGap, setToolboxIgnoreGap] = useState(false);
   const [toolboxAddText, setToolboxAddText] = useState(false);
+  // Per-page center guide — persists in localStorage keyed by pageId
+  const [toolboxCenterGuide, setToolboxCenterGuide] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(`center-guide-${pageId}`) === "true";
+  });
+  function toggleCenterGuide() {
+    setToolboxCenterGuide((v) => {
+      const next = !v;
+      localStorage.setItem(`center-guide-${pageId}`, next ? "true" : "false");
+      return next;
+    });
+  }
 
   // Add-text popup state
   type AddTextPopup = { blockId: string; slideIndex: number; x: number; y: number; screenX: number; screenY: number };
@@ -300,11 +313,11 @@ export function BlocksWorkspace({
   useEffect(() => {
     try {
       iframeRef.current?.contentWindow?.postMessage(
-        { type: "set-toolbox-state", text: toolboxText, drag: toolboxDrag, guides: toolboxGuides, ignoreGap: toolboxIgnoreGap, addText: toolboxAddText },
+        { type: "set-toolbox-state", text: toolboxText, drag: toolboxDrag, guides: toolboxGuides, ignoreGap: toolboxIgnoreGap, addText: toolboxAddText, centerGuide: toolboxCenterGuide },
         "*",
       );
     } catch { /* cross-origin */ }
-  }, [toolboxText, toolboxDrag, toolboxGuides, toolboxIgnoreGap, toolboxAddText]);
+  }, [toolboxText, toolboxDrag, toolboxGuides, toolboxIgnoreGap, toolboxAddText, toolboxCenterGuide]);
 
   const availableWidth = canvasWidth > 0 ? canvasWidth - CANVAS_PADDING * 2 : 1440;
 
@@ -912,6 +925,9 @@ export function BlocksWorkspace({
             <TToolBtn label="Show guidelines" active={toolboxGuides} onClick={() => setToolboxGuides((v) => !v)}>
               <Grid3X3 className="h-4 w-4" />
               Guides
+            </TToolBtn>
+            <TToolBtn label="Page center guide (saved per page)" active={toolboxCenterGuide} onClick={toggleCenterGuide}>
+              <SeparatorVertical className="h-4 w-4" />
             </TToolBtn>
             {/* Center — centers the selected element's alignment (slider only) */}
             {hasSlider && (

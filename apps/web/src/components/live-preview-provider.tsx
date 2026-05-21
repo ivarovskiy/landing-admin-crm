@@ -11,7 +11,7 @@ import {
 } from "react";
 
 type Overrides = Record<string, any>;
-export type ToolboxState = { text: boolean; drag: boolean; guides: boolean; ignoreGap: boolean; addText: boolean };
+export type ToolboxState = { text: boolean; drag: boolean; guides: boolean; ignoreGap: boolean; addText: boolean; centerGuide: boolean };
 type LivePreviewValue = {
   overrides: Overrides;
   editMode: boolean;
@@ -22,7 +22,7 @@ type LivePreviewValue = {
 const LivePreviewContext = createContext<LivePreviewValue>({
   overrides: {},
   editMode: false,
-  toolboxState: { text: false, drag: false, guides: false, ignoreGap: false, addText: false },
+  toolboxState: { text: false, drag: false, guides: false, ignoreGap: false, addText: false, centerGuide: false },
   updateBlock: () => {},
 });
 
@@ -39,7 +39,7 @@ export function useLivePreviewEdit() {
 export function LivePreviewProvider({ children }: { children: ReactNode }) {
   const [overrides, setOverrides] = useState<Overrides>({});
   const [editMode, setEditMode] = useState(false);
-  const [toolboxState, setToolboxState] = useState<ToolboxState>({ text: false, drag: false, guides: false, ignoreGap: false, addText: false });
+  const [toolboxState, setToolboxState] = useState<ToolboxState>({ text: false, drag: false, guides: false, ignoreGap: false, addText: false, centerGuide: false });
 
   useEffect(() => {
     const isPreview = window !== window.parent;
@@ -60,6 +60,7 @@ export function LivePreviewProvider({ children }: { children: ReactNode }) {
           guides: e.data?.guides === true,
           ignoreGap: e.data?.ignoreGap === true,
           addText: e.data?.addText === true,
+          centerGuide: e.data?.centerGuide === true,
         });
       }
     }
@@ -103,6 +104,22 @@ export function LivePreviewProvider({ children }: { children: ReactNode }) {
   return (
     <LivePreviewContext.Provider value={value}>
       {children}
+      {editMode && toolboxState.centerGuide && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: 0,
+            bottom: 0,
+            left: "50%",
+            width: 1,
+            transform: "translateX(-0.5px)",
+            background: "rgba(239,68,68,0.75)",
+            zIndex: 9999,
+            pointerEvents: "none",
+          }}
+        />
+      )}
     </LivePreviewContext.Provider>
   );
 }
