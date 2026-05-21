@@ -502,6 +502,20 @@
   /* max-width: 533px; */
 }
 
+/* Pin each col to its grid slot so an empty left col never evicts the right one */
+.cp__columns > .cp__col--left {
+  grid-column: 1;
+}
+.cp__columns > .cp__col--right {
+  grid-column: 2;
+}
+
+/* Image items in columns: shrink to image width so align-self actually positions them */
+.cp__col .cp__item--image {
+  width: fit-content;
+  max-width: var(--cp-width-lg, var(--cp-width-md, 100%));
+}
+
 .cp__item {
   order: unset;
   margin-top: var(--cp-gap-lg, var(--cp-gap-md, 0px));
