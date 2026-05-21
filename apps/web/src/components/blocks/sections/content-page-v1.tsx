@@ -789,8 +789,8 @@ export function ContentPageV1({
   const scrollStoryRightMaxW = data?.scrollStoryRightMaxW as string | undefined;
   const guidelinesConfig = (data?.guidelinesConfig ?? {}) as GuidelinesConfig;
 
-  const { toolboxState } = useLivePreviewEdit();
-  const showGuides = editMode && toolboxState.guides && columnsMode === "two" && !gridEnabled;
+  const { toolboxState, editMode: liveEditMode } = useLivePreviewEdit();
+  const showGuides = liveEditMode && toolboxState.guides && columnsMode === "two" && !gridEnabled;
 
   // Entries for scroll-story mode: each entry is an independent sticky pair
   const entries: { left: ContentItem[]; right: ContentItem[] }[] = Array.isArray(data?.entries)

@@ -16,7 +16,7 @@ import {
   BlockLayoutSection,
   ImageUpload,
 } from "@/components/inspector";
-import { AlignLeft, Columns2, GripVertical, Grid3X3, Image, Type } from "lucide-react";
+import { AlignLeft, ChevronDown, ChevronRight, Columns2, GripVertical, Grid3X3, Image, Type } from "lucide-react";
 import { TYPO_OPTIONS } from "./hero-slider-presets";
 import { useCustomTypoOptions } from "@/hooks/use-custom-typo-options";
 import { ContentGridDnd, prepareGridItems, type ContentGridConfig } from "./content-grid-dnd";
@@ -653,58 +653,81 @@ function EntryEditor({
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   isDragOver?: boolean;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
   const gridEnabled = grid?.enabled === true;
+  const leftCount = arr(entry.left).length;
+  const rightCount = arr(entry.right).length;
+  const summary = `${leftCount} left · ${rightCount} right`;
 
   return (
-    <div className={["rounded-lg border bg-card p-3 space-y-3 transition-colors", isDragOver ? "border-primary/60 bg-primary/5" : "border-border"].join(" ")}>
-      <div className="flex items-center justify-between">
+    <div className={["rounded-lg border bg-card transition-colors", isDragOver ? "border-primary/60 bg-primary/5" : "border-border"].join(" ")}>
+      <div
+        className="flex items-center justify-between px-3 py-2.5 cursor-pointer select-none"
+        onClick={() => setIsOpen((v) => !v)}
+      >
         <div className="flex items-center gap-1.5">
           <div
             {...dragHandleProps}
             className="cursor-grab text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+            onClick={(e) => e.stopPropagation()}
           >
             <GripVertical className="h-4 w-4" />
           </div>
+          {isOpen
+            ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/60" />
+            : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+          }
           <span className="text-xs font-bold text-primary uppercase tracking-wider">
             Entry {idx + 1}
           </span>
+          {!isOpen && (
+            <span className="text-[10px] text-muted-foreground/60 ml-1">{summary}</span>
+          )}
         </div>
-        <InlineDeleteBtn onDelete={onRemove} />
+        <div onClick={(e) => e.stopPropagation()}>
+          <InlineDeleteBtn onDelete={onRemove} />
+        </div>
       </div>
 
-      <ItemOrderList
-        left={arr(entry.left)}
-        right={arr(entry.right)}
-        onChange={(next) => onChange({ ...entry, ...next })}
-      />
+      {isOpen && (
+        <div className="px-3 pb-3 space-y-3 border-t border-border/50">
+          <div className="pt-3">
+            <ItemOrderList
+              left={arr(entry.left)}
+              right={arr(entry.right)}
+              onChange={(next) => onChange({ ...entry, ...next })}
+            />
+          </div>
 
-      {gridEnabled && onGridChange ? (
-        <ContentGridDnd
-          left={arr(entry.left)}
-          right={arr(entry.right)}
-          grid={grid}
-          onGridChange={onGridChange}
-          onItemsChange={(next) => onChange({ ...entry, ...next })}
-        />
-      ) : null}
+          {gridEnabled && onGridChange ? (
+            <ContentGridDnd
+              left={arr(entry.left)}
+              right={arr(entry.right)}
+              grid={grid}
+              onGridChange={onGridChange}
+              onItemsChange={(next) => onChange({ ...entry, ...next })}
+            />
+          ) : null}
 
-      <div className="space-y-1 pl-2 border-l-2 border-blue-400/60">
-        <ColumnEditor
-          label="Left column"
-          items={arr(entry.left)}
-          onChange={(next) => onChange({ ...entry, left: next })}
-        />
-      </div>
+          <div className="space-y-1 pl-2 border-l-2 border-blue-400/60">
+            <ColumnEditor
+              label="Left column"
+              items={arr(entry.left)}
+              onChange={(next) => onChange({ ...entry, left: next })}
+            />
+          </div>
 
-      <div className="h-px bg-border/60" />
+          <div className="h-px bg-border/60" />
 
-      <div className="space-y-1 pl-2 border-l-2 border-rose-400/60">
-        <ColumnEditor
-          label="Right column"
-          items={arr(entry.right)}
-          onChange={(next) => onChange({ ...entry, right: next })}
-        />
-      </div>
+          <div className="space-y-1 pl-2 border-l-2 border-rose-400/60">
+            <ColumnEditor
+              label="Right column"
+              items={arr(entry.right)}
+              onChange={(next) => onChange({ ...entry, right: next })}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1085,29 +1108,29 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
 
             <div className="rounded-md border border-border/60 bg-muted/30 p-2.5 space-y-2">
               <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Columns layout</div>
-              <div className="grid grid-cols-3 gap-1.5">
-                <InspectorField label="Left max W">
+              <div className="grid grid-cols-2 gap-1.5">
+                <InspectorField label="Left max width">
                   <InspectorInput
                     value={value?.scrollStoryLeftMaxW ?? ""}
                     onChange={(v) => onChange({ ...value, scrollStoryLeftMaxW: v || undefined })}
                     placeholder="533px"
                   />
                 </InspectorField>
-                <InspectorField label="Right max W">
+                <InspectorField label="Right max width">
                   <InspectorInput
                     value={value?.scrollStoryRightMaxW ?? ""}
                     onChange={(v) => onChange({ ...value, scrollStoryRightMaxW: v || undefined })}
                     placeholder="533px"
                   />
                 </InspectorField>
-                <InspectorField label="Col gap">
-                  <InspectorInput
-                    value={value?.scrollStoryColGap ?? ""}
-                    onChange={(v) => onChange({ ...value, scrollStoryColGap: v || undefined })}
-                    placeholder="142px"
-                  />
-                </InspectorField>
               </div>
+              <InspectorField label="Gap between columns">
+                <InspectorInput
+                  value={value?.scrollStoryColGap ?? ""}
+                  onChange={(v) => onChange({ ...value, scrollStoryColGap: v || undefined })}
+                  placeholder="142px"
+                />
+              </InspectorField>
             </div>
 
             <div className="mt-1">
