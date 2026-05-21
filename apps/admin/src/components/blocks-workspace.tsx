@@ -159,6 +159,8 @@ export function BlocksWorkspace({
     [blocks],
   );
 
+  const hasSlider = sorted.some((b) => b.type === "hero-slider");
+
   const [q, setQ] = useState("");
   const [viewportMode, setViewportMode] = useState<ViewportMode>("all");
   const [activeId, setActiveId] = useState<string>(() => {
@@ -876,99 +878,109 @@ export function BlocksWorkspace({
 
           {/* Canvas toolbox — quick toggles for content-maker tasks */}
           <div className="flex rounded-lg border border-border/50 bg-muted/40 p-0.5">
-            <TToolBtn
-              label="Add text element — click on canvas to place"
-              shortcut="T"
-              active={toolboxAddText}
-              onClick={() => { setToolboxAddText((v) => !v); setAddTextPopup(null); }}
-            >
-              <Plus className="h-4 w-4" />
-              Add
-            </TToolBtn>
+            {hasSlider && (
+              <TToolBtn
+                label="Add text element — click on canvas to place"
+                shortcut="T"
+                active={toolboxAddText}
+                onClick={() => { setToolboxAddText((v) => !v); setAddTextPopup(null); }}
+              >
+                <Plus className="h-4 w-4" />
+                Add
+              </TToolBtn>
+            )}
             <TToolBtn label="Text editing" active={toolboxText} onClick={() => setToolboxText((v) => !v)}>
               <Type className="h-4 w-4" />
               Text
             </TToolBtn>
-            <TToolBtn label="Drag elements" active={toolboxDrag} onClick={() => setToolboxDrag((v) => !v)}>
-              <Move className="h-4 w-4" />
-              Drag
-            </TToolBtn>
-            <TToolBtn
-              label="Ignore gap while dragging — elements move across the full slide width"
-              active={toolboxIgnoreGap}
-              onClick={() => setToolboxIgnoreGap((v) => !v)}
-            >
-              <ArrowLeftRight className="h-4 w-4" />
-              No gap
-            </TToolBtn>
+            {hasSlider && (
+              <TToolBtn label="Drag elements" active={toolboxDrag} onClick={() => setToolboxDrag((v) => !v)}>
+                <Move className="h-4 w-4" />
+                Drag
+              </TToolBtn>
+            )}
+            {hasSlider && (
+              <TToolBtn
+                label="Ignore gap while dragging — elements move across the full slide width"
+                active={toolboxIgnoreGap}
+                onClick={() => setToolboxIgnoreGap((v) => !v)}
+              >
+                <ArrowLeftRight className="h-4 w-4" />
+                No gap
+              </TToolBtn>
+            )}
             <TToolBtn label="Show guidelines" active={toolboxGuides} onClick={() => setToolboxGuides((v) => !v)}>
               <Grid3X3 className="h-4 w-4" />
               Guides
             </TToolBtn>
-            {/* Center — centers the selected element's alignment */}
-            <button
-              type="button"
-              title="Center selected element"
-              disabled={!selectedElementId}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                if (!selectedElementId) return;
-                try {
-                  iframeRef.current?.contentWindow?.postMessage(
-                    { type: "center-element", elementId: selectedElementId, blockId: activeId },
-                    "*",
-                  );
-                } catch { /* cross-origin */ }
-              }}
-              className={[
-                "relative group flex items-center justify-center gap-1 rounded transition-all px-2.5 py-1.5 text-xs font-medium",
-                selectedElementId ? "text-sky-500 hover:text-sky-400" : "text-foreground/25 cursor-default",
-              ].join(" ")}
-            >
-              <AlignCenter className="h-4 w-4" />
-              Center
-              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center whitespace-nowrap rounded-md bg-popover border border-border/60 shadow-md px-2 py-1 text-[11px] text-popover-foreground z-50">
-                Center selected element
-              </span>
-            </button>
-            {/* Scale — drag up/down to resize selected element font size */}
-            <button
-              type="button"
-              title="Scale font size — drag up to grow, down to shrink"
-              disabled={!selectedElementId}
-              style={{ cursor: selectedElementId ? "ns-resize" : "default", touchAction: "none" }}
-              onPointerDown={(e) => {
-                if (!selectedElementId) return;
-                e.preventDefault();
-                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                scaleDragRef.current = { active: true, startY: e.clientY };
-              }}
-              onPointerMove={(e) => {
-                const ref = scaleDragRef.current;
-                if (!ref?.active || !selectedElementId) return;
-                const dy = ref.startY - e.clientY; // up = positive = grow
-                ref.startY = e.clientY; // incremental delta
-                if (Math.abs(dy) < 0.5) return;
-                try {
-                  iframeRef.current?.contentWindow?.postMessage(
-                    { type: "scale-element", elementId: selectedElementId, blockId: activeId, delta: dy * 0.3 },
-                    "*",
-                  );
-                } catch { /* cross-origin */ }
-              }}
-              onPointerUp={() => { if (scaleDragRef.current) scaleDragRef.current.active = false; }}
-              onPointerCancel={() => { if (scaleDragRef.current) scaleDragRef.current.active = false; }}
-              className={[
-                "relative group flex items-center justify-center gap-1 rounded transition-all px-2.5 py-1.5 text-xs font-medium select-none",
-                selectedElementId ? "text-sky-500 hover:text-sky-400" : "text-foreground/25",
-              ].join(" ")}
-            >
-              <Maximize2 className="h-4 w-4" />
-              Scale
-              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center whitespace-nowrap rounded-md bg-popover border border-border/60 shadow-md px-2 py-1 text-[11px] text-popover-foreground z-50">
-                Scale font size — drag ↑ to grow, ↓ to shrink
-              </span>
-            </button>
+            {/* Center — centers the selected element's alignment (slider only) */}
+            {hasSlider && (
+              <button
+                type="button"
+                title="Center selected element"
+                disabled={!selectedElementId}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  if (!selectedElementId) return;
+                  try {
+                    iframeRef.current?.contentWindow?.postMessage(
+                      { type: "center-element", elementId: selectedElementId, blockId: activeId },
+                      "*",
+                    );
+                  } catch { /* cross-origin */ }
+                }}
+                className={[
+                  "relative group flex items-center justify-center gap-1 rounded transition-all px-2.5 py-1.5 text-xs font-medium",
+                  selectedElementId ? "text-sky-500 hover:text-sky-400" : "text-foreground/25 cursor-default",
+                ].join(" ")}
+              >
+                <AlignCenter className="h-4 w-4" />
+                Center
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center whitespace-nowrap rounded-md bg-popover border border-border/60 shadow-md px-2 py-1 text-[11px] text-popover-foreground z-50">
+                  Center selected element
+                </span>
+              </button>
+            )}
+            {/* Scale — drag up/down to resize selected element font size (slider only) */}
+            {hasSlider && (
+              <button
+                type="button"
+                title="Scale font size — drag up to grow, down to shrink"
+                disabled={!selectedElementId}
+                style={{ cursor: selectedElementId ? "ns-resize" : "default", touchAction: "none" }}
+                onPointerDown={(e) => {
+                  if (!selectedElementId) return;
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                  scaleDragRef.current = { active: true, startY: e.clientY };
+                }}
+                onPointerMove={(e) => {
+                  const ref = scaleDragRef.current;
+                  if (!ref?.active || !selectedElementId) return;
+                  const dy = ref.startY - e.clientY; // up = positive = grow
+                  ref.startY = e.clientY; // incremental delta
+                  if (Math.abs(dy) < 0.5) return;
+                  try {
+                    iframeRef.current?.contentWindow?.postMessage(
+                      { type: "scale-element", elementId: selectedElementId, blockId: activeId, delta: dy * 0.3 },
+                      "*",
+                    );
+                  } catch { /* cross-origin */ }
+                }}
+                onPointerUp={() => { if (scaleDragRef.current) scaleDragRef.current.active = false; }}
+                onPointerCancel={() => { if (scaleDragRef.current) scaleDragRef.current.active = false; }}
+                className={[
+                  "relative group flex items-center justify-center gap-1 rounded transition-all px-2.5 py-1.5 text-xs font-medium select-none",
+                  selectedElementId ? "text-sky-500 hover:text-sky-400" : "text-foreground/25",
+                ].join(" ")}
+              >
+                <Maximize2 className="h-4 w-4" />
+                Scale
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center whitespace-nowrap rounded-md bg-popover border border-border/60 shadow-md px-2 py-1 text-[11px] text-popover-foreground z-50">
+                  Scale font size — drag ↑ to grow, ↓ to shrink
+                </span>
+              </button>
+            )}
           </div>
 
           <div className="h-5 w-px bg-border" />

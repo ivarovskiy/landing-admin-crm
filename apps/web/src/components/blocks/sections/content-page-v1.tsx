@@ -11,6 +11,7 @@ import ClipIcon from "@/assets/icons/clip.svg";
 import { ScrollProgressDot } from "./scroll-progress-dot";
 import { TipTapInline, renderRichText } from "@/components/rich-text";
 import { TYPO_PRESETS } from "@/lib/typo-presets";
+import { useLivePreviewEdit } from "@/components/live-preview-provider";
 
 type ResponsiveItemLayout = {
   width?: string;
@@ -35,6 +36,46 @@ type ContentGridConfig = {
 };
 
 type TextAlign = "left" | "center" | "right";
+
+type GuidelinesConfig = {
+  showCenter?: boolean;
+  showGapLines?: boolean;
+  showEdgeLines?: boolean;
+};
+
+function ContentPageGuidelines({
+  config,
+  gap,
+}: {
+  config: GuidelinesConfig;
+  gap: string;
+}) {
+  const line = (props: React.CSSProperties) => (
+    <div aria-hidden="true" style={{ position: "absolute", top: 0, bottom: 0, width: 1, pointerEvents: "none", ...props }} />
+  );
+  return (
+    <div
+      aria-hidden="true"
+      style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 50, overflow: "hidden" }}
+    >
+      {config.showEdgeLines !== false && (
+        <>
+          {line({ left: 0, background: "rgba(239,68,68,0.55)" })}
+          {line({ right: 0, background: "rgba(239,68,68,0.55)" })}
+        </>
+      )}
+      {config.showGapLines !== false && (
+        <>
+          {line({ left: `calc(50% - ${gap} / 2)`, background: "rgba(16,185,129,0.6)" })}
+          {line({ left: `calc(50% + ${gap} / 2)`, background: "rgba(16,185,129,0.6)" })}
+        </>
+      )}
+      {config.showCenter !== false && (
+        line({ left: "50%", background: "rgba(59,130,246,0.65)" })
+      )}
+    </div>
+  );
+}
 
 type ContentItem = {
   kind: "image" | "text" | "media-pair";
@@ -743,6 +784,14 @@ export function ContentPageV1({
   const entryGap = data?.entryGap as string | undefined;
   const showProgress = !!data?.showProgress;
 
+  const scrollStoryColGap = (data?.scrollStoryColGap as string | undefined) ?? "142px";
+  const scrollStoryLeftMaxW = data?.scrollStoryLeftMaxW as string | undefined;
+  const scrollStoryRightMaxW = data?.scrollStoryRightMaxW as string | undefined;
+  const guidelinesConfig = (data?.guidelinesConfig ?? {}) as GuidelinesConfig;
+
+  const { toolboxState } = useLivePreviewEdit();
+  const showGuides = editMode && toolboxState.guides && columnsMode === "two" && !gridEnabled;
+
   // Entries for scroll-story mode: each entry is an independent sticky pair
   const entries: { left: ContentItem[]; right: ContentItem[] }[] = Array.isArray(data?.entries)
     ? data.entries.map((e: any) => ({
@@ -1027,8 +1076,14 @@ export function ContentPageV1({
     .filter(Boolean)
     .join(" ");
 
+  const sectionVars = {
+    ...(scrollStory && scrollStoryColGap !== "142px" ? { "--cp-entry-col-gap": scrollStoryColGap } : {}),
+    ...(scrollStoryLeftMaxW ? { "--cp-col-left-max-w": scrollStoryLeftMaxW } : {}),
+    ...(scrollStoryRightMaxW ? { "--cp-col-right-max-w": scrollStoryRightMaxW } : {}),
+  } as React.CSSProperties;
+
   return (
-    <section className="content-page">
+    <section className="content-page" style={Object.keys(sectionVars).length ? sectionVars : undefined}>
       <Container>
         {kicker || title || subtitle || cta?.label ? (
           <div className={heroClass}>
@@ -1126,6 +1181,12 @@ export function ContentPageV1({
         ) : null}
 
         {bodyContent}
+        {showGuides && (
+          <ContentPageGuidelines
+            config={guidelinesConfig}
+            gap={scrollStory ? scrollStoryColGap : "80px"}
+          />
+        )}
       </Container>
       {scrollStory && showProgress && <ScrollProgressDot />}
     </section>

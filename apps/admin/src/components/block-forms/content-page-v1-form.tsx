@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import type { BlockFormProps } from "./index";
 import { arr, setAt, removeAt } from "@/lib/array";
 import {
   InspectorSection,
   InspectorField,
   InspectorInput,
+  InspectorRichText,
   InspectorTextarea,
   InspectorSelect,
   InspectorNumber,
@@ -14,7 +16,7 @@ import {
   BlockLayoutSection,
   ImageUpload,
 } from "@/components/inspector";
-import { AlignLeft, Columns2, Image, Type } from "lucide-react";
+import { AlignLeft, Columns2, GripVertical, Grid3X3, Image, Type } from "lucide-react";
 import { TYPO_OPTIONS } from "./hero-slider-presets";
 import { useCustomTypoOptions } from "@/hooks/use-custom-typo-options";
 import { ContentGridDnd, prepareGridItems, type ContentGridConfig } from "./content-grid-dnd";
@@ -116,7 +118,7 @@ function updateDesktopLayout(item: any, patch: Record<string, string | undefined
 }
 
 function itemTitle(item: any, idx: number) {
-  if (item?.kind === "image") return item?.alt || `Image ${idx + 1}`;
+  if (item?.kind === "image") return item?.name || item?.alt || `Image ${idx + 1}`;
   if (item?.kind === "media-pair") return `Media pair ${idx + 1}`;
   return h(item?.heading) || `Text ${idx + 1}`;
 }
@@ -348,6 +350,14 @@ function ImageItemEditor({
           checked={!!item.fullWidth}
           onChange={(v) => onChange({ ...item, fullWidth: v || undefined })}
           label="Spans full content width (below columns)"
+        />
+      </InspectorField>
+
+      <InspectorField label="Name">
+        <InspectorInput
+          value={item.name ?? ""}
+          onChange={(v) => onChange({ ...item, name: v || undefined })}
+          placeholder="Display name (optional)"
         />
       </InspectorField>
 
@@ -631,6 +641,8 @@ function EntryEditor({
   onChange,
   onRemove,
   onGridChange,
+  dragHandleProps,
+  isDragOver,
 }: {
   entry: { left: any[]; right: any[] };
   idx: number;
@@ -638,15 +650,25 @@ function EntryEditor({
   onChange: (next: { left: any[]; right: any[] }) => void;
   onRemove: () => void;
   onGridChange?: (next: ContentGridConfig) => void;
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  isDragOver?: boolean;
 }) {
   const gridEnabled = grid?.enabled === true;
 
   return (
-    <div className="rounded-lg border border-border bg-card p-3 space-y-3">
+    <div className={["rounded-lg border bg-card p-3 space-y-3 transition-colors", isDragOver ? "border-primary/60 bg-primary/5" : "border-border"].join(" ")}>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-primary uppercase tracking-wider">
-          Entry {idx + 1}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <div
+            {...dragHandleProps}
+            className="cursor-grab text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+          >
+            <GripVertical className="h-4 w-4" />
+          </div>
+          <span className="text-xs font-bold text-primary uppercase tracking-wider">
+            Entry {idx + 1}
+          </span>
+        </div>
         <InlineDeleteBtn onDelete={onRemove} />
       </div>
 
@@ -704,6 +726,9 @@ function EntriesEditor({
   onGridChange?: (next: ContentGridConfig) => void;
   onImportFlat?: () => void;
 }) {
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
   const addEntry = () => {
     onChange([...entries, { left: [], right: [] }]);
   };
@@ -727,15 +752,35 @@ function EntriesEditor({
         </div>
       )}
       {entries.map((entry, idx) => (
-        <EntryEditor
+        <div
           key={idx}
-          entry={entry}
-          idx={idx}
-          grid={grid}
-          onChange={(next) => onChange(setAt(entries, idx, next))}
-          onRemove={() => onChange(removeAt(entries, idx))}
-          onGridChange={onGridChange}
-        />
+          draggable
+          onDragStart={() => setDragIdx(idx)}
+          onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx); }}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (dragIdx !== null && dragIdx !== idx) {
+              const next = [...entries];
+              const [moved] = next.splice(dragIdx, 1);
+              next.splice(idx, 0, moved);
+              onChange(next);
+            }
+            setDragIdx(null);
+            setDragOverIdx(null);
+          }}
+          onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
+        >
+          <EntryEditor
+            entry={entry}
+            idx={idx}
+            grid={grid}
+            onChange={(next) => onChange(setAt(entries, idx, next))}
+            onRemove={() => onChange(removeAt(entries, idx))}
+            onGridChange={onGridChange}
+            isDragOver={dragOverIdx === idx && dragIdx !== idx}
+            dragHandleProps={{}}
+          />
+        </div>
       ))}
       <button
         type="button"
@@ -769,32 +814,33 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
         </InspectorField>
 
         <InspectorField label="Kicker">
-          <InspectorInput
-            value={h(value?.kicker)}
+          <InspectorRichText
+            value={value?.kicker ?? ""}
             onChange={(v) => onChange({ ...value, kicker: v })}
             placeholder="SUMMER PROGRAM"
           />
         </InspectorField>
 
         <InspectorField label="Title">
-          <InspectorInput
-            value={h(value?.title)}
+          <InspectorRichText
+            value={value?.title ?? ""}
             onChange={(v) => onChange({ ...value, title: v })}
             placeholder="NEW GUEST TEACHERS"
+            minRows={2}
           />
         </InspectorField>
 
         <InspectorField label="Tagline">
-          <InspectorInput
-            value={h(value?.subtitle)}
+          <InspectorRichText
+            value={value?.subtitle ?? ""}
             onChange={(v) => onChange({ ...value, subtitle: v })}
             placeholder="Sign up by June 15"
           />
         </InspectorField>
 
         <InspectorField label="CTA label">
-          <InspectorInput
-            value={h(value?.cta?.label)}
+          <InspectorRichText
+            value={value?.cta?.label ?? ""}
             onChange={(v) => onChange({ ...value, cta: { ...value?.cta, label: v } })}
             placeholder="Studio Director"
           />
@@ -1037,6 +1083,33 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
               </InspectorField>
             </div>
 
+            <div className="rounded-md border border-border/60 bg-muted/30 p-2.5 space-y-2">
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Columns layout</div>
+              <div className="grid grid-cols-3 gap-1.5">
+                <InspectorField label="Left max W">
+                  <InspectorInput
+                    value={value?.scrollStoryLeftMaxW ?? ""}
+                    onChange={(v) => onChange({ ...value, scrollStoryLeftMaxW: v || undefined })}
+                    placeholder="533px"
+                  />
+                </InspectorField>
+                <InspectorField label="Right max W">
+                  <InspectorInput
+                    value={value?.scrollStoryRightMaxW ?? ""}
+                    onChange={(v) => onChange({ ...value, scrollStoryRightMaxW: v || undefined })}
+                    placeholder="533px"
+                  />
+                </InspectorField>
+                <InspectorField label="Col gap">
+                  <InspectorInput
+                    value={value?.scrollStoryColGap ?? ""}
+                    onChange={(v) => onChange({ ...value, scrollStoryColGap: v || undefined })}
+                    placeholder="142px"
+                  />
+                </InspectorField>
+              </div>
+            </div>
+
             <div className="mt-1">
               <EntriesEditor
                 entries={arr(value?.entries)}
@@ -1113,6 +1186,33 @@ export function ContentPageV1Form({ value, onChange }: BlockFormProps) {
             </div>
           </>
         )}
+      </InspectorSection>
+
+      <InspectorSection title="Grid guidelines" icon={<Grid3X3 className="h-3 w-3" />}>
+        <SectionNote>
+          Shown when Guides is active in the toolbar. Only visible in two-column mode (non-grid).
+        </SectionNote>
+        <InspectorField label="Center line">
+          <InspectorToggle
+            checked={value?.guidelinesConfig?.showCenter !== false}
+            onChange={(v) => onChange({ ...value, guidelinesConfig: { ...(value?.guidelinesConfig ?? {}), showCenter: v } })}
+            label="Vertical center"
+          />
+        </InspectorField>
+        <InspectorField label="Gap lines">
+          <InspectorToggle
+            checked={value?.guidelinesConfig?.showGapLines !== false}
+            onChange={(v) => onChange({ ...value, guidelinesConfig: { ...(value?.guidelinesConfig ?? {}), showGapLines: v } })}
+            label="Column gap boundaries"
+          />
+        </InspectorField>
+        <InspectorField label="Edge lines">
+          <InspectorToggle
+            checked={value?.guidelinesConfig?.showEdgeLines !== false}
+            onChange={(v) => onChange({ ...value, guidelinesConfig: { ...(value?.guidelinesConfig ?? {}), showEdgeLines: v } })}
+            label="Column outer edges"
+          />
+        </InspectorField>
       </InspectorSection>
 
       <BlockLayoutSection value={value} onChange={onChange} />

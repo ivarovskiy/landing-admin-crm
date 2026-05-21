@@ -490,7 +490,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   /* gap: clamp(56px, 10vw, 142px); */
-  gap: 80px;
+  gap: var(--cp-col-gap, 80px);
   align-items: start;
 }
 
@@ -562,7 +562,7 @@
 
 .cp__entry {
   display: flex;
-  gap: 142px;
+  gap: var(--cp-entry-col-gap, 142px);
   align-items: start;
 }
 
@@ -573,7 +573,15 @@
   flex-direction: column;
   align-items: flex-start;
   min-width: 0;
-  max-width: 533px;
+  max-width: var(--cp-col-max-w, 533px);
+}
+
+.cp__entry .cp__col--left {
+  max-width: var(--cp-col-left-max-w, var(--cp-col-max-w, 533px));
+}
+
+.cp__entry .cp__col--right {
+  max-width: var(--cp-col-right-max-w, var(--cp-col-max-w, 533px));
 }
 
 /* Progress dot — rendered by ScrollProgressDot client component */
