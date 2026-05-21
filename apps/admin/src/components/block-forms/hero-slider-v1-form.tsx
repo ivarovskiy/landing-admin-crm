@@ -688,38 +688,36 @@ export function HeroSliderV1Form({ blockId, value, onChange, viewMode, externalS
                   onChange={(v) => setSg(["showColumnCenter"], v || undefined)}
                 />
                 {!!sg.showColumnCenter && (
-                  <>
-                    <InspectorField label="Center mode" hint="Which zone to bisect: 1=slide↔photo, 2=margin↔photo, 3=slide↔gap, 4=margin↔gap">
-                      <select
-                        className="w-full h-7 rounded border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                        value={sg.columnCenterMode ?? 3}
-                        onChange={(e) => setSg(["columnCenterMode"], Number(e.target.value) as 1 | 2 | 3 | 4)}
-                      >
-                        <option value={1}>1 — slide edge ↔ photo (no gap)</option>
-                        <option value={2}>2 — outer margin ↔ photo (no gap)</option>
-                        <option value={3}>3 — slide edge ↔ gap boundary</option>
-                        <option value={4}>4 — outer margin ↔ gap boundary</option>
-                      </select>
-                    </InspectorField>
-                    <InspectorField label="Outer margin (layout px)" hint="Outer text zone margin in layout px (default 13)">
-                      <InspectorNumber
-                        value={sg.columnCenterOuterMarginPx ?? undefined}
-                        onChange={(v) => setSg(["columnCenterOuterMarginPx"], v ?? undefined)}
-                        placeholder="13"
-                      />
-                    </InspectorField>
-                    <InspectorToggle
-                      label="Quarter vertical lines (¼ and ¾ of zone)"
-                      checked={!!sg.showColumnCenterQuartersV}
-                      onChange={(v) => setSg(["showColumnCenterQuartersV"], v || undefined)}
-                    />
-                    <InspectorToggle
-                      label="Quarter horizontal lines (25% and 75%)"
-                      checked={!!sg.showColumnCenterQuartersH}
-                      onChange={(v) => setSg(["showColumnCenterQuartersH"], v || undefined)}
-                    />
-                  </>
+                  <InspectorField label="Center mode" hint="Which zone to bisect: 1=slide↔photo, 2=margin↔photo, 3=slide↔gap, 4=margin↔gap">
+                    <select
+                      className="w-full h-7 rounded border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                      value={sg.columnCenterMode ?? 3}
+                      onChange={(e) => setSg(["columnCenterMode"], Number(e.target.value) as 1 | 2 | 3 | 4)}
+                    >
+                      <option value={1}>1 — slide edge ↔ photo (no gap)</option>
+                      <option value={2}>2 — outer margin ↔ photo (no gap)</option>
+                      <option value={3}>3 — slide edge ↔ gap boundary</option>
+                      <option value={4}>4 — outer margin ↔ gap boundary</option>
+                    </select>
+                  </InspectorField>
                 )}
+                <InspectorField label="Outer margin (layout px)" hint="Outer text zone margin in layout px (default 13)">
+                  <InspectorNumber
+                    value={sg.columnCenterOuterMarginPx ?? undefined}
+                    onChange={(v) => setSg(["columnCenterOuterMarginPx"], v ?? undefined)}
+                    placeholder="13"
+                  />
+                </InspectorField>
+                <InspectorToggle
+                  label="Quarter vertical lines (¼ and ¾)"
+                  checked={!!sg.showColumnCenterQuartersV}
+                  onChange={(v) => setSg(["showColumnCenterQuartersV"], v || undefined)}
+                />
+                <InspectorToggle
+                  label="Quarter horizontal lines (25% and 75%)"
+                  checked={!!sg.showColumnCenterQuartersH}
+                  onChange={(v) => setSg(["showColumnCenterQuartersH"], v || undefined)}
+                />
               </>
             );
           })()}

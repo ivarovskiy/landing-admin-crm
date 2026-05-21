@@ -2576,7 +2576,11 @@ function useSlideElementEditor(
         if (d.mode === "resize") {
           el.style.transform = "";
           const nextSize = Math.max(6, Math.round(d.startSize + (dx + dy) / 2));
-          onSlideChangeRef.current!(setSlideElementViewportStyle(slideRef.current, key, viewportProfile, { size: `${nextSize}px` }));
+          const nextShadow = Math.round((nextSize / 104) * 5.56 * 100) / 100;
+          onSlideChangeRef.current!(setSlideElementViewportStyle(slideRef.current, key, viewportProfile, {
+            size: `${nextSize}px`,
+            shadowOffset: `${nextShadow}px`,
+          }));
           return;
         }
         // Measure snap-aligned elements from DOM before resetting transforms
